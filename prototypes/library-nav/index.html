@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Homelibra Library Gezinme Prototipi</title>
+<!--
+  PROTOTYPE — atılacak kod. Ticket: baspinarenes/homelibra#35 "Prototype: Library gezinme ekranları (Source listesi, Tag listesi, arama)".
+  Soru: Capture ve Organizing pass dışında Library'de nasıl gezinilir, Android'de ve web'de?
+  Üç gezinme yapısı, alttaki çubuktan (veya ← → tuşlarıyla) değişir; ?variant=A|B|C, ?device=phone|desktop.
+    A  Alt sekmeler   Enes'in seçtiği varyant. 1. tur: Not al · Kaynaklar · Etiketler · Ara; Düzenlenecekler Kaynaklar'ın tepesinde.
+                      2. tur: Ana sayfa · Kaynaklar · Etiketler · Dosyalar · Ara (beş sekme). Ana sayfa: en üstte son not alınan Source (kapak + Not al),
+                      Düzenlenecekler şeridi, Okunuyor listesi, Etiketler düz liste (son kullanılana göre, boyutla vurgu yok).
+                      Source kapakları her listede; yüklenmemişse türe göre şablon ikon. Not al = #11 akışı (yakalama sırası) itilen ekran;
+                      Source sayfası Locator sırası, yazma kutusu yok. Telefonda alt çubuk, masaüstünde sol ray; her sekmenin kendi geri yığını.
+    B  Ana sayfa      Tek Kütüphane ekranı: üstte arama, altında Düzenlenecekler, Okunuyor, Dosyalar, etiket bulutu. "Not al" yüzen düğme.
+                      Source sayfası hem okuma hem Capture: Locator sırası + altta yazma kutusu.
+    C  Kenar çubuğu   Üç bölme (kenar · liste · Source). Telefonda çekmece + yığın. Etiketler çoklu seçilir (OR), "Dosya olarak kaydet".
+                      Source sayfasında Konum sırası / Yakalama sırası anahtarı + yazma kutusu.
+  Ortak ekranlar: Source listesi (Okunuyor/Bitti, sıralama, takvim çipli Tarih filtresi), Source'un notları, Tag listesi → etiket sayfası
+  (tek etiketli geçici Collection görünümü, #12 C), Dosyalar, arama sonuçları (Notlar + Kaynaklar, #16), Düzenlenecekler (#13).
+  Basitleştirmeler: arama kök kademesi yok (birebir > önek > Source'ta parça); Düzenle modu, not düzenleme, Markdown kopya ve etiket
+  yeniden adlandırma birer bildirimle temsil edilir. Kalıcılık yok: her şey bellekte. Çalıştırma: dosyayı tarayıcıda aç.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root {
+  --page: #F4F6F7; --surface: #FFFFFF; --line: #D3DADF; --fg: #17212B; --muted: #5B6873;
+  --accent: #1E5A6D; --accent-fg: #FFFFFF; --accent-soft: #E2EDF0; --excerpt: #F3F1EC; --comment: #2F4A5A;
+  --warn: #8F5200; --warn-soft: #FCEFD9; --mark: #FBE7A1; --bar: #17212B; --bar-fg: #F4F7F8; --desk: #DCE2E6;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-quote: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0C1115; --surface: #161F25; --line: #2B3740; --fg: #E3E9ED; --muted: #93A0AA;
+  --accent: #74B4C7; --accent-fg: #0C1115; --accent-soft: #1D3038; --excerpt: #20262A; --comment: #B9CCD6;
+  --warn: #F0B45A; --warn-soft: #3A2B14; --mark: #5A4A12; --bar: #E3E9ED; --bar-fg: #0C1115; --desk: #05080A; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --page: #0C1115; --surface: #161F25; --line: #2B3740; --fg: #E3E9ED; --muted: #93A0AA;
+  --accent: #74B4C7; --accent-fg: #0C1115; --accent-soft: #1D3038; --excerpt: #20262A; --comment: #B9CCD6;
+  --warn: #F0B45A; --warn-soft: #3A2B14; --mark: #5A4A12; --bar: #E3E9ED; --bar-fg: #0C1115; --desk: #05080A; color-scheme: dark;
+}
+html, body { margin: 0; }
+body { background: var(--desk); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.45; }
+* { box-sizing: border-box; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px; }
+.muted { color: var(--muted); }
+.lbl { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.typechip { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.primary { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; white-space: nowrap; }
+.secondary { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; font-weight: 500; white-space: nowrap; }
+.ghost { background: none; border: 0; color: var(--accent); font-weight: 500; padding: 4px 6px; border-radius: 6px; white-space: nowrap; }
+.ghost:hover { background: var(--accent-soft); }
+.iconbtn { background: none; border: 0; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: var(--fg); flex: none; font-size: 20px; }
+.iconbtn:hover { background: var(--accent-soft); }
+.pill { display: inline-block; font-size: 11.5px; border-radius: 99px; padding: 1px 8px; white-space: nowrap; }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.done { background: var(--accent-soft); color: var(--accent); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 76px; background: var(--fg); color: var(--page);
+  padding: 9px 16px; border-radius: 12px; font-size: 13.5px; z-index: 80; pointer-events: none; max-width: min(520px, 92vw); text-align: center; }
+.empty { padding: 32px 16px; text-align: center; color: var(--muted); }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; flex: none; }
+.seg button { border: 0; background: none; border-radius: 7px; padding: 4px 10px; font-size: 13px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.search { position: relative; flex: 1; min-width: 140px; }
+.search input { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 32px 8px 12px; }
+.search button { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); width: 26px; height: 26px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tagchip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 2px 10px; font-size: 13px; }
+button.tagchip:hover { border-color: var(--accent); }
+.tagchip .x { border: 0; background: none; color: var(--muted); padding: 0 0 0 4px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; user-select: none; }
+.toggle input { appearance: none; width: 32px; height: 18px; border-radius: 99px; background: var(--line); position: relative; margin: 0; flex: none; cursor: pointer; }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); transition: left .15s; }
+.toggle input:checked { background: var(--accent); }
+.toggle input:checked::after { left: 16px; }
+select.plain { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 8px; font-size: 13.5px; }
+h3.sec { margin: 0; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+/* ---------- stage: phone frame or full desktop ---------- */
+.stage { min-height: 100vh; padding-bottom: 62px; }
+.frame { position: relative; background: var(--page); overflow: hidden; }
+.stage.desktop .frame { width: 100%; height: calc(100vh - 62px); }
+.stage.phone .frame { width: 390px; max-width: 100%; height: min(820px, calc(100vh - 92px)); margin: 16px auto 0; border: 9px solid #0E1418; border-radius: 34px; }
+@media (max-width: 500px) { .stage.phone .frame { border: 0; border-radius: 0; margin: 0; height: calc(100vh - 62px); } }
+.app { position: absolute; inset: 0; display: flex; min-width: 0; }
+.col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.scroll { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.hdr { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--page); min-height: 56px; flex: none; }
+.hdr h1 { margin: 0; font-size: 18px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pad { padding: 14px 16px; }
+.narrow .pad { padding: 12px 14px; }
+.maxw { max-width: 820px; margin: 0 auto; }
+
+/* ---------- covers ---------- */
+.cover { flex: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 4px; object-fit: cover;
+  box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.06); background: var(--surface); }
+.cover.tpl { background: hsl(var(--h) 32% 90%); color: hsl(var(--h) 40% 30%); }
+:root[data-theme="dark"] .cover.tpl { background: hsl(var(--h) 22% 22%); color: hsl(var(--h) 45% 75%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cover.tpl { background: hsl(var(--h) 22% 22%); color: hsl(var(--h) 45% 75%); } }
+.cover.xs { width: 30px; height: 44px; }
+.cover.s { width: 40px; height: 58px; }
+.cover.m { width: 76px; height: 112px; border-radius: 5px; }
+.cover.l { width: 100px; height: 148px; border-radius: 6px; }
+.cover .ct { font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; font-weight: 600; }
+.cover.click { cursor: pointer; }
+.coverwrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
+.coverwrap .ghost { font-size: 12px; padding: 2px 4px; }
+
+/* ---------- source rows ---------- */
+.srow { width: 100%; text-align: left; border: 0; background: none; display: grid; grid-template-columns: auto 1fr auto; gap: 2px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); align-items: baseline; }
+.srow .cover { grid-row: 1 / span 2; align-self: center; }
+.srow:hover, .srow[aria-current="true"] { background: var(--accent-soft); }
+.srow .t { font-weight: 600; min-width: 0; }
+.srow .m { grid-column: 2; font-size: 13px; color: var(--muted); }
+.srow .r { grid-row: 1 / span 2; grid-column: 3; text-align: right; font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.secrow { width: 100%; text-align: left; border: 0; background: var(--page); display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px; border-bottom: 1px solid var(--line); }
+
+/* ---------- date filter ---------- */
+.dfbtn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.dfpanel { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.yf { display: inline-flex; align-items: center; gap: 4px; }
+.yf input { width: 64px; border: 1px solid var(--line); border-radius: 8px; padding: 5px 7px; background: var(--page); font-family: var(--font-mono); font-size: 13.5px; }
+.calchip { border: 1px solid var(--accent); color: var(--accent); background: var(--accent-soft); border-radius: 99px; font-size: 12px; padding: 2px 9px; font-weight: 600; }
+.dfhint { flex-basis: 100%; font-size: 12.5px; color: var(--muted); }
+
+/* ---------- source page ---------- */
+.shead { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.shead .top { display: flex; gap: 14px; align-items: flex-start; }
+.shead .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.shead .r1 { display: flex; align-items: center; gap: 8px; }
+.stitle { font-family: var(--font-quote); font-size: 22px; font-weight: 600; margin: 0; line-height: 1.25; }
+.narrow .stitle { font-size: 19px; }
+.smeta { font-size: 13.5px; color: var(--muted); }
+.shead .r2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.status { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; font-size: 12px; padding: 2px 10px; }
+.status.done { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.editbar { background: var(--warn-soft); color: var(--warn); border-radius: 10px; padding: 8px 12px; font-size: 13.5px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.nrow { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 9px 16px; border-bottom: 1px solid var(--line); font-size: 14px; cursor: pointer; transition: background .6s; }
+.narrow .nrow { grid-template-columns: 70px 1fr; }
+.nrow:hover { background: var(--accent-soft); }
+.nrow.flash { background: var(--mark); transition: none; }
+.nrow .lc { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.nrow .ex { font-family: var(--font-quote); font-size: 15.5px; }
+.nrow .co { color: var(--comment); font-size: 13.5px; }
+.nrow .co::before { content: "↳ "; color: var(--muted); }
+.nrow .nt { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+.nrow .untag { font-style: italic; opacity: .8; }
+.nrow .newmark { color: var(--warn); font-weight: 600; }
+.write { position: sticky; bottom: 0; background: var(--page); border-top: 1px solid var(--line); padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.write .wtop { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.locchip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 2px 4px 2px 10px; font-size: 12px; color: var(--muted); }
+.locchip input { border: 0; background: none; width: 90px; font-family: var(--font-mono); font-size: 12.5px; color: var(--fg); padding: 2px 0; }
+.write .wrow { display: flex; gap: 8px; align-items: flex-end; }
+.write textarea { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; resize: none; background: var(--surface); }
+.write textarea.ex { font-family: var(--font-quote); font-size: 16px; background: var(--excerpt); }
+.srcpick { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.srcpick select { flex: 1; min-width: 0; }
+
+/* ---------- collection / tag view (#12 C) ---------- */
+.cbar { padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+.cbar .r { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ctitle { font-size: 20px; font-weight: 600; flex: 1; min-width: 0; margin: 0; }
+.count { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.gh { width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: var(--page); padding: 12px 16px 6px; display: flex; gap: 8px; align-items: baseline; }
+.gh:hover .tt { text-decoration: underline; }
+.gh .tt { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gh .y { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.reason .src { color: var(--warn); }
+
+/* ---------- lists: tags, collections, todo, search ---------- */
+.lrow { width: 100%; text-align: left; border: 0; background: none; display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.lrow:hover, .lrow[aria-current="true"] { background: var(--accent-soft); }
+.lrow .t { flex: 1; min-width: 0; }
+.lrow .t b { font-weight: 600; }
+.lrow .s { display: block; font-size: 12.5px; color: var(--muted); }
+.lrow .n { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.lrow .more { color: var(--muted); }
+.res { width: 100%; text-align: left; border: 0; background: none; display: block; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.res:hover { background: var(--accent-soft); }
+.res .snip { font-size: 14px; }
+.res .snip.ex { font-family: var(--font-quote); font-size: 15px; }
+.res .meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.res .meta .lc { font-family: var(--font-mono); }
+.ghead { padding: 14px 16px 6px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 8px; }
+.hint { padding: 20px 16px; color: var(--muted); font-size: 14px; }
+.hint code { font-family: var(--font-mono); background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 0 4px; }
+
+/* ---------- variant A: tabs ---------- */
+.va .rail { width: 92px; flex: none; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 14px 8px; }
+.va .rail .brand { font-weight: 600; font-size: 13px; text-align: center; margin-bottom: 14px; color: var(--accent); }
+.tabbtn { position: relative; border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border-radius: 12px; font-size: 11px; min-width: 0; color: var(--muted); }
+.tabbtn[aria-current="true"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.tabbtn .badge { position: absolute; top: 3px; right: calc(50% - 22px); background: var(--warn); color: var(--surface); font-size: 10px; font-weight: 600; border-radius: 99px; padding: 0 5px; line-height: 15px; }
+.va .tabbar { display: flex; border-top: 1px solid var(--line); background: var(--surface); padding: 4px 4px 6px; flex: none; }
+.va .tabbar .tabbtn { flex: 1; }
+.hero { margin: 14px 16px 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 14px; display: flex; gap: 14px; }
+.hero .b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.hero .t { font-family: var(--font-quote); font-size: 19px; font-weight: 600; line-height: 1.25; }
+.hero .last { font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 8px; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hero .last.ex { font-family: var(--font-quote); font-size: 14.5px; color: var(--fg); }
+.hero .acts { display: flex; gap: 8px; margin-top: auto; padding-top: 8px; flex-wrap: wrap; }
+.homesec { display: flex; align-items: center; gap: 8px; padding: 18px 16px 8px; border-bottom: 1px solid var(--line); }
+.homesec h3 { flex: 1; }
+.todoband { margin: 12px 16px 4px; width: calc(100% - 32px); text-align: left; border: 1px solid var(--warn); background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+.todoband .t { flex: 1; }
+.todoband b { display: block; }
+.todoband span { font-size: 12.5px; }
+
+/* ---------- variant B: hub ---------- */
+.vb .homehdr { padding: 14px 16px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; background: var(--page); flex: none; }
+.vb .homehdr .brand { display: flex; align-items: baseline; gap: 8px; }
+.vb .homehdr h1 { margin: 0; font-size: 22px; flex: 1; }
+.vb .homehdr .search input { padding: 10px 34px 10px 14px; border-radius: 12px; font-size: 15.5px; }
+.vb .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; max-width: 1180px; margin: 0 auto; padding: 0 12px 100px; }
+.narrow.vb .grid { grid-template-columns: 1fr; padding: 0 0 100px; }
+.vb .sect { padding-top: 18px; min-width: 0; }
+.vb .sect > h3 { padding: 0 16px 8px; }
+.vb .sect .all { padding: 8px 16px; }
+.cards { display: flex; gap: 10px; overflow-x: auto; padding: 2px 16px 6px; scroll-snap-type: x mandatory; }
+.wide.vb .cards { flex-wrap: wrap; overflow: visible; }
+.card { flex: none; width: 200px; scroll-snap-align: start; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.card:hover { border-color: var(--accent); }
+.card .t { font-weight: 600; font-size: 14px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card .f { display: flex; gap: 6px; align-items: center; margin-top: auto; padding-top: 4px; }
+.cloud { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 0 16px; align-items: baseline; }
+.cloud button { border: 0; background: none; color: var(--accent); padding: 2px 4px; border-radius: 6px; }
+.cloud button:hover { background: var(--accent-soft); }
+.cloud sup { color: var(--muted); font-size: 10.5px; margin-left: 2px; }
+.fab { position: absolute; right: 18px; bottom: 18px; z-index: 10; background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 16px; padding: 14px 18px; font-weight: 600; box-shadow: 0 6px 18px rgba(0,0,0,.22); display: flex; align-items: center; gap: 8px; }
+
+/* ---------- variant C: sidebar ---------- */
+.vc .side { width: 250px; flex: none; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }
+.vc .side .top { padding: 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+.vc .side .brand { font-weight: 600; color: var(--accent); }
+.vc .side nav { flex: 1; overflow-y: auto; padding: 8px 8px 24px; }
+.vc .side h3 { padding: 14px 8px 4px; }
+.nitem { width: 100%; text-align: left; border: 0; background: none; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; font-size: 14px; }
+.nitem:hover { background: var(--accent-soft); }
+.nitem[aria-current="true"] { background: var(--accent-soft); font-weight: 600; color: var(--accent); }
+.nitem .l { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nitem .n { font-size: 12px; color: var(--muted); font-weight: 400; }
+.nitem .n.warn { color: var(--warn); font-weight: 600; }
+.nitem input[type="checkbox"] { margin: 0; accent-color: var(--accent); }
+.vc .listpane { border-right: 1px solid var(--line); min-width: 0; display: flex; flex-direction: column; }
+.vc .detail { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vc .lhdr { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; min-height: 52px; }
+.vc .lhdr h2 { margin: 0; font-size: 16px; flex: 1; }
+.drawer-bg { position: absolute; inset: 0; background: rgba(10,18,24,.42); z-index: 30; }
+.drawer { position: absolute; top: 0; bottom: 0; left: 0; width: 84%; max-width: 300px; z-index: 31; box-shadow: 8px 0 24px rgba(0,0,0,.2); }
+
+/* ---------- prototype chrome ---------- */
+.switcher { position: fixed; left: 50%; transform: translateX(-50%); bottom: 12px; z-index: 70;
+  display: flex; align-items: center; gap: 4px; background: var(--bar); color: var(--bar-fg); border-radius: 99px; padding: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28); font-size: 13.5px; }
+.switcher button { background: none; border: 0; color: inherit; min-width: 32px; height: 32px; border-radius: 99px; font-size: 17px; }
+.switcher button.txt { font-size: 12.5px; padding: 0 10px; }
+.switcher button.txt[aria-pressed="true"] { background: rgba(127,127,127,.3); }
+.switcher button:hover { background: rgba(127,127,127,.25); }
+.switcher .lab { padding: 0 8px; white-space: nowrap; }
+.switcher b { font-family: var(--font-mono); }
+.statepanel { position: fixed; right: 16px; bottom: 60px; z-index: 70; width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow: auto;
+  background: var(--bar); color: var(--bar-fg); border-radius: 12px; padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; }
+@media (max-width: 560px) { .switcher .full { display: none; } }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+const { useState, useEffect, useMemo, useRef } = React;
+const html = htm.bind(React.createElement);
+
+const TYPES = { kitap: "Kitap", makale: "Makale", tez: "Tez", arsiv: "Arşiv", yazma: "Yazma", sureli: "Süreli yayın", kayit: "Kayıt", web: "Web sayfası", diger: "Diğer" };
+const NOW = Date.now(), HOUR = 3600e3;
+
+// Stand-ins for cover photos the scholar would take or upload: drawn SVGs, not real covers.
+function fakeCover(bg, fg, title, author) {
+  const lines = [];
+  for (const w of title.split(" ")) { const l = lines[lines.length - 1]; if (l && (l + " " + w).length <= 13) lines[lines.length - 1] = l + " " + w; else lines.push(w); }
+  const t = lines.map((l, i) => `<text x='100' y='${96 + i * 26}' text-anchor='middle' font-family='Georgia,serif' font-size='21' fill='${fg}'>${l}</text>`).join("");
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300'><rect width='200' height='300' fill='${bg}'/>` +
+    `<rect x='11' y='11' width='178' height='278' fill='none' stroke='${fg}' stroke-opacity='.45'/>${t}` +
+    `<text x='100' y='262' text-anchor='middle' font-family='Helvetica,Arial,sans-serif' font-size='13' letter-spacing='1.5' fill='${fg}' fill-opacity='.8'>${author.toLocaleUpperCase("tr")}</text></svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+const FAKE_COVERS = {
+  s1: fakeCover("#5B1F1F", "#E8C877", "Cemiyet-i İttihadiye Tarihçesi", "Mehmed Ali"),
+  s5: fakeCover("#1F3B5B", "#F1F1EC", "Ahmet Rıza'dan Talat Paşa'ya", "Selim Uğurlu"),
+  s9: fakeCover("#E9DFC9", "#3A2E1E", "Hamidiye Basını ve Sansür", "Ayşe Demirtaş"),
+  s10: fakeCover("#2E4A3A", "#EDE6D3", "Taşrada Kadı ve Naib", "Ömer Kaplan"),
+  s7: fakeCover("#F2F2F0", "#2A2A2A", "Cemiyet ve Ordu", "Kemal Ersoy"),
+};
+
+// Example data, fictional apart from the archive fond codes and the newspaper name.
+// date = as entered (ADR-0002); sort = approximate Milâdî value. passH = hours since the last "Bitir" of an organizing pass (null = never).
+const SEED_SOURCES = [
+  { id: "s1",  type: "kitap",  author: "Mehmed Ali", title: "Cemiyet-i İttihadiye Tarihçesi", date: "1327 r.", sort: 1911.2, tags: [], status: "okunuyor", passH: null },
+  { id: "s2",  type: "sureli", author: "", title: "Tanin", date: "Temmuz 1324 r.", sort: 1908.55, tags: [], status: "okunuyor", passH: 100 },
+  { id: "s3",  type: "arsiv",  author: "BOA", title: "DH.MKT", date: "", sort: null, tags: ["İttihat ve Terakki"], status: "okunuyor", passH: 50 },
+  { id: "s4",  type: "arsiv",  author: "BOA", title: "Y.PRK.ASK", date: "29 Z 1325", sort: 1908.08, tags: [], status: "bitti", passH: 400 },
+  { id: "s5",  type: "kitap",  author: "Selim Uğurlu", title: "Ahmet Rıza'dan Talat Paşa'ya: Cemiyetin Taşra Teşkilatı", date: "2014", sort: 2014, tags: [], status: "bitti", passH: 500 },
+  { id: "s6",  type: "makale", author: "Zeynep Arıkan", title: "Selanik'te Cemiyet Mahfilleri, 1906–1908", date: "2019", sort: 2019, tags: ["Selanik"], status: "okunuyor", passH: null },
+  { id: "s7",  type: "tez",    author: "Kemal Ersoy", title: "Cemiyet ve Ordu: Üçüncü Ordu'da Teşkilatlanma, 1906–1912", date: "", sort: null, tags: [], status: "bitti", passH: null },
+  { id: "s8",  type: "kayit",  author: "Seminer, 4. hafta", title: "1908 Devrimi ve taşra (ders kaydı)", date: "2023", sort: 2023, tags: [], status: "okunuyor", passH: null },
+  { id: "s9",  type: "kitap",  author: "Ayşe Demirtaş", title: "Hamidiye Basını ve Sansür", date: "2016", sort: 2016, tags: ["basın"], status: "bitti", passH: null },
+  { id: "s10", type: "kitap",  author: "Ömer Kaplan", title: "Taşrada Kadı ve Naib", date: "2011", sort: 2011, tags: [], status: "bitti", passH: null },
+  { id: "s11", type: "arsiv",  author: "Bursa Şer'iyye Sicili", title: "B 112", date: "1150 h.", sort: 1737.3, tags: ["kadı"], status: "okunuyor", passH: 10 },
+  { id: "s12", type: "makale", author: "Nuri Aksoy", title: "Naib", date: "2006", sort: 2006, tags: [], status: "okunuyor", passH: null, note: "Ansiklopedi maddesi, c. 32" },
+].map((s) => ({ ...s, passAt: s.passH == null ? null : NOW - s.passH * HOUR, cover: FAKE_COVERS[s.id] || null }));
+
+const SEED_NOTES = [
+  { id: "n1",  src: "s1", loc: "s. 12", ex: "Cemiyetin ilk nizamnamesi Mekteb-i Tıbbiye'de, dört talebe arasında kaleme alındı.", co: "", tags: ["İttihat ve Terakki"], h: 300 },
+  { id: "n2",  src: "s1", loc: "s. 47–49", ex: "", co: "Kuruluş tarihini 1305 diye veriyor; diğer anlatılarla karşılaştır.", tags: ["İttihat ve Terakki"], h: 290 },
+  { id: "n19", src: "s1", loc: "s. 63", ex: "Cemiyet, Paris'teki merkezle yazışmayı Selanik üzerinden yürütüyordu.", co: "", tags: [], h: 5 },
+  { id: "n20", src: "s1", loc: "s. 71", ex: "", co: "Burada tarih yine 1305; kronoloji tablosu çıkar.", tags: [], h: 4 },
+  { id: "n3",  src: "s2", loc: "sayı 1, s. 1", ex: "Millet, hukukuna sahip çıkmasını bilmiştir.", co: "Başmakale; yeni rejimin dili.", tags: ["1908", "basın"], h: 260 },
+  { id: "n4",  src: "s2", loc: "sayı 14, s. 2", ex: "", co: "Sansür kalktıktan sonra ilk ilan sayfaları.", tags: ["basın"], h: 250 },
+  { id: "n21", src: "s2", loc: "sayı 22, s. 1", ex: "Matbuat hürriyeti, meşrutiyetin teminatıdır.", co: "", tags: [], h: 30 },
+  { id: "n5",  src: "s3", loc: "1234/56", ex: "…Selanik'te cem'iyyet-i hafiyye ile münasebeti tahakkuk eden zâbitân…", co: "Tarih Rumî 1324 olmalı.", tags: [], h: 200 },
+  { id: "n6",  src: "s3", loc: "1240/12", ex: "", co: "Firari zabitlerin listesi; isimleri Ersoy'un teziyle karşılaştır.", tags: [], h: 190 },
+  { id: "n7",  src: "s3", loc: "", ex: "", co: "Fon genelinde 1908 sonrası evrak, Dahiliye'nin cemiyetle ilişkisini gösteriyor.", tags: [], h: 180 },
+  { id: "n22", src: "s3", loc: "1251/3", ex: "", co: "Selanik'ten gelen şifreli telgraf; tarihi okunamıyor.", tags: [], h: 2 },
+  { id: "n8",  src: "s4", loc: "254/12", ex: "Manastır ve Selanik'te zâbitânın ekserisi cemiyete dahil olmuştur.", co: "", tags: ["Selanik"], h: 420 },
+  { id: "n9",  src: "s5", loc: "", ex: "", co: "Genel değerlendirme: taşra şubelerini merkezden bağımsız ele alan nadir çalışmalardan.", tags: ["İttihat ve Terakki"], h: 560 },
+  { id: "n10", src: "s5", loc: "s. 45", ex: "Şubelerin çoğu, merkezden talimat beklemeden kendi nizamnamelerini yazdı.", co: "", tags: ["İttihat ve Terakki"], h: 555 },
+  { id: "n11", src: "s5", loc: "s. 112–114", ex: "Selanik şubesi, 1908'e gelindiğinde fiilen merkezin yerini almıştı.", co: "Bu iddia için dipnot 48'deki arşiv belgesine bak.", tags: ["Selanik", "1908"], h: 550 },
+  { id: "n12", src: "s5", loc: "Önsöz", ex: "", co: "Yazarın kaynak eleştirisi bölümü kısa ama işe yarar.", tags: ["İttihat ve Terakki"], h: 565 },
+  { id: "n13", src: "s5", loc: "s. 201", ex: "Enver Bey'in Resne'den dağa çıkışı, şubenin kararı değil, kendi kararıydı.", co: "", tags: ["Enver Paşa"], h: 540 },
+  { id: "n14", src: "s6", loc: "s. 87", ex: "Mahfiller kahvehane ile loca arasında bir yerde duruyordu.", co: "", tags: [], h: 20 },
+  { id: "n15", src: "s6", loc: "s. 91", ex: "", co: "Mason locası bağlantısı abartılmış olabilir.", tags: [], h: 19 },
+  { id: "n16", src: "s7", loc: "s. 211", ex: "Üçüncü Ordu'daki genç zabitlerin cemiyete katılımı 1907 baharında hızlandı.", co: "Ersoy'un sayıları DH.MKT ile tutuyor mu?", tags: ["İttihat ve Terakki", "1908"], h: 710 },
+  { id: "n23", src: "s7", loc: "s. 215", ex: "", co: "Tablo 4'teki katılım sayıları ek 2 ile çelişiyor.", tags: [], h: 700 },
+  { id: "n17", src: "s8", loc: "00:14:32", ex: "", co: "Hoca \"devrim\" yerine \"meşrutiyetin ilanı\" demeyi tercih ediyor; terminoloji tartışması.", tags: ["1908"], h: 150 },
+  { id: "n18", src: "s9", loc: "s. 33", ex: "Sansür, 1908'e kadar matbaaların sayısını değil, içeriğini daralttı.", co: "", tags: [], h: 900 },
+  { id: "n30", src: "s10", loc: "s. 3", ex: "", co: "Giriş: naibliğin kurumsal tarihi üzerine kısa ama yoğun.", tags: [], h: 64 },
+  { id: "n31", src: "s10", loc: "s. 27", ex: "Naib, kadının vekili olarak kazanın uzak nahiyelerinde hüküm verirdi;", co: "", tags: ["naib"], h: 63 },
+  { id: "n32", src: "s10", loc: "s. 28", ex: "ancak hüccetlerin çoğu kadının mührünü taşımaya devam etti.", co: "", tags: [], h: 62.9 },
+  { id: "n33", src: "s10", loc: "s. 40", ex: "Naiblik, on sekizinci yüzyılda iltizama benzer bir usulle satılır oldu.", co: "", tags: [], h: 62 },
+  { id: "n34", src: "s10", loc: "s. 44", ex: "", co: "İltizam benzetmesi Bursa sicilleriyle kontrol edilmeli.", tags: [], h: 61 },
+  { id: "n35", src: "s10", loc: "s. 52", ex: "Kadılar, gelirlerinin büyük kısmını mahkeme harçlarından sağlıyordu.", co: "", tags: [], h: 60 },
+  { id: "n36", src: "s10", loc: "s. 88–90", ex: "", co: "Tablo 3: 1700–1750 arası Bursa naiblerinin listesi.", tags: ["kadı"], h: 55 },
+  { id: "n37", src: "s10", loc: "s. 131", ex: "Şikâyetlerin çoğu naiblerin fazla harç almasıyla ilgiliydi.", co: "", tags: [], h: 52 },
+  { id: "n38", src: "s10", loc: "Dizin", ex: "", co: "Dizin iyi; yer adları ayrıca verilmiş.", tags: [], h: 50 },
+  { id: "n39", src: "s10", loc: "s. 140", ex: "Tanzimat'la birlikte naiblik maaşa bağlandı.", co: "", tags: [], h: 49 },
+  { id: "n40", src: "s11", loc: "vr. 12a", ex: "Mahkemeye gelen davaların üçte biri borç davasıydı.", co: "", tags: [], h: 40 },
+  { id: "n41", src: "s11", loc: "vr. 15b", ex: "", co: "Naib Mehmed Efendi'nin imzası; Kaplan'ın listesinde yok.", tags: [], h: 38 },
+  { id: "n42", src: "s11", loc: "vr. 31a", ex: "Merhum-ı mezburun terekesi verese beyninde taksim olundu.", co: "", tags: [], h: 36 },
+  { id: "n43", src: "s12", loc: "s. 444", ex: "Naib kelimesi, Osmanlı hukuk dilinde kadı vekili anlamında yerleşmişti.", co: "", tags: ["naib"], h: 600 },
+  { id: "n44", src: "s12", loc: "", ex: "", co: "Kısa ama kaynakçası çok iyi.", tags: ["kadı"], h: 600 },
+].map((n) => ({ ...n, at: NOW - n.h * HOUR }));
+
+const SEED_COLLS = [
+  { id: "c1", name: "İttihat ve Terakki", tags: ["İttihat ve Terakki", "1908", "Selanik"], includeSources: true },
+  { id: "c2", name: "Meşrutiyet basını", tags: ["basın"], includeSources: true },
+  { id: "c3", name: "Kadılık makalesi", tags: ["kadı", "naib"], includeSources: true },
+];
+
+const VARIANTS = [
+  { key: "A", name: "Alt sekmeler (2. tur)" },
+  { key: "B", name: "Ana sayfa" },
+  { key: "C", name: "Kenar çubuğu" },
+];
+
+// ---------- rules ----------
+// Tag identity (#3): Turkish case + spacing fold only.
+const tagKey = (t) => t.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr");
+const hasTag = (list, t) => list.some((x) => tagKey(x) === tagKey(t));
+// Search fold (ADR-0005, simplified): Turkish case, İ/I/ı→i, diacritics off, ayn/hemze/apostrophe deleted, final b/d→p/t.
+const fold = (s) => s.toLocaleLowerCase("tr").replace(/[ʿʾ'’]/g, "").replace(/ı/g, "i").normalize("NFD").replace(/[̀-ͯ]/g, "")
+  .replace(/b\b/g, "p").replace(/d\b/g, "t");
+const words = (s) => fold(s).split(/[^a-z0-9]+/).filter(Boolean);
+function parseQuery(q) {
+  const toks = q.trim().split(/\s+/).filter(Boolean);
+  return {
+    pos: toks.filter((t) => !t.startsWith("-")).flatMap(words),
+    neg: toks.filter((t) => t.startsWith("-") && t.length > 1).flatMap((t) => words(t.slice(1))),
+  };
+}
+// Prefix also tries the query's unfolded ending, so "naib" (folded "naip") still finds "naiblik".
+const prefixHit = (w, q) => q.length >= 3 && (w.startsWith(q) || w.startsWith(q.replace(/p$/, "b").replace(/t$/, "d")));
+const wordHit = (w, q) => w === q || prefixHit(w, q);
+// Note match (#16 without the stem tier): every word exact (1) or 3+ letter prefix (3); -word excludes. Excerpt/Comment only.
+function noteMatch(n, pq) {
+  if (!pq.pos.length && !pq.neg.length) return null;
+  const exW = words(n.ex), coW = words(n.co), all = [...exW, ...coW];
+  if (pq.neg.some((q) => all.some((w) => wordHit(w, q)))) return null;
+  let tier = 1;
+  for (const q of pq.pos) {
+    if (all.includes(q)) continue;
+    if (all.some((w) => prefixHit(w, q))) { tier = 3; continue; }
+    return null;
+  }
+  if (!pq.pos.length) return null;
+  return { tier, field: pq.pos.some((q) => exW.some((w) => wordHit(w, q))) ? "ex" : "co" };
+}
+// Source match: Başlık, Yazar, Künye notu; plus 3+ letter part inside a word (nalcık → İnalcık).
+function sourceMatch(s, pq) {
+  if (!pq.pos.length) return null;
+  const text = [s.author, s.title, s.note || ""].join(" ");
+  const ws = words(text), f = fold(text);
+  let tier = 1;
+  for (const q of pq.pos) {
+    if (ws.includes(q)) continue;
+    if (ws.some((w) => prefixHit(w, q))) { tier = Math.max(tier, 3); continue; }
+    if (q.length >= 3 && f.includes(q)) { tier = 4; continue; }
+    return null;
+  }
+  if (pq.neg.some((q) => ws.some((w) => wordHit(w, q)))) return null;
+  return { tier };
+}
+// Locator order (#2): empty first, then by the numbers in the text, number-less last in capture order.
+function locKey(n) {
+  if (!n.loc.trim()) return [0];
+  const nums = (n.loc.match(/\d+/g) || []).map(Number);
+  return nums.length ? [1, ...nums] : [2, n.at];
+}
+function cmpArr(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] ?? -1, y = b[i] ?? -1;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+const byLoc = (a, b) => cmpArr(locKey(a), locKey(b));
+// Source order by Date (#3): undated last, alphabetical.
+function cmpDate(a, b) {
+  if (a.sort == null && b.sort != null) return 1;
+  if (b.sort == null && a.sort != null) return -1;
+  if (a.sort != null && a.sort !== b.sort) return a.sort - b.sort;
+  return (a.author + a.title).localeCompare(b.author + b.title, "tr");
+}
+const join = (...xs) => xs.filter(Boolean).join(", ");
+const shortName = (s) => join(s.author, s.title);
+
+function relTime(at) {
+  const h = (Date.now() - at) / HOUR;
+  if (h < 1) return "az önce";
+  if (h < 24) return `${Math.floor(h)} saat önce`;
+  if (h < 48) return "dün";
+  if (h < 24 * 14) return `${Math.floor(h / 24)} gün önce`;
+  return `${Math.floor(h / 24 / 7)} hafta önce`;
+}
+
+// Everything the screens derive from the library.
+function derive(sources, notes, colls) {
+  const src = Object.fromEntries(sources.map((s) => [s.id, s]));
+  const bySrc = {};
+  for (const n of notes) (bySrc[n.src] ||= []).push(n);
+  const info = {};
+  for (const s of sources) {
+    const ns = bySrc[s.id] || [];
+    const fresh = ns.filter((n) => !n.tags.length && (s.passAt == null || n.at > s.passAt));
+    info[s.id] = { count: ns.length, last: ns.length ? Math.max(...ns.map((n) => n.at)) : 0, untagged: fresh.length, fresh: new Set(fresh.map((n) => n.id)) };
+  }
+  // Düzenlenecekler (#13): sources with untagged notes captured after the last "Bitir"; finished first, then by last note.
+  const todo = sources.filter((s) => info[s.id].untagged > 0)
+    .sort((a, b) => (a.status === "bitti" ? 0 : 1) - (b.status === "bitti" ? 0 : 1) || info[b.id].last - info[a.id].last);
+  const tagMap = new Map();
+  const bump = (t, k, at = 0) => { const key = tagKey(t); const e = tagMap.get(key) || { name: t, notes: 0, sources: 0, last: 0 }; e[k]++; e.last = Math.max(e.last, at); tagMap.set(key, e); };
+  notes.forEach((n) => n.tags.forEach((t) => bump(t, "notes", n.at)));
+  sources.forEach((s) => s.tags.forEach((t) => bump(t, "sources")));
+  const tags = [...tagMap.values()].sort((a, b) => a.name.localeCompare(b.name, "tr"));
+  const reading = sources.filter((s) => s.status === "okunuyor").sort((a, b) => info[b.id].last - info[a.id].last);
+  return { sources, notes, colls, src, bySrc, info, todo, tags, reading };
+}
+
+// Collection membership (ADR-0003): own tag OR (option on AND source tag).
+function computeColl(S, tags, includeSources, query) {
+  const pq = parseQuery(query);
+  const members = [];
+  let wouldAdd = 0;
+  for (const n of S.notes) {
+    const s = S.src[n.src];
+    const own = n.tags.filter((t) => hasTag(tags, t));
+    const via = s.tags.filter((t) => hasTag(tags, t));
+    if (!own.length && via.length && !includeSources) wouldAdd++;
+    if (!own.length && !(includeSources && via.length)) continue;
+    members.push({ ...n, own, via: includeSources ? via : [] });
+  }
+  const visible = members.filter((n) => !query.trim() || noteMatch(n, pq));
+  const groups = [];
+  for (const s of [...S.sources].sort(cmpDate)) {
+    const ns = visible.filter((n) => n.src === s.id).sort(byLoc);
+    if (ns.length) groups.push({ source: s, notes: ns });
+  }
+  return { groups, total: members.length, shown: visible.length, viaOnly: members.filter((n) => !n.own.length).length, wouldAdd, pq };
+}
+
+// ---------- Tarih filter: calendar chip as in the Source form (#18) ----------
+const CALS = [{ k: "M", name: "Milâdî", suf: "" }, { k: "H", name: "Hicrî", suf: " h." }, { k: "R", name: "Rumî", suf: " r." }];
+// Approximate start of a year in Milâdî, enough for filtering (#17 has the exact rules).
+const toMil = (y, cal) => cal === "H" ? y * 0.970229 + 621.5643 : cal === "R" ? y + 584.17 : y;
+const dfActive = (f) => !!(f && (f.from.y || f.to.y));
+function inRange(s, f) {
+  if (!dfActive(f)) return true;
+  if (s.sort == null) return false;
+  const lo = f.from.y ? toMil(+f.from.y, f.from.cal) : -Infinity;
+  const hi = f.to.y ? toMil(+f.to.y + 1, f.to.cal) : Infinity;
+  return s.sort >= lo && s.sort < hi;
+}
+const yLabel = (p) => p.y ? p.y + CALS.find((c) => c.k === p.cal).suf : "…";
+const EMPTY_DF = { from: { y: "", cal: "M" }, to: { y: "", cal: "M" } };
+
+function DateFilter({ value, onChange, open, setOpen }) {
+  const f = value || EMPTY_DF;
+  const set = (side, patch) => onChange({ ...f, [side]: { ...f[side], ...patch } });
+  const cycle = (side) => { const i = CALS.findIndex((c) => c.k === f[side].cal); set(side, { cal: CALS[(i + 1) % 3].k }); };
+  const lo = f.from.y ? Math.floor(toMil(+f.from.y, f.from.cal)) : null;
+  const hi = f.to.y ? Math.floor(toMil(+f.to.y + 1, f.to.cal) - 0.01) : null;
+  const field = (side, lab) => html`<span className="yf"><span className="muted" style=${{ fontSize: 12.5 }}>${lab}</span>
+    <input inputMode="numeric" placeholder="yıl" value=${f[side].y} onChange=${(e) => set(side, { y: e.target.value.replace(/\D/g, "").slice(0, 4) })} />
+    <button className="calchip" onClick=${() => cycle(side)} title="Takvimi değiştir">${CALS.find((c) => c.k === f[side].cal).name}</button></span>`;
+  return html`<button className="secondary dfbtn" aria-pressed=${dfActive(f)} onClick=${() => setOpen(!open)}>
+      Tarih: ${dfActive(f) ? `${yLabel(f.from)} – ${yLabel(f.to)}` : "tümü"} ▾</button>
+    ${open ? html`<div className="dfpanel">
+      ${field("from", "Başlangıç")} ${field("to", "Bitiş")}
+      ${dfActive(f) ? html`<button className="ghost" onClick=${() => onChange(EMPTY_DF)}>Temizle</button>` : null}
+      <div className="dfhint">${dfActive(f) ? `≈ ${lo ?? "…"}–${hi ?? "…"} Milâdî. Kaynaklar Tarih'lerinin yaklaşık Milâdî değeriyle süzülür; tarihsiz kaynaklar gizlenir.` : "Kaynak Tarih'ine göre süz. Takvim çipine dokun: Milâdî → Hicrî → Rumî."}</div>
+    </div>` : null}`;
+}
+
+// ---------- shared pieces ----------
+const IC = {
+  pen: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+  book: '<path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v12H8.5A3.5 3.5 0 0 1 5 16.5v-12z"/><path d="M5 16.5A3.5 3.5 0 0 1 8.5 13H19"/>',
+  tag: '<path d="M3.5 11.5V4h7.5l9.5 9.5-7.5 7.5-9.5-9.5z"/><circle cx="7.8" cy="8.3" r="1.4"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/>',
+  inbox: '<path d="M4 13.5l2.8-8h10.4l2.8 8V19H4v-5.5z"/><path d="M4 13.5h5l1 2h4l1-2h5"/>',
+  home: '<path d="M4 11l8-6.5 8 6.5V20h-5.5v-5.5h-5V20H4z"/>',
+  folder: '<path d="M3.5 6.5h6l2 2h9v10.5h-17z"/>',
+};
+// Template cover per source type, used when no image was uploaded.
+const TYPE_ICON = {
+  kitap: IC.book,
+  makale: '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M9.5 11.5h6M9.5 14.5h6M9.5 17.5h4"/>',
+  tez: '<path d="M12 5l9 4.5-9 4.5-9-4.5z"/><path d="M7 11.5V16c1.5 1.5 3 2 5 2s3.5-.5 5-2v-4.5M21 9.5v5"/>',
+  arsiv: '<path d="M3.5 5h17v4h-17z"/><path d="M5 9v10.5h14V9M10 12.5h4"/>',
+  yazma: '<path d="M19.5 4.5c-6 1-10 5-12 12l-2 3"/><path d="M8 15.5c3 0 6-1 8-4M10.5 9.5c2.5 0 4.5-.5 6-1.5"/>',
+  sureli: '<path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2M7 8.5h7M7 11.5h7M7 14.5h4"/>',
+  kayit: '<circle cx="12" cy="12" r="8.5"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/>',
+  web: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z"/>',
+  diger: '<rect x="4" y="4" width="7" height="7" rx="1"/><circle cx="16.5" cy="7.5" r="3.5"/><path d="M4 20l3.5-6 3.5 6zM13 13h7v7h-7z"/>',
+};
+const TYPE_HUE = { kitap: 200, makale: 165, tez: 260, arsiv: 30, yazma: 15, sureli: 220, kayit: 330, web: 190, diger: 90 };
+const Icon = ({ d, size = 22 }) => html`<svg viewBox="0 0 24 24" width=${size} height=${size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round" dangerouslySetInnerHTML=${{ __html: d }} />`;
+
+function Cover({ s, size = "s", onClick }) {
+  const cls = "cover " + size + (onClick ? " click" : "");
+  if (s.cover) return html`<img className=${cls} src=${s.cover} alt="" onClick=${onClick} />`;
+  const px = { xs: 18, s: 22, m: 34, l: 40 }[size];
+  return html`<span className=${cls + " tpl"} style=${{ "--h": TYPE_HUE[s.type] }} onClick=${onClick}>
+    <${Icon} d=${TYPE_ICON[s.type]} size=${px} />${size === "m" || size === "l" ? html`<span className="ct">${TYPES[s.type]}</span>` : null}</span>`;
+}
+
+function Hl({ text, pq }) {
+  if (!pq || !pq.pos.length) return text;
+  return text.split(/(\s+)/).map((tok, i) => {
+    const ws = words(tok);
+    return ws.length && ws.some((w) => pq.pos.some((q) => wordHit(w, q))) ? html`<mark key=${i}>${tok}</mark>` : tok;
+  });
+}
+function Search({ value, onChange, placeholder, autoFocus }) {
+  return html`<div className="search">
+    <input type="search" placeholder=${placeholder} value=${value} autoFocus=${autoFocus} onChange=${(e) => onChange(e.target.value)} />
+    ${value ? html`<button onClick=${() => onChange("")} aria-label="Temizle">×</button>` : null}
+  </div>`;
+}
+
+function SourceRow({ S, s, onClick, active, pq }) {
+  const inf = S.info[s.id];
+  return html`<button className="srow" aria-current=${!!active} onClick=${onClick}>
+    <${Cover} s=${s} size="s" />
+    <span className="t"><span className="typechip">${TYPES[s.type]}</span>  <${Hl} text=${s.title} pq=${pq} /></span>
+    <span className="m">${[s.author, s.date || "tarihsiz"].filter(Boolean).join(" · ")}</span>
+    <span className="r"><span>${inf.count} not · ${inf.count ? relTime(inf.last) : "notsuz"}</span>
+      ${inf.untagged ? html`<span className="pill warn">${inf.untagged} etiketsiz</span>` : null}</span>
+  </button>`;
+}
+
+const SORTS = [
+  { k: "last", name: "Son not" },
+  { k: "date", name: "Tarih" },
+  { k: "author", name: "Yazar" },
+  { k: "title", name: "Başlık" },
+];
+function sortSources(list, k, S) {
+  const xs = [...list];
+  if (k === "last") return xs.sort((a, b) => S.info[b.id].last - S.info[a.id].last);
+  if (k === "date") return xs.sort(cmpDate);
+  if (k === "author") return xs.sort((a, b) => (a.author || a.title).localeCompare(b.author || b.title, "tr"));
+  return xs.sort((a, b) => a.title.localeCompare(b.title, "tr"));
+}
+
+// Source list: Okunuyor / Bitti, sort, Tarih filter. `only` narrows to one status (sidebar items in C).
+function SourcesBody({ S, go, only, activeId, limit }) {
+  const [sort, setSort] = useState("last");
+  const [df, setDf] = useState(EMPTY_DF);
+  const [dfOpen, setDfOpen] = useState(false);
+  const [showDone, setShowDone] = useState(false);
+  const filtered = S.sources.filter((s) => inRange(s, df));
+  const hidden = S.sources.length - filtered.length;
+  const row = (s) => html`<${SourceRow} key=${s.id} S=${S} s=${s} active=${activeId === s.id} onClick=${() => go({ r: "source", id: s.id })} />`;
+  const reading = sortSources(filtered.filter((s) => s.status === "okunuyor"), sort, S);
+  const done = sortSources(filtered.filter((s) => s.status === "bitti"), sort, S);
+  return html`<div>
+    <div className="ctl">
+      <select className="plain" value=${sort} onChange=${(e) => setSort(e.target.value)} aria-label="Sırala">
+        ${SORTS.map((o) => html`<option key=${o.k} value=${o.k}>Sırala: ${o.name}</option>`)}
+      </select>
+      <${DateFilter} value=${df} onChange=${setDf} open=${dfOpen} setOpen=${setDfOpen} />
+      <span className="count">${filtered.length} kaynak${hidden ? ` · ${hidden} gizli` : ""}</span>
+    </div>
+    ${only === "bitti" ? done.map(row) : only === "okunuyor" ? reading.map(row) : html`
+      <div className="secrow"><h3 className="sec">Okunuyor · ${reading.length}</h3></div>
+      ${reading.map(row)}
+      <button className="secrow" onClick=${() => setShowDone(!showDone)}><h3 className="sec">${showDone ? "▾" : "▸"} Bitti · ${done.length}</h3></button>
+      ${showDone ? done.map(row) : null}`}
+    ${!filtered.length ? html`<div className="empty">Bu tarih aralığında kaynak yok.</div>` : null}
+  </div>`;
+}
+
+function NoteRow({ n, S, pq, flash, isNew, onClick, showReason }) {
+  return html`<div id=${"note-" + n.id} className=${"nrow" + (flash ? " flash" : "")} onClick=${onClick}>
+    <span className="lc">${n.loc || "—"}</span>
+    <div>
+      ${n.ex ? html`<div className="ex"><${Hl} text=${n.ex} pq=${pq} /></div>` : null}
+      ${n.co ? html`<div className="co"><${Hl} text=${n.co} pq=${pq} /></div>` : null}
+      <div className="nt">
+        ${showReason ? html`<span className="reason">${n.own.length ? n.own.join(", ") : html`<span className="src">kaynak: ${n.via.join(", ")}</span>`}</span>`
+          : n.tags.length ? html`<span>${n.tags.join(", ")}</span>` : html`<span className="untag">etiketsiz</span>`}
+        ${isNew ? html`<span className="newmark">yeni</span>` : null}
+      </div>
+    </div>
+  </div>`;
+}
+
+function WriteBox({ onSave, defaultLoc, autoFocus }) {
+  const [mode, setMode] = useState("ex");
+  const [text, setText] = useState("");
+  const [loc, setLoc] = useState(defaultLoc || "");
+  useEffect(() => setLoc(defaultLoc || ""), [defaultLoc]);
+  const save = () => {
+    if (!text.trim()) return;
+    onSave({ loc: loc.trim(), ex: mode === "ex" ? text.trim() : "", co: mode === "co" ? text.trim() : "" });
+    setText("");
+    if (mode === "ex") setMode("co");
+  };
+  return html`<div className="write" onClick=${(e) => e.stopPropagation()}>
+    <div className="wtop">
+      <label className="locchip">Konum <input value=${loc} placeholder="konumsuz" onChange=${(e) => setLoc(e.target.value)} /></label>
+      <div className="seg">
+        <button aria-pressed=${mode === "ex"} onClick=${() => setMode("ex")}>Alıntı</button>
+        <button aria-pressed=${mode === "co"} onClick=${() => setMode("co")}>Yorum</button>
+      </div>
+      <button className="ghost">+ etiket</button>
+    </div>
+    <div className="wrow">
+      <textarea rows="2" className=${mode} autoFocus=${autoFocus} placeholder=${mode === "ex" ? "Alıntıyı yaz…" : "Yorumunu yaz…"} value=${text} onChange=${(e) => setText(e.target.value)} />
+      <button className="primary" onClick=${save} disabled=${!text.trim()}>Kaydet</button>
+    </div>
+  </div>`;
+}
+
+// One source's notes. order: "loc" | "capture" | "toggle". write: show the capture box (Capture happens here).
+function SourceBody({ S, id, focus, order = "loc", write, go, onCapture, writeFocus, compactHead, narrowHead }) {
+  const s = S.src[id], inf = S.info[id];
+  const fileRef = useRef(null);
+  const [q, setQ] = useState("");
+  const [ord, setOrd] = useState(order === "capture" ? "capture" : "loc");
+  const [flashId, setFlashId] = useState(focus);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => { setFlashId(focus); setQ(""); setEditing(false); }, [focus, id]);
+  useEffect(() => { if (order !== "toggle") setOrd(order === "capture" ? "capture" : "loc"); }, [order]);
+  useEffect(() => {
+    if (!flashId) return;
+    const el = document.getElementById("note-" + flashId);
+    if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    const t = setTimeout(() => setFlashId(null), 1800);
+    return () => clearTimeout(t);
+  }, [flashId]);
+  if (!s) return html`<div className="empty">Kaynak yok.</div>`;
+  const pq = parseQuery(q);
+  const all = S.bySrc[id] || [];
+  const ns = all.filter((n) => !q.trim() || noteMatch(n, pq)).sort(ord === "loc" ? byLoc : (a, b) => a.at - b.at);
+  const lastLoc = all.length ? [...all].sort((a, b) => b.at - a.at)[0].loc : "";
+  const save = (n) => setFlashId(S.addNote(id, n));
+  return html`<div style=${{ minHeight: "100%", display: "flex", flexDirection: "column" }}>
+    ${compactHead ? null : html`<div className="shead">
+      <div className="top">
+      <div className="coverwrap">
+        <${Cover} s=${s} size=${narrowHead ? "m" : "l"} onClick=${() => fileRef.current.click()} />
+        <button className="ghost" onClick=${() => fileRef.current.click()}>${s.cover ? "Kapağı değiştir" : "Kapak ekle"}</button>
+        ${s.cover ? html`<button className="ghost" style=${{ color: "var(--muted)" }} onClick=${() => S.setCover(id, null)}>Kaldır</button>` : null}
+        <input ref=${fileRef} type="file" accept="image/*" capture="environment" hidden onChange=${(e) => { const f = e.target.files[0]; if (f) S.setCover(id, URL.createObjectURL(f)); e.target.value = ""; }} />
+      </div>
+      <div className="info">
+      <div className="r1">
+        <span className="typechip">${TYPES[s.type]}</span>
+        <button className=${"status" + (s.status === "bitti" ? " done" : "")} title="Okuma durumu (dokun: değiştir)"
+          onClick=${() => S.setStatus(id, s.status === "bitti" ? "okunuyor" : "bitti")}>${s.status === "bitti" ? "✓ bitti" : "okunuyor"}</button>
+      </div>
+      <h2 className="stitle">${s.title}</h2>
+      <div className="smeta">${[s.author, s.date || "tarihsiz", s.note].filter(Boolean).join(" · ")} · ${inf.count} not</div>
+      <div className="tags">
+        ${s.tags.map((t) => html`<button key=${t} className="tagchip" onClick=${() => go({ r: "tag", tag: t })}>${t}</button>`)}
+        <button className="ghost" onClick=${() => S.flash("Source etiketi seçicisi (#3)")}>+ etiket</button>
+      </div>
+      </div>
+      </div>
+      <div className="r2">
+        <button className="secondary" onClick=${() => setEditing(true)}>Düzenle${inf.untagged ? ` · ${inf.untagged} etiketsiz` : ""}</button>
+        ${onCapture ? html`<button className="primary" onClick=${onCapture}>Not al</button>` : null}
+        ${order === "toggle" ? html`<div className="seg">
+          <button aria-pressed=${ord === "loc"} onClick=${() => setOrd("loc")}>Konum sırası</button>
+          <button aria-pressed=${ord === "capture"} onClick=${() => setOrd("capture")}>Yakalama sırası</button>
+        </div>` : null}
+        <${Search} value=${q} onChange=${setQ} placeholder="Bu kaynakta ara" />
+      </div>
+      ${editing ? html`<div className="editbar">
+        <span style=${{ flex: 1 }}>Düzenle modu burada açılır (#13: Etiketsizler/Tümü, Bu turda çipleri, toplu etiket, birleştir). Prototipte yok.</span>
+        <button className="secondary" onClick=${() => { S.finishPass(id); setEditing(false); }}>Bitir</button>
+        <button className="ghost" onClick=${() => setEditing(false)}>Kapat</button>
+      </div>` : null}
+    </div>`}
+    <div style=${{ flex: 1 }}>
+      ${ns.map((n) => html`<${NoteRow} key=${n.id} n=${n} S=${S} pq=${pq} flash=${flashId === n.id} isNew=${inf.fresh.has(n.id)}
+        onClick=${() => S.flash("Not düzenleme açılır (#11): Konum, Alıntı, Yorum, Etiket")} />`)}
+      ${!ns.length ? html`<div className="empty">${q ? "Bu kaynakta eşleşen not yok." : "Henüz not yok."}</div>` : null}
+    </div>
+    ${write ? html`<${WriteBox} onSave=${save} defaultLoc=${lastLoc} autoFocus=${writeFocus} />` : null}
+  </div>`;
+}
+
+// Tag page or Collection: the #12 C list. kind "coll" edits a saved collection; "tags" is an unsaved view of one or more tags.
+function CollectionView({ S, coll, tags: viewTags, go, onSave, onRemoveTag, headless }) {
+  const [incLocal, setIncLocal] = useState(true);
+  const [q, setQ] = useState("");
+  const tags = coll ? coll.tags : viewTags;
+  const inc = coll ? coll.includeSources : incLocal;
+  const setInc = (v) => coll ? S.updateColl(coll.id, { includeSources: v }) : setIncLocal(v);
+  const r = computeColl(S, tags, inc, q);
+  const tagInfo = (t) => S.tags.find((x) => tagKey(x.name) === tagKey(t)) || { notes: 0, sources: 0 };
+  return html`<div>
+    <div className="cbar">
+      ${headless ? null : html`<div className="r">
+        ${coll ? html`<h2 className="ctitle">${coll.name}</h2>
+          <button className="primary" disabled=${!r.shown} onClick=${() => S.flash(`Kopyalandı · ${r.shown} not (Markdown, #12 biçimi)`)}>Markdown olarak kopyala</button>`
+        : html`<h2 className="ctitle">${tags.join(" · ")}</h2>
+          <button className="secondary" onClick=${onSave}>Dosya olarak kaydet</button>
+          ${tags.length === 1 ? html`<button className="iconbtn" title="Yeniden adlandır · Birleştir" onClick=${() => S.flash(`"${tags[0]}": Yeniden adlandır · Birleştir (#3)`)}>⋯</button>` : null}`}
+      </div>`}
+      ${coll ? html`<div className="tags">${tags.map((t) => html`<span key=${t} className="tagchip">${t}</span>`)}<button className="ghost" onClick=${() => S.flash("Etiket seçicisi (#12)")}>+ etiket</button></div>`
+        : html`<div className="tags"><span className="lbl">Etiket</span>
+          ${tags.map((t) => html`<span key=${t} className="tagchip">${t} <span className="muted" style=${{ fontSize: 12 }}>${tagInfo(t).notes} not${tagInfo(t).sources ? ` · ${tagInfo(t).sources} kaynak` : ""}</span>
+            ${onRemoveTag && tags.length > 1 ? html`<button className="x" onClick=${() => onRemoveTag(t)}>×</button>` : null}</span>`)}</div>`}
+      <div className="r"><label className="toggle"><input type="checkbox" checked=${inc} onChange=${(e) => setInc(e.target.checked)} />
+        Etiketli kaynakların tüm notları</label>
+        <span className="count">${inc ? (r.viaOnly ? `+${r.viaOnly} not` : "") : (r.wouldAdd ? `açılırsa +${r.wouldAdd} not` : "")}</span></div>
+      <div className="r"><${Search} value=${q} onChange=${setQ} placeholder="Bu görünümde ara" />
+        <span className="count">${r.shown === r.total ? `${r.total} not` : `${r.shown} / ${r.total} not`} · ${r.groups.length} kaynak</span></div>
+    </div>
+    ${r.groups.map(({ source: s, notes }) => html`<div key=${s.id}>
+      <button className="gh" onClick=${() => go({ r: "source", id: s.id })}><span className="typechip">${TYPES[s.type]}</span><span className="tt">${shortName(s)}</span><span className="y">${s.date || "tarihsiz"}</span></button>
+      ${notes.map((n) => html`<${NoteRow} key=${n.id} n=${n} S=${S} pq=${r.pq} showReason onClick=${() => go({ r: "source", id: s.id, focus: n.id })} />`)}
+    </div>`)}
+    ${!r.groups.length ? html`<div className="empty">${q ? "Eşleşen not yok." : "Bu etiketlerle not yok."}</div>` : null}
+  </div>`;
+}
+
+function TagsBody({ S, go, activeTags = [] }) {
+  const [sort, setSort] = useState("az");
+  const list = sort === "az" ? S.tags : [...S.tags].sort((a, b) => b.notes + b.sources - (a.notes + a.sources));
+  return html`<div>
+    <div className="ctl"><div className="seg">
+      <button aria-pressed=${sort === "az"} onClick=${() => setSort("az")}>A–Z</button>
+      <button aria-pressed=${sort === "n"} onClick=${() => setSort("n")}>Çok kullanılan</button>
+    </div><span className="count">${S.tags.length} etiket</span></div>
+    ${list.map((t) => html`<div key=${t.name} style=${{ display: "flex" }}>
+      <button className="lrow" aria-current=${hasTag(activeTags, t.name)} onClick=${() => go({ r: "tag", tag: t.name })}>
+        <span className="t"><b>${t.name}</b></span>
+        <span className="n">${t.notes} not${t.sources ? ` · ${t.sources} kaynak` : ""}</span>
+      </button>
+      <button className="iconbtn more" style=${{ margin: "auto 8px" }} title="Yeniden adlandır · Birleştir" onClick=${() => S.flash(`"${t.name}": Yeniden adlandır · Birleştir (#3)`)}>⋯</button>
+    </div>`)}
+  </div>`;
+}
+
+function CollsList({ S, go, activeId }) {
+  return html`<div>
+    ${S.colls.map((c) => html`<button key=${c.id} className="lrow" aria-current=${activeId === c.id} onClick=${() => go({ r: "coll", id: c.id })}>
+      <span className="t"><b>${c.name}</b><span className="s">${c.tags.join(", ")}</span></span>
+      <span className="n">${computeColl(S, c.tags, c.includeSources, "").total} not</span>
+    </button>`)}
+  </div>`;
+}
+
+function TodoBody({ S, go, activeId }) {
+  if (!S.todo.length) return html`<div className="empty">Düzenlenecek kaynak yok.</div>`;
+  return html`<div>
+    <div className="hint" style=${{ paddingBottom: 6 }}>Son "Bitir"den sonra etiketsiz notu gelen kaynaklar. Bitenler önce.</div>
+    ${S.todo.map((s) => html`<button key=${s.id} className="lrow" aria-current=${activeId === s.id} onClick=${() => go({ r: "source", id: s.id })}>
+      <${Cover} s=${s} size="xs" />
+      <span className="t"><span className="typechip">${TYPES[s.type]}</span> <b>${s.title}</b>
+        <span className="s">${[s.author, `son not ${relTime(S.info[s.id].last)}`].filter(Boolean).join(" · ")}</span></span>
+      ${s.status === "bitti" ? html`<span className="pill done">bitti</span>` : null}
+      <span className="pill warn">${S.info[s.id].untagged} etiketsiz</span>
+    </button>`)}
+  </div>`;
+}
+
+function snippet(text, pq) {
+  const ws = text.split(/(\s+)/);
+  const i = ws.findIndex((w) => words(w).some((x) => pq.pos.some((q) => wordHit(x, q))));
+  if (text.length <= 150 || i < 0) return text;
+  const start = Math.max(0, i - 12);
+  return (start ? "…" : "") + ws.slice(start, start + 40).join("") + (start + 40 < ws.length ? "…" : "");
+}
+
+// Search results (#16): two groups, Notes and Sources; tiers then newest. Tarih filter by the source's date.
+function SearchBody({ S, q, go }) {
+  const [kind, setKind] = useState("all");
+  const [df, setDf] = useState(EMPTY_DF);
+  const [dfOpen, setDfOpen] = useState(false);
+  const pq = parseQuery(q);
+  if (!q.trim()) return html`<div className="hint">
+    Notların Alıntı ve Yorum'unda, kaynakların Başlık, Yazar ve Künye notunda arar.<br/><br/>
+    <code>"tırnak"</code> kesin arama · <code>-kelime</code> hariç tutar · Locator, etiket ve Tarih aranmaz; Tarih için sonuçlarda süzgeç var.
+  </div>`;
+  const srcRes = S.sources.filter((s) => inRange(s, df)).map((s) => ({ s, m: sourceMatch(s, pq) })).filter((x) => x.m)
+    .sort((a, b) => a.m.tier - b.m.tier || S.info[b.s.id].last - S.info[a.s.id].last);
+  const noteRes = S.notes.filter((n) => inRange(S.src[n.src], df)).map((n) => ({ n, m: noteMatch(n, pq) })).filter((x) => x.m)
+    .sort((a, b) => a.m.tier - b.m.tier || b.n.at - a.n.at);
+  const showS = kind !== "notes", showN = kind !== "sources";
+  return html`<div>
+    <div className="ctl">
+      <div className="seg">
+        <button aria-pressed=${kind === "all"} onClick=${() => setKind("all")}>Tümü</button>
+        <button aria-pressed=${kind === "notes"} onClick=${() => setKind("notes")}>Notlar ${noteRes.length}</button>
+        <button aria-pressed=${kind === "sources"} onClick=${() => setKind("sources")}>Kaynaklar ${srcRes.length}</button>
+      </div>
+      <${DateFilter} value=${df} onChange=${setDf} open=${dfOpen} setOpen=${setDfOpen} />
+    </div>
+    ${showS && srcRes.length ? html`<div className="ghead"><h3 className="sec">Kaynaklar · ${srcRes.length}</h3></div>
+      ${(kind === "all" ? srcRes.slice(0, 3) : srcRes).map(({ s }) => html`<${SourceRow} key=${s.id} S=${S} s=${s} pq=${pq} onClick=${() => go({ r: "source", id: s.id })} />`)}
+      ${kind === "all" && srcRes.length > 3 ? html`<button className="ghost" style=${{ margin: "6px 12px" }} onClick=${() => setKind("sources")}>Tüm kaynaklar (${srcRes.length})</button>` : null}` : null}
+    ${showN && noteRes.length ? html`<div className="ghead"><h3 className="sec">Notlar · ${noteRes.length}</h3></div>
+      ${noteRes.map(({ n, m }) => { const s = S.src[n.src]; return html`<button key=${n.id} className="res" onClick=${() => go({ r: "source", id: s.id, focus: n.id })}>
+        <div className=${"snip " + m.field}>${m.field === "co" ? html`<span className="muted">↳ </span>` : null}<${Hl} text=${snippet(m.field === "ex" ? n.ex : n.co, pq)} pq=${pq} /></div>
+        <div className="meta">${shortName(s)} · <span className="lc">${n.loc || "konumsuz"}</span>${m.field === "co" ? " · yorumdan" : ""}</div>
+      </button>`; })}` : null}
+    ${!srcRes.length && !noteRes.length ? html`<div className="empty">Sonuç yok.</div>` : null}
+  </div>`;
+}
+
+const routeTitle = (S, r) => ({
+  capture: "Not al", sources: "Kaynaklar", colls: "Dosyalar", todo: "Düzenlenecekler", tags: "Etiketler", search: "Ara", home: "Kütüphane",
+  source: S.src[r.id] ? S.src[r.id].title : "", tag: r.tag, coll: (S.colls.find((c) => c.id === r.id) || {}).name
+}[r.r] || r.r);
+const routeName = (r) => r.r + (r.id ? `(${r.id}${r.focus ? "#" + r.focus : ""})` : r.tag ? `(${r.tag})` : "");
+
+// ======================================================================
+// Variant A (round 2): bottom tabs (rail on desktop), one back stack per tab; home tab leads with the last-noted source.
+// ======================================================================
+const A_TABS = [
+  { k: "home", label: "Ana sayfa", icon: IC.home },
+  { k: "sources", label: "Kaynaklar", icon: IC.book },
+  { k: "tags", label: "Etiketler", icon: IC.tag },
+  { k: "colls", label: "Dosyalar", icon: IC.folder },
+  { k: "search", label: "Ara", icon: IC.search },
+];
+function HomeA({ S, go, toTab }) {
+  // Same rule as Capture's default source (#11): the reading source noted last; any source if none is being read.
+  const hero = S.reading[0] || [...S.sources].sort((a, b) => S.info[b.id].last - S.info[a.id].last)[0];
+  const heroLast = [...(S.bySrc[hero.id] || [])].sort((a, b) => b.at - a.at)[0];
+  const reading = S.reading.filter((s) => s.id !== hero.id);
+  const tags = [...S.tags].sort((a, b) => b.last - a.last || a.name.localeCompare(b.name, "tr"));
+  return html`<div>
+    <div className="hero">
+      <${Cover} s=${hero} size="m" onClick=${() => go({ r: "source", id: hero.id })} />
+      <div className="b">
+        <span className="lbl">Son not aldığın</span>
+        <span className="t">${hero.title}</span>
+        <span className="smeta">${[hero.author, hero.date].filter(Boolean).join(" · ")}</span>
+        ${heroLast ? html`<div className=${"last" + (heroLast.ex ? " ex" : "")}>${heroLast.loc ? html`<span className="muted" style=${{ fontFamily: "var(--font-mono)", fontSize: 12 }}>${heroLast.loc} · </span>` : null}${heroLast.ex || heroLast.co}</div>
+          <span className="muted" style=${{ fontSize: 12 }}>${relTime(heroLast.at)}</span>` : null}
+        <div className="acts">
+          <button className="primary" onClick=${() => go({ r: "capture", id: hero.id })}>Not al</button>
+          <button className="secondary" onClick=${() => go({ r: "source", id: hero.id })}>Notları gör</button>
+        </div>
+      </div>
+    </div>
+    ${S.todo.length ? html`<button className="todoband" onClick=${() => go({ r: "todo" })}>
+      <${Icon} d=${IC.inbox} /><span className="t"><b>Düzenlenecekler · ${S.todo.length} kaynak</b>
+      <span>${S.todo.slice(0, 3).map((s) => s.title).join(", ")}${S.todo.length > 3 ? "…" : ""}</span></span>›</button>` : null}
+    <div className="homesec"><h3 className="sec">Okunuyor · ${S.reading.length}</h3><button className="ghost" onClick=${() => toTab("sources")}>Tümü ›</button></div>
+    ${reading.slice(0, 6).map((s) => html`<${SourceRow} key=${s.id} S=${S} s=${s} onClick=${() => go({ r: "source", id: s.id })} />`)}
+    <div className="homesec"><h3 className="sec">Etiketler · ${S.tags.length}</h3><button className="ghost" onClick=${() => toTab("tags")}>Tümü ›</button></div>
+    ${tags.slice(0, 8).map((t) => html`<button key=${t.name} className="lrow" onClick=${() => go({ r: "tag", tag: t.name })}>
+      <span className="t"><b>${t.name}</b></span>
+      <span className="n">${t.notes} not${t.sources ? ` · ${t.sources} kaynak` : ""}</span>
+    </button>`)}
+    <div style=${{ height: 24 }}></div>
+  </div>`;
+}
+function VariantA({ S, narrow, report }) {
+  const [tab, setTab] = useState("home");
+  const roots = { home: [{ r: "home" }], sources: [{ r: "sources" }], tags: [{ r: "tags" }], colls: [{ r: "colls" }], search: [{ r: "search" }] };
+  const [stacks, setStacks] = useState(roots);
+  const [q, setQ] = useState("");
+  const stack = stacks[tab], top = stack[stack.length - 1];
+  const go = (route) => setStacks((st) => ({ ...st, [tab]: [...st[tab], route] }));
+  const back = () => setStacks((st) => ({ ...st, [tab]: st[tab].slice(0, -1) }));
+  const pickTab = (k) => { if (k === tab) setStacks((st) => ({ ...st, [k]: [st[k][0]] })); setTab(k); };
+  useEffect(() => report({ sekme: tab, yığın: stack.map(routeName).join(" › ") }), [tab, stacks]);
+
+  let body;
+  if (top.r === "home") body = html`<${HomeA} S=${S} go=${go} toTab=${pickTab} />`;
+  else if (top.r === "capture") body = html`<div style=${{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+      <div className="srcpick">
+        <${Cover} s=${S.src[top.id]} size="xs" />
+        <select className="plain" value=${top.id} onChange=${(e) => setStacks((st) => ({ ...st, [tab]: [...st[tab].slice(0, -1), { r: "capture", id: e.target.value }] }))}>
+          <optgroup label="Okunuyor">${S.reading.map((s) => html`<option key=${s.id} value=${s.id}>${s.title}</option>`)}</optgroup>
+          <optgroup label="Bitti">${S.sources.filter((s) => s.status === "bitti").map((s) => html`<option key=${s.id} value=${s.id}>${s.title}</option>`)}</optgroup>
+        </select>
+        <button className="ghost" onClick=${() => go({ r: "source", id: top.id })}>Kaynağa git ›</button>
+      </div>
+      <div style=${{ flex: 1, display: "flex", flexDirection: "column" }}><${SourceBody} S=${S} id=${top.id} order="capture" write writeFocus compactHead go=${go} /></div>
+    </div>`;
+  else if (top.r === "sources") body = html`<${SourcesBody} S=${S} go=${go} />`;
+  else if (top.r === "todo") body = html`<${TodoBody} S=${S} go=${go} />`;
+  else if (top.r === "source") body = html`<${SourceBody} S=${S} id=${top.id} focus=${top.focus} order="loc" go=${go} narrowHead=${narrow} onCapture=${() => go({ r: "capture", id: top.id })} />`;
+  else if (top.r === "colls") body = html`<div>
+      <div className="ghead"><h3 className="sec" style=${{ flex: 1 }}>Dosyalar · ${S.colls.length}</h3><button className="ghost" onClick=${() => S.flash("Yeni dosya: ad + etiketler (#12)")}>+ Yeni dosya</button></div>
+      <${CollsList} S=${S} go=${go} />
+    </div>`;
+  else if (top.r === "tags") body = html`<${TagsBody} S=${S} go=${go} />`;
+  else if (top.r === "tag") body = html`<${CollectionView} key=${top.tag} S=${S} tags=${[top.tag]} go=${go} onSave=${() => { const id = S.saveColl([top.tag]); go({ r: "coll", id }); }} />`;
+  else if (top.r === "coll") body = html`<${CollectionView} key=${top.id} S=${S} coll=${S.colls.find((c) => c.id === top.id)} go=${go} />`;
+  else if (top.r === "search") body = html`<${SearchBody} S=${S} q=${q} go=${go} />`;
+
+  const tabs = A_TABS.map((t) => html`<button key=${t.k} className="tabbtn" aria-current=${tab === t.k} onClick=${() => pickTab(t.k)}>
+    <${Icon} d=${t.icon} />${t.label}${t.k === "home" && S.todo.length ? html`<span className="badge">${S.todo.length}</span>` : null}</button>`);
+  return html`<div className=${"app va " + (narrow ? "narrow" : "wide")}>
+    ${narrow ? null : html`<nav className="rail"><div className="brand">Homelibra</div>${tabs}</nav>`}
+    <div className="col">
+      <header className="hdr">
+        ${stack.length > 1 ? html`<button className="iconbtn" onClick=${back} aria-label="Geri">‹</button>` : null}
+        ${top.r === "search" ? html`<${Search} value=${q} onChange=${setQ} placeholder="Notlarda ve kaynaklarda ara" autoFocus />`
+          : html`<h1>${routeTitle(S, top)}</h1>`}
+      </header>
+      <div className="scroll"><div className=${narrow ? "" : "maxw"} style=${{ minHeight: "100%", display: "flex", flexDirection: "column" }}>${body}</div></div>
+      ${narrow ? html`<nav className="tabbar">${tabs}</nav>` : null}
+    </div>
+  </div>`;
+}
+
+// ======================================================================
+// Variant B: one home screen (hub) + drill-down stack; Capture on the source page.
+// ======================================================================
+function VariantB({ S, narrow, report }) {
+  const [stack, setStack] = useState([{ r: "home" }]);
+  const [q, setQ] = useState("");
+  const top = stack[stack.length - 1];
+  const go = (route) => setStack((st) => [...st, route]);
+  const back = () => setStack((st) => st.slice(0, -1));
+  useEffect(() => report({ yığın: stack.map(routeName).join(" › "), arama: q || "(yok)" }), [stack, q]);
+  const fab = () => go({ r: "source", id: (S.reading[0] || S.sources[0]).id, write: true });
+  const maxTags = Math.max(...S.tags.map((t) => t.notes + t.sources));
+
+  let body;
+  if (top.r === "home" && q.trim()) body = html`<div className=${narrow ? "" : "maxw"}><${SearchBody} S=${S} q=${q} go=${go} /></div>`;
+  else if (top.r === "home") body = html`<div className="grid">
+    <div>
+      ${S.todo.length ? html`<section className="sect">
+        <h3 className="sec">Düzenlenecekler · ${S.todo.length}</h3>
+        <div className="cards">${S.todo.map((s) => html`<button key=${s.id} className="card" onClick=${() => go({ r: "source", id: s.id })}>
+          <span className="typechip">${TYPES[s.type]}</span><span className="t">${s.title}</span>
+          <span className="f"><span className="pill warn">${S.info[s.id].untagged} etiketsiz</span>${s.status === "bitti" ? html`<span className="pill done">bitti</span>` : null}</span>
+        </button>`)}</div>
+      </section>` : null}
+      <section className="sect">
+        <h3 className="sec">Okunuyor · ${S.reading.length}</h3>
+        <div style=${{ borderTop: "1px solid var(--line)", marginTop: 6 }}>
+          ${S.reading.slice(0, 5).map((s) => html`<${SourceRow} key=${s.id} S=${S} s=${s} onClick=${() => go({ r: "source", id: s.id })} />`)}</div>
+        <button className="ghost all" onClick=${() => go({ r: "sources" })}>Tüm kaynaklar (${S.sources.length}) ›</button>
+      </section>
+    </div>
+    <div>
+      <section className="sect">
+        <h3 className="sec"><span style=${{ flex: 1 }}>Dosyalar · ${S.colls.length}</span><button className="ghost" onClick=${() => S.flash("Yeni dosya: ad + etiketler (#12)")}>+ Yeni</button></h3>
+        <div style=${{ borderTop: "1px solid var(--line)", marginTop: 6 }}><${CollsList} S=${S} go=${go} /></div>
+      </section>
+      <section className="sect">
+        <h3 className="sec">Etiketler · ${S.tags.length}</h3>
+        <div className="cloud" style=${{ marginTop: 8 }}>${S.tags.map((t) => { const n = t.notes + t.sources;
+          return html`<button key=${t.name} style=${{ fontSize: 13 + 9 * (n / maxTags) }} onClick=${() => go({ r: "tag", tag: t.name })}>${t.name}<sup>${n}</sup></button>`; })}</div>
+        <button className="ghost all" onClick=${() => go({ r: "tags" })}>Tüm etiketler ›</button>
+      </section>
+    </div>
+  </div>`;
+  else if (top.r === "sources") body = html`<div className=${narrow ? "" : "maxw"}><${SourcesBody} S=${S} go=${go} /></div>`;
+  else if (top.r === "tags") body = html`<div className=${narrow ? "" : "maxw"}><${TagsBody} S=${S} go=${go} /></div>`;
+  else if (top.r === "source") body = html`<div className=${narrow ? "" : "maxw"} style=${{ minHeight: "100%", display: "flex", flexDirection: "column" }}>
+    <${SourceBody} S=${S} id=${top.id} focus=${top.focus} order="loc" write writeFocus=${top.write} go=${go} narrowHead=${narrow} /></div>`;
+  else if (top.r === "tag") body = html`<div className=${narrow ? "" : "maxw"}><${CollectionView} key=${top.tag} S=${S} tags=${[top.tag]} go=${go}
+    onSave=${() => { const id = S.saveColl([top.tag]); go({ r: "coll", id }); }} /></div>`;
+  else if (top.r === "coll") body = html`<div className=${narrow ? "" : "maxw"}><${CollectionView} key=${top.id} S=${S} coll=${S.colls.find((c) => c.id === top.id)} go=${go} /></div>`;
+
+  return html`<div className=${"app vb " + (narrow ? "narrow" : "wide")}>
+    <div className="col">
+      ${top.r === "home" ? html`<div className="homehdr"><div className="maxw" style=${{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="brand"><h1>Kütüphane</h1><span className="muted" style=${{ fontSize: 13 }}>${S.sources.length} kaynak · ${S.notes.length} not</span></div>
+          <${Search} value=${q} onChange=${setQ} placeholder="Notlarda ve kaynaklarda ara" />
+        </div></div>`
+        : html`<header className="hdr"><button className="iconbtn" onClick=${back} aria-label="Geri">‹</button><h1>${routeTitle(S, top)}</h1></header>`}
+      <div className="scroll">${body}</div>
+    </div>
+    ${top.r === "home" && !q.trim() ? html`<button className="fab" onClick=${fab}><${Icon} d=${IC.pen} size=${18} />Not al</button>` : null}
+  </div>`;
+}
+
+// ======================================================================
+// Variant C: sidebar + list + source (mail client); drawer + stack on phone.
+// ======================================================================
+function VariantC({ S, narrow, report }) {
+  const [sec, setSec] = useState({ k: "okunuyor" });
+  const [q, setQ] = useState("");
+  const [detail, setDetail] = useState(null);
+  const [drawer, setDrawer] = useState(false);
+  const pick = (s) => { setSec(s); setDetail(null); setDrawer(false); if (s.k !== "search") setQ(""); };
+  const go = (route) => {
+    if (route.r === "source") return setDetail({ id: route.id, focus: route.focus });
+    if (route.r === "tag") return pick({ k: "tags", tags: [route.tag] });
+    if (route.r === "coll") return pick({ k: "coll", id: route.id });
+  };
+  const toggleTag = (t, e) => {
+    e.stopPropagation();
+    const cur = sec.k === "tags" ? sec.tags : [];
+    const next = hasTag(cur, t) ? cur.filter((x) => tagKey(x) !== tagKey(t)) : [...cur, t];
+    next.length ? setSec({ k: "tags", tags: next }) : pick({ k: "okunuyor" });
+    setDetail(null);
+  };
+  const onSearch = (v) => { setQ(v); if (v.trim()) { setSec({ k: "search" }); setDetail(null); } else if (sec.k === "search") setSec({ k: "okunuyor" }); };
+  useEffect(() => report({ bölüm: sec.k + (sec.tags ? `(${sec.tags.join(" OR ")})` : sec.id ? `(${sec.id})` : ""), kaynak: detail ? routeName({ r: "source", ...detail }) : "(yok)" }), [sec, detail]);
+
+  const counts = { okunuyor: S.sources.filter((s) => s.status === "okunuyor").length, bitti: S.sources.filter((s) => s.status === "bitti").length };
+  const item = (k, label, n, warn) => html`<button className="nitem" aria-current=${sec.k === k} onClick=${() => pick({ k })}>
+    <span className="l">${label}</span><span className=${"n" + (warn ? " warn" : "")}>${n}</span></button>`;
+  const sidebar = html`<aside className="side">
+    <div className="top"><span className="brand">Homelibra</span><${Search} value=${q} onChange=${onSearch} placeholder="Ara" /></div>
+    <nav>
+      ${item("todo", "Düzenlenecekler", S.todo.length, S.todo.length > 0)}
+      <h3 className="sec">Kaynaklar</h3>
+      ${item("okunuyor", "Okunuyor", counts.okunuyor)}
+      ${item("bitti", "Bitti", counts.bitti)}
+      ${item("all", "Tümü", S.sources.length)}
+      <h3 className="sec"><span style=${{ flex: 1 }}>Dosyalar</span><button className="ghost" style=${{ padding: "0 4px" }} onClick=${() => S.flash("Yeni dosya: ad + etiketler (#12)")}>+</button></h3>
+      ${S.colls.map((c) => html`<button key=${c.id} className="nitem" aria-current=${sec.k === "coll" && sec.id === c.id} onClick=${() => pick({ k: "coll", id: c.id })}>
+        <span className="l">${c.name}</span></button>`)}
+      <h3 className="sec">Etiketler</h3>
+      ${S.tags.map((t) => { const on = sec.k === "tags" && hasTag(sec.tags, t.name);
+        return html`<div key=${t.name} className="nitem" aria-current=${on} role="button" tabIndex="0" onClick=${(e) => (e.shiftKey || e.metaKey) ? toggleTag(t.name, e) : pick({ k: "tags", tags: [t.name] })}>
+          <input type="checkbox" checked=${on} title="Görünüme ekle (OR)" onClick=${(e) => toggleTag(t.name, e)} onChange=${() => {}} />
+          <span className="l">${t.name}</span><span className="n">${t.notes + t.sources}</span></div>`; })}
+      <div className="hint" style=${{ padding: "8px", fontSize: 12 }}>Kutucuk ya da Shift-tık: etiketleri birlikte göster (OR).</div>
+    </nav>
+  </aside>`;
+
+  const listTitle = { todo: "Düzenlenecekler", okunuyor: "Okunuyor", bitti: "Bitti", all: "Tüm kaynaklar", search: "Arama", coll: "Dosya", tags: "Etiket" }[sec.k];
+  let list;
+  if (["okunuyor", "bitti", "all"].includes(sec.k)) list = html`<${SourcesBody} key=${sec.k} S=${S} go=${go} only=${sec.k === "all" ? null : sec.k} activeId=${detail && detail.id} />`;
+  else if (sec.k === "todo") list = html`<${TodoBody} S=${S} go=${go} activeId=${detail && detail.id} />`;
+  else if (sec.k === "search") list = html`<${SearchBody} S=${S} q=${q} go=${go} />`;
+  else if (sec.k === "coll") list = html`<${CollectionView} key=${sec.id} S=${S} coll=${S.colls.find((c) => c.id === sec.id)} go=${go} />`;
+  else if (sec.k === "tags") list = html`<${CollectionView} key=${sec.tags.join("|")} S=${S} tags=${sec.tags} go=${go}
+    onRemoveTag=${(t) => setSec({ k: "tags", tags: sec.tags.filter((x) => x !== t) })}
+    onSave=${() => { const id = S.saveColl(sec.tags); pick({ k: "coll", id }); }} />`;
+  const wideList = ["coll", "tags", "search"].includes(sec.k);
+  const detailView = detail ? html`<${SourceBody} S=${S} id=${detail.id} focus=${detail.focus} order="toggle" write go=${go} narrowHead=${narrow} />` : null;
+
+  if (narrow) return html`<div className="app vc narrow">
+    <div className="col">
+      <header className="hdr">
+        ${detail ? html`<button className="iconbtn" onClick=${() => setDetail(null)} aria-label="Geri">‹</button>`
+          : html`<button className="iconbtn" onClick=${() => setDrawer(true)} aria-label="Menü">☰</button>`}
+        <h1>${detail ? S.src[detail.id].title : sec.k === "coll" ? S.colls.find((c) => c.id === sec.id).name : listTitle}</h1>
+      </header>
+      <div className="scroll"><div style=${{ minHeight: "100%", display: "flex", flexDirection: "column" }}>${detail ? detailView : list}</div></div>
+    </div>
+    ${drawer ? html`<div className="drawer-bg" onClick=${() => setDrawer(false)}></div><div className="drawer">${sidebar}</div>` : null}
+  </div>`;
+
+  return html`<div className="app vc wide">
+    ${sidebar}
+    <div className="listpane" style=${{ width: wideList ? (detail ? "46%" : "auto") : 400, flex: wideList && !detail ? 1 : "none" }}>
+      ${wideList ? null : html`<div className="lhdr"><h2>${listTitle}</h2></div>`}
+      <div className="scroll">${list}</div>
+    </div>
+    ${!wideList || detail ? html`<div className="detail">
+      ${detail && wideList ? html`<div className="lhdr"><button className="iconbtn" onClick=${() => setDetail(null)} aria-label="Kapat">×</button><h2>Kaynak</h2></div>` : null}
+      <div className="scroll"><div style=${{ minHeight: "100%", display: "flex", flexDirection: "column" }}>${detailView || html`<div className="empty" style=${{ marginTop: 80 }}>Bir kaynak seç.</div>`}</div></div>
+    </div>` : null}
+  </div>`;
+}
+
+// ---------- prototype chrome ----------
+function Switcher({ variant, setVariant, device, setDevice, showState, setShowState }) {
+  const i = VARIANTS.findIndex((v) => v.key === variant);
+  const go = (d) => setVariant(VARIANTS[(i + d + VARIANTS.length) % VARIANTS.length].key);
+  useEffect(() => {
+    const onKey = (e) => {
+      const el = document.activeElement;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
+      if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "ArrowRight") go(1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  return html`<nav className="switcher" aria-label="Varyant">
+    <button onClick=${() => go(-1)} aria-label="Önceki varyant">‹</button>
+    <span className="lab"><b>${variant}</b><span className="full"> · ${VARIANTS[i].name}</span></span>
+    <button onClick=${() => go(1)} aria-label="Sonraki varyant">›</button>
+    <button className="txt" onClick=${() => setDevice(device === "phone" ? "desktop" : "phone")}>${device === "phone" ? "telefon" : "masaüstü"}</button>
+    <button className="txt" aria-pressed=${showState} onClick=${() => setShowState(!showState)}>durum</button>
+  </nav>`;
+}
+function setParam(name, v) {
+  const u = new URL(location.href);
+  u.searchParams.set(name, v);
+  history.replaceState(null, "", u);
+}
+
+function App() {
+  const params = new URLSearchParams(location.search);
+  const [variant, setVariantS] = useState(() => { const v = (params.get("variant") || "").toUpperCase(); return VARIANTS.some((x) => x.key === v) ? v : "A"; });
+  const [device, setDeviceS] = useState(() => { const d = params.get("device"); return d === "phone" || d === "desktop" ? d : innerWidth < 720 ? "phone" : "desktop"; });
+  const [winW, setWinW] = useState(innerWidth);
+  useEffect(() => { const f = () => setWinW(innerWidth); addEventListener("resize", f); return () => removeEventListener("resize", f); }, []);
+  const [sources, setSources] = useState(SEED_SOURCES);
+  const [notes, setNotes] = useState(SEED_NOTES);
+  const [colls, setColls] = useState(SEED_COLLS);
+  const [toast, setToast] = useState(null);
+  const [showState, setShowState] = useState(false);
+  const [nav, setNav] = useState({});
+  const toastT = useRef();
+  const narrow = device === "phone" || winW < 720;
+  const setVariant = (v) => { setVariantS(v); setParam("variant", v); };
+  const setDevice = (d) => { setDeviceS(d); setParam("device", d); };
+
+  const D = useMemo(() => derive(sources, notes, colls), [sources, notes, colls]);
+  const flash = (t) => { setToast(t); clearTimeout(toastT.current); toastT.current = setTimeout(() => setToast(null), 2600); };
+  const S = {
+    ...D, flash,
+    addNote: (src, n) => { const id = "n" + Date.now(); setNotes((ns) => [...ns, { id, src, tags: [], at: Date.now(), ...n }]); return id; },
+    setStatus: (id, status) => {
+      setSources((ss) => ss.map((s) => s.id === id ? { ...s, status } : s));
+      if (status === "bitti" && D.info[id].untagged) flash(`${D.info[id].untagged} etiketsiz not var. Şimdi düzenle · Sonra (#13)`);
+    },
+    finishPass: (id) => { setSources((ss) => ss.map((s) => s.id === id ? { ...s, passAt: Date.now() } : s)); flash("Bitir: kaynak Düzenlenecekler'den düştü"); },
+    saveColl: (tags) => { const id = "c" + Date.now(); setColls((cs) => [...cs, { id, name: tags.join(" · "), tags, includeSources: true }]); flash("Dosya kaydedildi; adı değiştirilebilir"); return id; },
+    setCover: (id, cover) => { setSources((ss) => ss.map((s) => s.id === id ? { ...s, cover } : s)); if (cover) flash("Kapak eklendi"); },
+    updateColl: (id, patch) => setColls((cs) => cs.map((c) => c.id === id ? { ...c, ...patch } : c)),
+  };
+  const V = { A: VariantA, B: VariantB, C: VariantC }[variant];
+  const state = {
+    varyant: `${variant} · ${VARIANTS.find((v) => v.key === variant).name}`,
+    cihaz: narrow ? "telefon" : "masaüstü",
+    ...nav,
+    düzenlenecekler: D.todo.map((s) => `${s.title} (${D.info[s.id].untagged}${s.status === "bitti" ? ", bitti" : ""})`),
+    kütüphane: `${sources.length} kaynak · ${notes.length} not · ${D.tags.length} etiket · ${colls.length} dosya`,
+  };
+  return html`<div className=${"stage " + (device === "phone" ? "phone" : "desktop")}>
+    <div className="frame"><${V} key=${variant} S=${S} narrow=${narrow} report=${setNav} /></div>
+    <${Switcher} variant=${variant} setVariant=${setVariant} device=${device} setDevice=${setDevice} showState=${showState} setShowState=${setShowState} />
+    ${showState ? html`<div className="statepanel">${JSON.stringify(state, null, 2)}</div>` : null}
+    ${toast ? html`<div className="toast">${toast}</div>` : null}
+  </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+</script>
