@@ -7,8 +7,24 @@ Homelibra is a research-notes library for historians and other humanities schola
 ### Library
 
 **Library** (Kütüphane):
-Everything one user has recorded: their sources, notes, tags and collections. Private to that user.
+Everything one user has recorded: their sources, notes, tags and collections. Owned by exactly one account and private to it; it comes into being with the account and goes away with it.
 _Avoid_: workspace, account, archive, vault
+
+**Account** (Hesap):
+The identity a scholar signs in with: an email address and nothing more. An account owns exactly one library.
+_Avoid_: user, profile, member, login
+
+**Invitation** (Davet):
+Permission for one email address to open an account while Homelibra is in closed beta. Only the operator grants invitations; scholars cannot invite others. An invitation goes away with the account it opened.
+_Avoid_: invite code, referral, waitlist
+
+**Operator** (İşletici):
+The person who runs Homelibra: grants invitations, answers support requests and is answerable for the data kept in it. Looks inside a library only when its owner asks for help.
+_Avoid_: admin, owner, team
+
+**Library export** (Dışa aktarma):
+A complete copy of one library that its owner can download at any time, at no cost, in a form both machines and people can read.
+_Avoid_: backup, dump, download, archive
 
 **Source** (Kaynak):
 A work, or a body of records, that the scholar works through and takes notes on: a book, an article, a thesis, an archive fond or a single document, a manuscript, a newspaper run, a recording or a web page. What counts as one source is the scholar's choice; every source has exactly one source type.
