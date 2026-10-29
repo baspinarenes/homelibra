@@ -1,0 +1,16 @@
+# Local development database. `pnpm db:up` builds our image and starts it.
+services:
+  postgres:
+    build: infra/postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      HOMELIBRA_OWNER_PASSWORD: owner
+      HOMELIBRA_APP_PASSWORD: app
+      HOMELIBRA_DATABASES: homelibra homelibra_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

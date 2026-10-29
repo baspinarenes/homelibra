@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+  - infra/*
+
+# React Native's Metro bundler expects a flat node_modules.
+nodeLinker: hoisted
+
+allowBuilds:
+  esbuild: true

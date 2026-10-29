@@ -1,2 +1,7 @@
 # Temporary worktrees created by agent sessions
 .claude/worktrees/
+
+node_modules/
+.env
+*.tsbuildinfo
+.DS_Store
