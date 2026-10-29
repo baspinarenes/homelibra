@@ -1,0 +1,7 @@
+{
+  "name": "@homelibra/postgres",
+  "private": true,
+  "scripts": {
+    "build": "docker build -t homelibra-postgres ."
+  }
+}

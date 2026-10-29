@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - name: core tests
+        run: pnpm --filter @homelibra/core test
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Service containers start before any step, so they cannot use an image
+      # built in this job. Our own image (infra/postgres) is built and run here
+      # instead, so the tests always meet the database that production runs.
+      - name: Start our Postgres image
+        run: |
+          docker build -t homelibra-postgres infra/postgres
+          docker run -d --name postgres -p 5432:5432 \
+            -e POSTGRES_PASSWORD=postgres \
+            -e HOMELIBRA_OWNER_PASSWORD=owner \
+            -e HOMELIBRA_APP_PASSWORD=app \
+            -e HOMELIBRA_DATABASES=homelibra_test \
+            homelibra-postgres
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Wait for Postgres
+        run: |
+          for i in $(seq 1 30); do
+            docker exec postgres pg_isready -U postgres -d homelibra_test && exit 0
+            sleep 1
+          done
+          docker logs postgres; exit 1
+      - name: API integration tests
+        run: pnpm --filter @homelibra/api test
+        env:
+          TEST_DATABASE_URL: postgres://homelibra_app:app@localhost:5432/homelibra_test
+          TEST_MIGRATION_DATABASE_URL: postgres://homelibra_owner:owner@localhost:5432/homelibra_test

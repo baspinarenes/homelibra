@@ -1,0 +1,1 @@
+export { compareTr } from './turkish';
