@@ -43,8 +43,8 @@ Free-form bibliographic detail about a source that fits none of its fields: a pl
 _Avoid_: description, notes, remarks, summary
 
 **Reading status** (Okuma durumu):
-Whether a source is still being read or finished. Nothing more: no dates, ratings or progress.
-_Avoid_: progress, shelf, state
+Whether a source is still being read or finished. Finished means the scholar is done with it for now, whether or not they read it through; there is no separate state for a source set aside. A new source starts as being read, and a finished one can be read again. Nothing more: no dates, ratings or progress.
+_Avoid_: progress, shelf, state, abandoned
 
 ### Source types
 
@@ -100,6 +100,10 @@ _Avoid_: note, thought, annotation, remark
 Where in a source a note comes from, written as the scholar would cite it: a page, a page range, a timestamp, a folio, a document reference, an issue and page. Free-form; the notes of a source are listed in its order, and a note with no locator speaks of the source as a whole.
 _Avoid_: page, position, reference, citation
 
+**Note merge** (Not birleştirme):
+Combining two or more notes of the same source into one, for an excerpt cut in two by a page turn or a comment saved apart from its excerpt: the excerpts and comments are joined in locator order, the tags pooled, and the other notes are gone. Not to be confused with a tag merge.
+_Avoid_: join, combine, tag merge
+
 ### Finding things again
 
 **Tag** (Etiket):
@@ -125,5 +129,5 @@ Recording a note quickly while reading or watching, on the phone or at the desk,
 _Avoid_: entry, input, logging
 
 **Organizing pass** (Düzenleme turu):
-Going through a finished source's notes to tag them and tidy them up.
-_Avoid_: review, triage, cleanup
+Going through one source's untagged notes, after capture and usually at the desk, to tag them and tidy them up: fixing locators and wording, merging notes. It can be done for any source at any time; finishing a source invites one but is not needed for it. Notes may be left untagged; ending the pass sets the source aside until new untagged notes are captured.
+_Avoid_: review, triage, cleanup, round
