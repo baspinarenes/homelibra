@@ -6,7 +6,9 @@
   Üç varyant, alttaki çubuktan (veya ← → tuşlarıyla) değişir; ?variant=A|B|C ya da #A|#B|#C ile açılır.
     A  Tek ekran form      Kaynak → Konum → Alıntı → Yorum, hepsi tek ekranda, Kaydet altta sabit.
     B  Önce konum          Adım 1 sayı tuş takımıyla Konum, adım 2 Alıntı/Yorum sekmeleri.
-    C  Not akışı           Kaynağın notları sohbet gibi akar; altta tek yazma kutusu, Alıntı/Yorum modu, #etiket.
+    C  Not akışı           Kaynağın notları sohbet gibi akar; altta tek yazma kutusu, Alıntı/Yorum modu.
+                           Enes'in seçtiği varyant. 2. tur: konum tuş takımı + "hâlâ burada mı?", etiket seçici,
+                           yorum birleşince "Geri al", büyüyen/tam ekran yazma kutusu, nota dokununca düzenleme.
   Kalıcılık yok: her şey bellekte. Çevrimdışı kuyruk sağdaki panelden taklit edilir.
   Çalıştırma: dosyayı tarayıcıda aç.
 -->
@@ -161,6 +163,38 @@ button { cursor: pointer; }
 .vc .send:disabled { opacity: .35; }
 .vc .merge { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
 .vc .empty { color: var(--muted); text-align: center; padding: 40px 20px; font-size: 14px; }
+.vc .bubble { width: 100%; text-align: left; font: inherit; color: inherit; }
+.vc .lchip.stale { background: var(--warn-soft); color: var(--warn); }
+.vc .crow { flex-wrap: wrap; }
+.vc .tagbtn { border: 1px dashed var(--line); background: none; border-radius: 99px; padding: 4px 11px; font-size: 13px; color: var(--muted); max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc .tagbtn.on { border-style: solid; border-color: var(--accent); color: var(--accent); }
+.vc .sidebtns { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.vc .expand { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: 15px; }
+.vc.expanded .composer { flex: 1; min-height: 0; }
+.vc.expanded .inrow { flex: 1; align-items: stretch; min-height: 0; }
+.vc.expanded .inrow textarea { max-height: none; }
+.vc.expanded .sidebtns { justify-content: flex-end; }
+.vc .inrow textarea { max-height: 220px; }
+.sheetbody { overflow-y: auto; padding: 4px 18px 12px; min-height: 0; }
+.sheetfoot { display: flex; gap: 10px; padding: 12px 18px 18px; border-top: 1px solid var(--line); }
+.sheetfoot .primary { flex: 1; }
+.sheetfoot .secondary, .radio-btn { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-weight: 500; }
+.radio-btn { border-radius: 99px; padding: 5px 11px; font-size: 12.5px; }
+.locsheet { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.locsheet .pad, .locsheet .freeloc { padding: 0; margin: 0; }
+.tagpicker { display: flex; flex-direction: column; gap: 10px; }
+.tagpicker input { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 12px; font-size: 13.5px; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.chip.new { border-style: dashed; color: var(--accent); }
+.noteform { display: flex; flex-direction: column; gap: 6px; }
+.noteform .lbl { margin-top: 8px; }
+.noteform input, .noteform textarea { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; resize: vertical; line-height: 1.45; }
+.noteform textarea.ex { font-family: var(--font-quote); font-size: 16px; background: var(--excerpt); }
+.toast.act { pointer-events: auto; display: flex; gap: 12px; align-items: center; padding-right: 8px; }
+.toast button { background: none; border: 0; color: var(--accent-soft); font-weight: 600; padding: 2px 8px; }
+[hidden] { display: none !important; }
 
 /* ---------- panel ---------- */
 .panel h2 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
@@ -360,8 +394,9 @@ function SourceSheet({ store, currentId, onPick, onClose }) {
 function useToast() {
   const [msg, setMsg] = useState(null);
   const t = useRef();
-  const show = (m) => { setMsg(m); clearTimeout(t.current); t.current = setTimeout(() => setMsg(null), 1800); };
-  return [msg && html`<div className="toast" role="status">${msg}</div>`, show];
+  const show = (text, action) => { setMsg({ text, action }); clearTimeout(t.current); t.current = setTimeout(() => setMsg(null), action ? 5000 : 1800); };
+  return [msg && html`<div className=${"toast" + (msg.action ? " act" : "")} role="status">${msg.text}
+    ${msg.action && html`<button onClick=${() => { msg.action.fn(); setMsg(null); }}>${msg.action.label}</button>`}</div>`, show];
 }
 
 // ---------- Variant A: one-screen form ----------
@@ -514,75 +549,179 @@ function VariantB({ store, currentId, setCurrentId, timer }) {
 }
 
 // ---------- Variant C: note stream with one composer ----------
+function Sheet({ title, onClose, children, footer }) {
+  return html`<div className="backdrop" onClick=${onClose}>
+    <div className="sheet" onClick=${(e) => e.stopPropagation()} role="dialog" aria-label=${title}>
+      <header><h2>${title}</h2><button className="ghost" onClick=${onClose}>Kapat</button></header>
+      <div className="sheetbody">${children}</div>
+      ${footer && html`<div className="sheetfoot">${footer}</div>`}
+    </div>
+  </div>`;
+}
+
+const tagCounts = (store) => {
+  const c = {};
+  store.notes.forEach((n) => n.tags.forEach((t) => (c[t] = (c[t] || 0) + 1)));
+  return Object.keys(c).sort((a, b) => c[b] - c[a]);
+};
+
+function TagPicker({ store, value, onChange }) {
+  const [q, setQ] = useState("");
+  const norm = (s) => s.trim().replace(/^#/, "").toLocaleLowerCase("tr");
+  const known = tagCounts(store);
+  const add = (t) => { t = norm(t); if (t && !value.includes(t)) onChange([...value, t]); setQ(""); };
+  const sugg = known.filter((t) => !value.includes(t) && t.includes(norm(q))).slice(0, 12);
+  const isNew = norm(q) && !known.includes(norm(q)) && !value.includes(norm(q));
+  return html`<div className="tagpicker">
+    <div className="chips">
+      ${value.length
+        ? value.map((t) => html`<button key=${t} className="chip on" onClick=${() => onChange(value.filter((x) => x !== t))} aria-label=${t + " etiketini kaldır"}>${t} ×</button>`)
+        : html`<span className="hint">Etiket yok; etiketsiz de kaydedilir.</span>`}
+    </div>
+    <input id="tag-q" placeholder="Etiket ara ya da yeni yaz" value=${q} onChange=${(e) => setQ(e.target.value)}
+      onKeyDown=${(e) => { if (e.key === "Enter") { e.preventDefault(); add(q); } }} />
+    <div className="chips">
+      ${isNew && html`<button className="chip new" onClick=${() => add(q)}>+ “${norm(q)}” yeni etiket</button>`}
+      ${sugg.map((t) => html`<button key=${t} className="chip" onClick=${() => add(t)}>${t}</button>`)}
+    </div>
+  </div>`;
+}
+
+function LocatorSheet({ src, value, onDone, onClose }) {
+  const pad = PAD_KEYS[TYPES[src.type].pad];
+  const strip = (l) => pad && l?.startsWith(pad.pre) ? l.slice(pad.pre.length) : (l ?? "");
+  const [raw, setRaw] = useState(strip(value));
+  const [fresh, setFresh] = useState(true);
+  const locator = raw ? (pad ? pad.pre + raw : raw) : "";
+  const press = (k) => {
+    if (k === "⌫") { setRaw(fresh ? "" : raw.slice(0, -1)); setFresh(false); return; }
+    setRaw((fresh ? "" : raw) + k); setFresh(false);
+  };
+  return html`<${Sheet} title="Konum" onClose=${onClose} footer=${html`
+      <button className="secondary" onClick=${() => onDone("")}>Konumsuz</button>
+      <button className="primary" onClick=${() => onDone(locator)}>${fresh && raw ? "Hâlâ burada" : "Tamam"}</button>`}>
+    <div className="vb locsheet">
+      ${pad
+        ? html`<div className=${"big" + (raw ? "" : " empty")} style=${{ opacity: fresh && raw ? .55 : 1 }}>${raw ? html`<span className="pre">${pad.pre}</span>${raw}` : "Konumsuz · eserin bütünü"}</div>
+          <div className="pad">${pad.keys.map((k) => html`<button key=${k} className=${k === "⌫" ? "fn" : ""} onClick=${() => press(k)} aria-label=${k === "⌫" ? "Sil" : k}>${k}</button>`)}</div>`
+        : html`<input id="c-locfree" className="freeloc" autoFocus placeholder=${TYPES[src.type].ph} value=${raw}
+            onFocus=${(e) => e.target.select()} onChange=${(e) => { setRaw(e.target.value); setFresh(false); }}
+            onKeyDown=${(e) => { if (e.key === "Enter") onDone(locator); }} />`}
+    </div>
+  <//>`;
+}
+
+function NoteSheet({ store, note, src, onClose }) {
+  const [loc, setLoc] = useState(note.locator);
+  const [ex, setEx] = useState(note.excerpt);
+  const [co, setCo] = useState(note.comment);
+  const [tags, setTags] = useState(note.tags);
+  const can = ex.trim() || co.trim();
+  return html`<${Sheet} title="Notu düzenle" onClose=${onClose} footer=${html`
+      <button className="secondary" onClick=${onClose}>Vazgeç</button>
+      <button className="primary" disabled=${!can} onClick=${() => { store.patchNote(note.id, { locator: loc.trim(), excerpt: ex.trim(), comment: co.trim(), tags }); onClose(); }}>Kaydet</button>`}>
+    <div className="noteform">
+      <label className="lbl" htmlFor="n-loc">Konum</label>
+      <input id="n-loc" className="mono" value=${loc} placeholder=${TYPES[src.type].ph} onChange=${(e) => setLoc(e.target.value)} />
+      <label className="lbl" htmlFor="n-ex">Alıntı</label>
+      <textarea id="n-ex" className="ex" rows="4" value=${ex} placeholder="Yazarın sözleri, olduğu gibi" onChange=${(e) => setEx(e.target.value)}></textarea>
+      <label className="lbl" htmlFor="n-co">Yorum</label>
+      <textarea id="n-co" rows="3" value=${co} placeholder="Senin düşüncen" onChange=${(e) => setCo(e.target.value)}></textarea>
+      <span className="lbl">Etiketler</span>
+      <${TagPicker} store=${store} value=${tags} onChange=${setTags} />
+    </div>
+  <//>`;
+}
+
+const STALE_AFTER = 5 * MIN;
+
 function VariantC({ store, currentId, setCurrentId, timer, tweaks }) {
   const src = store.sources.find((s) => s.id === currentId);
   const notes = store.notes.filter((n) => n.sourceId === currentId).sort((a, b) => a.at - b.at);
   const last = notes[notes.length - 1];
+  const now = () => Date.now() + tweaks.skew;
   const [loc, setLoc] = useState(last?.locator ?? "");
-  const [editLoc, setEditLoc] = useState(false);
+  const [locAt, setLocAt] = useState(last?.at ?? now());
   const [mode, setMode] = useState("ex");
   const [text, setText] = useState("");
+  const [tags, setTags] = useState([]);
+  const [expanded, setExpanded] = useState(false);
   const [noMerge, setNoMerge] = useState(false);
-  const [sheet, setSheet] = useState(false);
+  const [sheet, setSheet] = useState(null); // "source" | "loc" | "tags" | note id
   const [freshId, setFreshId] = useState(null);
+  const [, tick] = useState(0);
   const [toast, showToast] = useToast();
   const taRef = useRef(), feedRef = useRef();
-  useEffect(() => { setLoc(store.lastNoteOf(currentId)?.locator ?? ""); setFreshId(null); }, [currentId]);
+  useEffect(() => { const i = setInterval(() => tick((x) => x + 1), 10000); return () => clearInterval(i); }, []);
+  useEffect(() => { const l = store.lastNoteOf(currentId); setLoc(l?.locator ?? ""); setLocAt(l?.at ?? now()); setFreshId(null); }, [currentId]);
   useEffect(() => { feedRef.current && (feedRef.current.scrollTop = feedRef.current.scrollHeight); }, [notes.length, currentId]);
   useEffect(() => { taRef.current?.focus(); }, [mode, currentId]);
+  useEffect(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+    if (expanded) { ta.style.height = ""; return; }
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight + 2, 220) + "px";
+  }, [text, expanded, mode]);
 
+  const stale = loc && now() - locAt > STALE_AFTER;
   // A comment typed right after an excerpt at the same locator joins that note.
   const mergeTarget = tweaks.cMerge && mode === "co" && !noMerge && last && last.id === freshId && last.excerpt && !last.comment && last.locator === loc ? last : null;
   const send = () => {
-    const tags = (text.match(/#[\p{L}\p{N}_-]+/gu) || []).map((t) => t.slice(1));
-    const body = text.replace(/#[\p{L}\p{N}_-]+/gu, "").replace(/\s{2,}/g, " ").trim();
+    const body = text.trim();
     if (!body) return;
     if (mergeTarget) {
-      store.patchNote(mergeTarget.id, { comment: body, tags: [...mergeTarget.tags, ...tags] });
-      showToast("Yorum alıntıya eklendi");
+      const before = { comment: mergeTarget.comment, tags: mergeTarget.tags };
+      store.patchNote(mergeTarget.id, { comment: body, tags: [...new Set([...mergeTarget.tags, ...tags])] });
+      showToast("Yorum alıntıya eklendi", { label: "Geri al", fn: () => {
+        store.patchNote(mergeTarget.id, before);
+        setText(body); setNoMerge(true); setMode("co");
+      } });
     } else {
       const n = store.addNote({ sourceId: currentId, locator: loc.trim(), [mode === "ex" ? "excerpt" : "comment"]: body, tags });
       setFreshId(n.id);
       showToast(`Kaydedildi · ${loc.trim() || "konumsuz"}`);
     }
     timer.stop();
-    setText(""); setNoMerge(false);
+    setText(""); setTags([]); setNoMerge(false); setExpanded(false);
     if (mode === "ex" && tweaks.cAutoComment) setMode("co");
   };
+  const openNote = sheet && sheet.startsWith?.("n") ? store.notes.find((n) => n.id === sheet) : null;
 
   let prevLoc = null;
-  return html`<div className="vc" style=${{ display: "contents" }}>
+  return html`<div className=${"vc" + (expanded ? " expanded" : "")} style=${{ display: "contents" }}>
     <div className="appbar">
-      <button className="srcbtn" onClick=${() => setSheet(true)}>
+      <button className="srcbtn" onClick=${() => setSheet("source")}>
         <span className="typechip">${TYPES[src.type].ad} ▾</span><span className="t">${src.title}</span>
       </button>
       <${QueueBadge} store=${store} />
     </div>
-    <div className="scroll" ref=${feedRef}><div className="feed">
+    <div className="scroll" ref=${feedRef} hidden=${expanded}><div className="feed">
       ${notes.length === 0 && html`<div className="empty">Bu kaynaktan henüz not yok. Aşağıya yazmaya başla.</div>`}
       ${notes.map((n) => {
         const head = n.locator !== prevLoc ? html`<div className="lochead" key=${n.id + "h"}>${n.locator || "konumsuz"}</div>` : null;
         prevLoc = n.locator;
         return html`<${React.Fragment} key=${n.id}>${head}
-          <div className=${"bubble" + (n.id === freshId ? " fresh" : "")}>
-            ${n.excerpt && html`<div className="ex">${n.excerpt}</div>`}
-            ${n.comment && html`<div className="co">${n.comment}</div>`}
-            <div className="meta">
-              ${n.tags.map((t) => html`<span className="tag" key=${t}>#${t}</span>`)}
+          <button className=${"bubble" + (n.id === freshId ? " fresh" : "")} onClick=${() => setSheet(n.id)} aria-label="Notu düzenle">
+            ${n.excerpt && html`<span className="ex">${n.excerpt}</span>`}
+            ${n.comment && html`<span className="co">${n.comment}</span>`}
+            <span className="meta">
+              ${n.tags.map((t) => html`<span className="tag" key=${t}>${t}</span>`)}
               <span style=${{ marginLeft: "auto" }}>${ago(n.at)}</span>
               <span className=${"sync " + n.sync}>${SYNC_LABEL[n.sync]}</span>
-            </div>
-          </div><//>`;
+            </span>
+          </button><//>`;
       })}
     </div></div>
     <div className="composer">
       ${mergeTarget && html`<div className="merge">Yorum, ${loc || "konumsuz"} alıntısına eklenecek <button className="ghost" onClick=${() => setNoMerge(true)}>Ayrı not yap</button></div>`}
       <div className="crow">
-        ${editLoc
-          ? html`<input id="c-loc" className="lchip-in" autoFocus value=${loc} placeholder=${TYPES[src.type].ph} onFocus=${(e) => e.target.select()}
-              onChange=${(e) => { timer.start(); setLoc(e.target.value); }} onBlur=${() => setEditLoc(false)}
-              onKeyDown=${(e) => { if (e.key === "Enter") { setEditLoc(false); taRef.current?.focus(); } }} />`
-          : html`<button className=${"lchip" + (loc ? "" : " none")} onClick=${() => setEditLoc(true)}>${loc || "konum ekle"} ✎</button>`}
+        <button className=${"lchip" + (loc ? "" : " none") + (stale ? " stale" : "")} onClick=${() => { timer.start(); setSheet("loc"); }}>
+          ${loc || "konum ekle"}${stale ? " · hâlâ burada mı?" : ""}
+        </button>
+        <button className=${"tagbtn" + (tags.length ? " on" : "")} onClick=${() => setSheet("tags")}>
+          ${tags.length ? tags.join(", ") : "+ etiket"}
+        </button>
         <div className="mode" role="group">
           <button aria-pressed=${mode === "ex"} onClick=${() => setMode("ex")}>Alıntı</button>
           <button aria-pressed=${mode === "co"} onClick=${() => setMode("co")}>Yorum</button>
@@ -590,14 +729,21 @@ function VariantC({ store, currentId, setCurrentId, timer, tweaks }) {
       </div>
       <div className="inrow">
         <textarea id="c-text" ref=${taRef} rows="2" className=${mode === "ex" ? "ex" : ""} value=${text}
-          placeholder=${mode === "ex" ? "Alıntı… (#etiket eklenebilir)" : "Yorum… (#etiket eklenebilir)"}
-          onChange=${(e) => { timer.start(); setText(e.target.value); }}
-          onKeyDown=${(e) => { if (e.key === "Enter" && !e.shiftKey && tweaks.cEnterSends) { e.preventDefault(); send(); } }}></textarea>
-        <button className="send" aria-label="Kaydet" disabled=${!text.trim()} onClick=${send}>↑</button>
+          placeholder=${mode === "ex" ? "Alıntı…" : "Yorum…"}
+          onChange=${(e) => { timer.start(); setText(e.target.value); }}></textarea>
+        <div className="sidebtns">
+          <button className="expand" onClick=${() => setExpanded(!expanded)} aria-label=${expanded ? "Küçült" : "Tam ekran yaz"}>${expanded ? "⤡" : "⤢"}</button>
+          <button className="send" aria-label="Kaydet" disabled=${!text.trim()} onClick=${send}>↑</button>
+        </div>
       </div>
     </div>
     ${toast}
-    ${sheet && html`<${SourceSheet} store=${store} currentId=${currentId} onClose=${() => setSheet(false)} onPick=${(id) => { setCurrentId(id); setSheet(false); }} />`}
+    ${sheet === "source" && html`<${SourceSheet} store=${store} currentId=${currentId} onClose=${() => setSheet(null)} onPick=${(id) => { setCurrentId(id); setSheet(null); }} />`}
+    ${sheet === "loc" && html`<${LocatorSheet} src=${src} value=${loc} onClose=${() => setSheet(null)} onDone=${(l) => { setLoc(l); setLocAt(now()); setSheet(null); taRef.current?.focus(); }} />`}
+    ${sheet === "tags" && html`<${Sheet} title="Bu notun etiketleri" onClose=${() => setSheet(null)} footer=${html`<button className="primary" onClick=${() => setSheet(null)}>Tamam</button>`}>
+      <${TagPicker} store=${store} value=${tags} onChange=${setTags} />
+    <//>`}
+    ${openNote && html`<${NoteSheet} store=${store} note=${openNote} src=${src} onClose=${() => setSheet(null)} />`}
   </div>`;
 }
 
@@ -623,7 +769,8 @@ function Panel({ store, variant, currentId, timer, tweaks, setTweaks }) {
         ${variant === "C" && html`
           <div className="toggle"><span>Alıntıdan sonra Yorum'a geç</span><button className="switch" role="switch" aria-checked=${tweaks.cAutoComment} aria-label="Alıntıdan sonra Yorum moduna geç" onClick=${() => set("cAutoComment", !tweaks.cAutoComment)}></button></div>
           <div className="toggle"><span>Yorumu son alıntıya ekle</span><button className="switch" role="switch" aria-checked=${tweaks.cMerge} aria-label="Yorumu son alıntıya ekle" onClick=${() => set("cMerge", !tweaks.cMerge)}></button></div>
-          <div className="toggle"><span>Enter kaydeder</span><button className="switch" role="switch" aria-checked=${tweaks.cEnterSends} aria-label="Enter kaydeder" onClick=${() => set("cEnterSends", !tweaks.cEnterSends)}></button></div>`}
+          <div className="toggle"><span>Konum ${tweaks.skew ? `(+${tweaks.skew / MIN} dk)` : ""}</span><button className="radio-btn" onClick=${() => set("skew", tweaks.skew + 5 * MIN)}>Zamanı 5 dk ileri al</button></div>
+          <p className="desc">Konum ${STALE_AFTER / MIN} dakikadır değişmediyse etiketi “hâlâ burada mı?” diye sorar. Bir nota dokununca düzenleme açılır.</p>`}
       </div>
     </section>
     <section>
@@ -692,7 +839,7 @@ function App() {
   const store = useStore();
   const [variant, setVariantState] = useState(initialVariant);
   const [currentId, setCurrentId] = useState(() => store.currentDefault().id);
-  const [tweaks, setTweaks] = useState({ aOrder: "loc-first", cAutoComment: true, cMerge: true, cEnterSends: false });
+  const [tweaks, setTweaks] = useState({ aOrder: "loc-first", cAutoComment: true, cMerge: true, skew: 0 });
   const t0 = useRef(null);
   const [lastDuration, setLastDuration] = useState(null);
   const timer = {
