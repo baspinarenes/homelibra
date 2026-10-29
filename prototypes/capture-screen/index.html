@@ -1,0 +1,719 @@
+<title>Homelibra Capture Prototipi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  PROTOTYPE — atılacak kod. Ticket: baspinarenes/homelibra#11 "Prototype: mobil Capture ekranı".
+  Soru: okurken on saniyede Note girmek nasıl görünür ve davranır?
+  Üç varyant, alttaki çubuktan (veya ← → tuşlarıyla) değişir; ?variant=A|B|C ya da #A|#B|#C ile açılır.
+    A  Tek ekran form      Kaynak → Konum → Alıntı → Yorum, hepsi tek ekranda, Kaydet altta sabit.
+    B  Önce konum          Adım 1 sayı tuş takımıyla Konum, adım 2 Alıntı/Yorum sekmeleri.
+    C  Not akışı           Kaynağın notları sohbet gibi akar; altta tek yazma kutusu, Alıntı/Yorum modu, #etiket.
+  Kalıcılık yok: her şey bellekte. Çevrimdışı kuyruk sağdaki panelden taklit edilir.
+  Çalıştırma: dosyayı tarayıcıda aç.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&display=swap">
+<style>
+/* Layout: a phone-sized app on the left, prototype state and controls on the right; on a phone the app fills the screen and the panel follows below. */
+:root {
+  --page: #E9EDF0;
+  --phone: #FAFBFB;
+  --surface: #FFFFFF;
+  --line: #D3DADF;
+  --fg: #17212B;
+  --muted: #5B6873;
+  --accent: #1E5A6D;
+  --accent-fg: #FFFFFF;
+  --accent-soft: #E2EDF0;
+  --excerpt: #F3F1EC;
+  --warn: #8F5200;
+  --warn-soft: #FCEFD9;
+  --ok: #2B7049;
+  --bar: #17212B;
+  --bar-fg: #F4F7F8;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-quote: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0C1115; --phone: #121A20; --surface: #19232A; --line: #2B3740; --fg: #E3E9ED; --muted: #93A0AA;
+  --accent: #74B4C7; --accent-fg: #0C1115; --accent-soft: #1D3038; --excerpt: #20262A; --warn: #F0B45A; --warn-soft: #3A2B14;
+  --ok: #6CC08E; --bar: #E3E9ED; --bar-fg: #0C1115; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --page: #0C1115; --phone: #121A20; --surface: #19232A; --line: #2B3740; --fg: #E3E9ED; --muted: #93A0AA;
+  --accent: #74B4C7; --accent-fg: #0C1115; --accent-soft: #1D3038; --excerpt: #20262A; --warn: #F0B45A; --warn-soft: #3A2B14;
+  --ok: #6CC08E; --bar: #E3E9ED; --bar-fg: #0C1115; color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--page); color: var(--fg); font-family: var(--font-ui); font-size: 15px; }
+* { box-sizing: border-box; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.stage { display: flex; gap: 32px; justify-content: center; align-items: flex-start;
+  padding-block: 24px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.phone { position: relative; width: 390px; height: min(820px, calc(100vh - 110px)); background: var(--phone);
+  border: 1px solid var(--line); border-radius: 34px; overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 18px 50px rgba(15, 30, 40, .16); flex: none; }
+.panel { width: 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px; font-size: 13.5px; }
+
+/* ---------- shared app chrome ---------- */
+.appbar { display: flex; align-items: center; gap: 10px; padding: 18px 18px 10px; }
+.appbar h1 { font-size: 17px; font-weight: 600; margin: 0; flex: 1; }
+.queue { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+.queue.off { background: var(--warn-soft); color: var(--warn); }
+.queue.ok { color: var(--muted); }
+.queue .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.typechip { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.primary { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 14px; padding: 13px 22px; font-weight: 600; font-size: 15.5px; }
+.primary:disabled { opacity: .35; cursor: default; }
+.ghost { background: none; border: 0; color: var(--accent); font-weight: 500; padding: 6px 4px; }
+.lbl { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.hint { font-size: 12.5px; color: var(--muted); }
+.mono { font-family: var(--font-mono); }
+.toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px; background: var(--fg); color: var(--phone);
+  padding: 9px 16px; border-radius: 99px; font-size: 13.5px; white-space: nowrap; z-index: 30; pointer-events: none; }
+
+/* source card */
+.srccard { display: flex; flex-direction: column; gap: 3px; text-align: left; width: 100%; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+.srccard .t { font-weight: 600; font-size: 15px; line-height: 1.3; }
+.srccard .a { color: var(--muted); font-size: 13px; }
+.srccard .row { display: flex; justify-content: space-between; align-items: center; }
+
+/* bottom sheet */
+.backdrop { position: absolute; inset: 0; background: rgba(10, 18, 24, .38); z-index: 20; display: flex; align-items: flex-end; }
+.sheet { width: 100%; max-height: 82%; background: var(--phone); border-radius: 22px 22px 0 0; display: flex; flex-direction: column; }
+.sheet header { padding: 14px 18px 6px; display: flex; justify-content: space-between; align-items: center; }
+.sheet h2 { margin: 0; font-size: 16px; }
+.sheet ul { list-style: none; margin: 0; padding: 0 8px 8px; overflow-y: auto; }
+.sheet li button { width: 100%; text-align: left; background: none; border: 0; border-radius: 12px; padding: 10px 10px; display: flex; flex-direction: column; gap: 2px; }
+.sheet li button[aria-current="true"] { background: var(--accent-soft); }
+.sheet li .t { font-weight: 500; line-height: 1.3; }
+.sheet li .m { font-size: 12.5px; color: var(--muted); }
+.sheet .grp { padding: 10px 18px 4px; }
+.quickadd { border-top: 1px solid var(--line); padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
+.quickadd .r { display: flex; gap: 8px; }
+.quickadd select, .quickadd input { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+.quickadd input { flex: 1; }
+
+/* ---------- variant A ---------- */
+.va .body { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field .top { display: flex; justify-content: space-between; align-items: baseline; }
+.va input.loc { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 11px 12px; font-size: 16px; }
+.va textarea { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px; resize: none; line-height: 1.45; }
+.va textarea.ex { font-family: var(--font-quote); font-size: 17px; min-height: 150px; background: var(--excerpt); }
+.va textarea.co { min-height: 90px; font-size: 15px; }
+.va input.tags { border: 1px dashed var(--line); background: transparent; border-radius: 12px; padding: 10px 12px; }
+.va .foot { border-top: 1px solid var(--line); padding: 12px 18px 18px; display: flex; align-items: center; gap: 12px; background: var(--phone); }
+.va .foot .hint { flex: 1; }
+
+/* ---------- variant B ---------- */
+.vb .srcline { display: flex; flex-direction: column; gap: 2px; text-align: left; background: none; border: 0; padding: 0; flex: 1; min-width: 0; }
+.vb .srcline .t { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vb .locdisplay { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 0 18px; }
+.vb .big { font-family: var(--font-mono); font-size: 46px; font-weight: 500; letter-spacing: -.01em; min-height: 60px; text-align: center; overflow-wrap: anywhere; }
+.vb .big .pre { color: var(--muted); font-size: 30px; }
+.vb .big.empty { color: var(--muted); font-size: 20px; font-family: var(--font-ui); }
+.vb .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 18px; }
+.vb .pad button { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; height: 54px; font-size: 22px; font-family: var(--font-mono); }
+.vb .pad button.fn { font-family: var(--font-ui); font-size: 15px; color: var(--muted); }
+.vb .freeloc { margin: 0 18px; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 14px; font-size: 18px; font-family: var(--font-mono); }
+.vb .steps { display: flex; gap: 10px; padding: 14px 18px 18px; }
+.vb .steps .primary { flex: 1; }
+.vb .secondary { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; font-weight: 500; }
+.vb .seg { display: flex; margin: 4px 18px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+.vb .seg button { flex: 1; border: 0; background: none; border-radius: 9px; padding: 9px; font-weight: 500; display: inline-flex; gap: 6px; justify-content: center; align-items: center; }
+.vb .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.vb .seg .filled { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.vb textarea { flex: 1; margin: 0 18px; border: 0; background: transparent; resize: none; padding: 6px 2px; line-height: 1.5; outline: none; }
+.vb textarea.ex { font-family: var(--font-quote); font-size: 19px; }
+.vb textarea.co { font-size: 16px; }
+.vb .loctag { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 99px; padding: 5px 12px; font-family: var(--font-mono); font-size: 14px; }
+
+/* ---------- variant C ---------- */
+.vc .srcbtn { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.vc .srcbtn .t { font-weight: 600; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc .feed { padding: 6px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+.vc .lochead { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: center; padding-top: 6px; }
+.vc .bubble { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 11px 13px; display: flex; flex-direction: column; gap: 7px; }
+.vc .bubble.fresh { border-color: var(--accent); }
+.vc .bubble .ex { font-family: var(--font-quote); font-size: 16px; line-height: 1.45; border-left: 3px solid var(--line); padding-left: 10px; }
+.vc .bubble .co { font-size: 14.5px; line-height: 1.45; }
+.vc .bubble .meta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.vc .tag { color: var(--accent); }
+.vc .composer { border-top: 1px solid var(--line); padding: 10px 12px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--phone); }
+.vc .crow { display: flex; gap: 8px; align-items: center; }
+.vc .lchip { background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 99px; padding: 5px 11px; font-family: var(--font-mono); font-size: 13px; }
+.vc .lchip.none { font-family: var(--font-ui); }
+.vc .lchip-in { border: 1px solid var(--accent); background: var(--surface); border-radius: 99px; padding: 4px 11px; font-family: var(--font-mono); font-size: 13px; width: 160px; }
+.vc .mode { display: flex; margin-left: auto; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.vc .mode button { border: 0; background: none; padding: 5px 12px; font-size: 13px; font-weight: 500; }
+.vc .mode button[aria-pressed="true"] { background: var(--fg); color: var(--phone); }
+.vc .inrow { display: flex; gap: 8px; align-items: flex-end; }
+.vc .inrow textarea { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 18px; padding: 10px 14px; resize: none; line-height: 1.4; max-height: 140px; }
+.vc .inrow textarea.ex { font-family: var(--font-quote); font-size: 16.5px; background: var(--excerpt); }
+.vc .send { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-fg); font-size: 19px; flex: none; }
+.vc .send:disabled { opacity: .35; }
+.vc .merge { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.vc .empty { color: var(--muted); text-align: center; padding: 40px 20px; font-size: 14px; }
+
+/* ---------- panel ---------- */
+.panel h2 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+.panel section { display: flex; flex-direction: column; }
+.panel .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.panel .q { font-size: 15px; font-weight: 600; line-height: 1.35; text-wrap: balance; margin: 0; }
+.panel .desc { color: var(--muted); line-height: 1.5; margin: 0; }
+.toggle { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.switch { position: relative; width: 44px; height: 26px; border-radius: 99px; border: 0; background: var(--line); flex: none; }
+.switch[aria-checked="true"] { background: var(--ok); }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: left .15s; }
+.switch[aria-checked="true"]::after { left: 21px; }
+.radio { display: flex; gap: 6px; flex-wrap: wrap; }
+.radio button { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 5px 11px; font-size: 12.5px; }
+.radio button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.notes li { border-bottom: 1px solid var(--line); padding-bottom: 8px; display: flex; flex-direction: column; gap: 3px; }
+.notes li:last-child { border-bottom: 0; padding-bottom: 0; }
+.notes .h { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.notes .ex { font-family: var(--font-quote); font-size: 14px; }
+.sync { font-size: 11.5px; padding: 1px 7px; border-radius: 99px; white-space: nowrap; }
+.sync.synced { color: var(--ok); }
+.sync.queued { background: var(--warn-soft); color: var(--warn); }
+.sync.sending { color: var(--accent); }
+.timer { font-family: var(--font-mono); font-size: 22px; font-variant-numeric: tabular-nums; }
+.timer.good { color: var(--ok); }
+.timer.slow { color: var(--warn); }
+
+/* ---------- switcher ---------- */
+.switcher { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 50;
+  display: flex; align-items: center; gap: 4px; background: var(--bar); color: var(--bar-fg); border-radius: 99px; padding: 5px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28); font-size: 13.5px; }
+.switcher button { background: none; border: 0; color: inherit; width: 34px; height: 34px; border-radius: 50%; font-size: 17px; }
+.switcher button:hover { background: rgba(127, 127, 127, .25); }
+.switcher .lab { padding: 0 8px; white-space: nowrap; }
+.switcher b { font-family: var(--font-mono); }
+
+@media (max-width: 760px) {
+  .stage { flex-direction: column; align-items: stretch; padding-block: 0 24px; padding-left: 0; padding-right: 0; gap: 20px; }
+  .phone { width: 100%; height: 100svh; border-radius: 0; border: 0; box-shadow: none; }
+  .panel { width: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .switcher { bottom: auto; top: calc(10px + env(safe-area-inset-top, 0px)); left: auto; right: max(10px, env(safe-area-inset-right, 0px)); transform: none; padding: 2px; font-size: 12px; }
+  .switcher button { width: 28px; height: 28px; font-size: 14px; }
+  .switcher .full { display: none; }
+  .appbar { padding-right: 140px; }
+}
+@media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+const { useState, useEffect, useRef, useMemo } = React;
+const html = htm.bind(React.createElement);
+
+// Source types with how their locators are typically written (GLOSSARY.md, Source types).
+const TYPES = {
+  kitap:  { ad: "Kitap",        ph: "s. 142",               pad: "page" },
+  makale: { ad: "Makale",       ph: "s. 87",                pad: "page" },
+  tez:    { ad: "Tez",          ph: "s. 211",               pad: "page" },
+  arsiv:  { ad: "Arşiv",        ph: "Dosya 412, Gömlek 18", pad: null },
+  yazma:  { ad: "Yazma",        ph: "vr. 23b",              pad: "folio" },
+  sureli: { ad: "Süreli yayın", ph: "sayı 412, s. 3",       pad: null },
+  kayit:  { ad: "Kayıt",        ph: "00:14:32",             pad: "time" },
+  web:    { ad: "Web sayfası",  ph: "genelde boş",          pad: null },
+  diger:  { ad: "Diğer",        ph: "",                     pad: null },
+};
+
+// Example data, fictional apart from the archive fond code.
+const MIN = 60000, NOW = Date.now();
+const SEED_SOURCES = [
+  { id: "s1", type: "kitap",  title: "Taşrada Kadı ve Naib, 1750–1850", author: "Ayşe Demirtaş", status: "okunuyor" },
+  { id: "s2", type: "kitap",  title: "Sürgün ve İskân: Balkanlarda Yerleşim Siyaseti", author: "Murat Kaya", status: "okunuyor" },
+  { id: "s3", type: "arsiv",  title: "Sadâret Mektûbî Kalemi Mühimme Evrakı (A.MKT.MHM)", author: "Devlet Arşivleri Başkanlığı", status: "okunuyor" },
+  { id: "s4", type: "sureli", title: "Takvîm-i Vekāyi", author: "", status: "okunuyor" },
+  { id: "s5", type: "kayit",  title: "Tanzimat ve taşra idaresi (ders kaydı)", author: "Seminer, 3. hafta", status: "okunuyor" },
+  { id: "s6", type: "yazma",  title: "Kavânîn-i Örfiyye mecmuası", author: "Süleymaniye Ktp.", status: "bitti" },
+  { id: "s7", type: "makale", title: "Kadı sicillerinde vekâlet kayıtları", author: "Elif Sönmez", status: "bitti" },
+];
+const SEED_NOTES = [
+  { id: "n1", sourceId: "s1", locator: "s. 139", excerpt: "Naibler çoğu zaman kadının adına değil, kendi adlarına hüküm yazıyordu.", comment: "", tags: [], at: NOW - 9 * MIN, sync: "synced" },
+  { id: "n2", sourceId: "s1", locator: "s. 141", excerpt: "", comment: "Naib imzası 1790'lardan sonra artıyor; Bursa sicilleriyle karşılaştır.", tags: ["naib", "bursa"], at: NOW - 3 * MIN, sync: "synced" },
+  { id: "n3", sourceId: "s3", locator: "Dosya 412, Gömlek 18", excerpt: "…mezkûr kazada vâki' olan ihtilâlin def'i zımnında…", comment: "Tarih Hicrî 1271 olmalı, zarfta yazıyor.", tags: [], at: NOW - 2 * 24 * 60 * MIN, sync: "synced" },
+  { id: "n4", sourceId: "s5", locator: "00:42:10", excerpt: "", comment: "Meclis-i Vâlâ mazbatalarına bak.", tags: ["meclis"], at: NOW - 5 * 24 * 60 * MIN, sync: "synced" },
+  { id: "n5", sourceId: "s2", locator: "s. 58", excerpt: "İskân defterleri yalnızca gelenleri kaydeder; gidenler sessizdir.", comment: "", tags: [], at: NOW - 26 * 60 * MIN, sync: "synced" },
+];
+
+const VARIANTS = [
+  { key: "A", name: "Tek ekran form" },
+  { key: "B", name: "Önce konum" },
+  { key: "C", name: "Not akışı" },
+];
+
+function ago(t) {
+  const m = Math.round((Date.now() - t) / MIN);
+  if (m < 1) return "şimdi";
+  if (m < 60) return m + " dk önce";
+  if (m < 60 * 24) return Math.round(m / 60) + " sa önce";
+  return Math.round(m / 1440) + " gün önce";
+}
+const SYNC_LABEL = { synced: "eşitlendi", queued: "kuyrukta", sending: "gönderiliyor" };
+const parseTags = (s) => s.split(/[,\s]+/).map((t) => t.replace(/^#/, "").trim()).filter(Boolean);
+
+// ---------- store ----------
+function useStore() {
+  const [sources, setSources] = useState(SEED_SOURCES);
+  const [notes, setNotes] = useState(SEED_NOTES);
+  const [online, setOnline] = useState(true);
+  const onlineRef = useRef(online);
+  onlineRef.current = online;
+
+  const ack = (ids) => setTimeout(() => {
+    if (!onlineRef.current) return setNotes((ns) => ns.map((n) => ids.includes(n.id) && n.sync === "sending" ? { ...n, sync: "queued" } : n));
+    setNotes((ns) => ns.map((n) => ids.includes(n.id) ? { ...n, sync: "synced" } : n));
+  }, 1100);
+
+  useEffect(() => {
+    if (!online) return;
+    const ids = notes.filter((n) => n.sync === "queued").map((n) => n.id);
+    if (!ids.length) return;
+    setNotes((ns) => ns.map((n) => ids.includes(n.id) ? { ...n, sync: "sending" } : n));
+    ack(ids);
+  }, [online]);
+
+  const addNote = (n) => {
+    const note = { id: "n" + Math.random().toString(36).slice(2, 7), at: Date.now(), tags: [], excerpt: "", comment: "", ...n, sync: online ? "sending" : "queued" };
+    setNotes((ns) => [...ns, note]);
+    if (online) ack([note.id]);
+    return note;
+  };
+  const patchNote = (id, patch) => {
+    setNotes((ns) => ns.map((n) => n.id === id ? { ...n, ...patch, sync: online ? "sending" : "queued" } : n));
+    if (online) ack([id]);
+  };
+  const addSource = (s) => {
+    const src = { id: "s" + Math.random().toString(36).slice(2, 7), author: "", status: "okunuyor", ...s };
+    setSources((ss) => [...ss, src]);
+    return src;
+  };
+  const lastNoteOf = (sourceId) => notes.filter((n) => n.sourceId === sourceId).sort((a, b) => b.at - a.at)[0];
+  const lastAt = (sourceId) => lastNoteOf(sourceId)?.at ?? 0;
+  // "Şu an okuduğum": the Reading source with the most recent note.
+  const currentDefault = () => [...sources].filter((s) => s.status === "okunuyor").sort((a, b) => lastAt(b.id) - lastAt(a.id))[0];
+  const queued = notes.filter((n) => n.sync !== "synced").length;
+  return { sources, notes, online, setOnline, addNote, patchNote, addSource, lastNoteOf, lastAt, currentDefault, queued };
+}
+
+// ---------- shared bits ----------
+function QueueBadge({ store }) {
+  if (!store.online) return html`<span className="queue off"><span className="dot"></span>Çevrimdışı${store.queued ? ` · ${store.queued} not bekliyor` : ""}</span>`;
+  if (store.queued) return html`<span className="queue ok">Gönderiliyor…</span>`;
+  return null;
+}
+
+function SourceSheet({ store, currentId, onPick, onClose }) {
+  const [showDone, setShowDone] = useState(false);
+  const [qType, setQType] = useState("kitap");
+  const [qTitle, setQTitle] = useState("");
+  const byRecent = (a, b) => store.lastAt(b.id) - store.lastAt(a.id);
+  const reading = store.sources.filter((s) => s.status === "okunuyor").sort(byRecent);
+  const done = store.sources.filter((s) => s.status === "bitti").sort(byRecent);
+  const item = (s) => {
+    const last = store.lastNoteOf(s.id);
+    return html`<li key=${s.id}><button aria-current=${s.id === currentId ? "true" : "false"} onClick=${() => onPick(s.id)}>
+      <span className="typechip">${TYPES[s.type].ad}</span>
+      <span className="t">${s.title}</span>
+      <span className="m">${[s.author, last ? `son: ${last.locator || "konumsuz"} · ${ago(last.at)}` : "henüz not yok"].filter(Boolean).join(" · ")}</span>
+    </button></li>`;
+  };
+  return html`<div className="backdrop" onClick=${onClose}>
+    <div className="sheet" onClick=${(e) => e.stopPropagation()} role="dialog" aria-label="Kaynak seç">
+      <header><h2>Kaynak seç</h2><button className="ghost" onClick=${onClose}>Kapat</button></header>
+      <div className="grp lbl">Okunuyor</div>
+      <ul>${reading.map(item)}</ul>
+      <div className="grp"><button className="ghost" onClick=${() => setShowDone(!showDone)}>${showDone ? "Bitenleri gizle" : `Bitenleri göster (${done.length})`}</button></div>
+      ${showDone && html`<ul>${done.map(item)}</ul>`}
+      <form className="quickadd" onSubmit=${(e) => { e.preventDefault(); if (!qTitle.trim()) return; const s = store.addSource({ type: qType, title: qTitle.trim() }); onPick(s.id); }}>
+        <span className="lbl">Yeni kaynak (ayrıntılar sonra)</span>
+        <div className="r">
+          <select id="qa-type" value=${qType} onChange=${(e) => setQType(e.target.value)}>
+            ${Object.entries(TYPES).map(([k, t]) => html`<option key=${k} value=${k}>${t.ad}</option>`)}
+          </select>
+          <input id="qa-title" placeholder="Başlık" value=${qTitle} onChange=${(e) => setQTitle(e.target.value)} />
+        </div>
+        <button className="primary" disabled=${!qTitle.trim()}>Ekle ve seç</button>
+      </form>
+    </div>
+  </div>`;
+}
+
+function useToast() {
+  const [msg, setMsg] = useState(null);
+  const t = useRef();
+  const show = (m) => { setMsg(m); clearTimeout(t.current); t.current = setTimeout(() => setMsg(null), 1800); };
+  return [msg && html`<div className="toast" role="status">${msg}</div>`, show];
+}
+
+// ---------- Variant A: one-screen form ----------
+function VariantA({ store, currentId, setCurrentId, timer, tweaks }) {
+  const src = store.sources.find((s) => s.id === currentId);
+  const last = store.lastNoteOf(currentId);
+  const [loc, setLoc] = useState(last?.locator ?? "");
+  const [ex, setEx] = useState("");
+  const [co, setCo] = useState("");
+  const [tags, setTags] = useState("");
+  const [showTags, setShowTags] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const [toast, showToast] = useToast();
+  const exRef = useRef(), locRef = useRef();
+  const focusFirst = () => (tweaks.aOrder === "loc-first" ? locRef : exRef).current?.focus();
+  useEffect(() => { setLoc(store.lastNoteOf(currentId)?.locator ?? ""); focusFirst(); }, [currentId, tweaks.aOrder]);
+  const can = ex.trim() || co.trim();
+  const save = () => {
+    if (!can) return;
+    store.addNote({ sourceId: currentId, locator: loc.trim(), excerpt: ex.trim(), comment: co.trim(), tags: parseTags(tags) });
+    timer.stop();
+    showToast(`Kaydedildi · ${loc.trim() || "konumsuz"}`);
+    setEx(""); setCo(""); setTags(""); setShowTags(false);
+    focusFirst();
+  };
+  const onKey = (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save(); };
+
+  const locField = html`<div className="field" key="loc">
+    <div className="top"><label className="lbl" htmlFor="a-loc">Konum</label>${last && html`<span className="hint">son: ${last.locator || "konumsuz"}</span>`}</div>
+    <input id="a-loc" ref=${locRef} className="loc mono" value=${loc} placeholder=${TYPES[src.type].ph}
+      inputMode=${TYPES[src.type].pad === "page" ? "numeric" : "text"}
+      onFocus=${(e) => e.target.select()} onChange=${(e) => { timer.start(); setLoc(e.target.value); }} onKeyDown=${onKey} />
+  </div>`;
+  const exField = html`<div className="field" key="ex">
+    <label className="lbl" htmlFor="a-ex">Alıntı</label>
+    <textarea id="a-ex" ref=${exRef} className="ex" value=${ex} placeholder="Yazarın sözleri, olduğu gibi" onChange=${(e) => { timer.start(); setEx(e.target.value); }} onKeyDown=${onKey}></textarea>
+  </div>`;
+
+  return html`<div className="va" style=${{ display: "contents" }}>
+    <div className="appbar"><h1>Yakala</h1><${QueueBadge} store=${store} /></div>
+    <div className="scroll"><div className="body">
+      <button className="srccard" onClick=${() => setSheet(true)}>
+        <span className="row"><span className="typechip">${TYPES[src.type].ad} · ${src.status}</span><span className="ghost">Değiştir</span></span>
+        <span className="t">${src.title}</span>
+        ${src.author && html`<span className="a">${src.author}</span>`}
+      </button>
+      ${tweaks.aOrder === "ex-first" ? [exField, locField] : [locField, exField]}
+      <div className="field">
+        <label className="lbl" htmlFor="a-co">Yorum</label>
+        <textarea id="a-co" className="co" value=${co} placeholder="Senin düşüncen (isteğe bağlı)" onChange=${(e) => { timer.start(); setCo(e.target.value); }} onKeyDown=${onKey}></textarea>
+      </div>
+      ${showTags
+        ? html`<input id="a-tags" className="tags" autoFocus placeholder="etiket, etiket" value=${tags} onChange=${(e) => setTags(e.target.value)} />`
+        : html`<button className="ghost" style=${{ alignSelf: "flex-start" }} onClick=${() => setShowTags(true)}>+ Etiket ekle</button>`}
+    </div></div>
+    <div className="foot">
+      <span className="hint">${can ? "Etiketsiz de kaydedilir" : "Alıntı ya da yorum yaz"}</span>
+      <button className="primary" disabled=${!can} onClick=${save}>Kaydet</button>
+    </div>
+    ${toast}
+    ${sheet && html`<${SourceSheet} store=${store} currentId=${currentId} onClose=${() => setSheet(false)} onPick=${(id) => { setCurrentId(id); setSheet(false); }} />`}
+  </div>`;
+}
+
+// ---------- Variant B: locator first, then text ----------
+const PAD_KEYS = {
+  page:  { pre: "s. ",  keys: ["1","2","3","4","5","6","7","8","9","–","0","⌫"] },
+  folio: { pre: "vr. ", keys: ["1","2","3","4","5","6","7","8","9","a","0","b","–","⌫"] },
+  time:  { pre: "",     keys: ["1","2","3","4","5","6","7","8","9",":","0","⌫"] },
+};
+function VariantB({ store, currentId, setCurrentId, timer }) {
+  const src = store.sources.find((s) => s.id === currentId);
+  const pad = PAD_KEYS[TYPES[src.type].pad];
+  const last = store.lastNoteOf(currentId);
+  const strip = (l) => pad && l?.startsWith(pad.pre) ? l.slice(pad.pre.length) : (l ?? "");
+  const [step, setStep] = useState(1);
+  const [raw, setRaw] = useState(strip(last?.locator));
+  const [fresh, setFresh] = useState(true); // first key replaces the carried-over value
+  const [tab, setTab] = useState("ex");
+  const [ex, setEx] = useState("");
+  const [co, setCo] = useState("");
+  const [sheet, setSheet] = useState(false);
+  const [toast, showToast] = useToast();
+  const taRef = useRef();
+  useEffect(() => { setRaw(strip(store.lastNoteOf(currentId)?.locator)); setFresh(true); setStep(1); }, [currentId]);
+  useEffect(() => { if (step === 2) taRef.current?.focus(); }, [step, tab]);
+  const locator = raw ? (pad ? pad.pre + raw : raw) : "";
+  const press = (k) => {
+    timer.start();
+    if (k === "⌫") { setRaw(fresh ? "" : raw.slice(0, -1)); setFresh(false); return; }
+    setRaw((fresh ? "" : raw) + k); setFresh(false);
+  };
+  const can = ex.trim() || co.trim();
+  const save = () => {
+    if (!can) return;
+    store.addNote({ sourceId: currentId, locator, excerpt: ex.trim(), comment: co.trim() });
+    timer.stop();
+    showToast(`Kaydedildi · ${locator || "konumsuz"}`);
+    setEx(""); setCo(""); setTab("ex"); setStep(1); setFresh(true);
+  };
+
+  const header = html`<div className="appbar">
+    <button className="srcline" onClick=${() => setSheet(true)}>
+      <span className="typechip">${TYPES[src.type].ad} ▾</span><span className="t">${src.title}</span>
+    </button><${QueueBadge} store=${store} />
+  </div>`;
+
+  const step1 = html`<${React.Fragment}>
+    ${header}
+    <div className="locdisplay">
+      <span className="lbl">Konum</span>
+      ${pad
+        ? html`<div className=${"big" + (raw ? "" : " empty")} style=${{ opacity: fresh && raw ? .55 : 1 }}>${raw ? html`<span className="pre">${pad.pre}</span>${raw}` : "Konumsuz · eserin bütünü"}</div>`
+        : html`<input id="b-free" className="freeloc" autoFocus placeholder=${TYPES[src.type].ph} value=${raw} onFocus=${(e) => e.target.select()} onChange=${(e) => { timer.start(); setRaw(e.target.value); }} />`}
+      <span className="hint">${fresh && raw ? "Aynı yerdeysen İleri; değilse yaz" : (last ? `son: ${last.locator || "konumsuz"}` : "")}</span>
+    </div>
+    ${pad && html`<div className="pad">
+      ${pad.keys.map((k) => html`<button key=${k} className=${k === "⌫" ? "fn" : ""} onClick=${() => press(k)} aria-label=${k === "⌫" ? "Sil" : k}>${k}</button>`)}
+    </div>`}
+    <div className="steps">
+      <button className="secondary" onClick=${() => { setRaw(""); setFresh(false); }}>Konumsuz</button>
+      <button className="primary" onClick=${() => { timer.start(); setStep(2); }}>İleri →</button>
+    </div>
+  <//>`;
+
+  const step2 = html`<${React.Fragment}>
+    <div className="appbar">
+      <button className="loctag" onClick=${() => setStep(1)}>‹ ${locator || "konumsuz"}</button>
+      <span className="hint" style=${{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>${src.title}</span>
+      <${QueueBadge} store=${store} />
+    </div>
+    <div className="seg" role="group">
+      <button aria-pressed=${tab === "ex"} onClick=${() => setTab("ex")}>Alıntı ${ex.trim() && html`<span className="filled"></span>`}</button>
+      <button aria-pressed=${tab === "co"} onClick=${() => setTab("co")}>Yorum ${co.trim() && html`<span className="filled"></span>`}</button>
+    </div>
+    ${tab === "ex"
+      ? html`<textarea id="b-ex" key="ex" ref=${taRef} className="ex" placeholder="Yazarın sözleri, olduğu gibi" value=${ex} onChange=${(e) => setEx(e.target.value)}></textarea>`
+      : html`<textarea id="b-co" key="co" ref=${taRef} className="co" placeholder="Senin düşüncen" value=${co} onChange=${(e) => setCo(e.target.value)}></textarea>`}
+    <div className="steps">
+      ${tab === "ex" && html`<button className="secondary" onClick=${() => setTab("co")}>+ Yorum</button>`}
+      <button className="primary" disabled=${!can} onClick=${save}>Kaydet</button>
+    </div>
+  <//>`;
+
+  return html`<div className="vb" style=${{ display: "contents" }}>
+    ${step === 1 ? step1 : step2}
+    ${toast}
+    ${sheet && html`<${SourceSheet} store=${store} currentId=${currentId} onClose=${() => setSheet(false)} onPick=${(id) => { setCurrentId(id); setSheet(false); }} />`}
+  </div>`;
+}
+
+// ---------- Variant C: note stream with one composer ----------
+function VariantC({ store, currentId, setCurrentId, timer, tweaks }) {
+  const src = store.sources.find((s) => s.id === currentId);
+  const notes = store.notes.filter((n) => n.sourceId === currentId).sort((a, b) => a.at - b.at);
+  const last = notes[notes.length - 1];
+  const [loc, setLoc] = useState(last?.locator ?? "");
+  const [editLoc, setEditLoc] = useState(false);
+  const [mode, setMode] = useState("ex");
+  const [text, setText] = useState("");
+  const [noMerge, setNoMerge] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const [freshId, setFreshId] = useState(null);
+  const [toast, showToast] = useToast();
+  const taRef = useRef(), feedRef = useRef();
+  useEffect(() => { setLoc(store.lastNoteOf(currentId)?.locator ?? ""); setFreshId(null); }, [currentId]);
+  useEffect(() => { feedRef.current && (feedRef.current.scrollTop = feedRef.current.scrollHeight); }, [notes.length, currentId]);
+  useEffect(() => { taRef.current?.focus(); }, [mode, currentId]);
+
+  // A comment typed right after an excerpt at the same locator joins that note.
+  const mergeTarget = tweaks.cMerge && mode === "co" && !noMerge && last && last.id === freshId && last.excerpt && !last.comment && last.locator === loc ? last : null;
+  const send = () => {
+    const tags = (text.match(/#[\p{L}\p{N}_-]+/gu) || []).map((t) => t.slice(1));
+    const body = text.replace(/#[\p{L}\p{N}_-]+/gu, "").replace(/\s{2,}/g, " ").trim();
+    if (!body) return;
+    if (mergeTarget) {
+      store.patchNote(mergeTarget.id, { comment: body, tags: [...mergeTarget.tags, ...tags] });
+      showToast("Yorum alıntıya eklendi");
+    } else {
+      const n = store.addNote({ sourceId: currentId, locator: loc.trim(), [mode === "ex" ? "excerpt" : "comment"]: body, tags });
+      setFreshId(n.id);
+      showToast(`Kaydedildi · ${loc.trim() || "konumsuz"}`);
+    }
+    timer.stop();
+    setText(""); setNoMerge(false);
+    if (mode === "ex" && tweaks.cAutoComment) setMode("co");
+  };
+
+  let prevLoc = null;
+  return html`<div className="vc" style=${{ display: "contents" }}>
+    <div className="appbar">
+      <button className="srcbtn" onClick=${() => setSheet(true)}>
+        <span className="typechip">${TYPES[src.type].ad} ▾</span><span className="t">${src.title}</span>
+      </button>
+      <${QueueBadge} store=${store} />
+    </div>
+    <div className="scroll" ref=${feedRef}><div className="feed">
+      ${notes.length === 0 && html`<div className="empty">Bu kaynaktan henüz not yok. Aşağıya yazmaya başla.</div>`}
+      ${notes.map((n) => {
+        const head = n.locator !== prevLoc ? html`<div className="lochead" key=${n.id + "h"}>${n.locator || "konumsuz"}</div>` : null;
+        prevLoc = n.locator;
+        return html`<${React.Fragment} key=${n.id}>${head}
+          <div className=${"bubble" + (n.id === freshId ? " fresh" : "")}>
+            ${n.excerpt && html`<div className="ex">${n.excerpt}</div>`}
+            ${n.comment && html`<div className="co">${n.comment}</div>`}
+            <div className="meta">
+              ${n.tags.map((t) => html`<span className="tag" key=${t}>#${t}</span>`)}
+              <span style=${{ marginLeft: "auto" }}>${ago(n.at)}</span>
+              <span className=${"sync " + n.sync}>${SYNC_LABEL[n.sync]}</span>
+            </div>
+          </div><//>`;
+      })}
+    </div></div>
+    <div className="composer">
+      ${mergeTarget && html`<div className="merge">Yorum, ${loc || "konumsuz"} alıntısına eklenecek <button className="ghost" onClick=${() => setNoMerge(true)}>Ayrı not yap</button></div>`}
+      <div className="crow">
+        ${editLoc
+          ? html`<input id="c-loc" className="lchip-in" autoFocus value=${loc} placeholder=${TYPES[src.type].ph} onFocus=${(e) => e.target.select()}
+              onChange=${(e) => { timer.start(); setLoc(e.target.value); }} onBlur=${() => setEditLoc(false)}
+              onKeyDown=${(e) => { if (e.key === "Enter") { setEditLoc(false); taRef.current?.focus(); } }} />`
+          : html`<button className=${"lchip" + (loc ? "" : " none")} onClick=${() => setEditLoc(true)}>${loc || "konum ekle"} ✎</button>`}
+        <div className="mode" role="group">
+          <button aria-pressed=${mode === "ex"} onClick=${() => setMode("ex")}>Alıntı</button>
+          <button aria-pressed=${mode === "co"} onClick=${() => setMode("co")}>Yorum</button>
+        </div>
+      </div>
+      <div className="inrow">
+        <textarea id="c-text" ref=${taRef} rows="2" className=${mode === "ex" ? "ex" : ""} value=${text}
+          placeholder=${mode === "ex" ? "Alıntı… (#etiket eklenebilir)" : "Yorum… (#etiket eklenebilir)"}
+          onChange=${(e) => { timer.start(); setText(e.target.value); }}
+          onKeyDown=${(e) => { if (e.key === "Enter" && !e.shiftKey && tweaks.cEnterSends) { e.preventDefault(); send(); } }}></textarea>
+        <button className="send" aria-label="Kaydet" disabled=${!text.trim()} onClick=${send}>↑</button>
+      </div>
+    </div>
+    ${toast}
+    ${sheet && html`<${SourceSheet} store=${store} currentId=${currentId} onClose=${() => setSheet(false)} onPick=${(id) => { setCurrentId(id); setSheet(false); }} />`}
+  </div>`;
+}
+
+// ---------- prototype panel ----------
+function Panel({ store, variant, currentId, timer, tweaks, setTweaks }) {
+  const def = store.currentDefault();
+  const cur = store.sources.find((s) => s.id === currentId);
+  const recent = [...store.notes].sort((a, b) => b.at - a.at).slice(0, 6);
+  const set = (k, v) => setTweaks({ ...tweaks, [k]: v });
+  const opt = (k, choices) => html`<div className="radio">${choices.map(([v, l]) => html`<button key=${String(v)} aria-pressed=${tweaks[k] === v} onClick=${() => set(k, v)}>${l}</button>`)}</div>`;
+  const secs = timer.last != null ? (timer.last / 1000).toFixed(1).replace(".", ",") : null;
+  return html`<aside className="panel">
+    <section className="card">
+      <p className="q">Okurken on saniyede not girmek nasıl görünmeli?</p>
+      <p className="desc">Üç varyantı aynı örnek kütüphaneyle dene. Hangisi elini kitaptan en az ayırıyor, hangi alan sırası doğal geliyor? Örnek kaynak ve notlar kurgusal.</p>
+    </section>
+    <section>
+      <h2>Prototip kontrolleri</h2>
+      <div className="card">
+        <div className="toggle"><span>İnternet bağlantısı</span>
+          <button className="switch" role="switch" aria-checked=${store.online} aria-label="İnternet bağlantısı" onClick=${() => store.setOnline(!store.online)}></button></div>
+        ${variant === "A" && html`<div className="toggle"><span>Alan sırası</span>${opt("aOrder", [["loc-first", "Konum → Alıntı"], ["ex-first", "Alıntı → Konum"]])}</div>`}
+        ${variant === "C" && html`
+          <div className="toggle"><span>Alıntıdan sonra Yorum'a geç</span><button className="switch" role="switch" aria-checked=${tweaks.cAutoComment} aria-label="Alıntıdan sonra Yorum moduna geç" onClick=${() => set("cAutoComment", !tweaks.cAutoComment)}></button></div>
+          <div className="toggle"><span>Yorumu son alıntıya ekle</span><button className="switch" role="switch" aria-checked=${tweaks.cMerge} aria-label="Yorumu son alıntıya ekle" onClick=${() => set("cMerge", !tweaks.cMerge)}></button></div>
+          <div className="toggle"><span>Enter kaydeder</span><button className="switch" role="switch" aria-checked=${tweaks.cEnterSends} aria-label="Enter kaydeder" onClick=${() => set("cEnterSends", !tweaks.cEnterSends)}></button></div>`}
+      </div>
+    </section>
+    <section>
+      <h2>Son kayıt süresi</h2>
+      <div className="card">
+        <span className=${"timer " + (secs == null ? "" : timer.last <= 10000 ? "good" : "slow")}>${secs == null ? "—" : secs + " sn"}</span>
+        <span className="hint">İlk tuştan Kaydet'e kadar. Hedef 10 sn.</span>
+      </div>
+    </section>
+    <section>
+      <h2>Durum</h2>
+      <div className="card">
+        <dl className="kv">
+          <dt>Varsayılan kaynak</dt><dd>${def?.title} <span className="hint">(okunuyor, en son not)</span></dd>
+          <dt>Seçili kaynak</dt><dd>${cur?.title}</dd>
+          <dt>Bağlantı</dt><dd>${store.online ? "çevrimiçi" : "çevrimdışı"}</dd>
+          <dt>Gönderim kuyruğu</dt><dd>${store.notes.filter((n) => n.sync === "queued").length} not</dd>
+        </dl>
+      </div>
+    </section>
+    <section>
+      <h2>Son notlar</h2>
+      <div className="card"><ul className="notes">
+        ${recent.map((n) => {
+          const s = store.sources.find((x) => x.id === n.sourceId);
+          return html`<li key=${n.id}>
+            <div className="h"><span>${s?.title.slice(0, 30)}${s && s.title.length > 30 ? "…" : ""} · <span className="mono">${n.locator || "konumsuz"}</span></span><span className=${"sync " + n.sync}>${SYNC_LABEL[n.sync]}</span></div>
+            ${n.excerpt && html`<div className="ex">“${n.excerpt}”</div>`}
+            ${n.comment && html`<div>${n.comment}</div>`}
+            <div className="hint">${n.tags.length ? n.tags.map((t) => "#" + t).join(" ") : "etiketsiz"}</div>
+          </li>`;
+        })}
+      </ul></div>
+    </section>
+  </aside>`;
+}
+
+function Switcher({ variant, setVariant }) {
+  const i = VARIANTS.findIndex((v) => v.key === variant);
+  const go = (d) => setVariant(VARIANTS[(i + d + VARIANTS.length) % VARIANTS.length].key);
+  useEffect(() => {
+    const onKey = (e) => {
+      const el = document.activeElement;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
+      if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "ArrowRight") go(1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  return html`<nav className="switcher" aria-label="Varyant">
+    <button onClick=${() => go(-1)} aria-label="Önceki varyant">‹</button>
+    <span className="lab"><b>${variant}</b><span className="full"> · ${VARIANTS[i].name}</span></span>
+    <button onClick=${() => go(1)} aria-label="Sonraki varyant">›</button>
+  </nav>`;
+}
+
+function initialVariant() {
+  const q = new URLSearchParams(location.search).get("variant");
+  const h = location.hash.replace("#", "");
+  const v = (q || h || "A").toUpperCase();
+  return VARIANTS.some((x) => x.key === v) ? v : "A";
+}
+
+function App() {
+  const store = useStore();
+  const [variant, setVariantState] = useState(initialVariant);
+  const [currentId, setCurrentId] = useState(() => store.currentDefault().id);
+  const [tweaks, setTweaks] = useState({ aOrder: "loc-first", cAutoComment: true, cMerge: true, cEnterSends: false });
+  const t0 = useRef(null);
+  const [lastDuration, setLastDuration] = useState(null);
+  const timer = {
+    start: () => { if (t0.current == null) t0.current = Date.now(); },
+    stop: () => { if (t0.current != null) setLastDuration(Date.now() - t0.current); t0.current = null; },
+    last: lastDuration,
+  };
+  const setVariant = (v) => {
+    setVariantState(v);
+    t0.current = null;
+    try { const u = new URL(location.href); u.searchParams.set("variant", v); u.hash = v; history.replaceState(null, "", u); } catch (e) {}
+  };
+  const V = { A: VariantA, B: VariantB, C: VariantC }[variant];
+  return html`<div className="stage">
+    <main className="phone" aria-label="Capture ekranı">
+      <${V} key=${variant} store=${store} currentId=${currentId} setCurrentId=${setCurrentId} timer=${timer} tweaks=${tweaks} />
+    </main>
+    <${Panel} store=${store} variant=${variant} currentId=${currentId} timer=${timer} tweaks=${tweaks} setTweaks=${setTweaks} />
+    <${Switcher} variant=${variant} setVariant=${setVariant} />
+  </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+</script>
