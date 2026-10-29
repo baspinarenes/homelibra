@@ -46,6 +46,10 @@ _Avoid_: description, notes, remarks, summary
 Whether a source is still being read or finished. Finished means the scholar is done with it for now, whether or not they read it through; there is no separate state for a source set aside. A new source starts as being read, and a finished one can be read again. Nothing more: no dates, ratings or progress.
 _Avoid_: progress, shelf, state, abandoned
 
+**Cover** (Kapak):
+A picture that stands for a source wherever it is listed, so the scholar knows it at a glance: usually a book's front cover, otherwise any image the scholar picks. A source has at most one; it only helps recognise the source and is never part of what the scholar records about it.
+_Avoid_: thumbnail, photo, image, artwork
+
 ### Source types
 
 **Book** (Kitap):
