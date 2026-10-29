@@ -7,8 +7,24 @@ Homelibra is a research-notes library for historians and other humanities schola
 ### Library
 
 **Library** (Kütüphane):
-Everything one user has recorded: their sources, notes, tags and collections. Private to that user.
+Everything one user has recorded: their sources, notes, tags and collections. Owned by exactly one account and private to it; it comes into being with the account and goes away with it.
 _Avoid_: workspace, account, archive, vault
+
+**Account** (Hesap):
+The identity a scholar signs in with: an email address and nothing more. An account owns exactly one library.
+_Avoid_: user, profile, member, login
+
+**Invitation** (Davet):
+Permission for one email address to open an account while Homelibra is in closed beta. Only the operator grants invitations; scholars cannot invite others. An invitation goes away with the account it opened.
+_Avoid_: invite code, referral, waitlist
+
+**Operator** (İşletici):
+The person who runs Homelibra: grants invitations, answers support requests and is answerable for the data kept in it. Looks inside a library only when its owner asks for help.
+_Avoid_: admin, owner, team
+
+**Library export** (Dışa aktarma):
+A complete copy of one library that its owner can download at any time, at no cost, in a form both machines and people can read.
+_Avoid_: backup, dump, download, archive
 
 **Source** (Kaynak):
 A work, or a body of records, that the scholar works through and takes notes on: a book, an article, a thesis, an archive fond or a single document, a manuscript, a newspaper run, a recording or a web page. What counts as one source is the scholar's choice; every source has exactly one source type.
@@ -87,17 +103,25 @@ _Avoid_: page, position, reference, citation
 ### Finding things again
 
 **Tag** (Etiket):
-A flat, free-form label attached to notes and to sources. Tags have no hierarchy and no type.
-_Avoid_: topic, keyword, category, subject, label
+A flat, free-form label attached to notes and to sources, with no hierarchy, no type and no synonyms. Two names are the same tag when they differ only in letter case (by Turkish rules, so I and ı pair, İ and i pair) or in spacing; circumflexes, dotted versus dotless i and punctuation still make different tags. A tag on a source is not a tag on that source's notes.
+_Avoid_: topic, keyword, category, subject, label, hashtag
+
+**Tag merge** (Etiket birleştirme):
+Folding one tag into another so that everything carrying either carries the survivor and every collection using either uses the survivor; the folded name is gone. It is how two names for the same thing become one, since tags have no synonyms.
+_Avoid_: alias, synonym, link
 
 **Collection** (Dosya):
-A saved, named view that gathers every note carrying any of a chosen set of tags, typically for a piece of writing in progress. Notes are not moved into a collection; it is a lens over the library.
-_Avoid_: project, folder, notebook, topic, saved search
+A saved, named view of every note carrying any of a chosen set of tags, typically for a piece of writing in progress; when it includes tagged sources (the default), it also takes every note of a source carrying one of those tags. Membership comes from tags alone: notes are never moved, pinned into or hidden from a collection.
+_Avoid_: project, folder, notebook, topic, saved search, filter
+
+**Search** (Arama):
+Finding notes and sources by the words in their text, as opposed to by their tags. A search is never saved; a saved view over the library is a collection.
+_Avoid_: query, filter, lookup, find
 
 ### Workflow
 
 **Capture** (Yakalama):
-Recording a note quickly while reading or watching, usually on the phone, possibly without tags.
+Recording a note quickly while reading or watching, on the phone or at the desk, possibly without tags.
 _Avoid_: entry, input, logging
 
 **Organizing pass** (Düzenleme turu):
