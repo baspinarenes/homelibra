@@ -114,6 +114,10 @@ _Avoid_: alias, synonym, link
 A saved, named view of every note carrying any of a chosen set of tags, typically for a piece of writing in progress; when it includes tagged sources (the default), it also takes every note of a source carrying one of those tags. Membership comes from tags alone: notes are never moved, pinned into or hidden from a collection.
 _Avoid_: project, folder, notebook, topic, saved search, filter
 
+**Search** (Arama):
+Finding notes and sources by the words in their text, as opposed to by their tags. A search is never saved; a saved view over the library is a collection.
+_Avoid_: query, filter, lookup, find
+
 ### Workflow
 
 **Capture** (Yakalama):
