@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Homelibra Collection Prototipi</title>
+<!--
+  PROTOTYPE — atılacak kod. Ticket: baspinarenes/homelibra#12 "Prototype: Collection görünümü ve Markdown kopya".
+  Soru: "İttihat ve Terakki" dosyası açıldığında ekran nasıl görünür ve Markdown kopyası nasıl çıkar?
+  Üç ekran varyantı, alttaki çubuktan (veya ← → tuşlarıyla) değişir; ?variant=A|B|C ile açılır.
+    A  Okuma sayfası     Tek sütun, belge gibi; Source başlıkları, Locator kenar boşluğunda. Kopya önizleme penceresinde.
+    B  İki panel         Solda dosyalar + Source içindekiler + tanım; sağda kartlar, Source başına kopya.
+    C  Sıkı liste        (1. turda: Yan yana kopya) Solda sıkı satırlar, sağda canlı Markdown; satırın üstüne gelince karşılığı vurgulanır.
+                         Enes'in seçtiği varyant. 2. tur: tek biçim (1 · Kaynak başlıklı), seçenek yok, kopya yalnızca dosyanın tamamı.
+                         3. tur: Markdown paneli/sekmesi kalktı; tek sütun liste, "Markdown olarak kopyala" üst çubukta, önizlemesiz.
+  Markdown biçimi ekrandan bağımsız seçilir (?format=1|2|3): 1 Kaynak başlıklı, 2 Not başına künye, 3 Madde listesi.
+  Kurallar: Collection = etiketlerden herhangi biri (OR) + "etiketli kaynakların tüm notları" (varsayılan açık, ADR-0003);
+  Source grupları Tarih sırasıyla (Tarih'siz sonda, alfabetik); Source içinde Locator sırası (boş başta, sayısız sonda);
+  geçici arama yalnızca Excerpt/Comment'te, #16'nın basitleştirilmiş hali (katlama + birebir/3+ harf önek, -kelime hariç; kök yok).
+  Kopya yalnızca görünen notları alır. Kalıcılık yok: her şey bellekte. Çalıştırma: dosyayı tarayıcıda aç.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root {
+  --page: #F4F6F7;
+  --surface: #FFFFFF;
+  --line: #D3DADF;
+  --fg: #17212B;
+  --muted: #5B6873;
+  --accent: #1E5A6D;
+  --accent-fg: #FFFFFF;
+  --accent-soft: #E2EDF0;
+  --excerpt: #F3F1EC;
+  --comment: #2F4A5A;
+  --warn: #8F5200;
+  --warn-soft: #FCEFD9;
+  --mark: #FBE7A1;
+  --bar: #17212B;
+  --bar-fg: #F4F7F8;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-quote: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0C1115; --surface: #161F25; --line: #2B3740; --fg: #E3E9ED; --muted: #93A0AA;
+  --accent: #74B4C7; --accent-fg: #0C1115; --accent-soft: #1D3038; --excerpt: #20262A; --comment: #B9CCD6;
+  --warn: #F0B45A; --warn-soft: #3A2B14; --mark: #5A4A12; --bar: #E3E9ED; --bar-fg: #0C1115; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --page: #0C1115; --surface: #161F25; --line: #2B3740; --fg: #E3E9ED; --muted: #93A0AA;
+  --accent: #74B4C7; --accent-fg: #0C1115; --accent-soft: #1D3038; --excerpt: #20262A; --comment: #B9CCD6;
+  --warn: #F0B45A; --warn-soft: #3A2B14; --mark: #5A4A12; --bar: #E3E9ED; --bar-fg: #0C1115; color-scheme: dark;
+}
+html, body { margin: 0; }
+body { background: var(--page); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.45; }
+* { box-sizing: border-box; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px; }
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--muted); }
+.lbl { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.typechip { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.primary { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 10px; padding: 9px 16px; font-weight: 600; white-space: nowrap; }
+.secondary { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-weight: 500; white-space: nowrap; }
+.ghost { background: none; border: 0; color: var(--accent); font-weight: 500; padding: 4px 6px; border-radius: 6px; }
+.ghost:hover { background: var(--accent-soft); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 80px; background: var(--fg); color: var(--page);
+  padding: 9px 16px; border-radius: 99px; font-size: 13.5px; z-index: 80; pointer-events: none; }
+
+/* ---------- shared controls ---------- */
+.tagchip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: 99px; padding: 3px 4px 3px 11px; font-size: 13.5px; }
+.tagchip button { border: 0; background: none; color: var(--muted); width: 22px; height: 22px; border-radius: 50%; line-height: 1; }
+.tagchip button:hover { background: var(--accent-soft); color: var(--fg); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.addtag { position: relative; }
+.addtag input { border: 1px dashed var(--line); background: transparent; border-radius: 99px; padding: 4px 11px; width: 150px; font-size: 13.5px; }
+.addtag ul { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; list-style: none; margin: 0; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.addtag li button { width: 100%; text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 6px; display: flex; justify-content: space-between; gap: 10px; }
+.addtag li button:hover { background: var(--accent-soft); }
+.toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; user-select: none; }
+.toggle input { appearance: none; width: 32px; height: 18px; border-radius: 99px; background: var(--line); position: relative; margin: 0; flex: none; cursor: pointer; }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); transition: left .15s; }
+.toggle input:checked { background: var(--accent); }
+.toggle input:checked::after { left: 16px; }
+.search { position: relative; flex: 1; min-width: 160px; }
+.search input { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 32px 8px 12px; }
+.search button { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); width: 26px; height: 26px; }
+.reason { font-size: 12px; color: var(--muted); }
+.reason .src { color: var(--warn); }
+.empty { padding: 40px 16px; text-align: center; color: var(--muted); }
+select.coll { border: 0; background: none; font-weight: 600; font-size: 22px; padding: 0; max-width: 100%; }
+
+/* ---------- copy dialog ---------- */
+.backdrop { position: fixed; inset: 0; background: rgba(10,18,24,.42); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dialog { background: var(--page); border-radius: 16px; width: min(760px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; overflow: hidden; }
+.dialog header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+.dialog h2 { margin: 0; font-size: 16px; }
+.mdopts { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 12px 18px; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.seg button { border: 0; background: none; border-radius: 7px; padding: 5px 10px; font-size: 13.5px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+pre.md { margin: 0; padding: 14px 18px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+  background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-y: auto; flex: 1; min-height: 0; }
+pre.md .hot { background: var(--accent-soft); outline: 1px solid var(--accent); border-radius: 3px; }
+.dialog footer { padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+
+/* ---------- variant A: reading page ---------- */
+.va { max-width: 860px; margin: 0 auto; padding: 0 16px 120px; }
+.va .top { position: sticky; top: 0; z-index: 20; background: var(--page); padding: 18px 0 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.va .titlerow { display: flex; align-items: center; gap: 12px; }
+.va .titlerow .coll { flex: 1; min-width: 0; }
+.va .filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.va .count { font-size: 13px; color: var(--muted); }
+.va section { padding-top: 28px; }
+.va .srch { font-family: var(--font-quote); font-size: 21px; font-weight: 600; margin: 0; line-height: 1.3; }
+.va .srcmeta { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin: 4px 0 6px; font-size: 13.5px; color: var(--muted); }
+.va .note { display: grid; grid-template-columns: 120px 1fr; gap: 0 20px; padding: 12px 0; border-top: 1px solid var(--line); }
+.va .note:first-of-type { border-top: 0; }
+.va .loc { font-family: var(--font-mono); font-size: 13px; color: var(--muted); text-align: right; padding-top: 3px; overflow-wrap: anywhere; }
+.va .loc.whole { font-family: var(--font-ui); font-style: italic; }
+.va .ex { font-family: var(--font-quote); font-size: 18px; line-height: 1.5; margin: 0 0 6px; border-left: 3px solid var(--line); padding-left: 12px; }
+.va .co { color: var(--comment); margin: 0 0 6px; }
+.va .co::before { content: "Yorum · "; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+@media (max-width: 640px) {
+  .va .note { grid-template-columns: 1fr; }
+  .va .loc { text-align: left; padding: 0 0 4px; }
+  select.coll { font-size: 19px; }
+}
+
+/* ---------- variant B: two panes ---------- */
+.vb { display: grid; grid-template-columns: 290px 1fr; min-height: 100vh; }
+.vb aside { border-right: 1px solid var(--line); background: var(--surface); padding: 18px 14px 100px; display: flex; flex-direction: column; gap: 22px;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.vb aside h3 { margin: 0 0 8px; }
+.vb .colllist { list-style: none; margin: 0; padding: 0; }
+.vb .colllist button { width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 8px; display: flex; justify-content: space-between; gap: 8px; }
+.vb .colllist button[aria-current="true"] { background: var(--accent-soft); font-weight: 600; }
+.vb .toc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.vb .toc a { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 6px 10px; border-radius: 8px; color: inherit; text-decoration: none; font-size: 13.5px; }
+.vb .toc a:hover { background: var(--accent-soft); }
+.vb .toc .y { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.vb main { padding: 18px 24px 120px; min-width: 0; }
+.vb .head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.vb .head h1 { margin: 0; font-size: 22px; flex: 1; min-width: 200px; }
+.vb .group { margin-top: 26px; scroll-margin-top: 12px; }
+.vb .ghead { display: flex; gap: 12px; align-items: flex-start; padding-bottom: 8px; border-bottom: 2px solid var(--fg); }
+.vb .ghead .t { flex: 1; min-width: 0; }
+.vb .ghead .tt { font-weight: 600; font-size: 16px; }
+.vb .ghead .m { font-size: 13px; color: var(--muted); }
+.vb .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 10px; }
+.vb .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; display: flex; flex-direction: column; gap: 7px; }
+.vb .card .lc { font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); font-weight: 500; }
+.vb .card .ex { font-family: var(--font-quote); font-size: 16px; background: var(--excerpt); border-radius: 8px; padding: 8px 10px; margin: 0; }
+.vb .card .co { margin: 0; padding-left: 2px; }
+.vb .card .co b { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin-right: 6px; }
+.vb .menu { display: none; }
+@media (max-width: 820px) {
+  .vb { grid-template-columns: 1fr; }
+  .vb aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding-bottom: 18px; display: none; }
+  .vb aside.open { display: flex; }
+  .vb .menu { display: inline-block; }
+  .vb main { padding: 14px 16px 120px; }
+}
+
+/* ---------- variant C: compact rows ---------- */
+.vc { max-width: 980px; margin: 0 auto; padding-bottom: 100px; }
+.vc .bar { position: sticky; top: 0; z-index: 5; background: var(--page); padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); }
+.vc .bar .r { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.vc .count { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.vc .gh { position: sticky; top: var(--barh, 0px); background: var(--page); padding: 12px 16px 6px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: baseline; z-index: 2; }
+.vc .gh .tt { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc .gh .y { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.vc .row { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.vc .row:hover { background: var(--accent-soft); }
+.vc .row .lc { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.vc .row .ex { font-family: var(--font-quote); font-size: 15px; }
+.vc .row .co { color: var(--comment); font-size: 13.5px; }
+.vc .row .co::before { content: "↳ "; color: var(--muted); }
+@media (max-width: 640px) { .vc .row { grid-template-columns: 72px 1fr; } }
+
+/* ---------- prototype chrome ---------- */
+.switcher { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 70;
+  display: flex; align-items: center; gap: 4px; background: var(--bar); color: var(--bar-fg); border-radius: 99px; padding: 5px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28); font-size: 13.5px; }
+.switcher button { background: none; border: 0; color: inherit; min-width: 34px; height: 34px; border-radius: 99px; font-size: 17px; }
+.switcher button.txt { font-size: 12.5px; padding: 0 10px; }
+.switcher button:hover { background: rgba(127,127,127,.25); }
+.switcher .lab { padding: 0 8px; white-space: nowrap; }
+.switcher b { font-family: var(--font-mono); }
+.statepanel { position: fixed; right: 16px; bottom: 72px; z-index: 70; width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow: auto;
+  background: var(--bar); color: var(--bar-fg); border-radius: 12px; padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; white-space: pre-wrap; }
+@media (max-width: 640px) { .switcher .full { display: none; } }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+const { useState, useEffect, useMemo, useRef } = React;
+const html = htm.bind(React.createElement);
+
+const TYPES = { kitap: "Kitap", makale: "Makale", tez: "Tez", arsiv: "Arşiv", yazma: "Yazma", sureli: "Süreli yayın", kayit: "Kayıt", web: "Web sayfası", diger: "Diğer" };
+
+// Example data, fictional apart from the archive fond codes and the newspaper name.
+// date = as entered (ADR-0002); sort = approximate Milâdî value, used only for ordering; firstEd = İlk baskı tarihi.
+const SOURCES = [
+  { id: "s1", type: "kitap",  author: "Mehmed Ali", title: "Cemiyet-i İttihadiye Tarihçesi", date: "1327 r.", sort: 1911.2, tags: [] },
+  { id: "s2", type: "sureli", author: "", title: "Tanin", date: "Temmuz 1324 r.", sort: 1908.55, tags: [] },
+  { id: "s3", type: "arsiv",  author: "BOA", title: "DH.MKT", date: "", sort: null, tags: ["İttihat ve Terakki"] },
+  { id: "s4", type: "arsiv",  author: "BOA", title: "Y.PRK.ASK", date: "29 Z 1325", sort: 1908.08, tags: [] },
+  { id: "s5", type: "kitap",  author: "Selim Uğurlu", title: "Ahmet Rıza'dan Talat Paşa'ya: Cemiyetin Taşra Teşkilatı", date: "2014", firstEd: "2009", sort: 2014, tags: [] },
+  { id: "s6", type: "makale", author: "Zeynep Arıkan", title: "Selanik'te Cemiyet Mahfilleri, 1906–1908", date: "2019", sort: 2019, tags: ["Selanik"] },
+  { id: "s7", type: "tez",    author: "Kemal Ersoy", title: "Cemiyet ve Ordu: Üçüncü Ordu'da Teşkilatlanma, 1906–1912", date: "", sort: null, tags: [] },
+  { id: "s8", type: "kayit",  author: "Seminer, 4. hafta", title: "1908 Devrimi ve taşra (ders kaydı)", date: "2023", sort: 2023, tags: [] },
+  { id: "s9", type: "kitap",  author: "Ayşe Demirtaş", title: "Hamidiye Basını ve Sansür", date: "2016", sort: 2016, tags: ["basın"] },
+];
+const NOTES = [
+  { id: "n1",  src: "s1", loc: "s. 12", ex: "Cemiyetin ilk nizamnamesi Mekteb-i Tıbbiye'de, dört talebe arasında kaleme alındı.", co: "", tags: ["İttihat ve Terakki"] },
+  { id: "n2",  src: "s1", loc: "s. 47–49", ex: "", co: "Kuruluş tarihini 1305 diye veriyor; diğer anlatılarla karşılaştır.", tags: ["İttihat ve Terakki"] },
+  { id: "n3",  src: "s2", loc: "sayı 1, s. 1", ex: "Millet, hukukuna sahip çıkmasını bilmiştir.", co: "Başmakale; yeni rejimin dili.", tags: ["1908", "basın"] },
+  { id: "n4",  src: "s2", loc: "sayı 14, s. 2", ex: "", co: "Sansür kalktıktan sonra ilk ilan sayfaları.", tags: ["basın"] },
+  { id: "n5",  src: "s3", loc: "1234/56", ex: "…Selanik'te cem'iyyet-i hafiyye ile münasebeti tahakkuk eden zâbitân…", co: "Tarih Rumî 1324 olmalı.", tags: [] },
+  { id: "n6",  src: "s3", loc: "1240/12", ex: "", co: "Firari zabitlerin listesi; isimleri Ersoy'un teziyle karşılaştır.", tags: [] },
+  { id: "n7",  src: "s3", loc: "", ex: "", co: "Fon genelinde 1908 sonrası evrak, Dahiliye'nin cemiyetle ilişkisini gösteriyor.", tags: [] },
+  { id: "n8",  src: "s4", loc: "254/12", ex: "Manastır ve Selanik'te zâbitânın ekserisi cemiyete dahil olmuştur.", co: "", tags: ["Selanik"] },
+  { id: "n9",  src: "s5", loc: "", ex: "", co: "Genel değerlendirme: taşra şubelerini merkezden bağımsız ele alan nadir çalışmalardan.", tags: ["İttihat ve Terakki"] },
+  { id: "n10", src: "s5", loc: "s. 45", ex: "Şubelerin çoğu, merkezden talimat beklemeden kendi nizamnamelerini yazdı.", co: "", tags: ["İttihat ve Terakki"] },
+  { id: "n11", src: "s5", loc: "s. 112–114", ex: "Selanik şubesi, 1908'e gelindiğinde fiilen merkezin yerini almıştı.", co: "Bu iddia için dipnot 48'deki arşiv belgesine bak.", tags: ["Selanik", "1908"] },
+  { id: "n12", src: "s5", loc: "Önsöz", ex: "", co: "Yazarın kaynak eleştirisi bölümü kısa ama işe yarar.", tags: ["İttihat ve Terakki"] },
+  { id: "n13", src: "s5", loc: "s. 201", ex: "Enver Bey'in Resne'den dağa çıkışı, şubenin kararı değil, kendi kararıydı.", co: "", tags: ["Enver Paşa"] },
+  { id: "n14", src: "s6", loc: "s. 87", ex: "Mahfiller kahvehane ile loca arasında bir yerde duruyordu.", co: "", tags: [] },
+  { id: "n15", src: "s6", loc: "s. 91", ex: "", co: "Mason locası bağlantısı abartılmış olabilir.", tags: [] },
+  { id: "n16", src: "s7", loc: "s. 211", ex: "Üçüncü Ordu'daki genç zabitlerin cemiyete katılımı 1907 baharında hızlandı.", co: "Ersoy'un sayıları DH.MKT ile tutuyor mu?", tags: ["İttihat ve Terakki", "1908"] },
+  { id: "n17", src: "s8", loc: "00:14:32", ex: "", co: "Hoca \"devrim\" yerine \"meşrutiyetin ilanı\" demeyi tercih ediyor; terminoloji tartışması.", tags: ["1908"] },
+  { id: "n18", src: "s9", loc: "s. 33", ex: "Sansür, 1908'e kadar matbaaların sayısını değil, içeriğini daralttı.", co: "", tags: [] },
+].map((n, i) => ({ ...n, at: i }));
+const SEED_COLLECTIONS = [
+  { id: "c1", name: "İttihat ve Terakki", tags: ["İttihat ve Terakki", "1908", "Selanik"], includeSources: true },
+  { id: "c2", name: "Meşrutiyet basını", tags: ["basın"], includeSources: true },
+  { id: "c3", name: "Yeni dosya", tags: [], includeSources: true },
+];
+const SRC = Object.fromEntries(SOURCES.map((s) => [s.id, s]));
+const ALL_TAGS = [...new Set([...SOURCES, ...NOTES].flatMap((x) => x.tags))];
+
+const VARIANTS = [
+  { key: "A", name: "Okuma sayfası" },
+  { key: "B", name: "İki panel" },
+  { key: "C", name: "Sıkı liste" },
+];
+const FORMATS = [
+  { key: "1", name: "Kaynak başlıklı" },
+  { key: "2", name: "Not başına künye" },
+  { key: "3", name: "Madde listesi" },
+];
+
+// ---------- rules ----------
+// Tag identity (#3): Turkish case + spacing fold only.
+const tagKey = (t) => t.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr");
+const hasTag = (list, t) => list.some((x) => tagKey(x) === tagKey(t));
+// Search fold (ADR-0005, simplified): Turkish case, İ/I/ı→i, diacritics and transcription marks off, ayn/hemze/apostrophe deleted, final b/d→p/t.
+const fold = (s) => s.toLocaleLowerCase("tr").replace(/[ʿʾ'’]/g, "").replace(/ı/g, "i").normalize("NFD").replace(/[̀-ͯ]/g, "")
+  .replace(/b\b/g, "p").replace(/d\b/g, "t");
+const words = (s) => fold(s).split(/[^a-z0-9]+/).filter(Boolean);
+function parseQuery(q) {
+  const toks = q.trim().split(/\s+/).filter(Boolean);
+  return {
+    pos: toks.filter((t) => !t.startsWith("-")).flatMap(words),
+    neg: toks.filter((t) => t.startsWith("-") && t.length > 1).flatMap((t) => words(t.slice(1))),
+  };
+}
+const wordHit = (w, q) => w === q || (q.length >= 3 && w.startsWith(q));
+function matchesQuery(note, pq) {
+  if (!pq.pos.length && !pq.neg.length) return true;
+  const ws = words(note.ex + " " + note.co);
+  return pq.pos.every((q) => ws.some((w) => wordHit(w, q))) && !pq.neg.some((q) => ws.some((w) => wordHit(w, q)));
+}
+// Locator order (#2): empty first, then by the numbers in the text, number-less last in capture order.
+function locKey(n) {
+  if (!n.loc.trim()) return [0];
+  const nums = (n.loc.match(/\d+/g) || []).map(Number);
+  return nums.length ? [1, ...nums] : [2, n.at];
+}
+function cmpArr(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] ?? -1, y = b[i] ?? -1;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+// Source order (#3): by date, then author, then title; undated last, alphabetical.
+function cmpSrc(a, b) {
+  if (a.sort == null && b.sort != null) return 1;
+  if (b.sort == null && a.sort != null) return -1;
+  if (a.sort != null && a.sort !== b.sort) return a.sort - b.sort;
+  return (a.author + a.title).localeCompare(b.author + b.title, "tr");
+}
+
+// Collection membership (ADR-0003): own tag OR (option on AND source tag). Returns groups of visible notes.
+function compute(coll, query) {
+  const pq = parseQuery(query);
+  const members = [], bySourceOnly = [];
+  for (const n of NOTES) {
+    const s = SRC[n.src];
+    const own = n.tags.filter((t) => hasTag(coll.tags, t));
+    const via = s.tags.filter((t) => hasTag(coll.tags, t));
+    if (!own.length && via.length && !coll.includeSources) bySourceOnly.push(n);
+    if (!own.length && !(coll.includeSources && via.length)) continue;
+    members.push({ ...n, own, via: coll.includeSources ? via : [] });
+  }
+  const visible = members.filter((n) => matchesQuery(n, pq));
+  const groups = [];
+  for (const s of [...SOURCES].sort(cmpSrc)) {
+    const ns = visible.filter((n) => n.src === s.id).sort((a, b) => cmpArr(locKey(a), locKey(b)));
+    if (ns.length) groups.push({ source: s, notes: ns });
+  }
+  const viaOnly = members.filter((n) => !n.own.length).length;
+  return { groups, total: members.length, shown: visible.length, viaOnly, wouldAdd: bySourceOnly.length, pq };
+}
+
+// ---------- markdown ----------
+const srcDate = (s, o) => s.date ? s.date + (o.firstEd && s.firstEd ? ` [ilk baskı ${s.firstEd}]` : "") : "";
+const join = (...xs) => xs.filter(Boolean).join(", ");
+const quote = (t) => t.split("\n").map((l) => "> " + l).join("\n");
+// Each block carries the note id so the side-by-side variant can light up the lines that came from a row.
+function toMarkdown(coll, groups, fmt, o) {
+  const blocks = [];
+  const push = (text, id) => blocks.push({ text, id });
+  push(`# ${coll.name}\n`);
+  for (const { source: s, notes } of groups) {
+    const d = srcDate(s, o);
+    if (fmt === "1") {
+      push(`## ${join(s.author, s.title)}${d ? ` (${d})` : ""}\n`);
+      for (const n of notes) {
+        const parts = [];
+        if (n.loc) parts.push(`**${n.loc}**`);
+        if (n.ex) parts.push(quote(n.ex));
+        if (n.co && o.comments) parts.push(n.co);
+        if (n.ex || (n.co && o.comments)) push(parts.join("\n\n") + "\n", n.id);
+      }
+    } else if (fmt === "2") {
+      for (const n of notes) {
+        const cite = join(s.author, s.title + (d ? ` (${d})` : ""), n.loc);
+        if (n.ex) push(quote(n.ex) + `\n>\n> — ${cite}` + (n.co && o.comments ? `\n\n${n.co}` : "") + "\n", n.id);
+        else if (n.co && o.comments) push(`${n.co} (${cite})\n`, n.id);
+      }
+    } else {
+      push(`### ${s.author ? s.author + " — " : ""}${s.title}${d ? ` (${d})` : ""}\n`);
+      const lines = [];
+      for (const n of notes) {
+        const body = [n.ex && `"${n.ex}"`, n.co && o.comments && `*${n.co}*`].filter(Boolean).join(" — ");
+        if (body) lines.push({ text: `- ${n.loc ? `**${n.loc}** · ` : ""}${body}`, id: n.id });
+      }
+      lines.forEach((l, i) => push(l.text + (i === lines.length - 1 ? "\n" : ""), l.id));
+    }
+  }
+  return blocks;
+}
+const mdText = (blocks) => blocks.map((b) => b.text).join("\n").trim() + "\n";
+
+function copyText(text) {
+  // Written synchronously in the click handler (web clipboard rule from #7).
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+  const ta = document.createElement("textarea");
+  ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+  return Promise.resolve();
+}
+
+// ---------- shared pieces ----------
+function Hl({ text, pq }) {
+  if (!pq.pos.length) return text;
+  return text.split(/(\s+)/).map((tok, i) => {
+    const ws = words(tok);
+    return ws.length && ws.some((w) => pq.pos.some((q) => wordHit(w, q))) ? html`<mark key=${i}>${tok}</mark>` : tok;
+  });
+}
+
+function Reason({ n }) {
+  return html`<span className="reason">
+    ${n.own.length ? n.own.join(", ") : null}
+    ${n.own.length && n.via.length ? " · " : null}
+    ${n.via.length && !n.own.length ? html`<span className="src" title="Not etiketsiz; kaynağın etiketiyle geldi">kaynak: ${n.via.join(", ")}</span>` : null}
+  </span>`;
+}
+
+function TagEditor({ coll, update }) {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const sugg = useMemo(() => {
+    const f = fold(q.trim());
+    return ALL_TAGS.filter((t) => !hasTag(coll.tags, t) && (!f || fold(t).includes(f)));
+  }, [q, coll.tags]);
+  const add = (t) => { if (t.trim() && !hasTag(coll.tags, t)) update({ tags: [...coll.tags, t.trim()] }); setQ(""); setOpen(false); };
+  return html`<div className="tags">
+    ${coll.tags.map((t) => html`<span className="tagchip" key=${t}>${t}<button aria-label=${t + " etiketini çıkar"} onClick=${() => update({ tags: coll.tags.filter((x) => x !== t) })}>×</button></span>`)}
+    <div className="addtag">
+      <input placeholder="+ etiket" value=${q} onFocus=${() => setOpen(true)} onBlur=${() => setTimeout(() => setOpen(false), 150)}
+        onChange=${(e) => setQ(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && add(sugg[0] || q)} />
+      ${open && sugg.length ? html`<ul>${sugg.map((t) => html`<li key=${t}><button onMouseDown=${() => add(t)}>${t}</button></li>`)}</ul>` : null}
+    </div>
+  </div>`;
+}
+
+function IncludeToggle({ coll, update, r }) {
+  const extra = coll.includeSources ? r.viaOnly : r.wouldAdd;
+  return html`<label className="toggle" title="Etiketlerinden birini taşıyan kaynakların bütün notları (ADR-0003)">
+    <input type="checkbox" checked=${coll.includeSources} onChange=${(e) => update({ includeSources: e.target.checked })} />
+    Etiketli kaynakların tüm notları <span className="muted">(${coll.includeSources ? "+" : "kapalı, "}${extra} not)</span>
+  </label>`;
+}
+
+function Search({ query, setQuery, placeholder }) {
+  return html`<div className="search">
+    <input type="search" placeholder=${placeholder || "Bu dosyada ara (geçici)"} value=${query} onChange=${(e) => setQuery(e.target.value)} />
+    ${query ? html`<button aria-label="Aramayı temizle" onClick=${() => setQuery("")}>×</button>` : null}
+  </div>`;
+}
+
+function MdOptions({ fmt, setFmt, opts, setOpts }) {
+  return html`<div className="mdopts">
+    <div className="seg" role="group" aria-label="Markdown biçimi">
+      ${FORMATS.map((f) => html`<button key=${f.key} aria-pressed=${fmt === f.key} onClick=${() => setFmt(f.key)}>${f.key} · ${f.name}</button>`)}
+    </div>
+    <label className="toggle"><input type="checkbox" checked=${opts.comments} onChange=${(e) => setOpts({ ...opts, comments: e.target.checked })} />Yorumlar</label>
+    <label className="toggle"><input type="checkbox" checked=${opts.firstEd} onChange=${(e) => setOpts({ ...opts, firstEd: e.target.checked })} />İlk baskı tarihi</label>
+  </div>`;
+}
+
+function MdPre({ blocks, hot }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current && ref.current.querySelector(".hot");
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, [hot]);
+  return html`<pre className="md" ref=${ref}>${blocks.map((b, i) => html`<span key=${i} className=${hot && b.id === hot ? "hot" : ""}>${b.text}${i < blocks.length - 1 ? "\n" : ""}</span>`)}</pre>`;
+}
+
+function CopyDialog({ title, blocks, count, fmt, setFmt, opts, setOpts, onClose, onCopied }) {
+  useEffect(() => {
+    const k = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, []);
+  return html`<div className="backdrop" onMouseDown=${(e) => e.target === e.currentTarget && onClose()}>
+    <div className="dialog" role="dialog" aria-label="Markdown olarak kopyala">
+      <header><h2>${title}</h2><button className="ghost" onClick=${onClose}>Kapat</button></header>
+      <${MdOptions} fmt=${fmt} setFmt=${setFmt} opts=${opts} setOpts=${setOpts} />
+      <${MdPre} blocks=${blocks} />
+      <footer><span className="muted">${count} not · yalnızca görünen notlar</span>
+        <button className="primary" onClick=${() => copyText(mdText(blocks)).then(() => { onCopied(count); onClose(); })}>Panoya kopyala</button></footer>
+    </div>
+  </div>`;
+}
+
+const typeLabel = (s) => TYPES[s.type];
+
+// ---------- variant A: reading page ----------
+function VariantA({ coll, colls, setCollId, update, query, setQuery, r, openCopy }) {
+  return html`<div className="va">
+    <div className="top">
+      <div className="titlerow">
+        <div className="coll"><${CollSelect} coll=${coll} colls=${colls} setCollId=${setCollId} /></div>
+        <button className="primary" disabled=${!r.shown} onClick=${() => openCopy(null)}>Markdown olarak kopyala</button>
+      </div>
+      <${TagEditor} coll=${coll} update=${update} />
+      <div className="filters">
+        <${IncludeToggle} coll=${coll} update=${update} r=${r} />
+        <${Search} query=${query} setQuery=${setQuery} />
+        <span className="count">${r.shown === r.total ? `${r.total} not` : `${r.shown} / ${r.total} not`} · ${r.groups.length} kaynak</span>
+      </div>
+    </div>
+    ${!r.groups.length ? html`<${Empty} coll=${coll} query=${query} />` : null}
+    ${r.groups.map(({ source: s, notes }) => html`<section key=${s.id}>
+      <h2 className="srch">${s.title}</h2>
+      <div className="srcmeta"><span className="typechip">${typeLabel(s)}</span><span>${join(s.author, s.date)}</span>
+        ${s.tags.length ? html`<span>· etiketler: ${s.tags.join(", ")}</span>` : null}</div>
+      ${notes.map((n) => html`<div className="note" key=${n.id}>
+        <div className=${"loc" + (n.loc ? "" : " whole")}>${n.loc || "eserin bütünü"}</div>
+        <div>
+          ${n.ex ? html`<p className="ex"><${Hl} text=${n.ex} pq=${r.pq} /></p>` : null}
+          ${n.co ? html`<p className="co"><${Hl} text=${n.co} pq=${r.pq} /></p>` : null}
+          <${Reason} n=${n} />
+        </div>
+      </div>`)}
+    </section>`)}
+  </div>`;
+}
+
+function CollSelect({ coll, colls, setCollId }) {
+  return html`<select className="coll" value=${coll.id} onChange=${(e) => setCollId(e.target.value)} aria-label="Dosya">
+    ${colls.map((c) => html`<option key=${c.id} value=${c.id}>${c.name}</option>`)}
+  </select>`;
+}
+
+function Empty({ coll, query }) {
+  if (!coll.tags.length) return html`<div className="empty">Bu dosyanın etiketi yok. Yukarıdan bir etiket ekle; o etiketi taşıyan notlar burada toplanır.</div>`;
+  if (query) return html`<div className="empty">"${query}" bu dosyada hiçbir notta geçmiyor.</div>`;
+  return html`<div className="empty">Bu etiketleri taşıyan not yok.</div>`;
+}
+
+// ---------- variant B: two panes ----------
+function VariantB({ coll, colls, setCollId, update, query, setQuery, r, openCopy, all }) {
+  const [menu, setMenu] = useState(false);
+  return html`<div className="vb">
+    <aside className=${menu ? "open" : ""}>
+      <div>
+        <div className="lbl">Dosyalar</div>
+        <ul className="colllist">${colls.map((c) => html`<li key=${c.id}><button aria-current=${c.id === coll.id} onClick=${() => { setCollId(c.id); setMenu(false); }}>
+          <span>${c.name}</span><span className="muted">${all[c.id]}</span></button></li>`)}</ul>
+      </div>
+      <div>
+        <div className="lbl" style=${{ marginBottom: 8 }}>Tanım · bu etiketlerden herhangi biri</div>
+        <${TagEditor} coll=${coll} update=${update} />
+        <div style=${{ marginTop: 12 }}><${IncludeToggle} coll=${coll} update=${update} r=${r} /></div>
+      </div>
+      <div>
+        <div className="lbl" style=${{ marginBottom: 6 }}>Kaynaklar · Tarih sırası</div>
+        <ul className="toc">${r.groups.map(({ source: s, notes }) => html`<li key=${s.id}><a href=${"#g-" + s.id} onClick=${() => setMenu(false)}>
+          <span>${s.title}</span><span className="muted">${notes.length}</span>
+          <span className="y">${join(s.author, s.date) || typeLabel(s)}</span></a></li>`)}</ul>
+      </div>
+    </aside>
+    <main>
+      <div className="head">
+        <button className="secondary menu" onClick=${() => setMenu(!menu)}>☰ Dosya</button>
+        <h1>${coll.name}</h1>
+        <button className="primary" disabled=${!r.shown} onClick=${() => openCopy(null)}>Tümünü kopyala (${r.shown})</button>
+      </div>
+      <${Search} query=${query} setQuery=${setQuery} />
+      ${!r.groups.length ? html`<${Empty} coll=${coll} query=${query} />` : null}
+      ${r.groups.map(({ source: s, notes }) => html`<div className="group" id=${"g-" + s.id} key=${s.id}>
+        <div className="ghead">
+          <div className="t"><div className="typechip">${typeLabel(s)}</div><div className="tt">${s.title}</div>
+            <div className="m">${join(s.author, s.date)}${s.tags.length ? " · kaynak etiketleri: " + s.tags.join(", ") : ""}</div></div>
+          <button className="ghost" onClick=${() => openCopy(s.id)}>Bu kaynağı kopyala</button>
+        </div>
+        <div className="cards">${notes.map((n) => html`<div className="card" key=${n.id}>
+          <div className="lc">${n.loc || "Eserin bütünü"}</div>
+          ${n.ex ? html`<p className="ex"><${Hl} text=${n.ex} pq=${r.pq} /></p>` : null}
+          ${n.co ? html`<p className="co"><b>Yorum</b><${Hl} text=${n.co} pq=${r.pq} /></p>` : null}
+          <${Reason} n=${n} />
+        </div>`)}</div>
+      </div>`)}
+    </main>
+  </div>`;
+}
+
+// ---------- variant C: side-by-side copy ----------
+// Round 3: one list, no Markdown pane; one fixed format (1 · Kaynak başlıklı) copied straight from the top bar.
+const C_FORMAT = "1", C_OPTS = { comments: true, firstEd: false };
+function VariantC({ coll, colls, setCollId, update, query, setQuery, r, onCopied }) {
+  const barRef = useRef(null);
+  // Source headers stick right under the sticky bar, whatever its height.
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const set = () => document.documentElement.style.setProperty("--barh", el.offsetHeight + "px");
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const copy = () => copyText(mdText(toMarkdown(coll, r.groups, C_FORMAT, C_OPTS))).then(() => onCopied(r.shown));
+  return html`<div className="vc">
+    <div className="bar" ref=${barRef}>
+      <div className="r">
+        <div style=${{ flex: 1, minWidth: 0 }}><${CollSelect} coll=${coll} colls=${colls} setCollId=${setCollId} /></div>
+        <button className="primary" disabled=${!r.shown} onClick=${copy}>Markdown olarak kopyala</button>
+      </div>
+      <${TagEditor} coll=${coll} update=${update} />
+      <div className="r"><${IncludeToggle} coll=${coll} update=${update} r=${r} /></div>
+      <div className="r"><${Search} query=${query} setQuery=${setQuery} />
+        <span className="count">${r.shown === r.total ? `${r.total} not` : `${r.shown} / ${r.total} not`} · ${r.groups.length} kaynak</span></div>
+    </div>
+    ${!r.groups.length ? html`<${Empty} coll=${coll} query=${query} />` : null}
+    ${r.groups.map(({ source: s, notes }) => html`<div key=${s.id}>
+      <div className="gh"><span className="typechip">${typeLabel(s)}</span><span className="tt" title=${s.title}>${join(s.author, s.title)}</span><span className="y">${s.date || "tarihsiz"}</span></div>
+      ${notes.map((n) => html`<div key=${n.id} className="row">
+        <div className="lc">${n.loc || "—"}</div>
+        <div>
+          ${n.ex ? html`<div className="ex"><${Hl} text=${n.ex} pq=${r.pq} /></div>` : null}
+          ${n.co ? html`<div className="co"><${Hl} text=${n.co} pq=${r.pq} /></div>` : null}
+          <${Reason} n=${n} />
+        </div>
+      </div>`)}
+    </div>`)}
+  </div>`;
+}
+
+// ---------- prototype chrome ----------
+function Switcher({ variant, setVariant, showState, setShowState }) {
+  const i = VARIANTS.findIndex((v) => v.key === variant);
+  const go = (d) => setVariant(VARIANTS[(i + d + VARIANTS.length) % VARIANTS.length].key);
+  useEffect(() => {
+    const onKey = (e) => {
+      const el = document.activeElement;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
+      if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "ArrowRight") go(1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  return html`<nav className="switcher" aria-label="Varyant">
+    <button onClick=${() => go(-1)} aria-label="Önceki varyant">‹</button>
+    <span className="lab"><b>${variant}</b><span className="full"> · ${VARIANTS[i].name}</span></span>
+    <button onClick=${() => go(1)} aria-label="Sonraki varyant">›</button>
+    <button className="txt" aria-pressed=${showState} onClick=${() => setShowState(!showState)}>durum</button>
+  </nav>`;
+}
+
+function param(name, allowed, dflt) {
+  const v = (new URLSearchParams(location.search).get(name) || "").toUpperCase();
+  return allowed.includes(v) ? v : dflt;
+}
+function setParam(name, v) {
+  const u = new URL(location.href);
+  u.searchParams.set(name, v);
+  history.replaceState(null, "", u);
+}
+
+function App() {
+  const [variant, setVariantS] = useState(() => param("variant", VARIANTS.map((v) => v.key), "C"));
+  const [fmt, setFmtS] = useState(() => param("format", FORMATS.map((f) => f.key), "1"));
+  const [opts, setOpts] = useState({ comments: true, firstEd: false });
+  const [colls, setColls] = useState(SEED_COLLECTIONS);
+  const [collId, setCollId] = useState("c1");
+  const [query, setQuery] = useState("");
+  const [copyFor, setCopyFor] = useState(undefined); // undefined = closed, null = whole collection, id = one source
+  const [toast, setToast] = useState(null);
+  const [showState, setShowState] = useState(false);
+
+  const setVariant = (v) => { setVariantS(v); setParam("variant", v); };
+  const setFmt = (f) => { setFmtS(f); setParam("format", f); };
+  const coll = colls.find((c) => c.id === collId);
+  const update = (patch) => setColls((cs) => cs.map((c) => c.id === collId ? { ...c, ...patch } : c));
+  // Search is temporary: switching collection clears it.
+  const pickColl = (id) => { setCollId(id); setQuery(""); };
+  const r = useMemo(() => compute(coll, query), [coll, query]);
+  const all = useMemo(() => Object.fromEntries(colls.map((c) => [c.id, compute(c, "").total])), [colls]);
+
+  const copyGroups = copyFor ? r.groups.filter((g) => g.source.id === copyFor) : r.groups;
+  const blocks = useMemo(() => copyFor === undefined ? [] : toMarkdown(coll, copyGroups, fmt, opts), [copyFor, coll, r, fmt, opts]);
+  const onCopied = (n) => { setToast(`Kopyalandı · ${n} not`); setTimeout(() => setToast(null), 1800); };
+
+  const props = { coll, colls, setCollId: pickColl, update, query, setQuery, r, all, openCopy: setCopyFor, fmt, setFmt, opts, setOpts, onCopied };
+  const V = { A: VariantA, B: VariantB, C: VariantC }[variant];
+
+  const state = {
+    dosya: { ad: coll.name, etiketler: coll.tags, "etiketli kaynakların tüm notları": coll.includeSources },
+    arama: query || "(yok)",
+    görünen: `${r.shown} / ${r.total} not, ${r.groups.length} kaynak`,
+    "kaynak etiketiyle gelen": r.viaOnly,
+    sıra: r.groups.map((g) => `${g.source.date || "tarihsiz"} · ${g.source.title} → ${g.notes.map((n) => n.loc || "∅").join(" | ")}`),
+    markdown: { biçim: FORMATS.find((f) => f.key === fmt).name, ...opts },
+  };
+
+  return html`
+    <${V} ...${props} />
+    ${copyFor !== undefined ? html`<${CopyDialog} title=${copyFor ? "Kaynağı Markdown olarak kopyala" : "Dosyayı Markdown olarak kopyala"}
+      blocks=${blocks} count=${copyGroups.reduce((a, g) => a + g.notes.length, 0)}
+      fmt=${fmt} setFmt=${setFmt} opts=${opts} setOpts=${setOpts} onClose=${() => setCopyFor(undefined)} onCopied=${onCopied} />` : null}
+    ${toast ? html`<div className="toast">${toast}</div>` : null}
+    ${showState ? html`<div className="statepanel">${JSON.stringify(state, null, 2)}</div>` : null}
+    <${Switcher} variant=${variant} setVariant=${setVariant} showState=${showState} setShowState=${setShowState} />
+  `;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+</script>
+</html>
