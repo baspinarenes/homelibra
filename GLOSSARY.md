@@ -101,7 +101,7 @@ _Avoid_: project, folder, notebook, topic, saved search, filter
 ### Workflow
 
 **Capture** (Yakalama):
-Recording a note quickly while reading or watching, usually on the phone, possibly without tags.
+Recording a note quickly while reading or watching, on the phone or at the desk, possibly without tags.
 _Avoid_: entry, input, logging
 
 **Organizing pass** (Düzenleme turu):
