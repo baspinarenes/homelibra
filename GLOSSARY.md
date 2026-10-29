@@ -87,12 +87,16 @@ _Avoid_: page, position, reference, citation
 ### Finding things again
 
 **Tag** (Etiket):
-A flat, free-form label attached to notes and to sources. Tags have no hierarchy and no type.
-_Avoid_: topic, keyword, category, subject, label
+A flat, free-form label attached to notes and to sources, with no hierarchy, no type and no synonyms. Two names are the same tag when they differ only in letter case (by Turkish rules, so I and ı pair, İ and i pair) or in spacing; circumflexes, dotted versus dotless i and punctuation still make different tags. A tag on a source is not a tag on that source's notes.
+_Avoid_: topic, keyword, category, subject, label, hashtag
+
+**Tag merge** (Etiket birleştirme):
+Folding one tag into another so that everything carrying either carries the survivor and every collection using either uses the survivor; the folded name is gone. It is how two names for the same thing become one, since tags have no synonyms.
+_Avoid_: alias, synonym, link
 
 **Collection** (Dosya):
-A saved, named view that gathers every note carrying any of a chosen set of tags, typically for a piece of writing in progress. Notes are not moved into a collection; it is a lens over the library.
-_Avoid_: project, folder, notebook, topic, saved search
+A saved, named view of every note carrying any of a chosen set of tags, typically for a piece of writing in progress; when it includes tagged sources (the default), it also takes every note of a source carrying one of those tags. Membership comes from tags alone: notes are never moved, pinned into or hidden from a collection.
+_Avoid_: project, folder, notebook, topic, saved search, filter
 
 ### Workflow
 
