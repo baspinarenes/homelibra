@@ -94,6 +94,10 @@ _Avoid_: topic, keyword, category, subject, label
 A saved, named view that gathers every note carrying any of a chosen set of tags, typically for a piece of writing in progress. Notes are not moved into a collection; it is a lens over the library.
 _Avoid_: project, folder, notebook, topic, saved search
 
+**Search** (Arama):
+Finding notes and sources by the words in their text, as opposed to by their tags. A search is never saved; a saved view over the library is a collection.
+_Avoid_: query, filter, lookup, find
+
 ### Workflow
 
 **Capture** (Yakalama):
