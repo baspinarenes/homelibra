@@ -1,0 +1,455 @@
+<!doctype html>
+<!--
+  PROTOTYPE — atılacak kod. Ticket baspinarenes/homelibra#18.
+  Soru: Source ekleme formu telefonda ve webde nasıl görünür, Tarih nasıl girilir?
+  Üç Tarih giriş varyantı, alttaki şeritten ya da ← → tuşlarıyla değişir (?variant=A|B|C):
+    A  Tek kutu + akıllı ayrıştırma (ticket varyantı a)
+    B  Takvim seçici + gün/ay/yıl alanları (ticket varyantı b)
+    C  Takvim seçici + tek kutu (karma, ek varyant)
+  Hicrî/Rumî → Milâdî dönüşümü kaba: aritmetik Hicrî takvim, Rumî için Jülyen + 584/585,
+  1 Mart 1333'ten sonra Milâdî ile hizalı. Gerçek kurallar #17'de. Kalıcılık yok, her şey bellekte.
+-->
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE · Source ekleme formu</title>
+<style>
+  :root { --ink:#1d1d1f; --mute:#6b6b70; --line:#d9d9de; --bg:#f4f3ef; --card:#fff; --acc:#7a3e1d; --accbg:#f6ebe3; --ok:#2f6b3a; --warn:#9a6a00; --err:#a3242b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  .page { display:grid; grid-template-columns: 230px 1fr 340px; gap:20px; padding:20px 20px 90px; align-items:start; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; font-size:13px; }
+  .panel h3 { margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--mute); }
+  .panel button { display:block; width:100%; text-align:left; margin:3px 0; }
+  .panel .seg button { display:inline-block; width:auto; }
+  pre { margin:0; font:11.5px/1.35 ui-monospace, Menlo, monospace; white-space:pre-wrap; word-break:break-word; }
+  button { font:inherit; border:1px solid var(--line); background:#fff; border-radius:7px; padding:5px 9px; cursor:pointer; }
+  button:hover { border-color:#aaa; }
+  .center { display:flex; justify-content:center; }
+  /* telefon çerçevesi */
+  .phone { width:390px; height:800px; border:10px solid #222; border-radius:40px; background:var(--card); overflow:hidden; display:flex; flex-direction:column; }
+  .phone .bar { padding:14px 16px 10px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .phone .scroll { flex:1; overflow:auto; padding:14px 16px 20px; }
+  .phone .foot { border-top:1px solid var(--line); padding:10px 16px 18px; }
+  .web { width:100%; max-width:860px; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+  .web .bar { padding:16px 24px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+  .web .scroll { padding:20px 24px; }
+  .web .foot { padding:14px 24px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:8px; }
+  .web .grid { display:grid; grid-template-columns:1fr 1fr; column-gap:20px; }
+  .web .grid .full { grid-column:1 / -1; }
+  .title { font-weight:600; font-size:17px; }
+  .field { margin:0 0 14px; }
+  .field > label, .lbl { display:block; font-size:13px; font-weight:600; margin-bottom:4px; }
+  .lbl small, label small { font-weight:400; color:var(--mute); }
+  input[type=text], input[type=number], select, textarea { font:inherit; width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  textarea { min-height:60px; resize:vertical; }
+  input:focus, select:focus, textarea:focus { outline:2px solid var(--acc); outline-offset:-1px; border-color:transparent; }
+  .types { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+  .web .types { grid-template-columns:repeat(5, 1fr); }
+  .type { text-align:left; padding:7px 8px; border-radius:8px; line-height:1.2; }
+  .type b { display:block; font-size:13.5px; }
+  .type span { font-size:11px; color:var(--mute); }
+  .type.on { border-color:var(--acc); background:var(--accbg); box-shadow:inset 0 0 0 1px var(--acc); }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:6px; }
+  .seg button { border:0; border-radius:0; border-right:1px solid var(--line); padding:6px 12px; }
+  .seg button:last-child { border-right:0; }
+  .seg button.on { background:var(--acc); color:#fff; }
+  .dmy { display:grid; grid-template-columns: 70px 1fr 90px; gap:6px; }
+  .hint { font-size:12.5px; color:var(--mute); margin-top:5px; }
+  .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; align-items:center; }
+  .chip { font-size:12px; padding:2px 7px; border-radius:20px; background:#eee; }
+  .chip.cal { background:var(--accbg); color:var(--acc); font-weight:600; }
+  .chip.btn { cursor:pointer; border:1px dashed var(--acc); background:#fff; color:var(--acc); }
+  .warn { color:var(--warn); } .err { color:var(--err); } .ok { color:var(--ok); }
+  .flash { font-size:12px; color:var(--acc); margin-top:4px; }
+  .more { width:100%; margin:4px 0 14px; color:var(--acc); }
+  .kept { font-size:12px; color:var(--mute); background:#fafafa; border:1px dashed var(--line); border-radius:8px; padding:6px 8px; margin-bottom:14px; }
+  .primary { background:var(--acc); color:#fff; border-color:var(--acc); padding:10px 16px; font-weight:600; }
+  .phone .primary { width:100%; }
+  .saved li { margin:0 0 7px; list-style:none; }
+  .saved ul { padding:0; margin:0; }
+  .saved .d { font-weight:600; }
+  .saved .s { color:var(--mute); font-size:11.5px; }
+  .preview { font-size:12.5px; background:#fafafa; border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:14px; }
+  /* prototip şeridi: tasarımın parçası değil */
+  .switcher { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; background:#111; color:#fff; padding:8px 12px; border-radius:30px; box-shadow:0 6px 24px rgba(0,0,0,.3); font-size:13px; z-index:10; }
+  .switcher button { background:#333; color:#fff; border:0; border-radius:20px; width:30px; height:30px; }
+  .switcher .tag { background:#f5c518; color:#111; font-weight:700; font-size:10px; padding:2px 6px; border-radius:4px; }
+  @media (max-width: 1100px) { .page { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div id="left"></div>
+  <div class="center" id="form"></div>
+  <div id="right"></div>
+</div>
+<div class="switcher" id="switcher"></div>
+
+<script>
+// ---------- takvim verisi ----------
+const CAL = { miladi:'Milâdî', hicri:'Hicrî', rumi:'Rumî' };
+const MONTHS = {
+  miladi: ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'].map(n => ({n})),
+  hicri: [['Muharrem','M'],['Safer','S'],['Rebîülevvel','Ra'],['Rebîülâhir','R'],['Cemâziyelevvel','Ca'],['Cemâziyelâhir','C'],
+          ['Receb','B'],['Şâban','Ş'],['Ramazan','N'],['Şevval','L'],['Zilkade','Za'],['Zilhicce','Z']].map(([n,a]) => ({n,a})),
+  // Rumî (mâlî) yıl 1 Mart'ta başlar; liste Mart'tan başlıyor
+  rumi: ['Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Teşrinievvel','Teşrinisani','Kânunuevvel','Kânunusani','Şubat'].map(n => ({n})),
+};
+const RUMI_JULIAN_MONTH = [3,4,5,6,7,8,9,10,11,12,1,2];
+const HICRI_ABBR = { 'm':1,'s':2,'ra':3,'r':4,'ca':5,'c':6,'b':7,'ş':8,'n':9,'l':10,'za':11,'z':12 };
+const HICRI_FULL = [/^muharrem$/,/^s[ae]fer$/,/^rebi.*evvel$/,/^rebi.*(ahir|sani|ahar)$/,/^cema[sz]i.*evvel$/,/^cema[sz]i.*(ahir|sani)$/,
+                    /^rece[bp]$/,/^saban$/,/^ramazan$/,/^sevval$/,/^zilka+de$/,/^zilhicce$/];
+const RUMI_ONLY = { tesrinievvel:8, tesrinevvel:8, tesrinisani:9, tesrinsani:9, kanunuevvel:10, kanunievvel:10, kanunevvel:10, kanunusani:11, kanunisani:11, kanunsani:11 };
+const MILADI_ONLY = { ocak:1, ekim:10, kasim:11, aralik:12 };
+const SHARED = { subat:2, mart:3, nisan:4, mayis:5, haziran:6, temmuz:7, agustos:8, eylul:9 }; // Milâdî ay sırası
+const SUFFIX = { h:'hicri', hicri:'hicri', r:'rumi', rumi:'rumi', m:'miladi', miladi:'miladi', ms:'miladi' };
+
+const fold = s => s.toLocaleLowerCase('tr').replace(/[âà]/g,'a').replace(/[îı]/g,'i').replace(/[ûü]/g,'u')
+  .replace(/ş/g,'s').replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ö/g,'o');
+
+// ---------- kaba dönüşüm (yalnızca sıralama ve ipucu için) ----------
+const gToJD = (y,m,d) => { const a=Math.floor((14-m)/12), yy=y+4800-a, mm=m+12*a-3;
+  return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045; };
+const jToJD = (y,m,d) => { const a=Math.floor((14-m)/12), yy=y+4800-a, mm=m+12*a-3;
+  return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-32083; };
+const hToJD = (y,m,d) => d + Math.ceil(29.5*(m-1)) + (y-1)*354 + Math.floor((3+11*y)/30) + 1948440 - 1;
+const jdToG = jd => { const a=jd+32044, b=Math.floor((4*a+3)/146097), c=a-Math.floor(146097*b/4), d=Math.floor((4*c+3)/1461),
+  e=c-Math.floor(1461*d/4), m=Math.floor((5*e+2)/153);
+  return { d:e-Math.floor((153*m+2)/5)+1, m:m+3-12*Math.floor(m/10), y:100*b+d-4800+Math.floor(m/10) }; };
+function toJD(cal, y, m, d) {
+  if (cal === 'miladi') return gToJD(y, m, d);
+  if (cal === 'hicri') return hToJD(y, m, d);
+  // rumi: m Mart'tan sayılır
+  const jm = RUMI_JULIAN_MONTH[m-1], jy = y + (m >= 11 ? 585 : 584);
+  return (y > 1333 || (y === 1333 && m <= 10)) ? gToJD(jy, jm, d) : jToJD(jy, jm, d);
+}
+// yıl/ay/gün hassasiyetine göre [başlangıç, bitiş] JD aralığı
+function period(cal, y, m, d) {
+  if (d) { const j = toJD(cal,y,m,d); return [j,j]; }
+  if (m) { const s = toJD(cal,y,m,1), e = m === 12 ? toJD(cal,y+1,1,1) : toJD(cal,y,m+1,1); return [s, e-1]; }
+  return [toJD(cal,y,1,1), toJD(cal,y+1,1,1)-1];
+}
+const fmtG = (jd, prec) => { const g = jdToG(jd), mn = MONTHS.miladi[g.m-1].n;
+  return prec === 'y' ? `${g.y}` : prec === 'm' ? `${mn} ${g.y}` : `${g.d} ${mn} ${g.y}`; };
+const iso = jd => { const g = jdToG(jd); return `${g.y}-${String(g.m).padStart(2,'0')}-${String(g.d).padStart(2,'0')}`; };
+
+// ---------- ayrıştırıcı ----------
+// forced: C varyantında seçili takvim; A'da kullanıcının elle düzelttiği takvim (yoksa null)
+function parse(text, forced) {
+  const raw = text.trim();
+  if (!raw) return { status:'empty' };
+  let m;
+  if ((m = raw.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{3,4})$/))) return okDate(forced || 'miladi', +m[3], +m[2], +m[1], 'full', false, null, 'gg.aa.yyyy');
+  if ((m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return okDate(forced || 'miladi', +m[1], +m[2], +m[3], 'full', false, null, 'yyyy-aa-gg');
+  const joined = raw.toLocaleLowerCase('tr').replace(/['’ʿʾ-]/g, '')
+    .replace(/(k[aâ]n[uû]n|te[sş]rin)\s*([ıiuü])?\s+(evvel|s[aâ]ni)/g, '$1$2$3');
+  const toks = joined.split(/[\s,]+/).map(t => t.replace(/\.$/, '')).filter(Boolean);
+  let day = null, year = null, monthHit = null, suffix = null, unknown = [];
+  for (const t of toks) {
+    if (/^\d+$/.test(t)) {
+      if (t.length >= 3 && year === null) year = +t;
+      else if (t.length <= 2 && day === null && year === null) day = +t;
+      else unknown.push(t);
+      continue;
+    }
+    if (year !== null && SUFFIX[fold(t)] && !suffix) { suffix = SUFFIX[fold(t)]; continue; }
+    if (monthHit) { unknown.push(t); continue; }
+    const f = fold(t);
+    if (HICRI_ABBR[t]) monthHit = { cal:'hicri', m:HICRI_ABBR[t], form:'abbr', tok:t };
+    else if (HICRI_FULL.findIndex(r => r.test(f)) >= 0) monthHit = { cal:'hicri', m:HICRI_FULL.findIndex(r => r.test(f))+1, form:'full', tok:t };
+    else if (RUMI_ONLY[f]) monthHit = { cal:'rumi', m:RUMI_ONLY[f], form:'full', tok:t };
+    else if (MILADI_ONLY[f]) monthHit = { cal:'miladi', m:MILADI_ONLY[f], form:'full', tok:t };
+    else if (SHARED[f]) monthHit = { cal:'shared', m:SHARED[f], form:'full', tok:t };
+    else unknown.push(t);
+  }
+  if (unknown.length) return { status:'error', error:`“${unknown.join(' ')}” tanınmadı` };
+  if (year === null) return { status:'error', error:'Yıl yok (en az yıl gerekli)' };
+  if (day !== null && !monthHit) return { status:'error', error:'Gün var ama ay yok' };
+
+  // takvim kararı: açık son ek > ayın ima ettiği takvim > seçili/düzeltilmiş takvim > tahmin
+  let cal, guessed = false, why, switched = null;
+  const implied = monthHit && monthHit.cal !== 'shared' ? monthHit.cal : null;
+  if (suffix) { cal = suffix; why = 'son ek'; }
+  else if (implied) { cal = implied; why = `“${monthHit.tok}” ${CAL[implied]} ay adı`; }
+  else if (forced) { cal = forced; why = 'seçili takvim'; }
+  else if (monthHit && year >= 1200 && year <= 1345) { cal = 'rumi'; guessed = true; why = `${monthHit.tok} + ${year}: büyük olasılıkla Rumî`; }
+  else { cal = 'miladi'; guessed = year >= 1200 && year <= 1450; why = guessed ? 'varsayılan Milâdî; bu yıl Hicrî ya da Rumî de olabilir' : 'varsayılan'; }
+  if (forced && cal !== forced) switched = { from:forced, to:cal, why };
+
+  let month = null;
+  if (monthHit) {
+    if (monthHit.cal === 'shared') {
+      if (cal === 'hicri') return { status:'error', error:`“${monthHit.tok}” Hicrî ay değil` };
+      month = cal === 'rumi' ? RUMI_JULIAN_MONTH.indexOf(monthHit.m)+1 : monthHit.m;
+    } else if (monthHit.cal !== cal) return { status:'error', error:`“${monthHit.tok}” ${CAL[monthHit.cal]} ay adı, son ek ${CAL[cal]} diyor` };
+    else month = monthHit.m;
+  }
+  return okDate(cal, year, month, day, monthHit ? monthHit.form : (cal === 'hicri' ? 'abbr' : 'full'), guessed, why, null, switched);
+}
+function okDate(cal, y, m, d, form, guessed, why, pattern, switched) {
+  if (m && (m < 1 || m > 12)) return { status:'error', error:'Ay 1–12 arası olmalı' };
+  const maxD = cal === 'hicri' ? 30 : 31;
+  if (d && (d < 1 || d > maxD)) return { status:'error', error:`Gün 1–${maxD} arası olmalı` };
+  const [s, e] = period(cal, y, m, d);
+  const prec = d ? 'd' : m ? 'm' : 'y';
+  const hint = cal === 'miladi' ? null : (s === e ? fmtG(s,"d") : m ? `${fmtG(s,"d")} – ${fmtG(e,"d")}` : `${fmtG(s,"m")} – ${fmtG(e,"m")}`);
+  return { status:'ok', calendar:cal, year:y, month:m, day:d, precision:prec, monthForm:form, guessed, why, switched, sortJD:s, hint };
+}
+function display(dt) {
+  if (dt.status !== 'ok') return '';
+  const mo = dt.month ? MONTHS[dt.calendar][dt.month-1] : null;
+  const mn = mo ? (dt.calendar === 'hicri' && dt.monthForm === 'abbr' ? mo.a : mo.n) : null;
+  const core = [dt.day, mn, dt.year].filter(x => x != null).join(' ');
+  // Hicrî ay kısaltması ya da Rumî'ye özgü ay adı takvimi zaten söylüyor; söylemiyorsa son ek
+  const selfEvident = dt.calendar === 'hicri' ? !!mo : dt.calendar === 'rumi' ? (mo && /Teşrin|Kânun/.test(mo.n)) : true;
+  return selfEvident ? core : `${core} ${dt.calendar === 'hicri' ? 'h.' : 'r.'}`;
+}
+
+// ---------- türler ----------
+const TYPES = [
+  { k:'book', tr:'Kitap', sub:'telif, derleme, e-kitap', date:'Basım tarihi', dateHint:'eldeki baskının tarihi', loc:'s. 45',
+    title:'Osmanlı İmparatorluğu Klasik Çağ', author:'Halil İnalcık',
+    extras:[['publisher','Yayınevi'],['place','Yayın yeri'],['edition','Baskı/cilt'],['isbn','ISBN'],['firstEd','İlk baskı tarihi','date']] },
+  { k:'article', tr:'Makale', sub:'dergi, bölüm, ansiklopedi', date:'Yayın tarihi', loc:'s. 45', title:'Makalenin ya da maddenin adı', author:'Suraiya Faroqhi',
+    extras:[['container','İçinde (dergi/derleme/ansiklopedi)'],['volume','Cilt/sayı'],['pages','Sayfa aralığı'],['doi','DOI']] },
+  { k:'thesis', tr:'Tez', sub:'yüksek lisans, doktora', date:'Tarih', loc:'s. 45', title:'Tezin adı', author:'Yazar',
+    extras:[['university','Üniversite'],['thesisType','Tez türü']] },
+  { k:'archive', tr:'Arşiv', sub:'fon, tek belge, defter', date:'Belge / defter tarihi', dateHint:'fonsa boş bırakılabilir; aralık Künye notu\'na', loc:'1234/56 · vr. 12b',
+    title:'DH.MKT · DH.MKT 1234/56 · MAD.d 1234', author:'BOA', extras:[] },
+  { k:'manuscript', tr:'Yazma', sub:'kütüphanedeki yazma', date:'Telif tarihi', dateHint:'istinsah tarihi Künye notu\'na', loc:'vr. 12b', title:'Eserin adı', author:'Müellif',
+    extras:[['library','Kütüphane'],['shelfmark','Koleksiyon ve numara']] },
+  { k:'periodical', tr:'Süreli yayın', sub:'gazete, dergi koleksiyonu', date:'Tarih', dateHint:'ör. ilk sayı; aralık Künye notu\'na', loc:'nr. 1134, s. 2', title:'Tanin', author:'(boş bırakılabilir)',
+    extras:[['place','Yayın yeri']] },
+  { k:'recording', tr:'Kayıt', sub:'belgesel, podcast, ders', date:'Yayın tarihi', loc:'1:23:45', title:'Bölümün ya da filmin adı', author:'Yapımcı / konuşmacı',
+    extras:[['url','URL'],['series','Seri/program adı'],['duration','Süre']] },
+  { k:'web', tr:'Web sayfası', sub:'blog, haber, kurum', date:'Yayın tarihi', loc:'(genelde boş)', title:'Sayfanın başlığı', author:'Yazar ya da kurum',
+    extras:[['url','URL'],['site','Site adı'],['accessed','Erişim tarihi','date']] },
+  { k:'other', tr:'Diğer', sub:'harita, görsel, sergi', date:'Tarih', loc:'(genelde boş)', title:'Adı', author:'Yaratıcı', extras:[] },
+];
+const T = k => TYPES.find(t => t.k === k);
+const VARIANTS = [ ['A','Tek kutu + akıllı ayrıştırma'], ['B','Takvim seçici + gün/ay/yıl'], ['C','Takvim seçici + tek kutu'] ];
+
+// ---------- durum ----------
+const newDate = (text='') => ({ text, cal:'miladi', override:null, y:'', m:'', d:'', flash:null });
+const newDraft = () => ({ type:'book', title:'', author:'', bibNote:'', extras:{}, dates:{ date:newDate(), firstEd:newDate(), accessed:newDate() } });
+const q = new URLSearchParams(location.search);
+const S = {
+  variant: VARIANTS.some(v => v[0] === q.get('variant')) ? q.get('variant') : 'A',
+  frame: q.get('frame') === 'web' ? 'web' : 'phone',
+  order: 'title', extrasOpen: true, draft: newDraft(), saved: [], lastSaved: null,
+};
+
+// bir tarih alanının değerini o anki varyanta göre çöz
+function resolve(f) {
+  if (S.variant === 'A') return parse(f.text, f.override);
+  if (S.variant === 'C') return parse(f.text, f.cal);
+  if (!f.y) return f.m || f.d ? { status:'error', error:'Yıl yok (en az yıl gerekli)' } : { status:'empty' };
+  if (f.d && !f.m) return { status:'error', error:'Gün var ama ay yok' };
+  return okDate(f.cal, +f.y, f.m ? +f.m : null, f.d ? +f.d : null, f.cal === 'hicri' ? 'abbr' : 'full', false, 'seçili takvim');
+}
+// varyant değişince alanın iki temsilini eşitle
+function sync(f) {
+  const dt = resolve(f);
+  if (dt.status === 'ok') { f.cal = dt.calendar; f.y = String(dt.year); f.m = dt.month ? String(dt.month) : ''; f.d = dt.day ? String(dt.day) : ''; f.text = display(dt); }
+}
+
+const PRESETS = [
+  ['Arşiv · fon', { type:'archive', author:'BOA', title:'DH.MKT', bibNote:'Dahiliye Nezareti Mektubî Kalemi; 1890–1908' }, {}],
+  ['Arşiv · tek belge', { type:'archive', author:'BOA', title:'DH.MKT 1234/56' }, { date:'29 Z 1310' }],
+  ['Arşiv · defter', { type:'archive', author:'BOA', title:'MAD.d 1234' }, { date:'1120' }],
+  ['Kitap (iki tarihli)', { type:'book', author:'Halil İnalcık', title:'Osmanlı İmparatorluğu Klasik Çağ (1300–1600)', bibNote:'çev. Ruşen Sezer',
+     extras:{ publisher:'Yapı Kredi Yayınları', place:'İstanbul' } }, { date:'2003', firstEd:'1973' }],
+  ['Süreli yayın (Rumî)', { type:'periodical', title:'Tanin', extras:{ place:'İstanbul' } }, { date:'12 Kânunusani 1327' }],
+  ['Makale (DOI)', { type:'article', extras:{ doi:'10.0000/ornek.2015.12' } }, {}],
+];
+function loadPreset(i) {
+  const [, p, ds] = PRESETS[i];
+  const d = newDraft(); Object.assign(d, p, { extras:{ ...(p.extras||{}) } });
+  for (const [k, txt] of Object.entries(ds)) { d.dates[k] = newDate(txt); const v = S.variant; S.variant = 'A'; sync(d.dates[k]); S.variant = v; if (v !== 'A') d.dates[k].text = txt; }
+  S.draft = d; render();
+}
+
+// ---------- görünüm ----------
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const calSeg = (key, cur) => `<div class="seg">${Object.entries(CAL).map(([k,n]) =>
+  `<button data-act="cal" data-key="${key}" data-cal="${k}" class="${cur===k?'on':''}">${n}</button>`).join('')}</div>`;
+
+function dateFeedback(key, f, dt) {
+  let h = '';
+  if (dt.status === 'error') h += `<div class="hint err">${esc(dt.error)}</div>`;
+  if (dt.status === 'ok') {
+    if (S.variant === 'A') {
+      const parts = [`<span class="chip cal">${CAL[dt.calendar]}${dt.guessed ? ' ?' : ''}</span>`];
+      if (dt.day) parts.push(`<span class="chip">gün ${dt.day}</span>`);
+      if (dt.month) parts.push(`<span class="chip">${esc(MONTHS[dt.calendar][dt.month-1].n)}</span>`);
+      parts.push(`<span class="chip">yıl ${dt.year}</span>`);
+      h += `<div class="chips">${parts.join('')}</div>`;
+      if (dt.guessed || f.override) {
+        h += `<div class="chips"><span class="hint ${dt.guessed?'warn':''}" style="margin:0">${dt.guessed ? 'Tahmin: ' + esc(dt.why) + '.' : 'Takvimi sen seçtin.'} Değiştir:</span>` +
+          Object.entries(CAL).filter(([k]) => k !== dt.calendar).map(([k,n]) => `<span class="chip btn" data-act="override" data-key="${key}" data-cal="${k}">${n}</span>`).join('') +
+          (f.override ? `<span class="chip btn" data-act="override" data-key="${key}" data-cal="">otomatik</span>` : '') + `</div>`;
+      }
+    }
+    if (dt.hint) h += `<div class="hint">≈ ${esc(dt.hint)} <small>(Milâdî, yaklaşık; yalnızca sıralama için)</small></div>`;
+    h += `<div class="hint">Görünecek: <b>${esc(display(dt))}</b></div>`;
+  }
+  if (f.flash) h += `<div class="flash">↻ ${esc(f.flash)}</div>`;
+  return h;
+}
+function dateInput(key, label, sub) {
+  const f = S.draft.dates[key], dt = resolve(f);
+  let body;
+  if (S.variant === 'A') body = `<input type="text" id="dt-${key}" data-bind="dtext" data-key="${key}" value="${esc(f.text)}" placeholder="ör. 29 Z 1310 · 12 Kânunusani 1327 · 1893" autocomplete="off">`;
+  else if (S.variant === 'C') body = calSeg(key, f.cal) + `<input type="text" id="dt-${key}" data-bind="dtext" data-key="${key}" value="${esc(f.text)}" placeholder="${
+      {miladi:'ör. 5 Mart 1893 · 1893', hicri:'ör. 29 Z 1310 · Ra 1310 · 1310', rumi:'ör. 12 Kânunusani 1327 · Mart 1310'}[f.cal]}" autocomplete="off">`;
+  else body = calSeg(key, f.cal) + `<div class="dmy">
+      <input type="number" id="dd-${key}" data-bind="dpart" data-part="d" data-key="${key}" value="${esc(f.d)}" placeholder="Gün" min="1" max="31">
+      <select id="dm-${key}" data-bind="dpart" data-part="m" data-key="${key}"><option value="">Ay —</option>${
+        MONTHS[f.cal].map((mo,i) => `<option value="${i+1}" ${String(i+1)===f.m?'selected':''}>${esc(mo.n)}${mo.a ? ' ('+mo.a+')' : ''}</option>`).join('')}</select>
+      <input type="number" id="dy-${key}" data-bind="dpart" data-part="y" data-key="${key}" value="${esc(f.y)}" placeholder="Yıl"></div>`;
+  return `<div class="field ${key==='date'?'full':''}"><span class="lbl">${esc(label)} ${sub ? `<small>· ${esc(sub)}</small>` : ''}</span>${body}${dateFeedback(key, f, dt)}</div>`;
+}
+const textField = (k, label, ph, full, area) => `<div class="field ${full?'full':''}"><label for="f-${k}">${esc(label)}</label>${
+  area ? `<textarea id="f-${k}" data-bind="core" data-k="${k}" placeholder="${esc(ph)}">${esc(S.draft[k])}</textarea>`
+       : `<input type="text" id="f-${k}" data-bind="core" data-k="${k}" value="${esc(S.draft[k])}" placeholder="${esc(ph)}" autocomplete="off">`}</div>`;
+
+function renderForm() {
+  const d = S.draft, t = T(d.type);
+  const typePicker = `<div class="field full"><span class="lbl">Tür</span><div class="types">${TYPES.map(x =>
+    `<button class="type ${x.k===d.type?'on':''}" data-act="type" data-type="${x.k}"><b>${x.tr}</b><span>${x.sub}</span></button>`).join('')}</div></div>`;
+  const title = textField('title', 'Başlık *', t.title, true);
+  const author = textField('author', 'Yazar', t.author, true);
+  const core = S.order === 'title' ? [typePicker, title, author] : [typePicker, author, title];
+  core.push(dateInput('date', t.date, t.dateHint));
+  const extras = t.extras.map(([k, label, kind]) => kind === 'date' ? dateInput(k, label, k === 'firstEd' ? 'yıl yeter' : '') :
+    `<div class="field"><label for="x-${k}">${esc(label)}</label><div style="display:flex;gap:6px"><input type="text" id="x-${k}" data-bind="extra" data-k="${k}" value="${esc(d.extras[k])}" autocomplete="off">${
+      k === 'doi' ? `<button data-act="doi">Getir</button>` : ''}</div></div>`);
+  const visibleKeys = t.extras.map(e => e[0]);
+  const kept = [...Object.entries(d.extras).filter(([k,v]) => v && !visibleKeys.includes(k)).map(([k,v]) => `${k} = ${v}`),
+                ...['firstEd','accessed'].filter(k => !visibleKeys.includes(k) && d.dates[k].text).map(k => `${k} = ${d.dates[k].text}`)];
+  let extraBlock = '';
+  if (extras.length) {
+    extraBlock = S.extrasOpen ? extras.join('') + (S.frame === 'web' && extras.length % 2 ? '<div></div>' : '')
+      : `<button class="more full" data-act="more">+ ${t.tr} alanları (${t.extras.map(e => e[1]).join(', ')})</button>`;
+  }
+  const keptBlock = kept.length ? `<div class="kept full">Bu türde gizli ama korunuyor: ${esc(kept.join(' · '))}</div>` : '';
+  const dt = resolve(d.dates.date);
+  const preview = `<div class="preview full"><b>Atıf üçlüsü:</b> ${esc([d.author, d.title].filter(Boolean).join(', ') || '—')}${dt.status==='ok' ? ', ' + esc(display(dt)) : ''}, <i>${esc(t.loc)}</i>
+    <br><small style="color:var(--mute)">Konum örneği bu türde: ${esc(t.loc)}</small></div>`;
+  const inner = [...core, extraBlock, keptBlock, textField('bibNote', 'Künye notu', 'çevirmen, seri, fonun tam adı, tarih aralığı…', true, true), preview].join('');
+  const saveBtn = `<button class="primary" data-act="save">Kaydet</button>`;
+  const hdr = `<div class="bar"><span style="color:var(--mute)">İptal</span><span class="title">Yeni kaynak</span><span style="color:var(--acc);font-weight:600" data-act="save">${S.frame==='phone'?'Kaydet':''}</span></div>`;
+  return S.frame === 'phone'
+    ? `<div class="phone">${hdr}<div class="scroll">${inner}</div><div class="foot">${saveBtn}</div></div>`
+    : `<div class="web">${hdr}<div class="scroll grid">${inner}</div><div class="foot"><button>İptal</button>${saveBtn}</div></div>`;
+}
+
+function snapshot() {
+  const d = S.draft, t = T(d.type), dates = {};
+  for (const k of ['date', ...t.extras.filter(e => e[2]==='date').map(e => e[0])]) {
+    const r = resolve(d.dates[k]);
+    dates[k] = r.status === 'ok' ? { calendar:r.calendar, year:r.year, month:r.month, day:r.day, precision:r.precision, monthForm:r.monthForm,
+      display:display(r), sortValue_approxGregorian:iso(r.sortJD), ...(r.guessed ? { guessed:r.why } : {}) } : r.status === 'error' ? { error:r.error } : null;
+  }
+  const visible = Object.fromEntries(t.extras.filter(e => !e[2]).map(([k]) => [k, d.extras[k] || null]));
+  return { type:d.type, title:d.title || null, author:d.author || null, dates, extras:visible, bibliographicNote:d.bibNote || null };
+}
+
+function renderLeft() {
+  return `<div class="panel"><h3>Prototip ayarları</h3>
+    <div class="lbl">Ekran</div><div class="seg"><button data-act="frame" data-v="phone" class="${S.frame==='phone'?'on':''}">Telefon</button><button data-act="frame" data-v="web" class="${S.frame==='web'?'on':''}">Web</button></div>
+    <div class="lbl">Alan sırası</div><div class="seg"><button data-act="order" data-v="title" class="${S.order==='title'?'on':''}">Başlık önce</button><button data-act="order" data-v="author" class="${S.order==='author'?'on':''}">Yazar önce</button></div>
+    <div class="lbl">Türe özel alanlar</div><div class="seg"><button data-act="ext" data-v="1" class="${S.extrasOpen?'on':''}">Açık</button><button data-act="ext" data-v="0" class="${!S.extrasOpen?'on':''}">Katlı</button></div>
+    </div><div class="panel" style="margin-top:12px"><h3>Örnekle doldur</h3>${PRESETS.map((p,i) => `<button data-act="preset" data-i="${i}">${p[0]}</button>`).join('')}
+    <button data-act="reset" style="margin-top:8px;color:var(--mute)">Formu boşalt</button></div>
+    <div class="panel" style="margin-top:12px"><h3>Denenecek girişler</h3><pre>29 Z 1310
+Z 1310
+1310        (tahmin uyarısı)
+1310 h.
+12 Kânunusani 1327
+Kânun-ı sâni 1327
+Mart 1310   (Rumî tahmini)
+Teşrinievvel 1324
+5 Mart 1893
+29.03.1893
+Ra 1310 r.  (çelişki)
+Rebiülevvel 1310</pre></div>`;
+}
+function renderRight() {
+  const sorted = [...S.saved].sort((a,b) => (a.sortJD ?? Infinity) - (b.sortJD ?? Infinity));
+  return `<div class="panel"><h3>Taslak durumu (kaydedilecek)</h3><pre>${esc(JSON.stringify(snapshot(), null, 2))}</pre></div>
+    <div class="panel saved" style="margin-top:12px"><h3>Kaydedilenler · Tarih'e göre sıralı</h3>${sorted.length ? `<ul>${sorted.map(s =>
+      `<li><span class="d">${esc(s.display || 'tarihsiz')}</span> · ${esc(s.author ? s.author + ', ' : '')}${esc(s.title)} <span class="s">${esc(T(s.type).tr)}${s.sortJD!=null ? ' · sıra ≈ ' + iso(s.sortJD) : ''}</span>${s.id===S.lastSaved?' <span class="ok">✓ yeni</span>':''}</li>`).join('')}</ul>`
+      : '<span style="color:var(--mute)">Henüz yok. Örnekleri doldurup kaydet; sıra yaklaşık Milâdî değere göre.</span>'}</div>`;
+}
+function renderSwitcher() {
+  const i = VARIANTS.findIndex(v => v[0] === S.variant);
+  return `<span class="tag">PROTOTİP</span><button data-act="prev">←</button><span><b>${S.variant}</b> · ${VARIANTS[i][1]}</span><button data-act="next">→</button>`;
+}
+
+function render() {
+  const a = document.activeElement, id = a && a.id, sel = a && 'selectionStart' in a ? [a.selectionStart, a.selectionEnd] : null;
+  document.getElementById('left').innerHTML = renderLeft();
+  document.getElementById('form').innerHTML = renderForm();
+  document.getElementById('right').innerHTML = renderRight();
+  document.getElementById('switcher').innerHTML = renderSwitcher();
+  if (id) { const el = document.getElementById(id); if (el) { el.focus(); if (sel && el.setSelectionRange && el.type === 'text') try { el.setSelectionRange(...sel); } catch {} } }
+}
+
+function setVariant(v) {
+  for (const f of Object.values(S.draft.dates)) { sync(f); f.override = null; f.flash = null; }
+  S.variant = v; const u = new URL(location); u.searchParams.set('variant', v); u.searchParams.set('frame', S.frame); history.replaceState(null, '', u); render();
+}
+const cycle = n => { const i = VARIANTS.findIndex(v => v[0] === S.variant); setVariant(VARIANTS[(i + n + VARIANTS.length) % VARIANTS.length][0]); };
+
+document.addEventListener('input', e => {
+  const el = e.target, b = el.dataset.bind; if (!b) return;
+  if (b === 'core') S.draft[el.dataset.k] = el.value;
+  if (b === 'extra') S.draft.extras[el.dataset.k] = el.value;
+  if (b === 'dtext') {
+    const f = S.draft.dates[el.dataset.key]; f.text = el.value; f.flash = null;
+    if (S.variant === 'C') { const r = parse(f.text, f.cal); if (r.switched) { f.flash = `Takvim ${CAL[r.switched.to]} oldu: ${r.switched.why}`; f.cal = r.switched.to; } }
+  }
+  if (b === 'dpart') S.draft.dates[el.dataset.key][el.dataset.part] = el.value;
+  render();
+});
+document.addEventListener('change', e => { if (e.target.tagName === 'SELECT') e.target.dispatchEvent(new Event('input', { bubbles:true })); });
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act, d = S.draft;
+  if (act === 'type') d.type = el.dataset.type;
+  if (act === 'cal') { const f = d.dates[el.dataset.key]; if (f.cal !== el.dataset.cal && S.variant === 'B') { f.m = ''; f.d = ''; } f.cal = el.dataset.cal; f.flash = null; }
+  if (act === 'override') d.dates[el.dataset.key].override = el.dataset.cal || null;
+  if (act === 'frame') { S.frame = el.dataset.v; const u = new URL(location); u.searchParams.set('frame', S.frame); history.replaceState(null, '', u); }
+  if (act === 'order') S.order = el.dataset.v;
+  if (act === 'ext') S.extrasOpen = el.dataset.v === '1';
+  if (act === 'more') S.extrasOpen = true;
+  if (act === 'preset') return loadPreset(+el.dataset.i);
+  if (act === 'reset') S.draft = newDraft();
+  if (act === 'prev') return cycle(-1);
+  if (act === 'next') return cycle(1);
+  if (act === 'doi') { // sahte Crossref yanıtı: otomatik doldurma Milâdî yazar
+    Object.assign(d, { title:'Örnek makale başlığı (Crossref)', author:'Ayşe Örnek' }); Object.assign(d.extras, { container:'Örnek Tarih Dergisi', volume:'12/3', pages:'45–67' });
+    d.dates.date = newDate('2015'); sync(d.dates.date); d.dates.date.flash = 'DOI ile dolduruldu (Milâdî); takvimi değiştirebilirsin';
+  }
+  if (act === 'save') {
+    if (!d.title.trim()) { alert('Başlık zorunlu'); return; }
+    const r = resolve(d.dates.date);
+    if (r.status === 'error') { alert('Tarih anlaşılamadı: ' + r.error); return; }
+    const id = Date.now();
+    S.saved.push({ id, type:d.type, title:d.title, author:d.author, display: r.status === 'ok' ? display(r) : null, sortJD: r.status === 'ok' ? r.sortJD : null });
+    S.lastSaved = id; S.draft = newDraft();
+  }
+  render();
+});
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+});
+render();
+</script>
+</body>
+</html>
