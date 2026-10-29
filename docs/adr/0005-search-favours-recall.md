@@ -16,6 +16,6 @@ Scholars write notes in Turkish mixed with Ottoman transcription, so the same wo
 
 - Known noise is accepted, not patched: kır finds kir, kadı finds kadın and kadîm, ad finds at. There is no stemming exception list and no synonym or variant dictionary; ranking and quotes are the only defence.
 - A tag's identity deliberately does not follow this: tag names stay distinct on ı/i and circumflex (ADR-0003's ticket, Tag ve Collection semantiği), because a tag is a name the scholar chose, whereas search is about not losing anything. Only the tag picker's suggestions fold.
-- Stemming has to run on Turkish-lowercased text before folding. The obvious PostgreSQL chain (`unaccent` then `turkish_stem`) stems the folded text and breaks Turkish inflection (sancağı, vakfı, kadın) — measured in `docs/research/turkish-search-scenario-battery.md`. Finding an engine setup that passes the contract's scenario table is baspinarenes/homelibra#28.
+- Stemming has to run on Turkish-lowercased text before folding. The obvious PostgreSQL chain (`unaccent` then `turkish_stem`) stems the folded text and breaks Turkish inflection (sancağı, vakfı, kadın) — measured in `docs/research/turkish-search-scenario-battery.md`. The setup that passes the contract's scenario table is in ADR-0010 (baspinarenes/homelibra#28).
 - Verb inflections are not unified (gitti does not find gitmişti); scholars search mostly by nouns.
 - Search runs on the server only; there is no offline search.
