@@ -63,6 +63,8 @@
   .chip.btn { cursor:pointer; border:1px dashed var(--acc); background:#fff; color:var(--acc); }
   .warn { color:var(--warn); } .err { color:var(--err); } .ok { color:var(--ok); }
   .flash { font-size:12px; color:var(--acc); margin-top:4px; }
+  .calchip { font-size:12px; padding:1px 9px; border-radius:20px; color:var(--acc); border-color:var(--acc); margin-left:6px; font-weight:600; }
+  .lookup { background:var(--accbg); border-radius:8px; padding:8px 10px; }
   .more { width:100%; margin:4px 0 14px; color:var(--acc); }
   .kept { font-size:12px; color:var(--mute); background:#fafafa; border:1px dashed var(--line); border-radius:8px; padding:6px 8px; margin-bottom:14px; }
   .primary { background:var(--acc); color:#fff; border-color:var(--acc); padding:10px 16px; font-weight:600; }
@@ -229,6 +231,10 @@ const TYPES = [
   { k:'other', tr:'Diğer', sub:'harita, görsel, sergi', date:'Tarih', loc:'(genelde boş)', title:'Adı', author:'Yaratıcı', extras:[] },
 ];
 const T = k => TYPES.find(t => t.k === k);
+// Sade form: seyrek alanlar adlarını yazan bir düğmenin arkasında; DOI/ISBN formun başında giriş kapısı
+Object.assign(T('book'), { rare:['edition','firstEd'], lookup:['isbn','ISBN ile öner','Öner','978…'] });
+Object.assign(T('article'), { lookup:['doi','DOI ile doldur','Getir','10.…'] });
+Object.assign(T('recording'), { rare:['series','duration'] });
 const VARIANTS = [ ['A','Tek kutu + akıllı ayrıştırma'], ['B','Takvim seçici + gün/ay/yıl'], ['C','Takvim seçici + tek kutu'] ];
 
 // ---------- durum ----------
@@ -238,7 +244,7 @@ const q = new URLSearchParams(location.search);
 const S = {
   variant: VARIANTS.some(v => v[0] === q.get('variant')) ? q.get('variant') : 'A',
   frame: q.get('frame') === 'web' ? 'web' : 'phone',
-  order: 'title', extrasOpen: true, draft: newDraft(), saved: [], lastSaved: null,
+  order: 'title', density: q.get('density') === 'sade' ? 'sade' : 'tam', more: false, draft: newDraft(), saved: [], lastSaved: null,
 };
 
 // bir tarih alanının değerini o anki varyanta göre çöz
@@ -300,16 +306,22 @@ function dateFeedback(key, f, dt) {
 }
 function dateInput(key, label, sub) {
   const f = S.draft.dates[key], dt = resolve(f);
+  // Erişim tarihi seçicisiz (hep Milâdî); Sade'de seçici etiketin yanındaki çipe iner
+  // Sade: seçici yerine tek çip; her dokunuş sıradaki takvime geçer (Milâdî → Hicrî → Rumî → Milâdî)
+  const picker = key === 'accessed' || S.density === 'sade' ? '' : calSeg(key, f.cal);
+  const chip = S.variant !== 'A' && key !== 'accessed' && S.density === 'sade'
+    ? `<button class="calchip" data-act="calcycle" data-key="${key}" title="Takvimi değiştir">${CAL[f.cal]} ↻</button>` : '';
+  const today = key === 'accessed' ? `<button data-act="today" data-key="${key}" style="margin-top:6px">Bugün</button>` : '';
   let body;
   if (S.variant === 'A') body = `<input type="text" id="dt-${key}" data-bind="dtext" data-key="${key}" value="${esc(f.text)}" placeholder="ör. 29 Z 1310 · 12 Kânunusani 1327 · 1893" autocomplete="off">`;
-  else if (S.variant === 'C') body = calSeg(key, f.cal) + `<input type="text" id="dt-${key}" data-bind="dtext" data-key="${key}" value="${esc(f.text)}" placeholder="${
+  else if (S.variant === 'C') body = picker +`<input type="text" id="dt-${key}" data-bind="dtext" data-key="${key}" value="${esc(f.text)}" placeholder="${
       {miladi:'ör. 5 Mart 1893 · 1893', hicri:'ör. 29 Z 1310 · Ra 1310 · 1310', rumi:'ör. 12 Kânunusani 1327 · Mart 1310'}[f.cal]}" autocomplete="off">`;
-  else body = calSeg(key, f.cal) + `<div class="dmy">
+  else body = picker +`<div class="dmy">
       <input type="number" id="dd-${key}" data-bind="dpart" data-part="d" data-key="${key}" value="${esc(f.d)}" placeholder="Gün" min="1" max="31">
       <select id="dm-${key}" data-bind="dpart" data-part="m" data-key="${key}"><option value="">Ay —</option>${
         MONTHS[f.cal].map((mo,i) => `<option value="${i+1}" ${String(i+1)===f.m?'selected':''}>${esc(mo.n)}${mo.a ? ' ('+mo.a+')' : ''}</option>`).join('')}</select>
       <input type="number" id="dy-${key}" data-bind="dpart" data-part="y" data-key="${key}" value="${esc(f.y)}" placeholder="Yıl"></div>`;
-  return `<div class="field ${key==='date'?'full':''}"><span class="lbl">${esc(label)} ${sub ? `<small>· ${esc(sub)}</small>` : ''}</span>${body}${dateFeedback(key, f, dt)}</div>`;
+  return `<div class="field ${key==='date'?'full':''}"><span class="lbl">${esc(label)} ${sub ? `<small>· ${esc(sub)}</small>` : ''}${chip}</span>${body}${today}${dateFeedback(key, f, dt)}</div>`;
 }
 const textField = (k, label, ph, full, area) => `<div class="field ${full?'full':''}"><label for="f-${k}">${esc(label)}</label>${
   area ? `<textarea id="f-${k}" data-bind="core" data-k="${k}" placeholder="${esc(ph)}">${esc(S.draft[k])}</textarea>`
@@ -321,19 +333,24 @@ function renderForm() {
     `<button class="type ${x.k===d.type?'on':''}" data-act="type" data-type="${x.k}"><b>${x.tr}</b><span>${x.sub}</span></button>`).join('')}</div></div>`;
   const title = textField('title', 'Başlık *', t.title, true);
   const author = textField('author', 'Yazar', t.author, true);
-  const core = S.order === 'title' ? [typePicker, title, author] : [typePicker, author, title];
+  const sade = S.density === 'sade', lookupKey = sade && t.lookup ? t.lookup[0] : null;
+  const lookupBlock = lookupKey ? `<div class="field full lookup"><label for="x-${lookupKey}">${esc(t.lookup[1])} <small>· isteğe bağlı; boşsa aşağıdan elle gir</small></label><div style="display:flex;gap:6px"><input type="text" id="x-${lookupKey}" data-bind="extra" data-k="${lookupKey}" value="${esc(d.extras[lookupKey])}" placeholder="${t.lookup[3]}" autocomplete="off"><button data-act="${lookupKey}">${t.lookup[2]}</button></div></div>` : '';
+  const core = [typePicker, lookupBlock, ...(S.order === 'title' ? [title, author] : [author, title])];
   core.push(dateInput('date', t.date, t.dateHint));
-  const extras = t.extras.map(([k, label, kind]) => kind === 'date' ? dateInput(k, label, k === 'firstEd' ? 'yıl yeter' : '') :
+  const fieldHtml = ([k, label, kind]) => kind === 'date' ? dateInput(k, label, k === 'firstEd' ? 'yıl yeter' : '') :
     `<div class="field"><label for="x-${k}">${esc(label)}</label><div style="display:flex;gap:6px"><input type="text" id="x-${k}" data-bind="extra" data-k="${k}" value="${esc(d.extras[k])}" autocomplete="off">${
-      k === 'doi' ? `<button data-act="doi">Getir</button>` : ''}</div></div>`);
+      k === 'doi' ? `<button data-act="doi">Getir</button>` : k === 'isbn' ? `<button data-act="isbn">Öner</button>` : ''}</div></div>`;
+  const isRare = k => sade && !S.more && (t.rare || []).includes(k);
+  const shown = t.extras.filter(e => e[0] !== lookupKey && !isRare(e[0]));
+  const tuckedFields = t.extras.filter(e => isRare(e[0]));
+  const filled = tuckedFields.filter(([k,,kind]) => kind === 'date' ? d.dates[k].text || d.dates[k].y : d.extras[k]).length;
+  const extras = shown.map(fieldHtml);
   const visibleKeys = t.extras.map(e => e[0]);
   const kept = [...Object.entries(d.extras).filter(([k,v]) => v && !visibleKeys.includes(k)).map(([k,v]) => `${k} = ${v}`),
                 ...['firstEd','accessed'].filter(k => !visibleKeys.includes(k) && d.dates[k].text).map(k => `${k} = ${d.dates[k].text}`)];
   let extraBlock = '';
-  if (extras.length) {
-    extraBlock = S.extrasOpen ? extras.join('') + (S.frame === 'web' && extras.length % 2 ? '<div></div>' : '')
-      : `<button class="more full" data-act="more">+ ${t.tr} alanları (${t.extras.map(e => e[1]).join(', ')})</button>`;
-  }
+  if (extras.length) extraBlock = extras.join('') + (S.frame === 'web' && extras.length % 2 ? '<div></div>' : '');
+  if (tuckedFields.length) extraBlock += `<button class="more full" data-act="more">+ ${esc(tuckedFields.map(e => e[1]).join(', '))}${filled ? ` <small>(${filled} dolu)</small>` : ''}</button>`;
   const keptBlock = kept.length ? `<div class="kept full">Bu türde gizli ama korunuyor: ${esc(kept.join(' · '))}</div>` : '';
   const dt = resolve(d.dates.date);
   const preview = `<div class="preview full"><b>Atıf üçlüsü:</b> ${esc([d.author, d.title].filter(Boolean).join(', ') || '—')}${dt.status==='ok' ? ', ' + esc(display(dt)) : ''}, <i>${esc(t.loc)}</i>
@@ -361,7 +378,8 @@ function renderLeft() {
   return `<div class="panel"><h3>Prototip ayarları</h3>
     <div class="lbl">Ekran</div><div class="seg"><button data-act="frame" data-v="phone" class="${S.frame==='phone'?'on':''}">Telefon</button><button data-act="frame" data-v="web" class="${S.frame==='web'?'on':''}">Web</button></div>
     <div class="lbl">Alan sırası</div><div class="seg"><button data-act="order" data-v="title" class="${S.order==='title'?'on':''}">Başlık önce</button><button data-act="order" data-v="author" class="${S.order==='author'?'on':''}">Yazar önce</button></div>
-    <div class="lbl">Türe özel alanlar</div><div class="seg"><button data-act="ext" data-v="1" class="${S.extrasOpen?'on':''}">Açık</button><button data-act="ext" data-v="0" class="${!S.extrasOpen?'on':''}">Katlı</button></div>
+    <div class="lbl">Form</div><div class="seg"><button data-act="density" data-v="tam" class="${S.density==='tam'?'on':''}">Tam</button><button data-act="density" data-v="sade" class="${S.density==='sade'?'on':''}">Sade</button></div>
+    <div class="hint" style="margin-top:0">Sade: takvim seçici yerine tek çip, dokundukça Milâdî → Hicrî → Rumî; Kitap'ta Baskı/cilt ve İlk baskı tarihi, Kayıt'ta Seri ve Süre düğmenin arkasında; ISBN/DOI en üstte.</div>
     </div><div class="panel" style="margin-top:12px"><h3>Örnekle doldur</h3>${PRESETS.map((p,i) => `<button data-act="preset" data-i="${i}">${p[0]}</button>`).join('')}
     <button data-act="reset" style="margin-top:8px;color:var(--mute)">Formu boşalt</button></div>
     <div class="panel" style="margin-top:12px"><h3>Denenecek girişler</h3><pre>29 Z 1310
@@ -419,13 +437,21 @@ document.addEventListener('change', e => { if (e.target.tagName === 'SELECT') e.
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act, d = S.draft;
-  if (act === 'type') d.type = el.dataset.type;
+  if (act === 'type') { d.type = el.dataset.type; S.more = false; }
   if (act === 'cal') { const f = d.dates[el.dataset.key]; if (f.cal !== el.dataset.cal && S.variant === 'B') { f.m = ''; f.d = ''; } f.cal = el.dataset.cal; f.flash = null; }
   if (act === 'override') d.dates[el.dataset.key].override = el.dataset.cal || null;
   if (act === 'frame') { S.frame = el.dataset.v; const u = new URL(location); u.searchParams.set('frame', S.frame); history.replaceState(null, '', u); }
   if (act === 'order') S.order = el.dataset.v;
-  if (act === 'ext') S.extrasOpen = el.dataset.v === '1';
-  if (act === 'more') S.extrasOpen = true;
+  if (act === 'density') { S.density = el.dataset.v; S.more = false; const u = new URL(location); u.searchParams.set('density', S.density); history.replaceState(null, '', u); }
+  if (act === 'more') S.more = true;
+  if (act === 'calcycle') { const f = d.dates[el.dataset.key], ks = Object.keys(CAL);
+    f.cal = ks[(ks.indexOf(f.cal) + 1) % ks.length]; f.flash = null; if (S.variant === 'B') { f.m = ''; f.d = ''; } }
+  if (act === 'today') { const f = d.dates[el.dataset.key], g = jdToG(gToJD(new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()));
+    Object.assign(f, { cal:'miladi', y:String(g.y), m:String(g.m), d:String(g.d), override:null, flash:null }); f.text = `${g.d} ${MONTHS.miladi[g.m-1].n} ${g.y}`; }
+  if (act === 'isbn') { // sahte Open Library önerisi: kullanıcı onaylar ya da düzeltir
+    Object.assign(d, { title:'Osmanlı İmparatorluğu Klasik Çağ (1300–1600)', author:'Halil İnalcık' }); Object.assign(d.extras, { publisher:'Yapı Kredi Yayınları', place:'İstanbul' });
+    d.dates.date = newDate('2003'); sync(d.dates.date); d.dates.date.flash = 'ISBN önerisi (Open Library); kontrol et, gerekirse düzelt';
+  }
   if (act === 'preset') return loadPreset(+el.dataset.i);
   if (act === 'reset') S.draft = newDraft();
   if (act === 'prev') return cycle(-1);
