@@ -1,37 +1,45 @@
-import { formatDate } from '@homelibra/core/date';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
+import { DateFilter, useDateFilter } from '@/components/date-filter';
 import { PrimaryButton } from '@/components/primary-button';
 import { Segment } from '@/components/segment';
-import { SourceCover } from '@/components/source-cover';
+import { SourceListRow } from '@/components/source-list-row';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
-type Sort = 'title' | 'author' | 'date';
+type Sort = 'last' | 'title' | 'author' | 'date';
 
 /**
- * Kaynaklar: every Source, by Başlık, Yazar or Tarih. A row opens the Source
- * page, where its Notes are captured. Okunuyor/Bitti sections arrive with
- * Reading status (P1).
+ * Kaynaklar: every Source, by Son not (the default), Başlık, Yazar or Tarih,
+ * narrowed by the Tarih filter, which hides the undated and says how many.
+ * A row opens the Source page, where its Notes are captured. Okunuyor/Bitti
+ * sections arrive with Reading status (P1).
  */
 export default function SourcesScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
-  const [sort, setSort] = useState<Sort>('title');
+  const [sort, setSort] = useState<Sort>('last');
+  const dates = useDateFilter();
   // Keep the rows on screen while the other order loads.
-  const sources = useQuery({ ...trpc.sources.list.queryOptions({ sort }), placeholderData: keepPreviousData });
+  const all = useQuery({ ...trpc.sources.list.queryOptions({ sort }), placeholderData: keepPreviousData });
+  const filtered = useQuery({
+    ...trpc.sources.list.queryOptions({ sort, dates: dates.range }),
+    enabled: dates.range !== null,
+    placeholderData: keepPreviousData,
+  });
+  const sources = dates.range ? filtered : all;
   const addSource = () => router.push('/source/new');
 
-  if (sources.isPending || sources.isError) {
+  if (all.isPending || all.isError) {
     return (
       <View style={styles.center}>
-        {sources.isPending ? (
+        {all.isPending ? (
           <ActivityIndicator color={styles.spinner.color} />
         ) : (
           <Text style={styles.lead}>{t('sources.loadFailed')}</Text>
@@ -40,7 +48,7 @@ export default function SourcesScreen() {
     );
   }
 
-  if (sources.data.length === 0) {
+  if (all.data.length === 0) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>{t('sources.emptyTitle')}</Text>
@@ -52,50 +60,48 @@ export default function SourcesScreen() {
     );
   }
 
+  const rows = sources.data ?? [];
+  const undated = dates.range ? all.data.filter((source) => !source.date).length : 0;
+
   return (
     <FlatList
       style={styles.screen}
       contentContainerStyle={styles.content}
-      data={sources.data}
+      data={rows}
       keyExtractor={(source) => source.id}
+      keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
-        <View style={styles.sort}>
+        <View style={styles.controls}>
           <Segment
             label={t('sources.sortLabel')}
             options={[
-              { value: 'title', label: t('sources.byTitle') },
-              { value: 'author', label: t('sources.byAuthor') },
+              { value: 'last', label: t('sourceList.byLast') },
               { value: 'date', label: t('sources.byDate') },
+              { value: 'author', label: t('sources.byAuthor') },
+              { value: 'title', label: t('sources.byTitle') },
             ]}
             value={sort}
             onChange={setSort}
           />
+          <DateFilter draft={dates.draft} onChange={dates.setDraft} />
+          <Text style={styles.count}>
+            {[
+              t('sourceList.count', { count: rows.length }),
+              undated > 0 && t('dateFilter.hiddenSources', { count: undated }),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
         </View>
       }
-      renderItem={({ item: source, index }) => {
-        // Yazar · Tarih, the Date as it was entered.
-        const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
-        return (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
-            style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
-          >
-            <SourceCover type={source.type} cover={source.cover} />
-            <View style={styles.text}>
-              <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-              <Text style={styles.rowTitle} numberOfLines={2}>
-                {source.title}
-              </Text>
-              {byline !== '' && (
-                <Text style={styles.byline} numberOfLines={1}>
-                  {byline}
-                </Text>
-              )}
-            </View>
-          </Pressable>
-        );
-      }}
+      ListEmptyComponent={
+        sources.isPending ? (
+          <ActivityIndicator color={styles.spinner.color} />
+        ) : (
+          <Text style={styles.empty}>{t(sources.isError ? 'sources.loadFailed' : 'dateFilter.noSources')}</Text>
+        )
+      }
+      renderItem={({ item: source, index }) => <SourceListRow source={source} divided={index > 0} />}
     />
   );
 }
@@ -116,12 +122,7 @@ const makeStyles = (c: Colors) =>
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     action: { marginTop: space.lg },
     spinner: { color: c.accent },
-    sort: { paddingVertical: space.md },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    pressed: { opacity: 0.7 },
-    text: { flex: 1, gap: 2 },
-    type: { ...typeScale.micro, color: c.muted },
-    rowTitle: { ...typeScale.sourceTitleSm, color: c.fg },
-    byline: { ...typeScale.caption, color: c.muted },
+    controls: { gap: space.md, paddingVertical: space.md },
+    count: { ...typeScale.caption, color: c.muted },
+    empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
   });

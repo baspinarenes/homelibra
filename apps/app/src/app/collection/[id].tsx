@@ -9,6 +9,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
 import { DefinitionTags } from '@/components/definition-tags';
 import { NameInput } from '@/components/name-input';
+import { narrowView, SearchField, useCollectionSearch, useSearchText } from '@/components/note-search';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
@@ -17,8 +18,9 @@ type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
 /**
  * A Collection (#51): its name, its Tags as chips, the source-notes switch
  * and the count in a fixed bar, its Notes by Source under it. Every change
- * in the bar is kept in the definition. The Markdown copy arrives in #52,
- * the search box in #56.
+ * in the bar is kept in the definition, apart from the search box, which
+ * only narrows what is shown. The Markdown copy arrives in #52; it takes
+ * the Notes shown (`shown`), so only the matches while searching.
  */
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -68,6 +70,9 @@ function CollectionPage({ collection }: { collection: Collection }) {
   const setTags = useMutation(trpc.collections.setTags.mutationOptions({ onSuccess: refresh }));
   const setSwitch = useMutation(trpc.collections.setIncludeSourceNotes.mutationOptions({ onSuccess: refresh }));
   const failed = rename.isError || setTags.isError || setSwitch.isError;
+  const search = useSearchText();
+  const searched = useCollectionSearch(collection.id, search.query);
+  const shown = narrowView(collection, searched.matches);
 
   // While saving, the bar shows what was chosen.
   const tagNames = setTags.isPending ? setTags.variables.names : collection.tags.map((tag) => tag.name);
@@ -101,16 +106,25 @@ function CollectionPage({ collection }: { collection: Collection }) {
         count={collection.sourceOnlyCount}
         onChange={(value) => setSwitch.mutate({ id: collection.id, includeSourceNotes: value })}
       />
-      <ViewCount view={collection} />
+      <SearchField value={search.text} onChange={search.setText} placeholder={t('noteSearch.inView')} />
+      <ViewCount view={shown} of={collection} />
+      {searched.failed && <Text style={styles.error}>{t('noteSearch.failed')}</Text>}
       {failed && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
     </>
   );
 
   return (
     <CollectionView
-      view={collection}
+      view={shown}
       bar={bar}
-      empty={collection.tags.length === 0 ? t('collection.emptyNoTags') : t('collection.emptyNoNotes')}
+      matches={searched.matches}
+      empty={
+        searched.matches
+          ? t('noteSearch.viewEmpty')
+          : collection.tags.length === 0
+            ? t('collection.emptyNoTags')
+            : t('collection.emptyNoNotes')
+      }
     />
   );
 }
