@@ -10,6 +10,7 @@
     "start": "tsx src/server.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "invite": "tsx --env-file-if-exists=.env src/invite.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

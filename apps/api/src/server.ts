@@ -12,6 +12,10 @@ const api = createApi({
   secret: env.BETTER_AUTH_SECRET,
   trustedOrigins: [...env.TRUSTED_ORIGINS, ...env.CORS_ORIGINS],
   corsOrigins: env.CORS_ORIGINS,
+  google:
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
+      : undefined,
 });
 
 serve({ fetch: api.http.fetch, port: env.PORT }, (info) => {

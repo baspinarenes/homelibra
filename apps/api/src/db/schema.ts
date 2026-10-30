@@ -67,6 +67,17 @@ export const verification = pgTable(
   (t) => [index('verification_identifier_idx').on(t.identifier)],
 );
 
+/**
+ * An Invitation: an address the Operator lets open an Account during the
+ * closed beta (GLOSSARY.md). Operator data, not Library data, so it has
+ * no account_id and no row-level security.
+ */
+export const invitation = pgTable('invitation', {
+  id: uuid('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Library tables. Every one carries account_id and is guarded by a row-level
 // security policy in a hand-written migration (ADR-0006).
 

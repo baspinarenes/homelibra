@@ -33,9 +33,14 @@ export const tr = {
     submit: 'Giriş yap',
     changeEmail: 'Başka bir adres kullan',
     resend: 'Kodu yeniden gönder',
+    or: 'ya da',
+    google: 'Google ile devam et',
+    inviteOnly: 'Homelibra şu an davetle açık.',
+    inviteOnlyContact: 'Davet için bize yazabilirsin:',
     errors: {
       sendFailed: 'Kod gönderilemedi. Bağlantını kontrol edip yeniden dene.',
       invalidCode: 'Kod yanlış ya da süresi dolmuş.',
+      googleFailed: 'Google ile giriş yapılamadı. Yeniden dene.',
     },
   },
   home: {

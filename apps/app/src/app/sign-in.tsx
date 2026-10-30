@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import * as Linking from 'expo-linking';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/primary-button';
+import { SecondaryButton } from '@/components/secondary-button';
 import { authClient } from '@/lib/auth-client';
+import { contactEmail } from '@/lib/contact';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Step = { kind: 'email' } | { kind: 'code'; email: string };
+type Message = { kind: 'notInvited' } | { kind: 'error'; text: string } | null;
+
+/** The API's error code for an address off the closed-beta list (apps/api/src/auth.ts). */
+const NOT_INVITED = 'NOT_INVITED';
 
 export default function SignInScreen() {
   const { t } = useTranslation();
@@ -16,25 +24,52 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [message, setMessage] = useState<Message>(null);
+
+  // Google sends a failed sign-in back here as ?error=..., on the web by a
+  // redirect and on Android through the app's scheme.
+  const { error: googleError } = useLocalSearchParams<{ error?: string }>();
+  useEffect(() => {
+    if (googleError) setMessage(failure(googleError, t('signIn.errors.googleFailed')));
+  }, [googleError, t]);
+
+  /** NOT_INVITED gets the closed-beta notice; anything else gets `text`. */
+  function failure(code: string | undefined, text: string): Message {
+    return code === NOT_INVITED ? { kind: 'notInvited' } : { kind: 'error', text };
+  }
 
   async function sendCode(address: string) {
     setBusy(true);
-    setError(null);
+    setMessage(null);
     const { error } = await authClient.emailOtp.sendVerificationOtp({ email: address, type: 'sign-in' });
     setBusy(false);
-    if (error) return setError(t('signIn.errors.sendFailed'));
+    if (error) return setMessage(failure(error.code, t('signIn.errors.sendFailed')));
     setCode('');
     setStep({ kind: 'code', email: address });
   }
 
+  async function continueWithGoogle() {
+    setGoogleBusy(true);
+    setMessage(null);
+    // On success the web leaves for Google; Android opens it in a browser
+    // tab and comes back through the app's scheme.
+    const { error } = await authClient.signIn.social({
+      provider: 'google',
+      callbackURL: Linking.createURL('/'),
+      errorCallbackURL: Linking.createURL('/sign-in'),
+    });
+    setGoogleBusy(false);
+    if (error) setMessage({ kind: 'error', text: t('signIn.errors.googleFailed') });
+  }
+
   async function submitCode(address: string) {
     setBusy(true);
-    setError(null);
+    setMessage(null);
     // On success the session store updates and the root layout swaps to the tabs.
     const { error } = await authClient.signIn.emailOtp({ email: address, otp: code });
     setBusy(false);
-    if (error) setError(t('signIn.errors.invalidCode'));
+    if (error) setMessage({ kind: 'error', text: t('signIn.errors.invalidCode') });
   }
 
   return (
@@ -64,10 +99,21 @@ export default function SignInScreen() {
                 <PrimaryButton
                   label={t('signIn.sendCode')}
                   busy={busy}
-                  disabled={!email.trim()}
+                  disabled={!email.trim() || googleBusy}
                   onPress={() => sendCode(email.trim())}
                 />
               </View>
+              <View style={styles.or}>
+                <View style={styles.rule} />
+                <Text style={styles.orLabel}>{t('signIn.or')}</Text>
+                <View style={styles.rule} />
+              </View>
+              <SecondaryButton
+                label={t('signIn.google')}
+                busy={googleBusy}
+                disabled={busy}
+                onPress={continueWithGoogle}
+              />
             </>
           ) : (
             <>
@@ -106,7 +152,18 @@ export default function SignInScreen() {
             </>
           )}
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {message?.kind === 'notInvited' ? (
+            <View style={styles.notice}>
+              <Text style={styles.noticeTitle}>{t('signIn.inviteOnly')}</Text>
+              <Text style={styles.hint}>
+                {t('signIn.inviteOnlyContact')}{' '}
+                <Text style={styles.link} onPress={() => Linking.openURL(`mailto:${contactEmail}`)}>
+                  {contactEmail}
+                </Text>
+              </Text>
+            </View>
+          ) : null}
+          {message?.kind === 'error' ? <Text style={styles.error}>{message.text}</Text> : null}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -154,5 +211,10 @@ const makeStyles = (c: Colors) =>
     links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
     link: { ...typeScale.label, color: c.accent },
     error: { ...typeScale.label, color: c.warn, marginTop: space.sm },
+    or: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginVertical: space.sm },
+    rule: { flex: 1, height: 1, backgroundColor: c.line },
+    orLabel: { ...typeScale.caption, color: c.muted },
+    notice: { gap: space.xs, marginTop: space.sm, borderTopColor: c.line, borderTopWidth: 1, paddingTop: space.md },
+    noticeTitle: { ...typeScale.label, color: c.fg },
     placeholder: { color: c.muted2 },
   });
