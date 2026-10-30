@@ -1,7 +1,9 @@
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Segment } from '@/components/segment';
+import { SettingsRow } from '@/components/settings-list';
 import { SignOutButton } from '@/components/sign-out-button';
 import {
   type Colors,
@@ -13,10 +15,11 @@ import {
   useThemePreference,
 } from '@/theme';
 
-/** A placeholder Ayarlar: the theme choice and sign-out. More settings arrive with their tickets. */
+/** Ayarlar: the theme choice, Hesap ve gizlilik and sign-out. More settings arrive with their tickets. */
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const router = useRouter();
   const preference = useThemePreference();
   const themes: { value: ThemePreference; label: string }[] = [
     { value: 'system', label: t('settings.themeSystem') },
@@ -32,6 +35,7 @@ export default function SettingsScreen() {
       </View>
       <View style={[styles.section, styles.divided]}>
         <Text style={styles.heading}>{t('settings.account').toLocaleUpperCase('tr')}</Text>
+        <SettingsRow label={t('privacy.title')} onPress={() => router.push('/settings/privacy')} />
         <View style={styles.signOut}>
           <SignOutButton />
         </View>

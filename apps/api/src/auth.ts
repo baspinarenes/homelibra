@@ -1,7 +1,8 @@
 import { expo } from '@better-auth/expo';
+import * as Sentry from '@sentry/node';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { emailOTP } from 'better-auth/plugins';
 import { uuidv7 } from 'uuidv7';
 
@@ -18,6 +19,9 @@ const NOT_INVITED = 'NOT_INVITED';
 function notInvited() {
   return new APIError('FORBIDDEN', { code: NOT_INVITED, message: 'Homelibra is invitation-only for now.' });
 }
+
+/** The app's email-change screen says the address belongs to another Account. */
+const EMAIL_TAKEN = 'EMAIL_TAKEN';
 
 export type AuthOptions = {
   db: Db;
@@ -49,7 +53,15 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google
     // Google lands in the Account that already has its address: Better Auth
     // links the two when Google says it verified the address.
     socialProviders: google ? { google } : {},
-    user: { modelName: 'account' },
+    user: {
+      modelName: 'account',
+      // On the session, so the app knows without another request whether to
+      // show the first-sign-in screen. Only account.acceptTerms sets them.
+      additionalFields: {
+        termsAcceptedAt: { type: 'date', required: false, input: false },
+        termsVersion: { type: 'string', required: false, input: false },
+      },
+    },
     account: {
       modelName: 'account_provider',
       fields: { userId: 'homelibraAccountId', accountId: 'providerAccountId' },
@@ -75,6 +87,17 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google
             if (!(await invited.isInvited(user.email))) throw notInvited();
           },
         },
+        update: {
+          // An email change has gone through: the session still holds the
+          // address the Account just left.
+          async after(user, ctx) {
+            const oldEmail = ctx?.context.session?.user.email;
+            if (ctx?.path !== '/email-otp/change-email' || !oldEmail || oldEmail === user.email) return;
+            await invited.move(oldEmail, user.email);
+            // The change stands even if the notice cannot be sent.
+            await mailer.sendEmailChangedNotice(oldEmail, user.email).catch((e) => Sentry.captureException(e));
+          },
+        },
       },
     },
     hooks: {
@@ -82,17 +105,29 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google
       // Invitation nor an Account. An open Account stays open even after the
       // Operator takes its address off the list.
       before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path !== '/email-otp/send-verification-otp' || ctx.body?.type !== 'sign-in') return;
-        if (!(await invited.mayRequestCode(String(ctx.body.email)))) throw notInvited();
+        if (ctx.path === '/email-otp/send-verification-otp' && ctx.body?.type === 'sign-in') {
+          if (!(await invited.mayRequestCode(String(ctx.body.email)))) throw notInvited();
+        }
+        // Better Auth would quietly send no code; the scholar is told instead.
+        // Only a signed-in scholar learns this: this hook runs before the
+        // endpoint's own session check, which turns everyone else away.
+        if (ctx.path === '/email-otp/request-email-change' && (await getSessionFromCtx(ctx))) {
+          if (await ctx.context.internalAdapter.findUserByEmail(String(ctx.body?.newEmail))) {
+            throw new APIError('BAD_REQUEST', { code: EMAIL_TAKEN, message: 'Another Account uses this address.' });
+          }
+        }
       }),
     },
     plugins: [
       emailOTP({
         otpLength: 6,
         expiresIn: 10 * 60,
-        async sendVerificationOTP({ email, otp }) {
-          await mailer.sendSignInCode(email, otp);
+        async sendVerificationOTP({ email, otp, type }) {
+          if (type === 'change-email') await mailer.sendEmailChangeCode(email, otp);
+          else await mailer.sendSignInCode(email, otp);
         },
+        // A code to the new address; the old one only hears about it afterwards.
+        changeEmail: { enabled: true },
       }),
       expo(),
     ],

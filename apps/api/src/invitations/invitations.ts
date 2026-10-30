@@ -58,6 +58,23 @@ export function invitations(db: Db) {
         .orderBy(asc(invitation.createdAt));
     },
 
+    /**
+     * An Account that changes its address takes its Invitation along, so the
+     * address it left opens nothing and the Invitation still goes away with it.
+     */
+    async move(from: string, to: string) {
+      const target = normalizeEmail(to);
+      const leaving = eq(invitation.email, normalizeEmail(from));
+      await db.transaction(async (tx) => {
+        const [targetInvitation] = await tx.select().from(invitation).where(eq(invitation.email, target));
+        if (targetInvitation) {
+          await tx.delete(invitation).where(leaving);
+        } else {
+          await tx.update(invitation).set({ email: target }).where(leaving);
+        }
+      });
+    },
+
     /** Only an Invitation opens a new Account. */
     isInvited,
 

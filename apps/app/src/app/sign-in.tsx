@@ -1,5 +1,5 @@
 import * as Linking from 'expo-linking';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -20,6 +20,7 @@ const NOT_INVITED = 'NOT_INVITED';
 export default function SignInScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const router = useRouter();
   const [step, setStep] = useState<Step>({ kind: 'email' });
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -165,6 +166,9 @@ export default function SignInScreen() {
           ) : null}
           {message?.kind === 'error' ? <Text style={styles.error}>{message.text}</Text> : null}
         </View>
+        <Text accessibilityRole="link" style={[styles.link, styles.privacy]} onPress={() => router.push('/privacy')}>
+          {t('signIn.privacy')}
+        </Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -210,6 +214,7 @@ const makeStyles = (c: Colors) =>
     action: { marginTop: space.md },
     links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
     link: { ...typeScale.label, color: c.accent },
+    privacy: { alignSelf: 'center', marginTop: space.lg },
     error: { ...typeScale.label, color: c.warn, marginTop: space.sm },
     or: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginVertical: space.sm },
     rule: { flex: 1, height: 1, backgroundColor: c.line },

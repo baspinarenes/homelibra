@@ -10,13 +10,23 @@ export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
 
 /**
  * Each tab is its own stack, so it keeps its own back history. Tapping the
- * tab that is already open pops its stack to the root.
+ * tab that is already open pops its stack to the root. `children` declares
+ * the screens the tab pushes over its root.
  */
-export function TabStack({ title, headerRight }: { title: TabTitleKey; headerRight?: () => ReactNode }) {
+export function TabStack({
+  title,
+  headerRight,
+  children,
+}: {
+  title: TabTitleKey;
+  headerRight?: () => ReactNode;
+  children?: ReactNode;
+}) {
   const { t } = useTranslation();
   return (
     <Stack screenOptions={useHeaderOptions()}>
       <Stack.Screen name="index" options={{ title: t(title), headerRight }} />
+      {children}
     </Stack>
   );
 }
