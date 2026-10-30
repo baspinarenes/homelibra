@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/primary-button';
+import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
 import { SourceCover } from '@/components/source-cover';
 import { ToOrganizeStrip } from '@/components/to-organize';
@@ -45,6 +46,7 @@ export default function HomeScreen() {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <LastNotedSection lastNoted={lastNoted.data} />
         <ToOrganizeStrip />
+        <ReadingList exceptId={lastNoted.data.source.id} />
         <RecentTags />
       </ScrollView>
     );

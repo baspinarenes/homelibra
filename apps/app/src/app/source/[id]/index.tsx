@@ -23,6 +23,7 @@ import { CoverEditor } from '@/components/cover-editor';
 import { NoteComposer } from '@/components/note-composer';
 import { NewMark, OrganizeEntry, OrganizeMode } from '@/components/organize-mode';
 import { OutboxStatus } from '@/components/outbox-status';
+import { ReadingStatusButton } from '@/components/reading-status';
 import { SourceTags } from '@/components/source-tags';
 import { NoteTagsLine } from '@/components/tag-chips';
 import { useOutbox } from '@/lib/outbox';
@@ -204,7 +205,14 @@ function SourcePage({
               <View style={styles.identity}>
                 <CoverEditor sourceId={source.id} type={source.type} cover={source.cover} />
                 <View style={styles.identityText}>
-                  <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
+                  <View style={styles.typeLine}>
+                    <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
+                    <ReadingStatusButton
+                      sourceId={source.id}
+                      status={source.readingStatus}
+                      onOrganize={() => setOrganizing(true)}
+                    />
+                  </View>
                   <Text style={styles.title}>{source.title}</Text>
                 </View>
               </View>
@@ -326,6 +334,7 @@ const makeStyles = (c: Colors) =>
     },
     identity: { flexDirection: 'row', alignItems: 'center', gap: 13 },
     identityText: { flex: 1, gap: 2 },
+    typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: 2 },
     type: { ...typeScale.micro, color: c.accent },
     title: { ...typeScale.sourceTitle, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },

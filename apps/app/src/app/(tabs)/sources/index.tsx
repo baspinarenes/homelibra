@@ -3,9 +3,10 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/primary-button';
+import { StatusSectionHeader } from '@/components/reading-status';
 import { Segment } from '@/components/segment';
 import { SourceCover } from '@/components/source-cover';
 import { useTRPC } from '@/lib/trpc';
@@ -14,9 +15,9 @@ import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme'
 type Sort = 'title' | 'author' | 'date';
 
 /**
- * Kaynaklar: every Source, by Başlık, Yazar or Tarih. A row opens the Source
- * page, where its Notes are captured. Okunuyor/Bitti sections arrive with
- * Reading status (P1).
+ * Kaynaklar: every Source, by Başlık, Yazar or Tarih, in two sections by
+ * Reading status: Okunuyor, then Bitti, folded until opened. A row opens
+ * the Source page, where its Notes are captured.
  */
 export default function SourcesScreen() {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export default function SourcesScreen() {
   const trpc = useTRPC();
   const router = useRouter();
   const [sort, setSort] = useState<Sort>('title');
+  const [finishedOpen, setFinishedOpen] = useState(false);
   // Keep the rows on screen while the other order loads.
   const sources = useQuery({ ...trpc.sources.list.queryOptions({ sort }), placeholderData: keepPreviousData });
   const addSource = () => router.push('/source/new');
@@ -52,12 +54,34 @@ export default function SourcesScreen() {
     );
   }
 
+  const reading = sources.data.filter((source) => source.readingStatus === 'reading');
+  const finished = sources.data.filter((source) => source.readingStatus === 'finished');
+  const sections = [
+    ...(reading.length > 0 ? [{ status: 'reading' as const, count: reading.length, data: reading }] : []),
+    ...(finished.length > 0
+      ? [{ status: 'finished' as const, count: finished.length, data: finishedOpen ? finished : [] }]
+      : []),
+  ];
+
   return (
-    <FlatList
+    <SectionList
       style={styles.screen}
       contentContainerStyle={styles.content}
-      data={sources.data}
+      sections={sections}
       keyExtractor={(source) => source.id}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) =>
+        section.status === 'reading' ? (
+          <StatusSectionHeader label={t('readingStatus.readingSection')} count={section.count} />
+        ) : (
+          <StatusSectionHeader
+            label={t('readingStatus.finishedSection')}
+            count={section.count}
+            open={finishedOpen}
+            onToggle={() => setFinishedOpen((open) => !open)}
+          />
+        )
+      }
       ListHeaderComponent={
         <View style={styles.sort}>
           <Segment

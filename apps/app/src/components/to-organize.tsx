@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { FinishedMark } from '@/components/reading-status';
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
@@ -50,7 +51,7 @@ export function ToOrganizeStrip() {
   );
 }
 
-/** A Düzenlenecekler row: Cover, title, when the last Note came, "N etiketsiz"; it opens the Source page. */
+/** A Düzenlenecekler row: Cover, title, when the last Note came, "bitti" if so, "N etiketsiz"; it opens the Source page. */
 export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided: boolean }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
@@ -68,6 +69,7 @@ export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided
         </Text>
         <Text style={styles.when}>{elapsed(t, source.lastNoteAt)}</Text>
       </View>
+      {source.finished && <FinishedMark />}
       <Text style={styles.badge}>{t('organize.untagged', { count: source.untaggedCount })}</Text>
     </Pressable>
   );
