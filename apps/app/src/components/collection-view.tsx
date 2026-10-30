@@ -126,6 +126,8 @@ export function SourceNotesSwitch({
         onValueChange={onChange}
         trackColor={{ false: colors.line, true: colors.accent }}
         thumbColor={colors.surface}
+        // react-native-web colours the thumb of an "on" switch on its own otherwise.
+        {...({ activeThumbColor: colors.surface } as object)}
       />
       <Text style={styles.switchLabel}>
         {t('collection.sourceNotes')}{' '}
