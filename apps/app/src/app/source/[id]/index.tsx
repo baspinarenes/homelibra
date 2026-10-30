@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -25,8 +25,11 @@ import { NewMark, OrganizeEntry, OrganizeMode } from '@/components/organize-mode
 import { OutboxStatus } from '@/components/outbox-status';
 import { SourceTags } from '@/components/source-tags';
 import { NoteTagsLine } from '@/components/tag-chips';
+import { knownNotes } from '@/lib/known-notes';
+import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
+import { offerUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
@@ -54,11 +57,13 @@ export default function SourceScreen() {
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
   const { state } = useOutbox();
   // The Notes still in the outbox go on top of what the server (or, offline,
-  // the phone's cache) last said.
-  const shown = useMemo(
-    () => notes.data && withPendingNotes(id, notes.data, state.pending),
-    [id, notes.data, state.pending],
-  );
+  // the phone's cache) last said; one waiting to move here comes from the
+  // list it is in now.
+  const shown = useMemo(() => {
+    if (!notes.data) return undefined;
+    const movingHere = state.pending.some((operation) => operation.type === 'moveNote' && operation.sourceId === id);
+    return withPendingNotes(id, notes.data, state.pending, movingHere ? knownNotes() : []);
+  }, [id, notes.data, state.pending]);
 
   // What the page last showed stays up while a refetch fails or waits for the network.
   if (!source.data || !shown) {
@@ -101,6 +106,8 @@ function SourcePage({
   const organize = useQuery(trpc.organize.source.queryOptions({ sourceId: source.id }));
   const fresh = useMemo(() => new Set(organize.data?.newNoteIds), [organize.data]);
   const [organizing, setOrganizing] = useState(false);
+  // Düzenle mode is online only, and starts from what the outbox still had to send (#58).
+  const onlineFirst = useOnlineFirst(useCallback(() => offerUndo({ message: t('outbox.needsConnection') }), [t]));
   const [expanded, setExpanded] = useState(false);
   // "Devam et" opens the box with the focus in it.
   const [writing, setWriting] = useState(write);
@@ -210,7 +217,10 @@ function SourcePage({
               </View>
               <Text style={styles.byline}>{byline}</Text>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
-              <OrganizeEntry count={organize.data?.untaggedCount ?? 0} onPress={() => setOrganizing(true)} />
+              <OrganizeEntry
+                count={organize.data?.untaggedCount ?? 0}
+                onPress={() => void onlineFirst(() => setOrganizing(true))}
+              />
             </View>
           }
           ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
@@ -255,8 +265,8 @@ function SourcePage({
 /**
  * Locator on the left (— when it has none), Excerpt and ↳ Comment on the
  * right; under them, on the phone, where the outbox has the Note:
- * kuyrukta / gönderiliyor / eşitlendi. A Note still waiting opens for
- * editing once it is sent.
+ * kuyrukta / gönderiliyor / eşitlendi / Kaynağı silinmiş. A Note still
+ * waiting opens for editing too, through the outbox (#58).
  */
 function NoteRow({
   note,
@@ -278,12 +288,11 @@ function NoteRow({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const waiting = status === 'queued' || status === 'sending';
+  const waiting = status !== undefined && status !== 'synced';
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityHint={waiting ? undefined : t('sourcePage.editNote')}
-      disabled={waiting}
+      accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
       onLayout={onLayout}
       style={({ pressed }) => [

@@ -24,8 +24,8 @@ export type Operation =
       /**
        * Where the Comment goes if the Excerpt's Note no longer takes it (it
        * took another Comment, or went away elsewhere): a Note of its own at
-       * the same Source and Locator, as Geri al would make it. Not sent; the
-       * same id as Geri al's `commentNoteId`, so the two never make two Notes.
+       * the same Source and Locator, with the Tags chosen for it. Not sent;
+       * the same id as Geri al's `commentNoteId`, so the two never make two Notes.
        */
       ownNote?: { id: string; sourceId: string; locator: string | null };
     }

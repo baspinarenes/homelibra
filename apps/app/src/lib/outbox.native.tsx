@@ -108,7 +108,7 @@ const transport: Transport = {
   undo: undoOperation,
 };
 
-type OutboxValue = { apply: ApplyOperation; state: OutboxState; drain: () => Promise<void> };
+type OutboxValue = { apply: ApplyOperation; state: OutboxState; drain: () => Promise<number> };
 const OutboxContext = createContext<OutboxValue | null>(null);
 
 export function OutboxProvider({ children }: { children: ReactNode }) {
@@ -159,7 +159,10 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
     [opening],
   );
   const drain = useCallback(async () => {
-    if (opening) await (await opening).drain();
+    if (!opening) return 0;
+    const outbox = await opening;
+    await outbox.drain();
+    return outbox.state().waiting;
   }, [opening]);
   const value = useMemo(() => ({ apply, state, drain }), [apply, state, drain]);
   return <OutboxContext value={value}>{children}</OutboxContext>;
@@ -170,7 +173,7 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
  * waiting to be sent. A screen does not know whether it is online: `apply`
  * resolves once the operation is safe (sent on the web, queued here) and
  * rejects when it is not. `drain` sends what waits, before an online-only
- * operation such as Düzenle mode.
+ * operation such as Düzenle mode; it resolves with how many Notes still wait.
  */
 export function useOutbox(): OutboxValue {
   const value = useContext(OutboxContext);

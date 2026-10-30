@@ -65,6 +65,7 @@ function RootLayout() {
                   <Stack.Screen name="source/[id]/index" options={pushedScreen} />
                   <Stack.Screen name="source/[id]/edit" options={pushedScreen} />
                   <Stack.Screen name="note/[id]" options={pushedScreen} />
+                  <Stack.Screen name="lost-notes" options={pushedScreen} />
                 </Stack.Protected>
                 {/* İlk giriş onayı: the Library stays closed until the terms of use are accepted. */}
                 <Stack.Protected guard={!!session && !termsAccepted && !closed} redirectTo={home}>

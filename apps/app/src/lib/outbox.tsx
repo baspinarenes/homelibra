@@ -19,15 +19,16 @@ const apply: ApplyOperation = async (operation) => {
   const { undoToken } = await sendOperation(operation);
   return { undo: undoToken ? () => undoOperation(undoToken) : null };
 };
-const drain = async () => {};
+/** Nothing waits on the web. */
+const drain = async () => 0;
 
 /**
  * "İşlemi uygula", the screens' one way to change Notes, and what is
  * waiting to be sent. A screen does not know whether it is online: `apply`
  * resolves once the operation is safe (sent here, queued on the phone) and
  * rejects when it is not. `drain` sends what waits, before an online-only
- * operation such as Düzenle mode.
+ * operation such as Düzenle mode; it resolves with how many Notes still wait.
  */
-export function useOutbox(): { apply: ApplyOperation; state: OutboxState; drain: () => Promise<void> } {
+export function useOutbox(): { apply: ApplyOperation; state: OutboxState; drain: () => Promise<number> } {
   return { apply, state: nothingWaiting, drain };
 }

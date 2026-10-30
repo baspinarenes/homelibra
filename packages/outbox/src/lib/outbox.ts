@@ -59,7 +59,7 @@ function retarget(operation: Operation, sourceId: string): Operation {
 function asOwnNote(operation: Operation): Operation | null {
   if (operation.type !== 'attachComment' || !operation.ownNote) return null;
   const { id, sourceId, locator } = operation.ownNote;
-  return { type: 'createNote', note: { id, sourceId, locator, comment: operation.comment } };
+  return { type: 'createNote', note: { id, sourceId, locator, comment: operation.comment, tags: operation.tags } };
 }
 
 type Settled = { promise: Promise<Reply | null>; settle: (reply: Reply | null) => void };

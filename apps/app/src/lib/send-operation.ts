@@ -2,10 +2,16 @@ import type { Operation } from '@homelibra/outbox';
 
 import { queryClient, trpcClient, trpcOptions } from './trpc';
 
-/** Everywhere a Note shows: its Source's list, Ana sayfa, search, Etiketler, Düzenlenecekler. */
-const refreshNotes = () =>
+/**
+ * Everywhere a Note shows: its Source's list, Ana sayfa, search, Etiketler,
+ * Düzenlenecekler. Not a deleted Note's own notes.get: it would only fail
+ * to load (and try again) while its screen goes.
+ */
+const refreshNotes = (operation: Operation) =>
   Promise.all([
-    queryClient.invalidateQueries({ queryKey: trpcOptions.notes.pathKey() }),
+    queryClient.invalidateQueries({
+      queryKey: operation.type === 'deleteNote' ? trpcOptions.notes.list.pathKey() : trpcOptions.notes.pathKey(),
+    }),
     queryClient.invalidateQueries({ queryKey: trpcOptions.sources.pathKey() }),
     queryClient.invalidateQueries({ queryKey: trpcOptions.search.pathKey() }),
     queryClient.invalidateQueries({ queryKey: trpcOptions.tags.pathKey() }),
@@ -49,7 +55,7 @@ async function call(operation: Operation): Promise<{ undoToken?: string | null }
  */
 export async function sendOperation(operation: Operation) {
   const { undoToken = null } = await call(operation);
-  await refreshNotes();
+  await refreshNotes(operation);
   return { undoToken };
 }
 
