@@ -39,6 +39,7 @@ function RootLayout() {
   // marks that refetch pending too. Showing the splash then would unmount the
   // sign-in screen and lose its step, typed code and ?error= message.
   const loading = (isPending && !isRefetching) || (!fontsLoaded && !fontError);
+  const termsAccepted = !!session?.user.termsAcceptedAt;
 
   return (
     <SafeAreaProvider>
@@ -52,15 +53,21 @@ function RootLayout() {
             </View>
           ) : (
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-              <Stack.Protected guard={!!session}>
+              <Stack.Protected guard={!!session && termsAccepted}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="source/new" options={pushedScreen} />
                 <Stack.Screen name="source/[id]" options={pushedScreen} />
                 <Stack.Screen name="capture" options={pushedScreen} />
               </Stack.Protected>
+              {/* İlk giriş onayı: the Library stays closed until the terms of use are accepted. */}
+              <Stack.Protected guard={!!session && !termsAccepted}>
+                <Stack.Screen name="welcome" />
+              </Stack.Protected>
               <Stack.Protected guard={!session}>
                 <Stack.Screen name="sign-in" />
               </Stack.Protected>
+              {/* Hesap ve gizlilik's documents open signed in or not. */}
+              <Stack.Screen name="privacy" />
             </Stack>
           )}
         </TRPCProvider>

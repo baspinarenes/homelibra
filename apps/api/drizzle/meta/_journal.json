@@ -47,8 +47,15 @@
     {
       "idx": 6,
       "version": "7",
-      "when": 1793361954337,
-      "tag": "0006_notes",
+      "when": 1793361828011,
+      "tag": "0006_terms_acceptance",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793362084610,
+      "tag": "0007_notes",
       "breakpoints": true
     }
   ]

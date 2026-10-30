@@ -27,6 +27,10 @@ export const account = pgTable('account', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  /** When the scholar accepted the terms of use on their first sign-in; the Library stays closed until then. */
+  termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
+  /** The version of the privacy notice and terms of use the app showed at that moment. */
+  termsVersion: text('terms_version'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
