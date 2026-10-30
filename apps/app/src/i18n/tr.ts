@@ -388,6 +388,9 @@ export const tr = {
     searchNeedsConnection: 'Arama için bağlantı gerekiyor',
     // #58: a Note whose Source was deleted elsewhere while it waited.
     sourceGone: 'Kaynağı silinmiş',
+    // A Note whose text the server refused for good: kept until edited or deleted.
+    refused: 'gönderilemedi',
+    refusedLead: 'Sunucu bu notu kabul etmedi; metni bu telefonda duruyor. Düzeltip kaydet ya da notu sil.',
     lostNotes: '{{count}} notun kaynağı silinmiş',
     lostTitle: 'Kaynağı silinmiş',
     lostLead:

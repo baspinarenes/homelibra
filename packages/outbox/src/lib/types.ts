@@ -76,8 +76,11 @@ export interface Transport {
   undo(token: string): Promise<void>;
 }
 
-/** kuyrukta / gönderiliyor / eşitlendi (server confirmed) / kaynağı silinmiş. */
-export type NoteStatus = 'queued' | 'sending' | 'synced' | 'sourceGone';
+/**
+ * kuyrukta / gönderiliyor / eşitlendi (server confirmed) / kaynağı silinmiş /
+ * gönderilemedi (the server refused its text for good; it waits to be edited or deleted).
+ */
+export type NoteStatus = 'queued' | 'sending' | 'synced' | 'sourceGone' | 'refused';
 
 /** What applying an operation hands back to the screen. */
 export type Receipt = {
