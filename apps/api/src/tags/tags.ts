@@ -101,7 +101,8 @@ export async function mergeTag(tx: LibraryTx, accountId: string, fromId: string,
     await tx.execute(sql`
       update ${table} l set tag_id = ${intoId}
        where l.tag_id = ${fromId} and l.account_id = ${accountId}
-         and not exists (select from ${table} x where x.${column} = l.${column} and x.tag_id = ${intoId})`);
+         and not exists (select from ${table} x
+                          where x.${column} = l.${column} and x.tag_id = ${intoId} and x.account_id = ${accountId})`);
   }
   // Takes the links left (to carriers that had both) with it.
   await tx.delete(tag).where(and(eq(tag.id, fromId), eq(tag.accountId, accountId)));

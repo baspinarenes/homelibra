@@ -123,11 +123,14 @@ export const sourcesRouter = router({
           readingStatus: source.readingStatus,
           ...coverColumns,
           // Spelled out: drizzle leaves a one-table select's columns unqualified.
-          noteCount: sql<number>`(select count(*) from ${note} n where n.source_id = source.id)::int`,
-          lastNoteId: sql<string | null>`(select n.id from ${note} n where n.source_id = source.id
+          noteCount: sql<number>`(select count(*) from ${note} n
+                                   where n.source_id = source.id and n.account_id = ${ctx.accountId})::int`,
+          lastNoteId: sql<string | null>`(select n.id from ${note} n
+                                           where n.source_id = source.id and n.account_id = ${ctx.accountId}
                                            order by n.id desc limit 1)`,
           untaggedCount: sql<number>`(select count(*) from ${note} n
-                                       where n.source_id = source.id and ${waiting('n', 'source')})::int`,
+                                       where n.source_id = source.id and n.account_id = ${ctx.accountId}
+                                         and ${waiting(ctx.accountId, 'n', 'source')})::int`,
         })
         .from(source)
         .where(and(eq(source.accountId, ctx.accountId), inDates(input.dates, sql`${source.dateSort}`)));

@@ -18,16 +18,18 @@ import { recordUndo } from '../undo/undo';
  * Source's last "Bitir"; before the first one, every untagged Note. Taking
  * a Tag off an older Note later does not bring it back.
  */
-export const waiting = (n: string, s: string) =>
-  sql.raw(`not exists (select 1 from note_tag nt where nt.note_id = ${n}.id)
-    and (${s}.last_finished_at is null or ${n}.entered_source_at > ${s}.last_finished_at)`);
+export const waiting = (accountId: string, n: string, s: string) => {
+  const [nr, sr] = [sql.raw(n), sql.raw(s)];
+  return sql`not exists (select 1 from ${noteTag} nt where nt.note_id = ${nr}.id and nt.account_id = ${accountId})
+    and (${sr}.last_finished_at is null or ${nr}.entered_source_at > ${sr}.last_finished_at)`;
+};
 
 /** How many of the Source's Notes Organizing pass waits on, as Düzenlenecekler counts them. */
 export async function waitingCount(tx: LibraryTx, accountId: string, sourceId: string) {
   const [row] = await tx.execute<{ count: number }>(
     sql`select count(*)::int as count from ${note} n
           join ${source} s on s.id = n.source_id and s.account_id = n.account_id
-         where n.source_id = ${sourceId} and n.account_id = ${accountId} and ${waiting('n', 's')}`,
+         where n.source_id = ${sourceId} and n.account_id = ${accountId} and ${waiting(accountId, 'n', 's')}`,
   );
   return row?.count ?? 0;
 }
@@ -58,7 +60,7 @@ export const organizeRouter = router({
                   s.reading_status = 'finished' as finished, w.untagged, l.last
             from ${source} s
             join lateral (select count(*)::int as untagged from ${note} n
-                           where n.source_id = s.id and n.account_id = s.account_id and ${waiting('n', 's')}) w
+                           where n.source_id = s.id and n.account_id = s.account_id and ${waiting(ctx.accountId, 'n', 's')}) w
               on w.untagged > 0
             join lateral (select n.id as last from ${note} n
                            where n.source_id = s.id and n.account_id = s.account_id
@@ -101,7 +103,7 @@ export const organizeRouter = router({
     const notes = await ctx.tx.execute<{ id: string; fresh: boolean; waiting: boolean }>(
       sql`select n.id,
                  s.last_finished_at is not null and n.entered_source_at > s.last_finished_at as fresh,
-                 ${waiting('n', 's')} as waiting
+                 ${waiting(ctx.accountId, 'n', 's')} as waiting
             from ${note} n
             join ${source} s on s.id = n.source_id and s.account_id = n.account_id
            where n.source_id = ${input.sourceId} and n.account_id = ${ctx.accountId}`,

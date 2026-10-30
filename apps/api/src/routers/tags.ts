@@ -25,12 +25,12 @@ export const tagsRouter = router({
         .select({
           id: tag.id,
           name: tag.name,
-          noteCount: sql<number>`(select count(*) from ${noteTag} where ${noteTag.tagId} = ${tag.id})::int`,
-          sourceCount: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id})::int`,
+          noteCount: sql<number>`(select count(*) from ${noteTag} where ${noteTag.tagId} = ${tag.id} and ${noteTag.accountId} = ${ctx.accountId})::int`,
+          sourceCount: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id} and ${sourceTag.accountId} = ${ctx.accountId})::int`,
           lastUsed: sql<string>`greatest(
-            (select max(${noteTag.createdAt}) from ${noteTag} where ${noteTag.tagId} = ${tag.id}),
-            (select max(${sourceTag.createdAt}) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id}),
-            (select max(${collectionTag.createdAt}) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id}))`,
+            (select max(${noteTag.createdAt}) from ${noteTag} where ${noteTag.tagId} = ${tag.id} and ${noteTag.accountId} = ${ctx.accountId}),
+            (select max(${sourceTag.createdAt}) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id} and ${sourceTag.accountId} = ${ctx.accountId}),
+            (select max(${collectionTag.createdAt}) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id} and ${collectionTag.accountId} = ${ctx.accountId}))`,
         })
         .from(tag)
         .where(eq(tag.accountId, ctx.accountId));
@@ -116,9 +116,9 @@ export const tagsRouter = router({
     const [row] = await ctx.tx
       .select({
         name: tag.name,
-        notes: sql<number>`(select count(*) from ${noteTag} where ${noteTag.tagId} = ${tag.id})::int`,
-        sources: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id})::int`,
-        collections: sql<number>`(select count(*) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id})::int`,
+        notes: sql<number>`(select count(*) from ${noteTag} where ${noteTag.tagId} = ${tag.id} and ${noteTag.accountId} = ${ctx.accountId})::int`,
+        sources: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id} and ${sourceTag.accountId} = ${ctx.accountId})::int`,
+        collections: sql<number>`(select count(*) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id} and ${collectionTag.accountId} = ${ctx.accountId})::int`,
       })
       .from(tag)
       .where(and(eq(tag.id, input.id), eq(tag.accountId, ctx.accountId)));
