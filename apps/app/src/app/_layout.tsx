@@ -23,7 +23,7 @@ export default Sentry.wrap(RootLayout);
 function RootLayout() {
   const { data: session, isPending, isRefetching } = authClient.useSession();
   const { scheme, colors } = useTheme();
-  // Pushed over the tabs (the Source form), so they keep a back button.
+  // Pushed over the tabs (the Source form, Capture), so they keep a back button.
   const pushedScreen = { ...useHeaderOptions(), headerShown: true };
   // Keys must match `fonts` in theme.ts. A font that fails to load falls back to the system font.
   const [fontsLoaded, fontError] = useFonts({
@@ -56,6 +56,7 @@ function RootLayout() {
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="source/new" options={pushedScreen} />
                 <Stack.Screen name="source/[id]" options={pushedScreen} />
+                <Stack.Screen name="capture" options={pushedScreen} />
               </Stack.Protected>
               <Stack.Protected guard={!session}>
                 <Stack.Screen name="sign-in" />

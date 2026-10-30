@@ -35,6 +35,7 @@ export const palette = {
     dangerSoft: '#F6E1DC',
     mark: '#F5DE9C',
     tabBg: 'rgba(246,242,234,0.94)',
+    scrim: 'rgba(42,37,32,0.38)', // behind a sheet
   },
   dark: {
     page: '#1C1813',
@@ -62,6 +63,7 @@ export const palette = {
     dangerSoft: '#3D211C',
     mark: '#5C4A18',
     tabBg: 'rgba(28,24,19,0.94)',
+    scrim: 'rgba(0,0,0,0.55)',
   },
 } as const;
 

@@ -1,7 +1,8 @@
+import { uuidv7 } from 'uuidv7';
 import { describe, expect, it } from 'vitest';
 
 import { withLibrary } from './db/client';
-import { source } from './db/schema';
+import { note, source } from './db/schema';
 import { scholarEmail, testApi } from './test/harness';
 
 const t = testApi();
@@ -51,5 +52,39 @@ describe('Library isolation', () => {
     expect(await naib.sources.list({ sort: 'title' })).toEqual([]);
 
     expect(await kadi.sources.get({ id })).toMatchObject({ title: 'DH.MKT' });
+  });
+
+  it("a Note cannot be added to another Account's Source, nor that Source's Notes read", async () => {
+    const kadi = await (await t.signIn(scholarEmail('kadi'))).call();
+    const naib = await (await t.signIn(scholarEmail('naib'))).call();
+    const { id: sourceId } = await kadi.sources.create({ type: 'archive', title: 'DH.MKT', author: 'BOA' });
+    await kadi.notes.create({ id: uuidv7(), sourceId, locator: 'gml. 3', excerpt: "Ma'lûm-ı âlîleri buyuruldukda" });
+
+    await expect(naib.notes.create({ id: uuidv7(), sourceId, comment: 'Benim notum' })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    await expect(naib.notes.flow({ sourceId })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+    expect(await kadi.notes.flow({ sourceId })).toEqual([expect.objectContaining({ locator: 'gml. 3' })]);
+  });
+
+  it("the database refuses a Note on another Library's Source even past the API", async () => {
+    const kadi = await t.signIn(scholarEmail('kadi'));
+    const naib = await t.signIn(scholarEmail('naib'));
+    const { id: sourceId } = await (await kadi.call()).sources.create({ type: 'book', title: 'Tezâkir' });
+
+    const insert = withLibrary(t.db, naib.accountId, (tx) =>
+      tx.insert(note).values({ id: uuidv7(), accountId: naib.accountId, sourceId, comment: 'Benim notum' }),
+    );
+
+    await expect(insert).rejects.toMatchObject({ cause: { constraint_name: 'note_source_fk' } });
+  });
+
+  it("outside a Library transaction the API's role sees no Notes", async () => {
+    const kadi = await (await t.signIn(scholarEmail('kadi'))).call();
+    const { id: sourceId } = await kadi.sources.create({ type: 'book', title: 'Tezâkir' });
+    await kadi.notes.create({ id: uuidv7(), sourceId, comment: 'Genel değerlendirme.' });
+
+    expect(await t.db.select().from(note)).toEqual([]);
   });
 });

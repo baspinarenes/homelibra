@@ -1,11 +1,11 @@
 import { compareTr } from '@homelibra/core';
 import { type SourceField, sourceFields, type SourceFieldValues, sourceTypes } from '@homelibra/core/source';
 import { TRPCError } from '@trpc/server';
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
-import { source } from '../db/schema';
+import { note, source } from '../db/schema';
 import { libraryProcedure, router } from '../trpc/init';
 
 // Only Tür and Başlık are required; nothing else is validated, so a
@@ -67,6 +67,22 @@ export const sourcesRouter = router({
       if (b.author === null) return -1;
       return compareTr(a.author, b.author) || byTitle(a, b);
     });
+  }),
+
+  /**
+   * Capture's Source list and its default (the first): the Source with the
+   * latest Note first, then those without Notes, newest first. Note and
+   * Source ids are UUIDv7, so id order is time order.
+   */
+  byLastNote: libraryProcedure.query(async ({ ctx }) => {
+    const lastNote = sql`(select ${note.id} from ${note}
+        where ${note.sourceId} = ${source.id} and ${note.accountId} = ${ctx.accountId}
+        order by ${note.id} desc limit 1)`;
+    return ctx.tx
+      .select({ id: source.id, type: source.type, title: source.title, author: source.author })
+      .from(source)
+      .where(eq(source.accountId, ctx.accountId))
+      .orderBy(sql`${lastNote} desc nulls last`, desc(source.id));
   }),
 
   create: libraryProcedure.input(sourceInput).mutation(async ({ ctx, input }) => {
