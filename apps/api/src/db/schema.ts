@@ -161,6 +161,12 @@ export const source = pgTable(
     coverKeyLarge: text('cover_key_large'),
     coverKeySmall: text('cover_key_small'),
     /**
+     * The last "Bitir" of an Organizing pass on this Source; null before the
+     * first. Düzenlenecekler counts only the untagged Notes that entered the
+     * Source after it, and the Source page marks them "yeni".
+     */
+    lastFinishedAt: timestamp('last_finished_at', { withTimezone: true }),
+    /**
      * What search matches by word: Başlık, Yazar, Künye notu and the
      * type-specific text fields, through the search functions of 0011_search.
      */
