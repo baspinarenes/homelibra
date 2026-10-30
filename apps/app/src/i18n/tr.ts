@@ -407,6 +407,36 @@ export const tr = {
     cancel: 'Vazgeç',
     deleteFailed: 'Silinemedi. Bağlantını kontrol edip yeniden dene.',
   },
+  // The ⋯ menu of a Tag in Etiketler (#50).
+  tagActions: {
+    menuFor: '{{name}} için seçenekler',
+    close: 'Kapat',
+    rename: 'Yeniden adlandır',
+    merge: 'Birleştir…',
+    delete: 'Sil',
+    renameTitle: 'Yeniden adlandır',
+    newName: 'Yeni ad',
+    renameHint: 'Her yerde hemen değişir. Başka bir etiketin adını yazarsan ikisini birleştirmeyi önerir.',
+    save: 'Kaydet',
+    mergeTitle: '“{{name}}” hangi etiketle birleşsin?',
+    filter: 'Etiketlerde bul',
+    noMatches: 'Bu adla başka etiket yok.',
+    // <tag> is set apart.
+    confirmMerge:
+      '<tag>“{{name}}”</tag> etiketi <tag>“{{into}}”</tag> ile birleşecek: notları ve kaynakları ona geçer, “{{name}}” adı kaybolur. Bu geri alınamaz.',
+    confirmMergeAction: 'Birleştir',
+    merged: 'Etiketler “{{name}}” altında birleşti',
+    counting: 'Etiketin kullanıldığı yerler sayılıyor…',
+    confirmDelete: '<tag>“{{name}}”</tag> {{from}} kaldırılacak.',
+    confirmDeleteUnused: '<tag>“{{name}}”</tag> silinecek.',
+    fromNotes: '{{count}} nottan',
+    fromSources: '{{count}} kaynaktan',
+    and: 've',
+    confirmDeleteAction: 'Sil',
+    deleted: '“{{name}}” silindi',
+    cancel: 'Vazgeç',
+    failed: 'Olmadı. Bağlantını kontrol edip yeniden dene.',
+  },
   // A Source's Cover (#63, ADR-0011).
   cover: {
     title: 'Kapak',
