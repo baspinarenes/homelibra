@@ -36,6 +36,8 @@ export const account = pgTable('account', {
   termsVersion: text('terms_version'),
   /** When the scholar confirmed Hesabı sil. The Account is closed from then on and deleted 14 days later, unless cancelled. */
   deletionRequestedAt: timestamp('deletion_requested_at', { withTimezone: true }),
+  /** How many times the scholar used "Markdown olarak kopyala", for the Operator's usage command. */
+  markdownCopies: integer('markdown_copies').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

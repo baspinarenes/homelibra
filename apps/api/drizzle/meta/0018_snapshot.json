@@ -1,5 +1,5 @@
 {
-  "id": "7d0d0102-440c-44f4-ad09-ca25fe513982",
+  "id": "e24ebac3-3c88-4230-a25b-786c6c5e8fdb",
   "prevId": "5270f456-adc1-426a-acb4-8b1c5d724dd0",
   "version": "7",
   "dialect": "postgresql",
@@ -56,6 +56,13 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "markdown_copies": {
+          "name": "markdown_copies",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -1438,8 +1445,7 @@
       "schema": "public",
       "values": [
         "doi",
-        "isbn",
-        "isbn_cover"
+        "isbn"
       ]
     },
     "public.reading_status": {
