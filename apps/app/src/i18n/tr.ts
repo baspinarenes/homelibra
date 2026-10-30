@@ -517,4 +517,15 @@ export const tr = {
     tagged: '{{count}} nota etiket takıldı',
     tagFailed: 'Etiketlenemedi. Bağlantını kontrol edip yeniden dene.',
   },
+  // A Collection's Markdown copy and its top bar menu (#52).
+  collectionActions: {
+    copy: 'Markdown olarak kopyala',
+    copied: 'Kopyalandı · {{count}} not',
+    copyFailed: 'Kopyalanamadı.',
+    menu: 'Dosya seçenekleri',
+    close: 'Kapat',
+    delete: 'Dosyayı sil',
+    deleted: '“{{name}}” silindi',
+    deleteFailed: 'Silinemedi. Bağlantını kontrol edip yeniden dene.',
+  },
 } as const;
