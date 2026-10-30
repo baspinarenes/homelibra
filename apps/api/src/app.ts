@@ -45,7 +45,7 @@ export function createApi(options: ApiOptions) {
 
   const http = new Hono().basePath('/api');
   if (options.corsOrigins?.length) {
-    http.use('*', cors({ origin: options.corsOrigins, credentials: true }));
+    http.use('*', cors({ origin: options.corsOrigins, credentials: true, exposeHeaders: ['content-disposition'] }));
   }
   http.get('/health', (c) => c.text('ok'));
   http.on(['GET', 'POST'], '/auth/*', (c) => auth.handler(c.req.raw));
