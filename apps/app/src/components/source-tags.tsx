@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { TagChips } from '@/components/tag-chips';
+import { useOffline } from '@/lib/network';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, type as typeScale, useThemedStyles } from '@/theme';
 
@@ -15,6 +16,8 @@ export function SourceTags({ sourceId, names }: { sourceId: string; names: strin
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  // Online only: the outbox carries Notes, not a Source's Tags (#58).
+  const offline = useOffline();
   const setOnSource = useMutation(
     trpc.tags.setOnSource.mutationOptions({
       onSuccess: () =>
@@ -33,7 +36,9 @@ export function SourceTags({ sourceId, names }: { sourceId: string; names: strin
         pickerTitle={t('tags.sourceTitle')}
         onChange={(next) => setOnSource.mutate({ sourceId, names: next })}
       />
-      {setOnSource.isError && <Text style={styles.error}>{t('tags.saveFailed')}</Text>}
+      {setOnSource.isError && (
+        <Text style={styles.error}>{t(offline ? 'outbox.needsConnection' : 'tags.saveFailed')}</Text>
+      )}
     </View>
   );
 }

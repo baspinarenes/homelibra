@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/primary-button';
+import { LostNotesNotice } from '@/components/lost-notes-notice';
 import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
 import { SourceCover } from '@/components/source-cover';
@@ -44,6 +45,7 @@ export default function HomeScreen() {
   if (lastNoted.data) {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <LostNotesNotice />
         <LastNotedSection lastNoted={lastNoted.data} />
         <ToOrganizeStrip />
         <ReadingList exceptId={lastNoted.data.source.id} />

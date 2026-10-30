@@ -42,13 +42,22 @@ const undoGone = (error: unknown) =>
  * Source or Note coming back shows up in lists, search and Ana sayfa alike.
  */
 export function offerServerUndo(message: string, token: string | null) {
-  if (!token) return;
-  const undo = () =>
-    trpcClient.undo
-      .mutate({ token })
-      .then(() => queryClient.invalidateQueries())
-      .catch((error: unknown) =>
-        offerUndo(undoGone(error) ? { message: i18n.t('undo.gone') } : { message: i18n.t('undo.failed'), undo }),
-      );
-  offerUndo({ message, undo });
+  offerReceiptUndo(
+    message,
+    token ? () => trpcClient.undo.mutate({ token }).then(() => queryClient.invalidateQueries()) : null,
+  );
+}
+
+/**
+ * Offers the Geri al an operation applied through the outbox handed back
+ * (out of the queue while it waits, or the server's once it was sent); none
+ * when there is none.
+ */
+export function offerReceiptUndo(message: string, undo: (() => Promise<void>) | null) {
+  if (!undo) return;
+  const take = () =>
+    undo().catch((error: unknown) =>
+      offerUndo(undoGone(error) ? { message: i18n.t('undo.gone') } : { message: i18n.t('undo.failed'), undo: take }),
+    );
+  offerUndo({ message, undo: take });
 }
