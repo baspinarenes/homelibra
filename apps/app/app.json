@@ -36,7 +36,8 @@
           "organization": "enes-baspnar",
           "project": "homelibra-app"
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

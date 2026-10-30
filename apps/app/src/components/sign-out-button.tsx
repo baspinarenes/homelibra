@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { authClient } from '@/lib/auth-client';
-import { queryClient } from '@/lib/trpc';
+import { forgetQueries } from '@/lib/query-provider';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** Signs out this device only; the scholar's other sessions stay open. */
@@ -14,7 +14,7 @@ export function SignOutButton() {
       accessibilityRole="button"
       onPress={async () => {
         await authClient.signOut();
-        queryClient.clear();
+        await forgetQueries();
       }}
       style={styles.button}
     >
