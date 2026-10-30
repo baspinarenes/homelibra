@@ -4,10 +4,14 @@ import { and, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
-import { setCollectionTags, tagsOfCollection, tagsOfCollections } from '../collections/definition';
+import {
+  collectionDefinition,
+  setCollectionTags,
+  tagsOfCollection,
+  tagsOfCollections,
+} from '../collections/definition';
 import { deleteCollection } from '../collections/delete';
 import { collectionView, memberCount } from '../collections/view';
-import type { LibraryTx } from '../db/client';
 import { account, collection, tag } from '../db/schema';
 import { resolveTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
@@ -16,15 +20,6 @@ const collectionName = z.string().trim().min(1).max(200);
 
 /** The Collection with this id, when it is in this Library. */
 const myCollection = (accountId: string, id: string) => and(eq(collection.id, id), eq(collection.accountId, accountId));
-
-async function definition(tx: LibraryTx, accountId: string, id: string) {
-  const [row] = await tx
-    .select({ id: collection.id, name: collection.name, includeSourceNotes: collection.includeSourceNotes })
-    .from(collection)
-    .where(myCollection(accountId, id));
-  if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
-  return { ...row, tags: await tagsOfCollection(tx, accountId, id) };
-}
 
 export const collectionsRouter = router({
   /**
@@ -112,7 +107,7 @@ export const collectionsRouter = router({
 
   /** The Collection's definition and its view, worked out now (#3). */
   view: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
-    const found = await definition(ctx.tx, ctx.accountId, input.id);
+    const found = await collectionDefinition(ctx.tx, ctx.accountId, input.id);
     return { ...found, ...(await collectionView(ctx.tx, ctx.accountId, found)) };
   }),
 

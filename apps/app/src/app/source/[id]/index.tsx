@@ -21,9 +21,11 @@ import {
 
 import { CoverEditor } from '@/components/cover-editor';
 import { NoteComposer } from '@/components/note-composer';
+import { type Match, MarkedText, useSearchText, useSourceSearch } from '@/components/note-search';
 import { NewMark, OrganizeEntry, OrganizeMode } from '@/components/organize-mode';
 import { OutboxStatus } from '@/components/outbox-status';
 import { ReadingStatusButton } from '@/components/reading-status';
+import { SourceSearchBar, SourceSearchButton } from '@/components/source-search';
 import { SourceTags } from '@/components/source-tags';
 import { NoteTagsLine } from '@/components/tag-chips';
 import { knownNotes } from '@/lib/known-notes';
@@ -47,7 +49,8 @@ type Pin = { id: string; at: 'box' | 'middle' };
  * order, with the writing box at its foot. Capture happens here; it has no
  * screen of its own. "Devam et" opens the page ready to write (`write`), a
  * search result on the Note it found (`note`), every other way in as for
- * reading: the box closed and the list at the top.
+ * reading: the box closed and the list at the top. "Bu kaynakta ara"
+ * narrows the list to the Notes that match and hides the writing box.
  */
 export default function SourceScreen() {
   const { id, write, note } = useLocalSearchParams<{ id: string; write?: string; note?: string }>();
@@ -107,6 +110,17 @@ function SourcePage({
   const organize = useQuery(trpc.organize.source.queryOptions({ sourceId: source.id }));
   const fresh = useMemo(() => new Set(organize.data?.newNoteIds), [organize.data]);
   const [organizing, setOrganizing] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const search = useSearchText();
+  const searched = useSourceSearch(source.id, searching ? search.query : '');
+  const listed = useMemo(
+    () => (searched.matches ? notes.filter((note) => searched.matches?.has(note.id)) : notes),
+    [notes, searched.matches],
+  );
+  const closeSearch = () => {
+    setSearching(false);
+    search.setText('');
+  };
   // Düzenle mode is online only, and starts from what the outbox still had to send (#58).
   const onlineFirst = useOnlineFirst(useCallback(() => offerUndo({ message: t('outbox.needsConnection') }), [t]));
   const [expanded, setExpanded] = useState(false);
@@ -124,7 +138,7 @@ function SourcePage({
   // Again whenever the list's height or content changes: the keyboard opens, the box grows, a saved Note comes in.
   const scrollToPin = () => {
     const target = pin.current;
-    const index = target ? notes.findIndex((n) => n.id === target.id) : -1;
+    const index = target ? listed.findIndex((n) => n.id === target.id) : -1;
     if (!target || index < 0) return;
     // Above the box with room for the marked Note's outline.
     const above = target.at === 'box';
@@ -192,8 +206,8 @@ function SourcePage({
           ref={list}
           style={styles.screen}
           contentContainerStyle={styles.content}
-          data={notes}
-          extraData={[marked, statuses]}
+          data={listed}
+          extraData={[marked, statuses, searched.matches]}
           keyExtractor={(note) => note.id}
           keyboardShouldPersistTaps="handled"
           onLayout={scrollToPin}
@@ -225,18 +239,34 @@ function SourcePage({
               </View>
               <Text style={styles.byline}>{byline}</Text>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
-              <OrganizeEntry
-                count={organize.data?.untaggedCount ?? 0}
-                onPress={() => void onlineFirst(() => setOrganizing(true))}
-              />
+              <View style={styles.actions}>
+                <OrganizeEntry
+                  count={organize.data?.untaggedCount ?? 0}
+                  onPress={() => void onlineFirst(() => setOrganizing(true))}
+                />
+                {!searching && <SourceSearchButton onPress={() => setSearching(true)} />}
+              </View>
+              {searching && (
+                <SourceSearchBar
+                  text={search.text}
+                  onChange={search.setText}
+                  matches={searched.matches}
+                  failed={searched.failed}
+                  total={notes.length}
+                  onClose={closeSearch}
+                />
+              )}
             </View>
           }
-          ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
+          ListEmptyComponent={
+            <Text style={styles.empty}>{t(searched.matches ? 'noteSearch.sourceEmpty' : 'sourcePage.empty')}</Text>
+          }
           renderItem={({ item: note, index }) => (
             <NoteRow
               note={note}
               divided={index > 0}
               marked={note.id === marked}
+              match={searched.matches?.get(note.id)}
               fresh={fresh.has(note.id)}
               status={statuses.get(note.id)}
               onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
@@ -248,24 +278,27 @@ function SourcePage({
           )}
         />
       )}
-      <NoteComposer
-        sourceId={source.id}
-        sourceType={source.type}
-        carriedLocator={last?.note.locator ?? ''}
-        carriedSince={last ? last.locatorSince.getTime() : Date.now()}
-        expanded={expanded}
-        onExpandedChange={setExpanded}
-        autoFocus={write}
-        onFocusChange={(focused) => {
-          setWriting(focused);
-          if (focused && last) pinAboveBox(last.note.id);
-          else if (!focused) pin.current = null;
-        }}
-        onSaved={(id) => {
-          setFreshId(id);
-          pinAboveBox(id);
-        }}
-      />
+      {/* Hidden rather than gone while searching, so a draft in it stays. */}
+      <View style={searching && styles.hidden}>
+        <NoteComposer
+          sourceId={source.id}
+          sourceType={source.type}
+          carriedLocator={last?.note.locator ?? ''}
+          carriedSince={last ? last.locatorSince.getTime() : Date.now()}
+          expanded={expanded}
+          onExpandedChange={setExpanded}
+          autoFocus={write}
+          onFocusChange={(focused) => {
+            setWriting(focused);
+            if (focused && last) pinAboveBox(last.note.id);
+            else if (!focused) pin.current = null;
+          }}
+          onSaved={(id) => {
+            setFreshId(id);
+            pinAboveBox(id);
+          }}
+        />
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -280,6 +313,7 @@ function NoteRow({
   note,
   divided,
   marked,
+  match,
   fresh,
   status,
   onPress,
@@ -288,6 +322,8 @@ function NoteRow({
   note: ListedNote;
   divided: boolean;
   marked: boolean;
+  /** What "Bu kaynakta ara" found in it, to mark. */
+  match: Match | undefined;
   /** Came into the Source after its last "Bitir". */
   fresh: boolean;
   status: NoteStatus | undefined;
@@ -312,8 +348,8 @@ function NoteRow({
     >
       <Text style={styles.locator}>{note.locator ?? '—'}</Text>
       <View style={styles.texts}>
-        {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
-        {note.comment && <Text style={styles.comment}>{`↳ ${note.comment}`}</Text>}
+        {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} style={styles.excerpt} />}
+        {note.comment && <MarkedText text={note.comment} marks={match?.comment} style={styles.comment} prefix="↳ " />}
         <View style={styles.marks}>
           <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
           {fresh && <NewMark />}
@@ -347,6 +383,8 @@ const makeStyles = (c: Colors) =>
     type: { ...typeScale.micro, color: c.accent },
     title: { ...typeScale.sourceTitle, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+    hidden: { display: 'none' },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },

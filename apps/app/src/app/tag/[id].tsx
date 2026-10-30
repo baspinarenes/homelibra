@@ -5,13 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
+import { narrowView, SearchField, useSearchText, useTagSearch } from '@/components/note-search';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * A Tag's page (#51, story 104): the Collection view of that one Tag, saved
- * nowhere; its switch lives on the page. "Dosya olarak kaydet" makes it a
- * Collection of the same name and Tag and opens that instead.
+ * nowhere; its switch lives on the page, and its search box only narrows
+ * what is shown. "Dosya olarak kaydet" makes it a Collection of the same
+ * name and Tag and opens that instead.
  */
 export default function TagScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,6 +28,8 @@ export default function TagScreen() {
     ...trpc.collections.tagView.queryOptions({ tagId: id, includeSourceNotes }),
     placeholderData: keepPreviousData,
   });
+  const search = useSearchText();
+  const searched = useTagSearch(id, includeSourceNotes, search.query);
   const save = useMutation(
     trpc.collections.create.mutationOptions({
       onSuccess: async ({ id: collectionId }) => {
@@ -50,6 +54,7 @@ export default function TagScreen() {
     );
   }
   const { tag } = view.data;
+  const shown = narrowView(view.data, searched.matches);
 
   const bar = (
     <>
@@ -70,7 +75,9 @@ export default function TagScreen() {
         count={view.data.sourceOnlyCount}
         onChange={setIncludeSourceNotes}
       />
-      <ViewCount view={view.data} />
+      <SearchField value={search.text} onChange={search.setText} placeholder={t('noteSearch.inView')} />
+      <ViewCount view={shown} of={view.data} />
+      {searched.failed && <Text style={styles.error}>{t('noteSearch.failed')}</Text>}
       {save.isError && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
     </>
   );
@@ -78,7 +85,12 @@ export default function TagScreen() {
   return (
     <>
       <Stack.Screen options={{ title: '' }} />
-      <CollectionView view={view.data} bar={bar} empty={t('collection.emptyTagNoNotes')} />
+      <CollectionView
+        view={shown}
+        bar={bar}
+        matches={searched.matches}
+        empty={searched.matches ? t('noteSearch.viewEmpty') : t('collection.emptyTagNoNotes')}
+      />
     </>
   );
 }

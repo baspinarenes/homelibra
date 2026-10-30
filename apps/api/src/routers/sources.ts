@@ -1,5 +1,4 @@
 import { compareTr } from '@homelibra/core';
-import { capturedAt } from '@homelibra/core/note';
 import { type CalendarDate, calendars, sortValue } from '@homelibra/core/date';
 import {
   isFilled,
@@ -9,6 +8,7 @@ import {
   type SourceFieldValues,
   sourceTypes,
 } from '@homelibra/core/source';
+import { capturedAt } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
@@ -16,11 +16,12 @@ import { z } from 'zod';
 
 import { coverColumns, coverOf } from '../covers/covers';
 import { note, source } from '../db/schema';
+import { dateFilter, inDates } from '../search/dates';
 import { tagParts } from '../tags/snapshot';
 import { tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo, storedRow } from '../undo/undo';
-import { waitingCount } from './organize';
+import { waiting, waitingCount } from './organize';
 
 // Only Tür and Başlık are required; nothing else is validated, so a
 // non-standard citation still goes in (#40, story 44). Blank means empty;
@@ -100,12 +101,16 @@ export const sourcesRouter = router({
   }),
 
   /**
-   * The Kaynaklar list, by Başlık, by Yazar or by Tarih (oldest first, across
-   * calendars); Sources without a Yazar or a Tarih come last. Each with its
-   * Reading status: the app splits the list into Okunuyor and Bitti.
+   * The Kaynaklar list, by Son not (the Source noted last first), by Başlık,
+   * by Yazar or by Tarih (oldest first, across calendars); Sources without a
+   * Note, a Yazar or a Tarih come last. Each with its Reading status (the app
+   * splits the list into Okunuyor and Bitti), how many Notes it has, when the
+   * last one was captured and how many untagged ones Düzenle waits on
+   * ("N etiketsiz"). The Tarih filter keeps only Sources dated in its years
+   * (#40, story 164).
    */
   list: libraryProcedure
-    .input(z.object({ sort: z.enum(['title', 'author', 'date']) }))
+    .input(z.object({ sort: z.enum(['last', 'title', 'author', 'date']), dates: dateFilter.nullish() }))
     .query(async ({ ctx, input }) => {
       const rows = await ctx.tx
         .select({
@@ -117,9 +122,15 @@ export const sourcesRouter = router({
           dateSort: source.dateSort,
           readingStatus: source.readingStatus,
           ...coverColumns,
+          // Spelled out: drizzle leaves a one-table select's columns unqualified.
+          noteCount: sql<number>`(select count(*) from ${note} n where n.source_id = source.id)::int`,
+          lastNoteId: sql<string | null>`(select n.id from ${note} n where n.source_id = source.id
+                                           order by n.id desc limit 1)`,
+          untaggedCount: sql<number>`(select count(*) from ${note} n
+                                       where n.source_id = source.id and ${waiting('n', 'source')})::int`,
         })
         .from(source)
-        .where(eq(source.accountId, ctx.accountId));
+        .where(and(eq(source.accountId, ctx.accountId), inDates(input.dates, sql`${source.dateSort}`)));
       type Row = (typeof rows)[number];
       const byTitle = (a: Row, b: Row) => compareTr(a.title, b.title);
       const lastWhenNull = <T>(a: T | null, b: T | null, compare: (a: T, b: T) => number) => {
@@ -128,11 +139,17 @@ export const sourcesRouter = router({
         return compare(a, b);
       };
       const order: Record<typeof input.sort, (a: Row, b: Row) => number> = {
+        // UUIDv7 ids sort as their capture times, newest last.
+        last: (a, b) =>
+          lastWhenNull(a.lastNoteId, b.lastNoteId, (x, y) => (x < y ? 1 : x > y ? -1 : 0)) || byTitle(a, b),
         title: byTitle,
         author: (a, b) => lastWhenNull(a.author, b.author, compareTr) || byTitle(a, b),
         date: (a, b) => lastWhenNull(a.dateSort, b.dateSort, (x, y) => x - y) || byTitle(a, b),
       };
-      return rows.sort(order[input.sort]).map(({ dateSort: _, ...row }) => coverOf(row));
+      return rows.sort(order[input.sort]).map(({ dateSort: _, lastNoteId, ...row }) =>
+        // A string, as the app receives it over JSON.
+        coverOf({ ...row, lastNoteAt: lastNoteId && capturedAt(lastNoteId).toISOString() }),
+      );
     }),
 
   /**

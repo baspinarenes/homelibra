@@ -534,6 +534,46 @@ export const tr = {
     tagged: '{{count}} nota etiket takıldı',
     tagFailed: 'Etiketlenemedi. Bağlantını kontrol edip yeniden dene.',
   },
+  // "Bu kaynakta ara", the search box of a Collection or a Tag's page, and Ara's selector (#56).
+  noteSearch: {
+    inSource: 'Bu kaynakta ara',
+    inView: 'Bu görünümde ara',
+    close: 'Kapat',
+    clear: 'Aramayı temizle',
+    sourceEmpty: 'Bu kaynakta eşleşen not yok.',
+    viewEmpty: 'Eşleşen not yok.',
+    matchCount: '{{shown}} / {{count}} not',
+    viewMatchCounts: '{{shown}} / {{notes}} not · {{sources}} kaynak',
+    failed: 'Arama yapılamadı. Bağlantını kontrol edip yeniden dene.',
+    kindLabel: 'Sonuçlar',
+    all: 'Tümü',
+    notes: 'Notlar',
+    sources: 'Kaynaklar',
+  },
+  // The Tarih filter of Kaynaklar and Ara (#56, story 164).
+  dateFilter: {
+    label: 'Tarih: {{range}}',
+    any: 'tümü',
+    from: 'Başlangıç',
+    to: 'Bitiş',
+    year: 'yıl',
+    open: '…',
+    clear: 'Temizle',
+    changeCalendar: '{{side}} yılının takvimini değiştir: {{calendar}}',
+    lead: 'Kaynak Tarih’ine göre süz. Takvim çipine dokun: Milâdî → Hicrî → Rumî.',
+    hint: '≈ {{from}}–{{to}} Milâdî. Kaynaklar Tarih’lerinin yaklaşık Milâdî değeriyle süzülür; tarihsiz kaynaklar gizlenir.',
+    notInCalendar: '{{year}} yılı {{calendar}} takviminde yok.',
+    hiddenSources: '{{count}} tarihsiz kaynak gizli',
+    hiddenResults: 'Tarihsiz kaynaklardan {{sources}} kaynak ve {{notes}} not gizli',
+    noSources: 'Bu tarih aralığında kaynak yok.',
+  },
+  // Kaynaklar's "Son not" order and the counts on its rows (#56, story 165).
+  sourceList: {
+    byLast: 'Son not',
+    count: '{{count}} kaynak',
+    notes: '{{count}} not',
+    noNotes: 'notsuz',
+  },
   // A Collection's Markdown copy and its top bar menu (#52).
   collectionActions: {
     copy: 'Markdown olarak kopyala',
