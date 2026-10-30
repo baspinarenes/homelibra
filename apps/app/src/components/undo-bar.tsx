@@ -1,14 +1,15 @@
-import { useEffect } from 'react';
+import { useIsFocused } from 'expo-router';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { offerUndo, type UndoOffer, useUndoOffer } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
+
+export type { UndoOffer } from '@/lib/undo';
 
 /** How long every Geri al in the app stays offered. */
 export const undoDuration = 5000;
-
-/** What was just done and how to take it back. A new offer replaces the one on screen. */
-export type UndoOffer = { message: string; undo: () => void };
 
 /**
  * The one Geri al bar (design system UndoToast): ink ground, paper text,
@@ -30,22 +31,36 @@ export function UndoBar({ offer, onDismiss }: { offer: UndoOffer | null; onDismi
 
   if (!offer) return null;
   return (
-    <View role="status" style={[styles.bar, { boxShadow: shadow.lift }]}>
+    <View role="status" style={[styles.bar, !offer.undo && styles.plain, { boxShadow: shadow.lift }]}>
       <Text style={styles.message} numberOfLines={2}>
         {offer.message}
       </Text>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          onDismiss();
-          offer.undo();
-        }}
-        style={({ pressed }) => [styles.undo, pressed && styles.pressed]}
-      >
-        <Text style={styles.undoLabel}>{t('undo.action')}</Text>
-      </Pressable>
+      {offer.undo && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            onDismiss();
+            offer.undo?.();
+          }}
+          style={({ pressed }) => [styles.undo, pressed && styles.pressed]}
+        >
+          <Text style={styles.undoLabel}>{t('undo.action')}</Text>
+        </Pressable>
+      )}
     </View>
   );
+}
+
+/**
+ * The bar for the app's one shared offer ({@link offerUndo}), shown only
+ * while its screen is in front, so a screen left for another still hands
+ * its Geri al over to the one the scholar sees.
+ */
+export function SharedUndoBar() {
+  const offer = useUndoOffer();
+  const focused = useIsFocused();
+  const dismiss = useCallback(() => offerUndo(null), []);
+  return <UndoBar offer={focused ? offer : null} onDismiss={dismiss} />;
 }
 
 const makeStyles = (c: Colors) =>
@@ -64,6 +79,8 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.card,
       backgroundColor: c.fg,
     },
+    // Only a word, no Geri al button beside it.
+    plain: { paddingRight: space.lg },
     message: { ...typeScale.label, flex: 1, color: c.page, paddingVertical: space.md },
     // At least 44pt to touch, as the design system asks.
     undo: { minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: space.md },

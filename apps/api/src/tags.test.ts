@@ -1,10 +1,8 @@
-import { eq } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { describe, expect, it } from 'vitest';
 
 import { withLibrary } from './db/client';
-import { note, sourceTag, tag } from './db/schema';
-import { restoreTags, tagSnapshot } from './tags/snapshot';
+import { tag } from './db/schema';
 import { scholarEmail, testApi } from './test/harness';
 
 const t = testApi();
@@ -156,50 +154,76 @@ describe('An unused Tag', () => {
     expect(names(await api.tags.list({ sort: 'name' }))).toEqual(['İttihat ve Terakki']);
   });
 
-  it('goes with the last Note carrying it, however the Note goes', async () => {
-    const device = await t.signIn(scholarEmail());
-    const api = await device.call();
-    const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Tezâkir' });
-    const id = uuidv7();
-    await api.notes.create({ id, sourceId, comment: 'Bir.', tags: ['kadı'] });
-
-    // Past the API, as Note and Source deletion (#48) will do it: the links cascade.
-    await withLibrary(t.db, device.accountId, (tx) => tx.delete(note).where(eq(note.id, id)));
-
-    expect(await api.tags.list({ sort: 'name' })).toEqual([]);
-  });
-
-  it('comes back with an undo of what took it away, through the snapshot taken before (#48)', async () => {
-    const device = await t.signIn(scholarEmail());
-    const api = await device.call();
-    const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Tezâkir' });
+  it('goes with the last Note carrying it when the Note is deleted', async () => {
+    const { api, sourceId } = await scholarWithSource();
     const id = uuidv7();
     await api.notes.create({ id, sourceId, comment: 'Bir.', tags: ['kadı', 'naib'] });
-    await api.tags.setOnSource({ sourceId, names: ['Çorum'] });
-    const library = <T>(fn: Parameters<typeof withLibrary<T>>[2]) => withLibrary(t.db, device.accountId, fn);
+    await api.notes.create({ id: uuidv7(), sourceId, comment: 'İki.', tags: ['kadı'] });
 
-    const { snapshot, row } = await library(async (tx) => {
-      const taken = await tagSnapshot(tx, device.accountId, { noteIds: [id], sourceIds: [sourceId] });
-      const [deleted] = await tx.delete(note).where(eq(note.id, id)).returning();
-      await tx.delete(sourceTag).where(eq(sourceTag.sourceId, sourceId));
-      return { snapshot: taken, row: deleted! };
-    });
-    // Meanwhile the scholar names "Naib" again elsewhere: a new Tag of the same identity.
-    await api.notes.create({ id: uuidv7(), sourceId, comment: 'İki.', tags: ['Naib'] });
-    expect(names(await api.tags.list({ sort: 'name' }))).toEqual(['Naib']);
+    await api.notes.delete({ id });
 
-    await library(async (tx) => {
-      await tx.insert(note).values(row);
-      await restoreTags(tx, device.accountId, snapshot);
-    });
+    expect(await api.tags.list({ sort: 'name' })).toMatchObject([{ name: 'kadı', noteCount: 1 }]);
+  });
+});
 
-    expect(names((await api.notes.get({ id })).tags)).toEqual(['kadı', 'Naib']);
-    expect(names((await api.sources.get({ id: sourceId })).tags)).toEqual(['Çorum']);
-    expect(await api.tags.list({ sort: 'name' })).toMatchObject([
-      { name: 'Çorum', noteCount: 0, sourceCount: 1 },
-      { name: 'kadı', noteCount: 1, sourceCount: 0 },
-      { name: 'Naib', noteCount: 2, sourceCount: 0 },
+describe('Geri al', () => {
+  it('after Notu sil brings the Note back with its Tags, and a Tag that went with it', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, comment: 'Bir.', tags: ['kadı', 'naib'] });
+    await api.notes.create({ id: uuidv7(), sourceId, comment: 'İki.', tags: ['kadı'] });
+    const before = await api.tags.list({ sort: 'name' });
+    const { undoToken } = await api.notes.delete({ id });
+
+    await api.undo({ token: undoToken! });
+
+    expect((await api.notes.get({ id })).tags).toEqual([
+      { id: before[0]!.id, name: 'kadı' },
+      { id: before[1]!.id, name: 'naib' },
     ]);
+    expect(await api.tags.list({ sort: 'name' })).toEqual(before);
+  });
+
+  it("after Kaynağı sil brings back the Source's Tags and its Notes' own", async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, comment: 'Bir.', tags: ['kadı'] });
+    await api.tags.setOnSource({ sourceId, names: ['Çorum', 'kadı'] });
+    const before = await api.tags.list({ sort: 'name' });
+    const { undoToken } = await api.sources.delete({ id: sourceId });
+    expect(await api.tags.list({ sort: 'name' })).toEqual([]);
+
+    await api.undo({ token: undoToken! });
+
+    expect(names((await api.sources.get({ id: sourceId })).tags)).toEqual(['Çorum', 'kadı']);
+    expect(names((await api.notes.get({ id })).tags)).toEqual(['kadı']);
+    expect(await api.tags.list({ sort: 'name' })).toEqual(before);
+  });
+
+  it('puts the links on a Tag named again meanwhile under the same identity, with its new spelling', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, comment: 'Bir.', tags: ['naib'] });
+    const { undoToken } = await api.notes.delete({ id });
+    await api.notes.create({ id: uuidv7(), sourceId, comment: 'İki.', tags: ['Naib'] });
+
+    await api.undo({ token: undoToken! });
+
+    expect(names((await api.notes.get({ id })).tags)).toEqual(['Naib']);
+    expect(await api.tags.list({ sort: 'name' })).toMatchObject([{ name: 'Naib', noteCount: 2 }]);
+  });
+
+  it('after a move leaves the Note with its Tags', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const { id: other } = await api.sources.create({ type: 'archive', title: 'DH.MKT' });
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, comment: 'Bir.', tags: ['kadı'] });
+    const { undoToken } = await api.notes.move({ id, sourceId: other });
+    expect(names((await api.notes.get({ id })).tags)).toEqual(['kadı']);
+
+    await api.undo({ token: undoToken! });
+
+    expect(await api.notes.get({ id })).toMatchObject({ sourceId, tags: [{ name: 'kadı' }] });
   });
 });
 

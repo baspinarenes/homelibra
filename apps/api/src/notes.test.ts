@@ -206,7 +206,8 @@ describe('Note editing', () => {
     const stranger = await (await t.signIn(scholarEmail())).call();
 
     await expect(stranger.notes.get({ id })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    await expect(stranger.notes.update({ id, comment: 'Senin.' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    // As for a Note already deleted, the edit is ignored.
+    await stranger.notes.update({ id, comment: 'Senin.' });
     expect(await api.notes.get({ id })).toMatchObject({ comment: 'Benim.' });
   });
 });

@@ -202,6 +202,12 @@ export const note = pgTable(
     locatorSort: doublePrecision('locator_sort').array(),
     excerpt: text('excerpt'),
     comment: text('comment'),
+    /**
+     * When the Note came into its Source: captured, or moved there from
+     * another. Organizing pass counts a Note "yeni" by it; capture time stays
+     * the id's and a move never changes it (#36).
+     */
+    enteredSourceAt: timestamp('entered_source_at', { withTimezone: true }).notNull().defaultNow(),
     /** What search matches: the Excerpt's and the Comment's words (ADR-0010). Locator is not searched. */
     searchVector: tsvector('search_vector')
       .notNull()
@@ -211,9 +217,9 @@ export const note = pgTable(
   },
   (t) => [
     index('note_source_id_idx').on(t.sourceId, t.id),
+    index('note_search_vector_idx').using('gin', t.searchVector),
     // What note_tag_note_fk points at, so a Note's Tags are always in its own Library.
     unique('note_id_account_id_unique').on(t.id, t.accountId),
-    index('note_search_vector_idx').using('gin', t.searchVector),
     // Through account_id too: a Note can never sit on another Library's Source.
     foreignKey({
       name: 'note_source_fk',
@@ -229,10 +235,33 @@ export const note = pgTable(
 );
 
 /**
+ * What Geri al needs to take one operation back (#40, "Silme ve Geri al"):
+ * the rows it deleted and the values it changed, as a snapshot whose shape
+ * lives in src/undo/undo.ts. Its id is the token the operation returned. A
+ * record outlives the app's Geri al bar by minutes and the clean-up job then
+ * deletes it; nothing else reads it.
+ */
+export const undoRecord = pgTable(
+  'undo_record',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    snapshot: jsonb('snapshot').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    /** When Geri al was applied; asked again, it changes nothing. */
+    undoneAt: timestamp('undone_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('undo_record_account_id_idx').on(t.accountId), index('undo_record_expires_at_idx').on(t.expiresAt)],
+);
+
+/**
  * A Tag (GLOSSARY.md): shown as first entered, one per identity in a Library
  * (core's tagIdentity). It lives while a Note or a Source carries it (a
  * Collection too, once they exist); the database drops it with its last
- * link, in the same transaction (0012_tags).
+ * link, in the same transaction (0013_tags).
  */
 export const tag = pgTable(
   'tag',

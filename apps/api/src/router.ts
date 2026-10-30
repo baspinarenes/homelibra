@@ -4,6 +4,7 @@ import { notesRouter } from './routers/notes';
 import { searchRouter } from './routers/search';
 import { sourcesRouter } from './routers/sources';
 import { tagsRouter } from './routers/tags';
+import { undoProcedure } from './routers/undo';
 import { router } from './trpc/init';
 
 export const appRouter = router({
@@ -13,6 +14,7 @@ export const appRouter = router({
   search: searchRouter,
   lookups: lookupsRouter,
   tags: tagsRouter,
+  undo: undoProcedure,
 });
 
 export type AppRouter = typeof appRouter;

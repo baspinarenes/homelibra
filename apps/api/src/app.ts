@@ -8,19 +8,21 @@ import { type AuthOptions, createAuth } from './auth';
 import type { Crossref } from './lookups/crossref';
 import { lookups } from './lookups/lookups';
 import { appRouter } from './router';
+import { deleteExpiredUndoRecords } from './undo/undo';
 import type { Context } from './trpc/init';
 
 export type ApiOptions = AuthOptions & {
   /** Cross-origin web clients allowed in development; production is same-origin. */
   corsOrigins?: string[];
   crossref: Crossref;
-  /** What time it is for the lookup cache's seven days; tests move it. The system clock by default. */
+  /** What time it is for the lookup cache's seven days and Geri al; tests move it. The system clock by default. */
   now?: () => Date;
 };
 
 export function createApi(options: ApiOptions) {
   const auth = createAuth(options);
-  const sharedLookups = lookups(options.db, { crossref: options.crossref }, options.now ?? (() => new Date()));
+  const now = options.now ?? (() => new Date());
+  const sharedLookups = lookups(options.db, { crossref: options.crossref }, now);
 
   async function createContext(headers: Headers): Promise<Context> {
     const session = await auth.api.getSession({ headers });
@@ -31,6 +33,7 @@ export function createApi(options: ApiOptions) {
       accountClosed: !!session?.user.deletionRequestedAt,
       mailer: options.mailer,
       lookups: sharedLookups,
+      now,
     };
   }
 
@@ -57,6 +60,7 @@ export function createApi(options: ApiOptions) {
   /** The scheduled jobs (src/server.ts runs them), each told what time it is. */
   const jobs = {
     deleteClosedAccounts: (now: Date) => deleteClosedAccounts(options.db, now),
+    deleteExpiredUndoRecords: (now: Date) => deleteExpiredUndoRecords(options.db, now),
   };
 
   return { auth, http, createContext, jobs };

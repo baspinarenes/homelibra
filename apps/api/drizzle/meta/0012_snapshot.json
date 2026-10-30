@@ -1,5 +1,5 @@
 {
-  "id": "05617fb1-7bcb-448e-935d-2378f4834ca7",
+  "id": "94a31d62-4a8d-4b2b-9339-1dd310c279cc",
   "prevId": "dfd8732a-d65b-4eda-8972-fb4d46647d79",
   "version": "7",
   "dialect": "postgresql",
@@ -349,6 +349,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "entered_source_at": {
+          "name": "entered_source_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
         "search_vector": {
           "name": "search_vector",
           "type": "tsvector",
@@ -443,16 +450,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "note_id_account_id_unique": {
-          "name": "note_id_account_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "account_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
         "note_has_text": {
@@ -460,112 +458,6 @@
           "value": "coalesce(\"note\".\"excerpt\" ~ '[^[:space:]]', false) or coalesce(\"note\".\"comment\" ~ '[^[:space:]]', false)"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.note_tag": {
-      "name": "note_tag",
-      "schema": "",
-      "columns": {
-        "note_id": {
-          "name": "note_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tag_id": {
-          "name": "tag_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "account_id": {
-          "name": "account_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "note_tag_tag_id_idx": {
-          "name": "note_tag_tag_id_idx",
-          "columns": [
-            {
-              "expression": "tag_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "note_tag_account_id_account_id_fk": {
-          "name": "note_tag_account_id_account_id_fk",
-          "tableFrom": "note_tag",
-          "tableTo": "account",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "note_tag_note_fk": {
-          "name": "note_tag_note_fk",
-          "tableFrom": "note_tag",
-          "tableTo": "note",
-          "columnsFrom": [
-            "note_id",
-            "account_id"
-          ],
-          "columnsTo": [
-            "id",
-            "account_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "note_tag_tag_fk": {
-          "name": "note_tag_tag_fk",
-          "tableFrom": "note_tag",
-          "tableTo": "tag",
-          "columnsFrom": [
-            "tag_id",
-            "account_id"
-          ],
-          "columnsTo": [
-            "id",
-            "account_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "note_tag_note_id_tag_id_pk": {
-          "name": "note_tag_note_id_tag_id_pk",
-          "columns": [
-            "note_id",
-            "tag_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.session": {
@@ -853,114 +745,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.source_tag": {
-      "name": "source_tag",
-      "schema": "",
-      "columns": {
-        "source_id": {
-          "name": "source_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tag_id": {
-          "name": "tag_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "account_id": {
-          "name": "account_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "source_tag_tag_id_idx": {
-          "name": "source_tag_tag_id_idx",
-          "columns": [
-            {
-              "expression": "tag_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "source_tag_account_id_account_id_fk": {
-          "name": "source_tag_account_id_account_id_fk",
-          "tableFrom": "source_tag",
-          "tableTo": "account",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "source_tag_source_fk": {
-          "name": "source_tag_source_fk",
-          "tableFrom": "source_tag",
-          "tableTo": "source",
-          "columnsFrom": [
-            "source_id",
-            "account_id"
-          ],
-          "columnsTo": [
-            "id",
-            "account_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "source_tag_tag_fk": {
-          "name": "source_tag_tag_fk",
-          "tableFrom": "source_tag",
-          "tableTo": "tag",
-          "columnsFrom": [
-            "tag_id",
-            "account_id"
-          ],
-          "columnsTo": [
-            "id",
-            "account_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "source_tag_source_id_tag_id_pk": {
-          "name": "source_tag_source_id_tag_id_pk",
-          "columns": [
-            "source_id",
-            "tag_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.tag": {
-      "name": "tag",
+    "public.undo_record": {
+      "name": "undo_record",
       "schema": "",
       "columns": {
         "id": {
@@ -975,17 +761,23 @@
           "primaryKey": false,
           "notNull": true
         },
-        "name": {
-          "name": "name",
-          "type": "text",
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": true
         },
-        "identity": {
-          "name": "identity",
-          "type": "text",
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
+        },
+        "undone_at": {
+          "name": "undone_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -995,11 +787,42 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "undo_record_account_id_idx": {
+          "name": "undo_record_account_id_idx",
+          "columns": [
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "undo_record_expires_at_idx": {
+          "name": "undo_record_expires_at_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
-        "tag_account_id_account_id_fk": {
-          "name": "tag_account_id_account_id_fk",
-          "tableFrom": "tag",
+        "undo_record_account_id_account_id_fk": {
+          "name": "undo_record_account_id_account_id_fk",
+          "tableFrom": "undo_record",
           "tableTo": "account",
           "columnsFrom": [
             "account_id"
@@ -1012,24 +835,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "tag_account_id_identity_unique": {
-          "name": "tag_account_id_identity_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "account_id",
-            "identity"
-          ]
-        },
-        "tag_id_account_id_unique": {
-          "name": "tag_id_account_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "account_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

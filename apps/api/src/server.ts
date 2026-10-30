@@ -26,6 +26,7 @@ serve({ fetch: api.http.fetch, port: env.PORT }, (info) => {
 });
 
 const HOUR_MS = 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
 
 /**
  * Scheduled jobs run here in the API container; there is no worker (#40).
@@ -40,3 +41,5 @@ function schedule(intervalMs: number, job: (now: Date) => Promise<unknown>) {
 
 // Hourly, so a closed Account goes within the hour its 14 days end.
 schedule(HOUR_MS, api.jobs.deleteClosedAccounts);
+// Every few minutes, so a Geri al's snapshot goes soon after its five minutes.
+schedule(5 * MINUTE_MS, api.jobs.deleteExpiredUndoRecords);
