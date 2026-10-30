@@ -6,6 +6,7 @@ import { cors } from 'hono/cors';
 import { deleteClosedAccounts } from './account-deletion/account-deletion';
 import { type AuthOptions, createAuth } from './auth';
 import { deleteUnusedCovers, readCover } from './covers/covers';
+import { libraryExport } from './export/library-export';
 import type { Crossref } from './lookups/crossref';
 import type { OpenLibrary } from './lookups/openlibrary';
 import { lookups } from './lookups/lookups';
@@ -51,7 +52,7 @@ export function createApi(options: ApiOptions) {
 
   const http = new Hono().basePath('/api');
   if (options.corsOrigins?.length) {
-    http.use('*', cors({ origin: options.corsOrigins, credentials: true }));
+    http.use('*', cors({ origin: options.corsOrigins, credentials: true, exposeHeaders: ['content-disposition'] }));
   }
   http.get('/health', (c) => c.text('ok'));
   http.on(['GET', 'POST'], '/auth/*', (c) => auth.handler(c.req.raw));
@@ -67,6 +68,21 @@ export function createApi(options: ApiOptions) {
     return c.body(bytes, 200, {
       'content-type': 'image/jpeg',
       'cache-control': 'private, max-age=31536000, immutable',
+    });
+  });
+  // Library export (#40, stories 16-18): the whole Library as one ZIP, any
+  // time, at no cost (ADR-0004). A download rather than a tRPC call, so the
+  // web app can save it as a file.
+  http.get('/export', async (c) => {
+    const context = await createContext(c.req.raw.headers);
+    if (!context.accountId) return c.body(null, 401);
+    if (!context.termsAccepted || context.accountClosed) return c.body(null, 403);
+    const exportedAt = now();
+    const zip = await libraryExport(options.db, options.covers, context.accountId, exportedAt);
+    return c.body(zip, 200, {
+      'content-type': 'application/zip',
+      'content-disposition': `attachment; filename="homelibra-${exportedAt.toISOString().slice(0, 10)}.zip"`,
+      'cache-control': 'no-store',
     });
   });
   http.all('/trpc/*', (c) =>

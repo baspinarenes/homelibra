@@ -73,8 +73,8 @@ export const tr = {
     title: 'Hesabı sil',
     lead: 'Hesabını silersen hemen kapanır ve her cihazda oturumun kapanır. 14 gün içinde yeniden giriş yapıp silmeyi iptal edebilirsin; sonra hesabın ve kütüphanenin tamamı kalıcı olarak silinir.',
     exportHeading: 'Önce kütüphanenin bir kopyasını al',
-    exportPending:
-      'Kütüphaneni dışa aktarma henüz hazır değil; geldiğinde Hesap ve gizlilik bölümünde olacak. O zamana kadar saklamak istediklerini silmeden önce kendin kopyalaman gerekir. Soruların için:',
+    exportLead:
+      'Silmeden önce kütüphanenin tamamını tek bir ZIP olarak, ücretsiz indirebilirsin. Hesabın silindikten sonra geri getiremeyiz.',
     sendCode: 'Silme kodunu gönder',
     cancel: 'Vazgeç',
     codeSentTo: '{{email}} adresine bir kod gönderdik. Kodu yazınca hesabın hemen kapanır.',
@@ -617,6 +617,22 @@ export const tr = {
     previewLead: '{{count}} not, ilkinin yerinde tek not olacak. Konumu ve metni burada düzeltebilirsin.',
     close: 'Vazgeç',
     mergeFailed: 'Birleştirilemedi. Bağlantını kontrol edip yeniden dene.',
+  },
+  // Library export (#66): the whole Library as one ZIP, from the web.
+  libraryExport: {
+    title: 'Kütüphaneni dışa aktar',
+    lead: 'Kütüphanenin tamamını tek bir ZIP dosyası olarak indir. Her zaman ve ücretsiz; Homelibra’dan ayrılmak istersen her şeyinle ayrılabilirsin.',
+    download: 'Kütüphaneni indir',
+    preparing: 'Dosya hazırlanıyor; kütüphane büyükse biraz sürebilir.',
+    failed: 'İndirilemedi. Bağlantını kontrol edip yeniden dene.',
+    onWeb:
+      'Dışa aktarma web’den indirilir: tarayıcıda Homelibra’ya giriş yap, Ayarlar → Hesap ve gizlilik → Kütüphaneni dışa aktar.',
+    openWeb: 'Web’de aç',
+    contentsHeading: 'ZIP’te neler var',
+    json: 'kutuphane.json: kaynakların ve künyelerinin tüm alanları, takvimli tarihler, notlar, etiketler ve dosya tanımları; başka bir araca taşımak için. Şeması yanında, kutuphane.schema.json’da.',
+    markdown:
+      'kaynaklar/: her kaynak için bir Markdown dosyası, notlar Konum sırasıyla; hiçbir araç olmadan okumak için.',
+    covers: 'kapaklar/: kaynakların kapakları.',
   },
   // ISBN ile öner from Open Library, with its cover (#65).
   isbn: {

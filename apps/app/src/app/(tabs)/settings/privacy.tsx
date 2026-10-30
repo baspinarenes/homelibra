@@ -8,8 +8,7 @@ import { authClient } from '@/lib/auth-client';
 import { type Colors, space, useThemedStyles } from '@/theme';
 
 /**
- * Hesap ve gizlilik: every right in one place (#40, story 14). Library export
- * keeps its place until its ticket fills it.
+ * Hesap ve gizlilik: every right in one place (#40, story 14).
  */
 export default function PrivacySettingsScreen() {
   const { t } = useTranslation();
@@ -26,7 +25,7 @@ export default function PrivacySettingsScreen() {
           value={session?.user.email}
           onPress={() => router.push('/settings/email')}
         />
-        <SettingsRow label={t('privacy.export')} />
+        <SettingsRow label={t('privacy.export')} onPress={() => router.push('/settings/export')} />
         <SettingsRow label={t('privacy.deleteAccount')} onPress={() => router.push('/settings/delete')} />
       </SettingsSection>
       <ContactSection />
