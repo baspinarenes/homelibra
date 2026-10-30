@@ -15,3 +15,4 @@ export {
   sourceTypes,
   type SourceValues,
 } from './lib/source-layout';
+export { normalizeDoi } from './lib/identifiers';

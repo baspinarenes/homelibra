@@ -11,6 +11,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -102,6 +103,27 @@ export const invitation = pgTable('invitation', {
   email: text('email').notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * The shared lookup cache (ADR-0006): what a provider returned for a
+ * normalised DOI or ISBN-13, exactly as it came, for every Library. Not
+ * Library data, so no account_id and no row-level security; a scholar's
+ * corrections stay in their own Source and never come here.
+ */
+export const lookupKind = pgEnum('lookup_kind', ['doi', 'isbn']);
+
+export const lookupCache = pgTable(
+  'lookup_cache',
+  {
+    kind: lookupKind('kind').notNull(),
+    identifier: text('identifier').notNull(),
+    provider: text('provider').$type<'crossref'>().notNull(),
+    /** The provider's answer as it came; null when it knew nothing ("bulunamadı"). */
+    response: jsonb('response'),
+    fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.kind, t.identifier] })],
+);
 
 // Library tables. Every one carries account_id and is guarded by a row-level
 // security policy in a hand-written migration (ADR-0006).
