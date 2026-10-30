@@ -6,7 +6,8 @@ import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme'
 
 /**
  * Düzenlenecekler (#13), from Ana sayfa's strip: every Source with an
- * untagged Note since its last "Bitir", the last noted first. A row opens
+ * untagged Note since its last "Bitir", the finished ones first, each part
+ * the last noted first. A row opens
  * the Source page, where "Düzenle · N etiketsiz" starts the work.
  */
 export default function ToOrganizeScreen() {

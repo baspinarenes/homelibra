@@ -26,6 +26,7 @@
     "@trpc/tanstack-react-query": "^11.19.0",
     "better-auth": "^1.7.14",
     "expo": "~58.0.21",
+    "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.14",
     "expo-font": "~58.0.11",
     "expo-image-manipulator": "~58.0.16",

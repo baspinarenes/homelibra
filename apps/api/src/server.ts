@@ -5,6 +5,7 @@ import { createApi } from './app';
 import { createDb } from './db/client';
 import { env } from './env';
 import { crossrefClient } from './lookups/crossref';
+import { openLibraryClient } from './lookups/openlibrary';
 import { consoleMailer, resendMailer } from './mail/mailer';
 import { localDirectoryStorage } from './storage/local-directory';
 import { s3Storage } from './storage/s3';
@@ -17,6 +18,7 @@ const api = createApi({
   trustedOrigins: [...env.TRUSTED_ORIGINS, ...env.CORS_ORIGINS],
   corsOrigins: env.CORS_ORIGINS,
   crossref: crossrefClient(),
+  openLibrary: openLibraryClient(),
   covers:
     env.COVERS_S3_ENDPOINT && env.COVERS_S3_ACCESS_KEY_ID && env.COVERS_S3_SECRET_ACCESS_KEY
       ? s3Storage({
