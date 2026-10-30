@@ -37,7 +37,9 @@ export const accountProvider = pgTable(
   'account_provider',
   {
     id: uuid('id').primaryKey(),
-    accountId: uuid('account_id')
+    // Not `accountId`: that is Better Auth's own name for the provider's user
+    // id, and its join on the next Google sign-in would read that instead.
+    homelibraAccountId: uuid('account_id')
       .notNull()
       .references(() => account.id, { onDelete: 'cascade' }),
     providerAccountId: text('provider_account_id').notNull(),
@@ -52,7 +54,7 @@ export const accountProvider = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('account_provider_account_id_idx').on(t.accountId)],
+  (t) => [index('account_provider_account_id_idx').on(t.homelibraAccountId)],
 );
 
 export const verification = pgTable(

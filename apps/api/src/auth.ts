@@ -52,7 +52,7 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google
     user: { modelName: 'account' },
     account: {
       modelName: 'account_provider',
-      fields: { userId: 'accountId', accountId: 'providerAccountId' },
+      fields: { userId: 'homelibraAccountId', accountId: 'providerAccountId' },
     },
     session: {
       fields: { userId: 'accountId' },
