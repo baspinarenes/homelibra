@@ -1,5 +1,5 @@
 {
-  "id": "91954b98-c7b1-41e7-bb6a-584cd9ea8bc6",
+  "id": "ec2b435e-2c86-4545-b697-4fbc45896ab8",
   "prevId": "23a8ad96-5260-44a3-b628-0a1a2089948f",
   "version": "7",
   "dialect": "postgresql",
@@ -193,46 +193,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.invitation": {
-      "name": "invitation",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "invitation_email_unique": {
-          "name": "invitation_email_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.session": {
       "name": "session",
       "schema": "",
@@ -350,14 +310,59 @@
           "primaryKey": false,
           "notNull": true
         },
+        "type": {
+          "name": "type",
+          "type": "source_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
         "title": {
           "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
+        "author": {
+          "name": "author",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isbn": {
+          "name": "isbn",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doi": {
+          "name": "doi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bibliographic_note": {
+          "name": "bibliographic_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fields": {
+          "name": "fields",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -470,7 +475,23 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.source_type": {
+      "name": "source_type",
+      "schema": "public",
+      "values": [
+        "book",
+        "article",
+        "thesis",
+        "archive",
+        "manuscript",
+        "periodical",
+        "recording",
+        "webPage",
+        "other"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},
