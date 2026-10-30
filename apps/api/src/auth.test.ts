@@ -81,6 +81,17 @@ describe('sign-in with Google', () => {
     expect(await (await device!.call()).sources.home()).toEqual({ sourceCount: 0 });
   });
 
+  it('opens the same Account again on the next Google sign-in', async () => {
+    const email = scholarEmail();
+    await t.invite(email);
+    const first = await t.signInWithGoogle({ email });
+
+    const again = await t.signInWithGoogle({ email });
+
+    expect(again.redirectedTo.href).toBe('http://localhost:8081/');
+    expect(again.device?.accountId).toBe(first.device?.accountId);
+  });
+
   it('does not open an existing Account for an address Google has not verified', async () => {
     const email = scholarEmail();
     await t.signIn(email);
