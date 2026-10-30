@@ -7,4 +7,5 @@ packages:
 nodeLinker: hoisted
 
 allowBuilds:
+  '@sentry/cli': true
   esbuild: true
