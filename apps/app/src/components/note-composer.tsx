@@ -1,8 +1,9 @@
+import type { SourceType } from '@homelibra/core/source';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import Maximize2 from 'lucide-react-native/icons/maximize-2';
 import Minimize2 from 'lucide-react-native/icons/minimize-2';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -17,7 +18,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { uuidv7 } from 'uuidv7';
 
+import { LocatorSheet } from '@/components/locator-sheet';
 import { Segment } from '@/components/segment';
+import { UndoBar, type UndoOffer } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
@@ -27,19 +30,39 @@ const minInputHeight = 66;
 const maxInputHeight = 220;
 
 /**
+ * After this long with the same Locator, the chip asks "hâlâ burada mı?": a
+ * Note tied to the wrong page is Capture's costliest mistake. Five minutes
+ * until use on Android says otherwise (#11).
+ */
+const locatorCheckAfter = 5 * 60_000;
+
+/** The Excerpt's Note took another Comment or went away elsewhere. */
+const attachRefused = (code: string | undefined) => code === 'CONFLICT' || code === 'NOT_FOUND';
+
+/** As the server keeps it: trimmed, and null when blank. */
+const storedLocator = (locator: string) => locator.trim() || null;
+
+/**
  * Capture's one writing box. Alıntı or Yorum; the Locator carried over from
- * the previous Note sits above it. Enter is a new line: only the button
- * saves, so a long Excerpt is never cut in two by accident.
+ * the previous Note sits above it. Enter is a new line: the button saves, and
+ * on the web Ctrl/Cmd+Enter does too, so a long Excerpt is never cut in two by
+ * accident. A Comment written right after an Excerpt, at the same Locator,
+ * joins that Excerpt's Note.
  */
 export function NoteComposer({
   sourceId,
+  sourceType,
   carriedLocator,
+  carriedSince,
   expanded,
   onExpandedChange,
   onSaved,
 }: {
   sourceId: string;
+  sourceType: SourceType;
   carriedLocator: string;
+  /** When the carried Locator was first noted at, in ms; its age starts there. */
+  carriedSince: number;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   /** The Note just saved, so the flow can mark it. */
@@ -54,43 +77,122 @@ export function NoteComposer({
   const [mode, setMode] = useState<Mode>('excerpt');
   const [text, setText] = useState('');
   const [locator, setLocator] = useState(carriedLocator);
+  const [locatorSince, setLocatorSince] = useState(carriedSince);
+  const [now, setNow] = useState(Date.now);
   const [editingLocator, setEditingLocator] = useState(false);
   const [focused, setFocused] = useState(false);
+  // The Excerpt saved last on this screen, which the next Comment joins.
+  const [lastExcerpt, setLastExcerpt] = useState<{ id: string; locator: string | null } | null>(null);
+  const [undo, setUndo] = useState<UndoOffer | null>(null);
   const inputRef = useRef<TextInputInstance>(null);
   // The id a failed save used, kept while nothing changes, so sending the
   // same Note again cannot make a second one.
   const attempt = useRef<{ id: string; key: string } | null>(null);
 
+  // A Locator gets old while the screen stays open.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(timer);
+  }, []);
+  const stale = locator.trim() !== '' && now - locatorSince > locatorCheckAfter;
+
+  const refreshFlow = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: trpc.notes.flow.queryKey({ sourceId }) }),
+      queryClient.invalidateQueries({ queryKey: trpc.notes.list.queryKey({ sourceId }) }),
+      queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
+    ]);
+
+  const saved = (id: string) => {
+    onSaved(id);
+    setText('');
+    onExpandedChange(false);
+  };
+
   const create = useMutation(
     trpc.notes.create.mutationOptions({
-      onSuccess: async ({ id }) => {
+      onSuccess: async ({ id }, note) => {
         attempt.current = null;
-        onSaved(id);
-        setText('');
-        onExpandedChange(false);
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: trpc.notes.flow.queryKey({ sourceId }) }),
-          queryClient.invalidateQueries({ queryKey: trpc.notes.list.queryKey({ sourceId }) }),
-          queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
-        ]);
+        saved(id);
+        if (note.excerpt) {
+          setLastExcerpt({ id, locator: storedLocator(note.locator ?? '') });
+          setMode('comment');
+        } else {
+          setLastExcerpt(null);
+        }
+        await refreshFlow();
       },
     }),
   );
 
-  // Not on blur: on web the blur would remove "Konumsuz" before its press lands.
-  const closeLocator = () => {
-    setEditingLocator(false);
-    inputRef.current?.focus();
-  };
+  // Geri al after attaching: the Comment becomes a Note of its own, never lost.
+  const detach = useMutation(
+    trpc.notes.detachComment.mutationOptions({
+      onSuccess: async (_, { commentNoteId }) => {
+        onSaved(commentNoteId);
+        await refreshFlow();
+      },
+    }),
+  );
 
-  const canSave = text.trim() !== '' && !create.isPending;
+  const attach = useMutation(
+    trpc.notes.attachComment.mutationOptions({
+      onSuccess: async (_, { id }) => {
+        saved(id);
+        setLastExcerpt(null);
+        // Made now, so the Comment's own Note would sort where it was written.
+        const commentNoteId = uuidv7();
+        setUndo({
+          message: t('capture.commentAttached'),
+          undo: () => {
+            detach.mutate({ id, commentNoteId });
+            inputRef.current?.focus();
+          },
+        });
+        await refreshFlow();
+      },
+      // The Note took another Comment or went away elsewhere: the text stays
+      // in the box, to be saved as a Note of its own.
+      onError: (error) => {
+        if (attachRefused(error.data?.code)) setLastExcerpt(null);
+      },
+    }),
+  );
+
+  const attachTo =
+    mode === 'comment' && lastExcerpt && lastExcerpt.locator === storedLocator(locator) ? lastExcerpt : null;
+
+  const busy = create.isPending || attach.isPending;
+  const canSave = text.trim() !== '' && !busy;
   const save = () => {
     if (!canSave) return;
+    if (attachTo) {
+      attach.mutate({ id: attachTo.id, comment: text });
+      return;
+    }
     const note = { sourceId, locator, ...(mode === 'excerpt' ? { excerpt: text } : { comment: text }) };
     const key = JSON.stringify(note);
     if (attempt.current?.key !== key) attempt.current = { id: uuidv7(), key };
     create.mutate({ id: attempt.current.id, ...note });
   };
+
+  // Looking at the Locator, changed or not, starts its age again.
+  const confirmLocator = () => {
+    const at = Date.now();
+    setLocatorSince(at);
+    setNow(at);
+  };
+
+  const setLocatorFromSheet = (next: string) => {
+    setEditingLocator(false);
+    // A Comment joins only the Excerpt it follows directly.
+    if (storedLocator(next) !== storedLocator(locator)) setLastExcerpt(null);
+    setLocator(next);
+    confirmLocator();
+    inputRef.current?.focus();
+  };
+
+  const dismissUndo = useCallback(() => setUndo(null), []);
 
   // Native multiline inputs grow with their text; a web textarea needs telling.
   useLayoutEffect(() => {
@@ -100,51 +202,56 @@ export function NoteComposer({
     if (!expanded) node.style.height = `${Math.min(Math.max(node.scrollHeight + 2, minInputHeight), maxInputHeight)}px`;
   }, [text, mode, expanded]);
 
+  const shownLocator = locator.trim() || t('capture.noLocator');
+
   return (
     <View style={[styles.composer, { paddingBottom: insets.bottom + space.md }, expanded && styles.composerExpanded]}>
-      <View style={styles.controls}>
-        {editingLocator ? (
-          <View style={styles.locatorEdit}>
-            <TextInput
-              accessibilityLabel={t('capture.locator')}
-              autoFocus
-              selectTextOnFocus
-              value={locator}
-              onChangeText={setLocator}
-              onSubmitEditing={closeLocator}
-              placeholder={t('capture.locatorPlaceholder')}
-              placeholderTextColor={colors.muted2}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="done"
-              style={styles.locatorInput}
-            />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setLocator('');
-                closeLocator();
-              }}
-              style={styles.noLocator}
-            >
-              <Text style={styles.noLocatorText}>{t('capture.noLocator')}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={closeLocator} style={styles.noLocator}>
-              <Text style={styles.locatorDone}>{t('capture.locatorDone')}</Text>
-            </Pressable>
-          </View>
-        ) : (
+      <UndoBar offer={undo} onDismiss={dismissUndo} />
+      {attachTo && (
+        <View style={styles.attach}>
+          <Text style={styles.attachText} numberOfLines={1}>
+            {t('capture.attachTo')}
+          </Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${t('capture.locator')}: ${locator.trim() || t('capture.noLocator')}`}
-            onPress={() => setEditingLocator(true)}
-            style={({ pressed }) => [styles.locatorChip, pressed && styles.pressed]}
+            onPress={() => {
+              setLastExcerpt(null);
+              inputRef.current?.focus();
+            }}
+            hitSlop={8}
+            style={({ pressed }) => pressed && styles.pressed}
           >
-            <Text style={locator.trim() ? styles.locatorText : styles.locatorNone} numberOfLines={1}>
-              {locator.trim() || t('capture.noLocator')}
+            <Text style={styles.attachSeparate}>{t('capture.separateNote')}</Text>
+          </Pressable>
+        </View>
+      )}
+      <View style={styles.controls}>
+        <View style={styles.locator}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${t('capture.locator')}: ${shownLocator}${stale ? `, ${t('capture.stillHere')}` : ''}`}
+            onPress={() => setEditingLocator(true)}
+            style={({ pressed }) => [styles.locatorChip, stale && styles.locatorStale, pressed && styles.pressed]}
+          >
+            <Text
+              style={[locator.trim() ? styles.locatorText : styles.locatorNone, stale && styles.locatorStaleText]}
+              numberOfLines={1}
+            >
+              {stale ? `${shownLocator} · ${t('capture.stillHere')}` : shownLocator}
             </Text>
           </Pressable>
-        )}
+          {stale && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('capture.stillHereConfirmLabel', { locator: shownLocator })}
+              onPress={confirmLocator}
+              hitSlop={6}
+              style={({ pressed }) => [styles.confirm, pressed && styles.pressed]}
+            >
+              <Text style={styles.confirmText}>{t('capture.stillHereConfirm')}</Text>
+            </Pressable>
+          )}
+        </View>
         <View style={styles.mode}>
           <Segment
             compact
@@ -155,6 +262,8 @@ export function NoteComposer({
             ]}
             value={mode}
             onChange={(next) => {
+              // Going back to Alıntı moves on from the Excerpt just saved.
+              if (next === 'excerpt') setLastExcerpt(null);
               setMode(next);
               inputRef.current?.focus();
             }}
@@ -167,13 +276,22 @@ export function NoteComposer({
           ref={inputRef}
           accessibilityLabel={t(`capture.${mode}`)}
           multiline
-          onFocus={() => {
-            setEditingLocator(false);
-            setFocused(true);
-          }}
+          onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           value={text}
           onChangeText={setText}
+          onKeyPress={(event) => {
+            // The web's keyboard event; a phone has no Ctrl or Cmd to hold.
+            const key = event as unknown as {
+              key: string;
+              ctrlKey?: boolean;
+              metaKey?: boolean;
+              preventDefault: () => void;
+            };
+            if (Platform.OS !== 'web' || key.key !== 'Enter' || !(key.ctrlKey || key.metaKey)) return;
+            key.preventDefault();
+            save();
+          }}
           placeholder={t(mode === 'excerpt' ? 'capture.excerptPlaceholder' : 'capture.commentPlaceholder')}
           placeholderTextColor={colors.muted2}
           style={[
@@ -187,7 +305,11 @@ export function NoteComposer({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t(expanded ? 'capture.collapse' : 'capture.expand')}
-            onPress={() => onExpandedChange(!expanded)}
+            onPress={() => {
+              // Full screen covers where the bar would sit.
+              if (!expanded) setUndo(null);
+              onExpandedChange(!expanded);
+            }}
             hitSlop={6}
             style={({ pressed }) => [styles.expand, pressed && styles.pressed]}
           >
@@ -209,7 +331,7 @@ export function NoteComposer({
               pressed && styles.pressed,
             ]}
           >
-            {create.isPending ? (
+            {busy ? (
               <ActivityIndicator color={colors.accentFg} />
             ) : (
               <ArrowUp color={colors.accentFg} size={20} strokeWidth={2} />
@@ -217,7 +339,21 @@ export function NoteComposer({
           </Pressable>
         </View>
       </View>
-      {create.isError && <Text style={styles.error}>{t('capture.saveFailed')}</Text>}
+      {(create.isError || attach.isError) && (
+        <Text style={styles.error}>
+          {t(attachRefused(attach.error?.data?.code) ? 'capture.attachFailed' : 'capture.saveFailed')}
+        </Text>
+      )}
+      {detach.isError && <Text style={styles.error}>{t('capture.undoFailed')}</Text>}
+      <LocatorSheet
+        visible={editingLocator}
+        sourceType={sourceType}
+        locator={locator.trim()}
+        onDone={setLocatorFromSheet}
+        onClose={() => setEditingLocator(false)}
+        // On the web the closing sheet would take the focus with it.
+        onHidden={() => inputRef.current?.focus()}
+      />
     </View>
   );
 }
@@ -234,7 +370,11 @@ const makeStyles = (c: Colors) =>
       backgroundColor: c.surface,
     },
     composerExpanded: { flex: 1, borderTopWidth: 0 },
+    attach: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    attachText: { ...typeScale.caption, flexShrink: 1, color: c.muted },
+    attachSeparate: { ...typeScale.caption, fontFamily: typeScale.button.fontFamily, color: c.accent },
     controls: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    locator: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
     locatorChip: {
       flexShrink: 1,
       paddingVertical: 4,
@@ -244,22 +384,16 @@ const makeStyles = (c: Colors) =>
     },
     locatorText: { ...typeScale.locator, fontSize: 13, lineHeight: 18, color: c.accent },
     locatorNone: { ...typeScale.label, color: c.accent },
-    locatorEdit: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-    locatorInput: {
-      ...typeScale.locator,
-      fontSize: 13,
-      color: c.fg,
-      width: 150,
+    locatorStale: { backgroundColor: c.warnSoft },
+    locatorStaleText: { color: c.warn },
+    confirm: {
       paddingVertical: 4,
-      paddingHorizontal: 10,
+      paddingHorizontal: 9,
       borderWidth: 1,
-      borderColor: c.accent,
+      borderColor: c.warn,
       borderRadius: radius.chip,
-      backgroundColor: c.page,
     },
-    noLocator: { paddingVertical: 5, paddingHorizontal: 4 },
-    noLocatorText: { ...typeScale.label, color: c.muted },
-    locatorDone: { ...typeScale.button, color: c.accent },
+    confirmText: { ...typeScale.label, color: c.warn },
     mode: { marginLeft: 'auto' },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
     inputRowExpanded: { flex: 1, alignItems: 'stretch' },

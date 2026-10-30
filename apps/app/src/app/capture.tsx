@@ -1,5 +1,6 @@
 import type { AppRouter } from '@homelibra/api';
-import { locatorGroups } from '@homelibra/core/note';
+import { capturedAt, locatorGroups } from '@homelibra/core/note';
+import type { SourceType } from '@homelibra/core/source';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -79,7 +80,7 @@ export default function CaptureScreen() {
         }}
       />
       {/* A new Source starts with its own flow, Locator and empty box. */}
-      <NoteFlow key={source.id} sourceId={source.id} />
+      <NoteFlow key={source.id} sourceId={source.id} sourceType={source.type} />
       <SourcePicker
         visible={picking}
         sources={sources.data}
@@ -114,7 +115,7 @@ function SourceButton({ source, onPress }: { source: PickableSource; onPress: ()
   );
 }
 
-function NoteFlow({ sourceId }: { sourceId: string }) {
+function NoteFlow({ sourceId, sourceType }: { sourceId: string; sourceType: SourceType }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
@@ -127,14 +128,19 @@ function NoteFlow({ sourceId }: { sourceId: string }) {
   const contentHeight = useRef(0);
   const scrollToBottom = () => list.current?.scrollToOffset({ offset: contentHeight.current, animated: false });
 
+  const groups = useMemo(() => locatorGroups(flow.data ?? []), [flow.data]);
   const rows = useMemo(
     () =>
-      locatorGroups(flow.data ?? []).flatMap((group, index): FlowRow[] => [
+      groups.flatMap((group, index): FlowRow[] => [
         { kind: 'heading', key: `heading-${index}`, locator: group.locator },
         ...group.notes.map((note): FlowRow => ({ kind: 'note', key: note.id, note })),
       ]),
-    [flow.data],
+    [groups],
   );
+
+  // The carried Locator has been in use since the first Note of its run.
+  const runStart = groups.at(-1)?.notes[0];
+  const carriedSince = runStart ? capturedAt(runStart.id).getTime() : Date.now();
 
   if (flow.isPending || flow.isError) {
     return (
@@ -182,7 +188,9 @@ function NoteFlow({ sourceId }: { sourceId: string }) {
       )}
       <NoteComposer
         sourceId={sourceId}
+        sourceType={sourceType}
         carriedLocator={flow.data.at(-1)?.locator ?? ''}
+        carriedSince={carriedSince}
         expanded={expanded}
         onExpandedChange={setExpanded}
         onSaved={setFreshId}

@@ -254,3 +254,119 @@ describe("Ana sayfa's last noted Source", () => {
     expect(await api.sources.lastNoted()).toBeNull();
   });
 });
+
+describe('A Comment attached to a Note', () => {
+  it('joins the Excerpt it was written after', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
+
+    await api.notes.attachComment({ id, comment: '  Naiplik bir tür kiralama mı?\n' });
+
+    expect(await api.notes.flow({ sourceId })).toEqual([
+      { id, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.', comment: 'Naiplik bir tür kiralama mı?' },
+    ]);
+  });
+
+  it('is sent again without harm, but never writes over a Comment the Note already has', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
+
+    await api.notes.attachComment({ id, comment: 'Naiplik bir tür kiralama mı?' });
+    await api.notes.attachComment({ id, comment: 'Naiplik bir tür kiralama mı?' });
+    await expect(api.notes.attachComment({ id, comment: 'Başka bir düşünce.' })).rejects.toMatchObject({
+      code: 'CONFLICT',
+    });
+
+    expect((await api.notes.flow({ sourceId }))[0]?.comment).toBe('Naiplik bir tür kiralama mı?');
+  });
+
+  it("cannot reach another Library's Note", async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, excerpt: 'Kadı, naibini kendisi seçerdi.' });
+    const stranger = await (await t.signIn(scholarEmail())).call();
+
+    await expect(stranger.notes.attachComment({ id, comment: 'Benim yorumum.' })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    expect((await api.notes.flow({ sourceId }))[0]?.comment).toBeNull();
+  });
+});
+
+describe('Detaching a Comment (Geri al after attaching)', () => {
+  it('moves the Comment into a Note of its own at the same Locator, the Excerpt staying put', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
+    await api.notes.attachComment({ id, comment: 'Naiplik bir tür kiralama mı?' });
+    const commentNoteId = uuidv7();
+
+    await api.notes.detachComment({ id, commentNoteId });
+
+    expect(await api.notes.flow({ sourceId })).toEqual([
+      { id, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null },
+      { id: commentNoteId, locator: 's. 45', excerpt: null, comment: 'Naiplik bir tür kiralama mı?' },
+    ]);
+  });
+
+  it("keeps the Excerpt's sort value, corrected or not, so the two stay together in Locator order", async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
+    await api.notes.update({ id, locatorSort: [44] });
+    await api.notes.attachComment({ id, comment: 'Naiplik bir tür kiralama mı?' });
+    const commentNoteId = uuidv7();
+
+    await api.notes.detachComment({ id, commentNoteId });
+
+    expect(await api.notes.get({ id: commentNoteId })).toMatchObject({ locator: 's. 45', locatorSort: [44] });
+  });
+
+  it('is sent again without harm', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
+    await api.notes.attachComment({ id, comment: 'Naiplik bir tür kiralama mı?' });
+    const commentNoteId = uuidv7();
+
+    await api.notes.detachComment({ id, commentNoteId });
+    await api.notes.detachComment({ id, commentNoteId });
+
+    expect(await api.notes.flow({ sourceId })).toEqual([
+      { id, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null },
+      { id: commentNoteId, locator: 's. 45', excerpt: null, comment: 'Naiplik bir tür kiralama mı?' },
+    ]);
+  });
+
+  it('leaves a Note alone that would be emptied, or has no Comment to give', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const commentOnly = uuidv7();
+    const excerptOnly = uuidv7();
+    await api.notes.create({ id: commentOnly, sourceId, comment: 'Genel değerlendirme.' });
+    await api.notes.create({ id: excerptOnly, sourceId, excerpt: 'Kadı, naibini kendisi seçerdi.' });
+    const before = await api.notes.flow({ sourceId });
+
+    for (const id of [commentOnly, excerptOnly]) {
+      await expect(api.notes.detachComment({ id, commentNoteId: uuidv7() })).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+      });
+    }
+    expect(await api.notes.flow({ sourceId })).toEqual(before);
+  });
+
+  it("cannot reach another Library's Note", async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, excerpt: 'Kadı, naibini kendisi seçerdi.' });
+    await api.notes.attachComment({ id, comment: 'Naiplik bir tür kiralama mı?' });
+    const before = await api.notes.flow({ sourceId });
+    const stranger = await (await t.signIn(scholarEmail())).call();
+
+    await expect(stranger.notes.detachComment({ id, commentNoteId: uuidv7() })).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    expect(await api.notes.flow({ sourceId })).toEqual(before);
+  });
+});

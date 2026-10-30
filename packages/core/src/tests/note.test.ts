@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { locatorGroups } from '../note';
+import { capturedAt, locatorGroups } from '../note';
 
 const note = (id: string, locator: string | null) => ({ id, locator });
 
@@ -23,5 +23,12 @@ describe('locatorGroups', () => {
 
   it('has no headings for an empty flow', () => {
     expect(locatorGroups([])).toEqual([]);
+  });
+});
+
+describe('capturedAt', () => {
+  it('reads the moment a Note was captured from its UUIDv7 id', () => {
+    // The test vector of RFC 9562, appendix A.6.
+    expect(capturedAt('017f22e2-79b0-7cc3-98c4-dc0c0c07398f')).toEqual(new Date('2022-02-22T19:22:22.000Z'));
   });
 });
