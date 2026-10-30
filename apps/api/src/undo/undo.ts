@@ -3,7 +3,7 @@ import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { uuidv7 } from 'uuidv7';
 
 import type { Db, LibraryTx } from '../db/client';
-import { note, noteTag, source, sourceTag, tag, undoRecord } from '../db/schema';
+import { collectionTag, note, noteTag, source, sourceTag, tag, undoRecord } from '../db/schema';
 import { reinsertTagLinks, reinsertTags } from '../tags/snapshot';
 
 /**
@@ -35,6 +35,10 @@ const restorable: Restorable[] = [
   {
     table: sourceTag,
     reinsert: (tx, accountId, rows, parts) => reinsertTagLinks(tx, sourceTag, accountId, rows, parts.tag ?? []),
+  },
+  {
+    table: collectionTag,
+    reinsert: (tx, accountId, rows, parts) => reinsertTagLinks(tx, collectionTag, accountId, rows, parts.tag ?? []),
   },
 ];
 
