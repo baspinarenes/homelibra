@@ -210,7 +210,18 @@ export function sortValue(date: CalendarDate): number | null {
 }
 
 /**
- * The approximate Milâdî days of a Hicrî or Rumî Date, for the hint under the
+ * Whether a Date's Milâdî days are exact rather than approximate. Rumî from
+ * 1256 is the Julian calendar with a fixed year offset, so it is exact; Hicrî
+ * is arithmetic and can drift a day or two from the Ottoman reckoning; Rumî
+ * before 1256 is numbered by an inferred rule (§2 R7).
+ */
+export function isExactInGregorian(date: CalendarDate): boolean {
+  if (date.calendar === 'hijri') return false;
+  return date.calendar === 'gregorian' || date.year >= 1256;
+}
+
+/**
+ * The Milâdî days of a Hicrî or Rumî Date, for the hint under the
  * form's field: "14 Temmuz 1893", "16 Haziran 1893 – 14 Temmuz 1893", and to
  * the month for a year, "Temmuz 1892 – Temmuz 1893". Null for a Milâdî Date
  * and one that does not exist.
