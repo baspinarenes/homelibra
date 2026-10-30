@@ -21,6 +21,7 @@ import { uuidv7 } from 'uuidv7';
 
 import { LocatorSheet } from '@/components/locator-sheet';
 import { Segment } from '@/components/segment';
+import { TagPicker } from '@/components/tag-picker';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useOutbox } from '@/lib/outbox';
 import { offerUndo } from '@/lib/undo';
@@ -91,6 +92,9 @@ export function NoteComposer({
   const [locatorSince, setLocatorSince] = useState(carriedSince);
   const [now, setNow] = useState(Date.now);
   const [editingLocator, setEditingLocator] = useState(false);
+  // The Tags for the Note being written; untagged is the default, and each save starts untagged again.
+  const [tags, setTags] = useState<string[]>([]);
+  const [pickingTags, setPickingTags] = useState(false);
   const [focused, setFocused] = useState(false);
   // The Excerpt saved last on this screen, which the next Comment joins.
   const [lastExcerpt, setLastExcerpt] = useState<{ id: string; locator: string | null } | null>(null);
@@ -116,6 +120,7 @@ export function NoteComposer({
   const saved = (id: string) => {
     onSaved(id);
     setText('');
+    setTags([]);
     onExpandedChange(false);
   };
 
@@ -144,7 +149,7 @@ export function NoteComposer({
     try {
       if (attachTo) {
         const { id } = attachTo;
-        await apply({ type: 'attachComment', id, comment: text });
+        await apply({ type: 'attachComment', id, comment: text, tags });
         saved(id);
         setLastExcerpt(null);
         // Made now, so the Comment's own Note would sort where it was written.
@@ -158,7 +163,7 @@ export function NoteComposer({
         });
         return;
       }
-      const note = { sourceId, locator, ...(mode === 'excerpt' ? { excerpt: text } : { comment: text }) };
+      const note = { sourceId, locator, tags, ...(mode === 'excerpt' ? { excerpt: text } : { comment: text }) };
       const key = JSON.stringify(note);
       if (attempt.current?.key !== key) attempt.current = { id: uuidv7(), key };
       const { id } = attempt.current;
@@ -256,6 +261,17 @@ export function NoteComposer({
             </Pressable>
           )}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tags.length > 0 ? `${t('tags.field')}: ${tags.join(', ')}` : t('tags.add')}
+          onPress={() => setPickingTags(true)}
+          hitSlop={6}
+          style={({ pressed }) => [styles.tags, tags.length > 0 && styles.tagsChosen, pressed && styles.pressed]}
+        >
+          <Text style={tags.length > 0 ? styles.tagsChosenText : styles.tagsText} numberOfLines={1}>
+            {tags.length > 0 ? tags.join(', ') : t('tags.add')}
+          </Text>
+        </Pressable>
         <View style={styles.mode}>
           <Segment
             compact
@@ -370,6 +386,17 @@ export function NoteComposer({
         // On the web the closing sheet would take the focus with it.
         onHidden={() => inputRef.current?.focus()}
       />
+      <TagPicker
+        visible={pickingTags}
+        title={t('tags.noteTitle')}
+        value={tags}
+        onDone={(next) => {
+          setPickingTags(false);
+          setTags(next);
+          inputRef.current?.focus();
+        }}
+        onClose={() => setPickingTags(false)}
+      />
     </View>
   );
 }
@@ -410,6 +437,19 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
     },
     confirmText: { ...typeScale.label, color: c.warn },
+    // "+ etiket" beside the Locator; once Tags are chosen, their names.
+    tags: {
+      flexShrink: 1,
+      paddingVertical: 3,
+      paddingHorizontal: 9,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderStyle: 'dashed',
+      borderRadius: radius.chip,
+    },
+    tagsChosen: { borderStyle: 'solid', borderColor: c.chipBg, backgroundColor: c.chipBg },
+    tagsText: { ...typeScale.label, fontSize: 13, color: c.accent },
+    tagsChosenText: { ...typeScale.label, fontSize: 13, color: c.chipInk },
     mode: { marginLeft: 'auto' },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
     inputRowExpanded: { flex: 1, alignItems: 'stretch' },

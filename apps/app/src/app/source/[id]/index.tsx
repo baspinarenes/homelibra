@@ -1,7 +1,7 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { lastCaptured } from '@homelibra/core/note';
-import { type NoteStatus, withPendingNotes } from '@homelibra/outbox';
+import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,13 +21,14 @@ import {
 
 import { NoteComposer } from '@/components/note-composer';
 import { OutboxStatus } from '@/components/outbox-status';
+import { SourceTags } from '@/components/source-tags';
+import { NoteTagsLine } from '@/components/tag-chips';
 import { TemplateCover } from '@/components/template-cover';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
-type ListedNote = inferRouterOutputs<AppRouter>['notes']['list'][number];
 
 // Tries at placing a Note whose row is not laid out yet, and the wait between them in ms.
 const scrollRetries = 5;
@@ -190,6 +191,7 @@ function SourcePage({
                 </View>
               </View>
               <Text style={styles.byline}>{byline}</Text>
+              <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
             </View>
           }
           ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
@@ -272,6 +274,7 @@ function NoteRow({
       <View style={styles.texts}>
         {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
         {note.comment && <Text style={styles.comment}>{`↳ ${note.comment}`}</Text>}
+        <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
         {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
       </View>
     </Pressable>

@@ -14,6 +14,8 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
 import { note, source } from '../db/schema';
+import { tagParts } from '../tags/snapshot';
+import { tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo, storedRow } from '../undo/undo';
 
@@ -185,7 +187,7 @@ export const sourcesRouter = router({
       .from(source)
       .where(and(eq(source.id, input.id), eq(source.accountId, ctx.accountId)));
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
-    return row;
+    return { ...row, tags: await tagsOfSource(ctx.tx, ctx.accountId, row.id) };
   }),
 
   /**
@@ -207,9 +209,14 @@ export const sourcesRouter = router({
       .select({ row: storedRow(note) })
       .from(note)
       .where(and(eq(note.sourceId, input.id), eq(note.accountId, ctx.accountId)));
+    // The Source's Tags and its Notes' own, and every Tag they point at.
+    const tags = await tagParts(ctx.tx, ctx.accountId, {
+      sourceIds: [input.id],
+      noteIds: notes.map(({ row }) => row.id as string),
+    });
     await ctx.tx.delete(source).where(mine);
     const undoToken = await recordUndo(ctx.tx, ctx.accountId, ctx.now(), {
-      reinsert: { source: [deleted.row], note: notes.map(({ row }) => row) },
+      reinsert: { source: [deleted.row], note: notes.map(({ row }) => row), ...tags },
     });
     return { undoToken };
   }),

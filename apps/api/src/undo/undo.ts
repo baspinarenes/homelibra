@@ -3,7 +3,8 @@ import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { uuidv7 } from 'uuidv7';
 
 import type { Db, LibraryTx } from '../db/client';
-import { note, source, undoRecord } from '../db/schema';
+import { note, noteTag, source, sourceTag, tag, undoRecord } from '../db/schema';
+import { reinsertTagLinks, reinsertTags } from '../tags/snapshot';
 
 /**
  * How long the server keeps an operation's Geri al: well past the app's
@@ -14,10 +15,28 @@ export const UNDO_LIFETIME_MS = 5 * 60 * 1000;
 
 /**
  * The Library tables Geri al writes rows back into, parents before
- * children: undo puts a Source back before its Notes. A table joins with
- * one entry here (#49: tag, then note_tag and source_tag).
+ * children: undo puts a Source back before its Notes, Tags before their
+ * links. A table joins with one entry here. Most rows go back as they were;
+ * Tags have their own way (tags/snapshot.ts), since one may still be there
+ * or have been named again meanwhile.
  */
-const restorable: PgTable[] = [source, note];
+type Restorable = {
+  table: PgTable;
+  reinsert?: (tx: LibraryTx, accountId: string, rows: StoredRow[], parts: Record<string, StoredRow[]>) => Promise<void>;
+};
+const restorable: Restorable[] = [
+  { table: source },
+  { table: note },
+  { table: tag, reinsert: (tx, _, rows) => reinsertTags(tx, rows) },
+  {
+    table: noteTag,
+    reinsert: (tx, accountId, rows, parts) => reinsertTagLinks(tx, noteTag, accountId, rows, parts.tag ?? []),
+  },
+  {
+    table: sourceTag,
+    reinsert: (tx, accountId, rows, parts) => reinsertTagLinks(tx, sourceTag, accountId, rows, parts.tag ?? []),
+  },
+];
 
 /**
  * A row as the database's `to_jsonb` gives it: SQL column names, JSON
@@ -32,8 +51,8 @@ export type StoredRow = Record<string, unknown>;
  * and every part optional, so a later operation adds what it needs:
  *
  * - `reinsert`: rows the operation deleted, whole, put back with their own
- *   ids. Rows a delete takes with it by cascade (a Source's Notes, later
- *   their Tag links and a Tag left without any) must be read before the
+ *   ids. Rows a delete takes with it by cascade (a Source's Notes, their
+ *   Tag links and every Tag they point at: tags/snapshot.ts) must be read before the
  *   delete and listed here too.
  * - `revert`: rows the operation changed, as their `id` and the columns'
  *   earlier values (a move: the Note's Source and when it entered it).
@@ -122,11 +141,13 @@ export async function applyUndo(
   if (record.undoneAt) return 'applied';
   if (record.expiresAt <= now) return 'expired';
   const snapshot = record.snapshot as UndoSnapshot;
-  for (const table of restorable) {
+  for (const { table, reinsert: own } of restorable) {
     const rows = snapshot.reinsert?.[getTableName(table)];
-    if (rows?.length) await reinsert(tx, table, rows);
+    if (!rows?.length) continue;
+    if (own) await own(tx, accountId, rows, snapshot.reinsert ?? {});
+    else await reinsert(tx, table, rows);
   }
-  for (const table of restorable) {
+  for (const { table } of restorable) {
     const rows = snapshot.revert?.[getTableName(table)];
     if (rows?.length) await revert(tx, table, accountId, rows);
   }

@@ -10,6 +10,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { DangerAction } from '@/components/danger-action';
 import { Field } from '@/components/field';
 import { PrimaryButton } from '@/components/primary-button';
+import { TagChips } from '@/components/tag-chips';
 import { type PickedSource, SourcePicker } from '@/components/source-picker';
 import { SourceTypeIcon } from '@/components/source-type-icon';
 import { useTRPC } from '@/lib/trpc';
@@ -59,6 +60,7 @@ function NoteForm({ note }: { note: StoredNote }) {
   const [locator, setLocator] = useState(note.locator ?? '');
   const [excerpt, setExcerpt] = useState(note.excerpt ?? '');
   const [comment, setComment] = useState(note.comment ?? '');
+  const [tags, setTags] = useState(() => note.tags.map((tag) => tag.name));
   // The sort value the scholar typed here; until then the field shows the
   // stored one, and the derived one once the Locator text changes (#2 §5).
   const [typedSort, setTypedSort] = useState<string | null>(null);
@@ -88,6 +90,7 @@ function NoteForm({ note }: { note: StoredNote }) {
       queryClient.invalidateQueries({ queryKey: trpc.notes.pathKey() }),
       queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
       queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.tags.pathKey() }),
     ]);
 
   const updateNote = useMutation(trpc.notes.update.mutationOptions());
@@ -115,6 +118,7 @@ function NoteForm({ note }: { note: StoredNote }) {
           queryClient.invalidateQueries({ queryKey: trpc.notes.list.pathKey() }),
           queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
           queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
+          queryClient.invalidateQueries({ queryKey: trpc.tags.pathKey() }),
         ]);
       },
     }),
@@ -129,6 +133,7 @@ function NoteForm({ note }: { note: StoredNote }) {
       locator,
       excerpt,
       comment,
+      tags,
       // Sent only when typed here: a value without numbers derives it again.
       ...(typedSort !== null && { locatorSort: locatorSortValue(typedSort) }),
     });
@@ -200,6 +205,10 @@ function NoteForm({ note }: { note: StoredNote }) {
         </View>
         <Field label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline quote />
         <Field label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
+        <View style={styles.tags}>
+          <Text style={styles.label}>{t('tags.field').toLocaleUpperCase('tr')}</Text>
+          <TagChips names={tags} pickerTitle={t('tags.noteTitle')} onChange={setTags} />
+        </View>
         {!hasText && <Text style={styles.error}>{t('noteEdit.needsText')}</Text>}
         {update.isError && <Text style={styles.error}>{t('noteEdit.saveFailed')}</Text>}
         <PrimaryButton label={t('noteEdit.save')} onPress={save} busy={update.isPending} disabled={!canSave} />
@@ -235,6 +244,7 @@ const makeStyles = (c: Colors) =>
     spinner: { color: c.accent },
     form: { gap: space.lg, width: '100%', maxWidth: 640, alignSelf: 'center' },
     sort: { gap: 6 },
+    tags: { gap: 8 },
     hint: { ...typeScale.caption, color: c.muted },
     link: { ...typeScale.caption, color: c.accent },
     error: { ...typeScale.body, color: c.danger },
