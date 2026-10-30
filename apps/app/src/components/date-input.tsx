@@ -9,9 +9,11 @@ import {
   type Month,
   sortValue,
 } from '@homelibra/core/date';
+import Info from 'lucide-react-native/icons/info';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
@@ -41,7 +43,8 @@ export function readDateDraft({ calendar, day, month, year }: DateDraft): ReadDa
  * The Date field (#18 §1, Sade): a chip beside the label cycles Milâdî →
  * Hicrî → Rumî, always starting at Milâdî; then Gün · Ay · Yıl. Changing the
  * calendar clears Ay and Gün and keeps Yıl; Gün opens once Ay is chosen.
- * Under the field: the Milâdî days (≈ when approximate) and the form the Date is shown in.
+ * Under the field: the Milâdî days (≈ when approximate, with ⓘ saying why)
+ * and the form the Date is shown in.
  * `today` replaces the chip with a Bugün button, for Erişim tarihi (always Milâdî).
  */
 export function DateInput({
@@ -60,6 +63,7 @@ export function DateInput({
   const { colors } = useTheme();
   const [focused, setFocused] = useState<'day' | 'year' | null>(null);
   const [choosingMonth, setChoosingMonth] = useState(false);
+  const [explaining, setExplaining] = useState(false);
 
   const { calendar, day, month, year } = value;
   const months = calendarMonths(calendar);
@@ -71,6 +75,7 @@ export function DateInput({
 
   const read = readDateDraft(value);
   const range = read.date && formatGregorianRange(read.date);
+  const exact = read.date ? isExactInGregorian(read.date) : true;
   const setToday = () => {
     const now = new Date();
     onChange({
@@ -148,14 +153,26 @@ export function DateInput({
         read.date && (
           <View>
             {range && (
-              <Text style={styles.hint}>
-                {t(isExactInGregorian(read.date) ? 'date.exact' : 'date.approximate', { range })}
-              </Text>
+              <View style={styles.rangeLine}>
+                <Text style={styles.hint}>{t(exact ? 'date.exact' : 'date.approximate', { range })}</Text>
+                {!exact && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('date.whyApproximate')}
+                    onPress={() => setExplaining(true)}
+                    hitSlop={8}
+                  >
+                    <Info color={colors.muted} size={14} strokeWidth={1.8} />
+                  </Pressable>
+                )}
+              </View>
             )}
             <Text style={styles.hint}>{t('date.shownAs', { date: formatDate(read.date) })}</Text>
           </View>
         )
       )}
+
+      <ApproximationSheet visible={explaining} calendar={calendar} onClose={() => setExplaining(false)} />
 
       <Modal visible={choosingMonth} transparent animationType="fade" onRequestClose={() => setChoosingMonth(false)}>
         <Pressable style={styles.backdrop} onPress={() => setChoosingMonth(false)}>
@@ -183,6 +200,54 @@ export function DateInput({
         </Pressable>
       </Modal>
     </View>
+  );
+}
+
+// Why a Date's Milâdî days are approximate, and where the rule comes from (#17).
+const approximations = {
+  hijri: { reason: 'date.hijriDrift', source: 'date.ttkGuide', url: 'https://www.ttk.gov.tr/tarih-cevirme-kilavuzu/' },
+  rumi: { reason: 'date.earlyRumi', source: 'date.tdvTakvim', url: 'https://islamansiklopedisi.org.tr/takvim' },
+} as const;
+
+/** A sheet over the form saying why the Milâdî days under a Hicrî or early Rumî Date are approximate. */
+function ApproximationSheet({
+  visible,
+  calendar,
+  onClose,
+}: {
+  visible: boolean;
+  calendar: Calendar;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
+  if (calendar === 'gregorian') return null;
+  const { reason, source, url } = approximations[calendar];
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.bottomBackdrop}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('date.close')}
+          style={styles.dismiss}
+          onPress={onClose}
+        />
+        <View accessibilityViewIsModal style={[styles.bottomSheet, { paddingBottom: insets.bottom + space.lg }]}>
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetHeading}>{t('date.whyApproximate')}</Text>
+            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
+              <Text style={styles.close}>{t('date.close')}</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.sheetBody}>{t(reason)}</Text>
+          <Text accessibilityRole="link" style={styles.sourceLink} onPress={() => Linking.openURL(url)}>
+            {t(source)}
+          </Text>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -223,6 +288,7 @@ const makeStyles = (c: Colors) =>
     today: { alignSelf: 'flex-start', paddingVertical: 4 },
     todayText: { ...typeScale.button, color: c.accent },
     hint: { ...typeScale.caption, color: c.muted },
+    rangeLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     problem: { ...typeScale.caption, color: c.danger },
     backdrop: {
       flex: 1,
@@ -243,4 +309,26 @@ const makeStyles = (c: Colors) =>
     pressed: { backgroundColor: c.accentSub },
     optionText: { ...typeScale.body, color: c.fg },
     optionSelected: { color: c.accent, fontFamily: typeScale.button.fontFamily },
+    bottomBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
+    dismiss: { ...StyleSheet.absoluteFill },
+    bottomSheet: {
+      width: '100%',
+      maxWidth: 560,
+      alignSelf: 'center',
+      gap: space.md,
+      paddingHorizontal: space.lg,
+      backgroundColor: c.page,
+      borderTopLeftRadius: radius.hero,
+      borderTopRightRadius: radius.hero,
+    },
+    sheetHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: space.lg,
+    },
+    sheetHeading: { ...typeScale.sourceTitle, color: c.fg },
+    close: { ...typeScale.button, color: c.accent },
+    sheetBody: { ...typeScale.body, color: c.ink2 },
+    sourceLink: { ...typeScale.caption, color: c.accent },
   });
