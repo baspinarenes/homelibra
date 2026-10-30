@@ -15,7 +15,7 @@ export type LastCaptured<N> = {
 export function lastCaptured<N extends { id: string; locator: string | null }>(
   notes: readonly N[],
 ): LastCaptured<N> | null {
-  const inCaptureOrder = notes.toSorted(byCapture);
+  const inCaptureOrder = [...notes].sort(byCapture);
   const note = inCaptureOrder.at(-1);
   if (!note) return null;
   let runStart = note;
