@@ -9,7 +9,8 @@
     "./note": "./src/note.ts",
     "./account": "./src/account.ts",
     "./tag": "./src/tag.ts",
-    "./markdown": "./src/markdown.ts"
+    "./markdown": "./src/markdown.ts",
+    "./errors": "./src/errors.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

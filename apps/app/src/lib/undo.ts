@@ -1,3 +1,4 @@
+import { UNDO_CONFLICT, UNDO_EXPIRED } from '@homelibra/core/errors';
 import { TRPCClientError } from '@trpc/client';
 import { useSyncExternalStore } from 'react';
 
@@ -34,7 +35,7 @@ export function useUndoOffer() {
 
 /** The server no longer has the operation's Geri al, or what it took cannot go back. */
 const undoGone = (error: unknown) =>
-  error instanceof TRPCClientError && ['UNDO_EXPIRED', 'UNDO_CONFLICT'].includes(error.message);
+  error instanceof TRPCClientError && [UNDO_EXPIRED, UNDO_CONFLICT].includes(error.message);
 
 /**
  * Offers Geri al for an operation the server took a snapshot of: the token

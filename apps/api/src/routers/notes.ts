@@ -1,3 +1,4 @@
+import { SOURCE_NOT_FOUND } from '@homelibra/core/errors';
 import { compareNotes, locatorSortValue } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
 import { and, eq, isNull, or } from 'drizzle-orm';
@@ -30,13 +31,6 @@ const noteColumns = {
 
 /** The sort value a Locator gets until the scholar corrects it. */
 const derivedSort = (locator: string | null) => (locator === null ? null : locatorSortValue(locator));
-
-/**
- * "Kaynak yok": the Source a Note is captured for or moved to is not in this
- * Library, deleted meanwhile perhaps. The outbox keeps such a Note waiting
- * as "Kaynağı silinmiş" until another Source is chosen (#36).
- */
-export const SOURCE_NOT_FOUND = 'SOURCE_NOT_FOUND';
 
 /** Fails with NOT_FOUND ({@link SOURCE_NOT_FOUND}) unless the Source is in this Library. */
 async function assertSource(tx: LibraryTx, accountId: string, sourceId: string) {
