@@ -270,6 +270,7 @@ function ConfirmDelete({ tag, onClose }: { tag: TagRef; onClose: () => void }) {
   const counts: string[] = [];
   if (impact.data?.notes) counts.push(t('tagActions.fromNotes', { count: impact.data.notes }));
   if (impact.data?.sources) counts.push(t('tagActions.fromSources', { count: impact.data.sources }));
+  if (impact.data?.collections) counts.push(t('tagActions.fromCollections', { count: impact.data.collections }));
   // Inside the dialog's Text: words only, no spinner.
   const message = impact.isPending ? (
     t('tagActions.counting')

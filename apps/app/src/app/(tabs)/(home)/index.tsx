@@ -8,6 +8,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 
 import { PrimaryButton } from '@/components/primary-button';
 import { LostNotesNotice } from '@/components/lost-notes-notice';
+import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
 import { SourceCover } from '@/components/source-cover';
 import { ToOrganizeStrip } from '@/components/to-organize';
@@ -47,6 +48,7 @@ export default function HomeScreen() {
         <LostNotesNotice />
         <LastNotedSection lastNoted={lastNoted.data} />
         <ToOrganizeStrip />
+        <ReadingList exceptId={lastNoted.data.source.id} />
         <RecentTags />
       </ScrollView>
     );

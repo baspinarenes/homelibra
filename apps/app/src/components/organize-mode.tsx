@@ -5,16 +5,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import { Check } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, type GestureResponderEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Segment } from '@/components/segment';
+import { SelectionActionsRow, useSelectionActions } from '@/components/selection-actions';
 import { SourceTags } from '@/components/source-tags';
 import { TagChips } from '@/components/tag-chips';
 import { TagPicker } from '@/components/tag-picker';
 import { SharedUndoBar } from '@/components/undo-bar';
+import { useOrganizeKeys } from '@/lib/organize-keys';
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -67,7 +69,9 @@ export function NewMark() {
  * with the writing box hidden. Etiketsizler (the default) or Tümü, in
  * Locator order. A Note tagged here stays, faded and with its Tags, until
  * the mode is entered again. Tags used here stay as one-tap chips on top;
- * selected Notes get Tags all at once, with Geri al. Bitir writes the
+ * selected Notes get Tags all at once, or are merged, moved or deleted
+ * (selection-actions.tsx), each with Geri al; on the web by keys too
+ * (j/k, x, t, Delete: lib/organize-keys.ts). Bitir writes the
  * moment on the Source and leaves the mode. Online only: the phone's
  * unsent Notes are left out; the Source page sends them before entering.
  */
@@ -97,11 +101,19 @@ export function OrganizeMode({
   const [anchor, setAnchor] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const [picking, setPicking] = useState(false);
+  // The Note j/k stand on, on the web.
+  const [cursor, setCursor] = useState<string | null>(null);
+  const list = useRef<FlatList<ListedNote>>(null);
 
   const workable = notes.filter((n) => !unsent(statuses.get(n.id)));
   const shown = filter === 'all' ? workable : workable.filter((n) => untaggedAtEntry.has(n.id) || n.tags.length === 0);
   const chosen = shown.filter((n) => selected.has(n.id)).map((n) => n.id);
   const allChosen = shown.length > 0 && chosen.length === shown.length;
+  const actions = useSelectionActions({
+    sourceId: source.id,
+    chosen: shown.filter((n) => selected.has(n.id)),
+    onDone: () => setSelected(new Set()),
+  });
 
   const remember = (names: string[]) =>
     setRecent((last) => {
@@ -156,14 +168,37 @@ export function OrganizeMode({
     else next.add(id);
     setSelected(next);
     setAnchor(id);
+    setCursor(id);
   };
+
+  const at = shown.findIndex((n) => n.id === cursor);
+  useOrganizeKeys(
+    {
+      step: (by) => {
+        if (shown.length === 0) return;
+        const index = at < 0 ? (by > 0 ? 0 : shown.length - 1) : Math.min(Math.max(at + by, 0), shown.length - 1);
+        setCursor(shown[index]!.id);
+        list.current?.scrollToIndex({ index, viewPosition: 0.5 });
+      },
+      select: (range) => at >= 0 && toggle(shown[at]!.id, range),
+      tag: () => {
+        // With nothing selected, the Note under the cursor.
+        if (chosen.length === 0 && at >= 0) setSelected(new Set([shown[at]!.id]));
+        if (chosen.length > 0 || at >= 0) setPicking(true);
+      },
+      remove: actions.remove,
+    },
+    !picking && !actions.open,
+  );
 
   const failed =
     setNoteTags.isError || bulkTag.isError
       ? t('organize.tagFailed')
       : finish.isError
         ? t('organize.finishFailed')
-        : null;
+        : actions.failed
+          ? t('selection.failed')
+          : null;
 
   return (
     <View style={styles.screen}>
@@ -182,10 +217,14 @@ export function OrganizeMode({
         }}
       />
       <FlatList
+        ref={list}
         style={styles.screen}
         contentContainerStyle={styles.content}
         data={shown}
-        extraData={[selected, fresh]}
+        extraData={[selected, fresh, cursor]}
+        onScrollToIndexFailed={({ index, averageItemLength }) =>
+          list.current?.scrollToOffset({ offset: averageItemLength * index })
+        }
         keyExtractor={(note) => note.id}
         ListHeaderComponent={
           <View style={styles.heading}>
@@ -196,6 +235,7 @@ export function OrganizeMode({
               </Pressable>
             </View>
             <Text style={styles.title}>{source.title}</Text>
+            {Platform.OS === 'web' && <Text style={styles.keys}>{t('selection.keys')}</Text>}
             <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
             <Segment
               label={t('organize.filterLabel')}
@@ -237,6 +277,7 @@ export function OrganizeMode({
             // Tagged since the mode opened: kept, faded.
             done={untaggedAtEntry.has(note.id) && note.tags.length > 0}
             selected={selected.has(note.id)}
+            current={note.id === cursor}
             selecting={selected.size > 0}
             onToggle={(range) => toggle(note.id, range)}
             onOpen={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
@@ -276,7 +317,9 @@ export function OrganizeMode({
             <Text style={styles.tagButtonLabel}>{t('organize.tagSelected')}</Text>
           </Pressable>
         </View>
+        <SelectionActionsRow actions={actions} />
       </View>
+      {actions.sheets}
       <TagPicker
         visible={picking}
         title={t('organize.selectedTitle')}
@@ -303,6 +346,7 @@ function OrganizeRow({
   fresh,
   done,
   selected,
+  current,
   selecting,
   onToggle,
   onOpen,
@@ -313,6 +357,8 @@ function OrganizeRow({
   fresh: boolean;
   done: boolean;
   selected: boolean;
+  /** Under the keyboard's cursor (j/k). */
+  current: boolean;
   selecting: boolean;
   onToggle: (range: boolean) => void;
   onOpen: () => void;
@@ -322,7 +368,7 @@ function OrganizeRow({
   const styles = useThemedStyles(makeStyles);
   const tapSelects = selecting && Platform.OS !== 'web';
   return (
-    <View style={[styles.row, divided && styles.divided, selected && styles.selectedRow]}>
+    <View style={[styles.row, divided && styles.divided, selected && styles.selectedRow, current && styles.current]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityLabel={t('organize.select')}
@@ -398,6 +444,15 @@ const makeStyles = (c: Colors) =>
     row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     selectedRow: { backgroundColor: c.accentSoft },
+    // An outline, so the row keeps its place under the cursor.
+    current: {
+      outlineWidth: 2,
+      outlineStyle: 'solid',
+      outlineColor: c.accent,
+      outlineOffset: 3,
+      borderRadius: radius.cover,
+    },
+    keys: { ...typeScale.caption, color: c.muted },
     box: {
       width: 20,
       height: 20,

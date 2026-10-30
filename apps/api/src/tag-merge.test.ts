@@ -151,7 +151,12 @@ describe('Deleting a Tag', () => {
     const { api, kadi } = await kadiInUse();
 
     // Only the Notes carrying it themselves: a Source's Tag is not on its Notes (ADR-0003).
-    expect(await api.tags.deleteImpact({ id: kadi.id })).toEqual({ name: 'kadı', notes: 2, sources: 2 });
+    expect(await api.tags.deleteImpact({ id: kadi.id })).toEqual({
+      name: 'kadı',
+      notes: 2,
+      sources: 2,
+      collections: 0,
+    });
   });
 
   it('takes it off every Note and Source, the rest of their Tags staying', async () => {

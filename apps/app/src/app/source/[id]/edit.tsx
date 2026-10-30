@@ -7,12 +7,13 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DangerAction } from '@/components/danger-action';
+import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
 import { OfflineNotice } from '@/components/offline-notice';
-import { draftToInput, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
+import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
 import { useOffline } from '@/lib/network';
 import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';
-import { useTRPC } from '@/lib/trpc';
+import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo } from '@/lib/undo';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
@@ -23,9 +24,16 @@ export default function EditSourceScreen() {
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
-  const update = useMutation(trpc.sources.update.mutationOptions({ onSuccess: useLeaveAfterSave() }));
   // Saving and deleting a Source are online only: the outbox carries Notes (#58).
   const offline = useOffline();
+  const giveCover = useGiveSuggestedCover();
+  const update = useMutation({
+    mutationFn: async (draft: SourceDraft) => {
+      await trpcClient.sources.update.mutate({ id, ...draftToInput(draft) });
+      await giveCover(id, draft.suggestedCover);
+    },
+    onSuccess: useLeaveAfterSave(),
+  });
 
   if (source.isPending || source.isError) {
     return (
@@ -46,7 +54,7 @@ export default function EditSourceScreen() {
       initial={sourceToDraft(source.data)}
       saving={update.isPending}
       failed={update.isError && !offline}
-      onSave={(draft) => !offline && update.mutate({ id, ...draftToInput(draft) })}
+      onSave={(draft) => !offline && update.mutate(draft)}
       footer={<DeleteSource id={id} title={source.data.title} />}
     />
   );
