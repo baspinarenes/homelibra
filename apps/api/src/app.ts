@@ -17,7 +17,11 @@ export function createApi(options: ApiOptions) {
 
   async function createContext(headers: Headers): Promise<Context> {
     const session = await auth.api.getSession({ headers });
-    return { db: options.db, accountId: session?.user.id ?? null };
+    return {
+      db: options.db,
+      accountId: session?.user.id ?? null,
+      termsAccepted: !!session?.user.termsAcceptedAt,
+    };
   }
 
   const http = new Hono().basePath('/api');

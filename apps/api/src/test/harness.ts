@@ -9,16 +9,27 @@ import type { Mailer } from '../mail/mailer';
 import { appRouter } from '../router';
 import { testDatabaseUrl, testMigrationDatabaseUrl } from './db';
 
-/** Captures sign-in codes instead of sending them. */
+/** Captures codes and notices instead of sending them. */
 export function fakeMailer() {
   const sent: { email: string; code: string }[] = [];
+  const notices: { email: string; newEmail: string }[] = [];
   const mailer: Mailer = {
     async sendSignInCode(email, code) {
       sent.push({ email, code });
     },
+    async sendEmailChangeCode(email, code) {
+      sent.push({ email, code });
+    },
+    async sendEmailChangedNotice(email, newEmail) {
+      notices.push({ email, newEmail });
+    },
   };
   return {
     mailer,
+    /** The "your address changed" emails an address received. */
+    noticesSentTo(email: string) {
+      return notices.filter((m) => m.email === email).map(({ newEmail }) => ({ newEmail }));
+    },
     codesSentTo(email: string) {
       return sent.filter((m) => m.email === email).map((m) => m.code);
     },
@@ -135,9 +146,10 @@ export function testApi() {
 
   /**
    * Signs in on a new device with the code from the email; returns that
-   * device. The Operator invites the address first unless `invite` is false.
+   * device. The Operator invites the address first unless `invite` is false,
+   * and the scholar accepts the terms of use unless `acceptTerms` is false.
    */
-  async function signIn(email: string, { invite: inviteFirst = true } = {}) {
+  async function signIn(email: string, { invite: inviteFirst = true, acceptTerms = true } = {}) {
     if (inviteFirst) await invite(email);
     const sent = await requestCode(email);
     if (!sent.ok) throw new Error(`no code was sent: ${sent.status}`);
@@ -148,6 +160,7 @@ export function testApi() {
     if (!response.ok) throw new Error(`sign-in failed: ${response.status}`);
     const device = await deviceFrom(response.headers.getSetCookie());
     if (!device) throw new Error('signed in without a session');
+    if (acceptTerms) await (await device.call()).account.acceptTerms({ version: 'test' });
     return device;
   }
 
@@ -155,7 +168,7 @@ export function testApi() {
    * Signs in with Google on a new device, as the web app does: ask the API
    * for Google's page, consent there as `identity`, and follow Google's
    * redirect back to the API. Returns where the API sends the browser next,
-   * and the device when a session was opened.
+   * and the device when a session was opened, its terms of use accepted.
    */
   async function signInWithGoogle(identity: GoogleIdentity) {
     const start = await api.http.request('/api/auth/sign-in/social', {
@@ -178,7 +191,9 @@ export function testApi() {
     const location = callback.headers.get('location');
     if (!location) throw new Error(`Google callback did not redirect: ${callback.status}`);
 
-    return { redirectedTo: new URL(location), device: await deviceFrom(callback.headers.getSetCookie()) };
+    const device = await deviceFrom(callback.headers.getSetCookie());
+    if (device) await (await device.call()).account.acceptTerms({ version: 'test' });
+    return { redirectedTo: new URL(location), device };
   }
 
   /** The device holding these cookies, or null when they carry no session. */
@@ -190,10 +205,26 @@ export function testApi() {
     return {
       accountId: session.user.id,
       setCookie,
+      /** The signed-in Account as the session reports it now. */
+      account: async () => {
+        const now = await api.auth.api.getSession({ headers });
+        if (!now) throw new Error('the session has ended');
+        return now.user;
+      },
       /** A tRPC caller for one request from this device. */
       call: async () => appRouter.createCaller(await api.createContext(headers)),
+      /** Asks for a code at the new address, as Ayarlar does over HTTP. */
+      requestEmailChange: (newEmail: string) => postAuth('/email-otp/request-email-change', headers, { newEmail }),
+      /** Moves the Account to the new address with the code sent there. */
+      changeEmail: (newEmail: string, otp: string) => postAuth('/email-otp/change-email', headers, { newEmail, otp }),
       signOut: () => api.auth.api.signOut({ headers }),
     };
+  }
+
+  function postAuth(path: string, headers: Headers, body: object) {
+    const json = new Headers(headers);
+    json.set('content-type', 'application/json');
+    return api.http.request(`/api/auth${path}`, { method: 'POST', headers: json, body: JSON.stringify(body) });
   }
 
   /** A caller with no session at all. */
