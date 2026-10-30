@@ -6,9 +6,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CollectionMenu, CopyMarkdownButton } from '@/components/collection-actions';
 import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
 import { DefinitionTags } from '@/components/definition-tags';
 import { NameInput } from '@/components/name-input';
+import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
@@ -17,8 +19,8 @@ type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
 /**
  * A Collection (#51): its name, its Tags as chips, the source-notes switch
  * and the count in a fixed bar, its Notes by Source under it. Every change
- * in the bar is kept in the definition. The Markdown copy arrives in #52,
- * the search box in #56.
+ * in the bar is kept in the definition. Beside the name, the Markdown copy;
+ * in the header, the ⋯ menu with Dosyayı sil (#52). The search box arrives in #56.
  */
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -86,14 +88,17 @@ function CollectionPage({ collection }: { collection: Collection }) {
           onCancel={() => setRenaming(false)}
         />
       ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityHint={t('collection.rename')}
-          onPress={() => setRenaming(true)}
-          style={({ pressed }) => pressed && styles.pressed}
-        >
-          <Text style={styles.name}>{collection.name}</Text>
-        </Pressable>
+        <View style={styles.nameRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityHint={t('collection.rename')}
+            onPress={() => setRenaming(true)}
+            style={({ pressed }) => [styles.nameButton, pressed && styles.pressed]}
+          >
+            <Text style={styles.name}>{collection.name}</Text>
+          </Pressable>
+          <CopyMarkdownButton view={collection} />
+        </View>
       )}
       <DefinitionTags names={tagNames} onChange={(names) => setTags.mutate({ id: collection.id, names })} />
       <SourceNotesSwitch
@@ -107,11 +112,17 @@ function CollectionPage({ collection }: { collection: Collection }) {
   );
 
   return (
-    <CollectionView
-      view={collection}
-      bar={bar}
-      empty={collection.tags.length === 0 ? t('collection.emptyNoTags') : t('collection.emptyNoNotes')}
-    />
+    <View style={styles.page}>
+      <Stack.Screen options={{ headerRight: () => <CollectionMenu collection={collection} /> }} />
+      <CollectionView
+        view={collection}
+        bar={bar}
+        empty={collection.tags.length === 0 ? t('collection.emptyNoTags') : t('collection.emptyNoNotes')}
+      />
+      <View pointerEvents="box-none" style={styles.foot}>
+        <SharedUndoBar />
+      </View>
+    </View>
   );
 }
 
@@ -122,5 +133,10 @@ const makeStyles = (c: Colors) =>
     spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
     name: { ...typeScale.title, color: c.fg },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+    nameButton: { flex: 1, minWidth: 0 },
+    page: { flex: 1 },
+    // "Kopyalandı · n not" and failures float above this zero-height edge.
+    foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
     error: { ...typeScale.caption, color: c.danger },
   });
