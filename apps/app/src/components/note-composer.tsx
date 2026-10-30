@@ -70,6 +70,7 @@ export function NoteComposer({
         onExpandedChange(false);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: trpc.notes.flow.queryKey({ sourceId }) }),
+          queryClient.invalidateQueries({ queryKey: trpc.notes.list.queryKey({ sourceId }) }),
           queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
         ]);
       },

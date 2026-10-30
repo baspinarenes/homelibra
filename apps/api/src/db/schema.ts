@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  doublePrecision,
   foreignKey,
   index,
   integer,
@@ -149,6 +150,11 @@ export const note = pgTable(
     sourceId: uuid('source_id').notNull(),
     /** Free-form, as the scholar would cite it; null speaks of the Source as a whole. */
     locator: text('locator'),
+    /**
+     * What the Locator sorts by (core's compareNotes): derived from it, or
+     * corrected by hand until the Locator text changes. Null when it holds no number.
+     */
+    locatorSort: doublePrecision('locator_sort').array(),
     excerpt: text('excerpt'),
     comment: text('comment'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

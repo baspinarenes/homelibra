@@ -140,6 +140,28 @@ export const sourcesRouter = router({
       .orderBy(sql`${lastNote} desc nulls last`, desc(source.id));
   }),
 
+  /** Ana sayfa's "Son not aldığın": the latest Note and its Source, or null before the first Note. */
+  lastNoted: libraryProcedure.query(async ({ ctx }) => {
+    const [row] = await ctx.tx
+      .select({
+        source: { id: source.id, type: source.type, title: source.title, author: source.author, date: source.date },
+        note: {
+          id: note.id,
+          locator: note.locator,
+          excerpt: note.excerpt,
+          comment: note.comment,
+          capturedAt: note.createdAt,
+        },
+      })
+      .from(note)
+      .innerJoin(source, and(eq(source.id, note.sourceId), eq(source.accountId, ctx.accountId)))
+      .where(eq(note.accountId, ctx.accountId))
+      .orderBy(desc(note.id))
+      .limit(1);
+    // A string, as the app receives it over JSON.
+    return row ? { ...row, note: { ...row.note, capturedAt: row.note.capturedAt.toISOString() } } : null;
+  }),
+
   create: libraryProcedure.input(sourceInput).mutation(async ({ ctx, input }) => {
     const id = uuidv7();
     const { fields: patch, date, ...columns } = input;

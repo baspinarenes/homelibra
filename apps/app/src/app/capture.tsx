@@ -64,7 +64,19 @@ export default function CaptureScreen() {
   return (
     <>
       <Stack.Screen
-        options={{ headerTitle: () => <SourceButton source={source} onPress={() => setPicking(true)} /> }}
+        options={{
+          headerTitle: () => <SourceButton source={source} onPress={() => setPicking(true)} />,
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
+              hitSlop={8}
+              style={({ pressed }) => pressed && styles.pressed}
+            >
+              <Text style={styles.goToSource}>{t('capture.goToSource')}</Text>
+            </Pressable>
+          ),
+        }}
       />
       {/* A new Source starts with its own flow, Locator and empty box. */}
       <NoteFlow key={source.id} sourceId={source.id} />
@@ -179,15 +191,27 @@ function NoteFlow({ sourceId }: { sourceId: string }) {
   );
 }
 
-/** A Note in the flow: the design system's NoteCard, Excerpt above Comment. */
+/** A Note in the flow: the design system's NoteCard, Excerpt above Comment. Tapping it opens its editing. */
 function FlowNoteView({ note, fresh }: { note: FlowNote; fresh: boolean }) {
+  const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const { shadow } = useTheme();
+  const router = useRouter();
   return (
-    <View style={[styles.note, { boxShadow: shadow.card }, fresh && styles.fresh]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint={t('capture.editNote')}
+      onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
+      style={({ pressed }) => [
+        styles.note,
+        { boxShadow: shadow.card },
+        fresh && styles.fresh,
+        pressed && styles.pressed,
+      ]}
+    >
       {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
       {note.comment && <Text style={styles.comment}>{note.comment}</Text>}
-    </View>
+    </Pressable>
   );
 }
 
@@ -207,6 +231,7 @@ const makeStyles = (c: Colors) =>
     sourceButton: { maxWidth: 280, gap: 1 },
     sourceType: { ...typeScale.micro, color: c.accent },
     sourceTitle: { fontFamily: typeScale.sourceTitle.fontFamily, fontSize: 18, lineHeight: 21, color: c.fg },
+    goToSource: { ...typeScale.label, color: c.accent, paddingHorizontal: space.sm },
     // The header rule from the design: the native header draws none.
     underHeader: { borderTopWidth: 1, borderTopColor: c.line },
     flow: { gap: 10, paddingHorizontal: space.lg, paddingTop: 6, paddingBottom: 18 },
