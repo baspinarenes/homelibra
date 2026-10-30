@@ -9,7 +9,7 @@ import { type Colors, space, useThemedStyles } from '@/theme';
 
 /**
  * Hesap ve gizlilik: every right in one place (#40, story 14). Library export
- * and account deletion keep their places until their tickets fill them.
+ * keeps its place until its ticket fills it.
  */
 export default function PrivacySettingsScreen() {
   const { t } = useTranslation();
@@ -27,7 +27,7 @@ export default function PrivacySettingsScreen() {
           onPress={() => router.push('/settings/email')}
         />
         <SettingsRow label={t('privacy.export')} />
-        <SettingsRow label={t('privacy.deleteAccount')} />
+        <SettingsRow label={t('privacy.deleteAccount')} onPress={() => router.push('/settings/delete')} />
       </SettingsSection>
       <ContactSection />
     </ScrollView>

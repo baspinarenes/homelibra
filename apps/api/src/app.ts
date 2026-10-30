@@ -3,6 +3,7 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
+import { deleteClosedAccounts } from './account-deletion/account-deletion';
 import { type AuthOptions, createAuth } from './auth';
 import { appRouter } from './router';
 import type { Context } from './trpc/init';
@@ -21,6 +22,8 @@ export function createApi(options: ApiOptions) {
       db: options.db,
       accountId: session?.user.id ?? null,
       termsAccepted: !!session?.user.termsAcceptedAt,
+      accountClosed: !!session?.user.deletionRequestedAt,
+      mailer: options.mailer,
     };
   }
 
@@ -44,5 +47,10 @@ export function createApi(options: ApiOptions) {
     }),
   );
 
-  return { auth, http, createContext };
+  /** The scheduled jobs (src/server.ts runs them), each told what time it is. */
+  const jobs = {
+    deleteClosedAccounts: (now: Date) => deleteClosedAccounts(options.db, now),
+  };
+
+  return { auth, http, createContext, jobs };
 }

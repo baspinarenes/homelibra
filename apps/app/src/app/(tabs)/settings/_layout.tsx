@@ -9,6 +9,7 @@ export default function SettingsStack() {
     <TabStack title="tabs.settings">
       <Stack.Screen name="privacy" options={{ title: t('privacy.title') }} />
       <Stack.Screen name="email" options={{ title: t('emailChange.title') }} />
+      <Stack.Screen name="delete" options={{ title: t('accountDeletion.title') }} />
     </TabStack>
   );
 }

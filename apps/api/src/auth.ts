@@ -56,10 +56,12 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google
     user: {
       modelName: 'account',
       // On the session, so the app knows without another request whether to
-      // show the first-sign-in screen. Only account.acceptTerms sets them.
+      // show the first-sign-in screen or the "silmeyi iptal et" screen. Only
+      // the account router sets them.
       additionalFields: {
         termsAcceptedAt: { type: 'date', required: false, input: false },
         termsVersion: { type: 'string', required: false, input: false },
+        deletionRequestedAt: { type: 'date', required: false, input: false },
       },
     },
     account: {

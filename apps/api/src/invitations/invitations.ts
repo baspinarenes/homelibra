@@ -18,7 +18,7 @@ export function normalizeEmail(email: string) {
  * Invitations for the closed beta. Only the Operator grants or withdraws
  * them (src/invite.ts); sign-in checks one before an address may open an
  * Account. Withdrawing an Invitation does not close the Account it opened;
- * deleting that Account deletes the Invitation too (a later ticket).
+ * deleting that Account deletes the Invitation too (src/account-deletion).
  */
 export function invitations(db: Db) {
   async function isInvited(email: string) {
