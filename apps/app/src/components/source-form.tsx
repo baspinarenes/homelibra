@@ -1,13 +1,18 @@
 import type { AppRouter } from '@homelibra/api';
+import { type CalendarDate, formatDate } from '@homelibra/core/date';
 import {
+  isFilled,
+  isSourceDateField,
   keptHidden,
+  type SourceDateField,
+  sourceDateFields,
   type SourceField,
   sourceFields,
   type SourceIdentifier,
   sourceLayout,
+  type SourceTextField,
   type SourceType,
   sourceTypes,
-  type SourceValues,
 } from '@homelibra/core/source';
 import { useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
@@ -26,32 +31,62 @@ import {
   View,
 } from 'react-native';
 
+import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/components/date-input';
 import { PrimaryButton } from '@/components/primary-button';
 import { SourceTypeIcon } from '@/components/source-type-icon';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles, wideMinWidth } from '@/theme';
 
+type TextValues = Partial<Record<SourceIdentifier | SourceTextField, string>>;
+
 export type SourceDraft = {
   type: SourceType;
   title: string;
   author: string;
+  date: DateDraft;
   bibliographicNote: string;
-  /** ISBN, DOI and the type-specific fields, including the ones the current type hides. */
-  values: SourceValues;
+  /** ISBN, DOI and the type-specific text fields, including the ones the current type hides. */
+  values: TextValues;
+  /** The type-specific Date fields, hidden ones included. */
+  dates: Record<SourceDateField, DateDraft>;
 };
 
-export const emptyDraft: SourceDraft = { type: 'book', title: '', author: '', bibliographicNote: '', values: {} };
+const draftDates = (stored: Partial<Record<SourceDateField, CalendarDate>>) =>
+  Object.fromEntries(sourceDateFields.map((key) => [key, dateToDraft(stored[key])])) as SourceDraft['dates'];
+
+export const emptyDraft: SourceDraft = {
+  type: 'book',
+  title: '',
+  author: '',
+  date: emptyDateDraft,
+  bibliographicNote: '',
+  values: {},
+  dates: draftDates({}),
+};
 
 type StoredSource = inferRouterOutputs<AppRouter>['sources']['get'];
 
 export function sourceToDraft(source: StoredSource): SourceDraft {
+  const textFields = Object.fromEntries(Object.entries(source.fields).filter(([key]) => !isSourceDateField(key)));
   return {
     type: source.type,
     title: source.title,
     author: source.author ?? '',
+    date: dateToDraft(source.date),
     bibliographicNote: source.bibliographicNote ?? '',
-    values: { ...source.fields, isbn: source.isbn ?? '', doi: source.doi ?? '' },
+    values: { ...textFields, isbn: source.isbn ?? '', doi: source.doi ?? '' },
+    dates: draftDates(source.fields),
   };
+}
+
+/** The Dates a draft's Date fields hold; a field still being typed holds none. */
+function filledDates(dates: SourceDraft['dates']): Partial<Record<SourceDateField, CalendarDate>> {
+  return Object.fromEntries(
+    sourceDateFields.flatMap((key) => {
+      const read = readDateDraft(dates[key]);
+      return read.date ? [[key, read.date]] : [];
+    }),
+  );
 }
 
 /** After a save: refresh every Source query and go back to where the form was opened. */
@@ -66,20 +101,32 @@ export function useLeaveAfterSave() {
   };
 }
 
-/** Every value the form holds, hidden ones included; a blank one empties its field. */
-export function draftToInput({ values, ...draft }: SourceDraft) {
+/**
+ * Every value the form holds, hidden ones included; a blank one empties its
+ * field. A hidden Date field still being typed is left as it is stored.
+ */
+export function draftToInput({ values, dates, date, ...draft }: SourceDraft) {
+  const read = readDateDraft(date);
   return {
     ...draft,
     isbn: values.isbn ?? '',
     doi: values.doi ?? '',
-    fields: Object.fromEntries(sourceFields.map((key) => [key, values[key] ?? ''])) as Record<SourceField, string>,
+    date: read.problem ? undefined : read.date,
+    fields: Object.fromEntries(
+      sourceFields.flatMap((key): [SourceField, string | CalendarDate | null][] => {
+        if (!isSourceDateField(key)) return [[key, values[key] ?? '']];
+        const field = readDateDraft(dates[key]);
+        return field.problem ? [] : [[key, field.date]];
+      }),
+    ) as Partial<Record<SourceTextField, string> & Record<SourceDateField, CalendarDate | null>>,
   };
 }
 
 /**
  * The Source form, Sade variant (#18): Tür → ISBN/DOI → Başlık → Yazar →
- * type-specific fields (sparse ones behind a button) → Künye notu. Only Tür
- * and Başlık are required. A type change hides fields and never clears them.
+ * Tarih → type-specific fields (sparse ones behind a button) → Künye notu.
+ * Only Tür and Başlık are required. A type change hides fields and never
+ * clears them.
  */
 export function SourceForm({
   screenTitle,
@@ -102,33 +149,52 @@ export function SourceForm({
   const [tuckedOpen, setTuckedOpen] = useState(false);
 
   const layout = sourceLayout(draft.type);
-  const canSave = draft.title.trim() !== '' && !saving;
+  const typeFields = [...layout.open, ...(tuckedOpen ? layout.tucked : [])];
+  // A Date the form shows must be a Date or empty; a hidden one being typed is left alone.
+  const datesReady = [draft.date, ...typeFields.filter(isSourceDateField).map((key) => draft.dates[key])].every(
+    (date) => !readDateDraft(date).problem,
+  );
+  const canSave = draft.title.trim() !== '' && datesReady && !saving;
   const save = () => canSave && onSave(draft);
   // A new type starts with its sparse fields behind the button again.
   const changeType = (type: SourceType) => {
     setDraft((d) => ({ ...d, type }));
     setTuckedOpen(false);
   };
-  const setValue = (key: SourceIdentifier | SourceField, value: string) =>
+  const setValue = (key: SourceIdentifier | SourceTextField, value: string) =>
     setDraft((d) => ({ ...d, values: { ...d.values, [key]: value } }));
+  const setDate = (key: SourceDateField, value: DateDraft) =>
+    setDraft((d) => ({ ...d, dates: { ...d.dates, [key]: value } }));
 
-  const tuckedFilled = layout.tucked.filter((key) => draft.values[key]?.trim()).length;
-  const kept = keptHidden(draft.type, draft.values);
+  const values = { ...draft.values, ...filledDates(draft.dates) };
+  const tuckedFilled = layout.tucked.filter((key) => isFilled(values[key])).length;
+  const kept = keptHidden(draft.type, values);
+  const keptValue = (key: SourceIdentifier | SourceField) => {
+    const value = values[key];
+    return typeof value === 'string' ? value.trim() : value ? formatDate(value) : '';
+  };
   const typeText = t(`sourceTypes.${draft.type}`, { returnObjects: true });
 
-  const fieldInput = (key: SourceIdentifier | SourceField, extra?: TextInputProps) => (
-    <Field
-      key={key}
-      label={t(`sourceFields.${key}`)}
-      value={draft.values[key] ?? ''}
-      onChangeText={(value) => setValue(key, value)}
-      placeholder={key === 'container' ? t('sourceForm.containerExample') : undefined}
-      autoCapitalize={key === 'url' || key === 'doi' ? 'none' : undefined}
-      {...extra}
-    />
-  );
-
-  const typeFields = [...layout.open, ...(tuckedOpen ? layout.tucked : [])];
+  const fieldInput = (key: SourceIdentifier | SourceField, extra?: TextInputProps) =>
+    isSourceDateField(key) ? (
+      <DateInput
+        key={key}
+        label={t(`sourceFields.${key}`)}
+        value={draft.dates[key]}
+        onChange={(value) => setDate(key, value)}
+        today={key === 'accessDate'}
+      />
+    ) : (
+      <Field
+        key={key}
+        label={t(`sourceFields.${key}`)}
+        value={draft.values[key] ?? ''}
+        onChangeText={(value) => setValue(key, value)}
+        placeholder={key === 'container' ? t('sourceForm.containerExample') : undefined}
+        autoCapitalize={key === 'url' || key === 'doi' ? 'none' : undefined}
+        {...extra}
+      />
+    );
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -170,6 +236,11 @@ export function SourceForm({
           onChangeText={(author) => setDraft((d) => ({ ...d, author }))}
           placeholder={typeText.authorExample}
         />
+        <DateInput
+          label={typeText.dateLabel}
+          value={draft.date}
+          onChange={(date) => setDraft((d) => ({ ...d, date }))}
+        />
 
         {typeFields.length > 0 && (
           <View style={wide ? styles.columns : styles.stack}>
@@ -199,7 +270,7 @@ export function SourceForm({
                 .map((key) =>
                   t('sourceForm.keptHiddenItem', {
                     field: t(`sourceFields.${key}`),
-                    value: draft.values[key]?.trim() ?? '',
+                    value: keptValue(key),
                   }),
                 )
                 .join(' · '),

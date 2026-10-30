@@ -2,18 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import { keptHidden, sourceLayout } from '../source';
 
-// The Sade form's table from the Source form prototype (#18). İlk baskı tarihi
-// and Erişim tarihi join Kitap and Web sayfası with the Tarih ticket (#44).
+// The Sade form's table from the Source form prototype (#18).
 describe('sourceLayout', () => {
   it.each([
-    ['book', 'isbn', ['publisher', 'placeOfPublication'], ['edition']],
+    ['book', 'isbn', ['publisher', 'placeOfPublication'], ['edition', 'firstEditionDate']],
     ['article', 'doi', ['container', 'volumeIssue', 'pageRange'], []],
     ['thesis', null, ['university', 'thesisType'], []],
     ['archive', null, [], []],
     ['manuscript', null, ['library', 'shelfmark'], []],
     ['periodical', null, ['placeOfPublication'], []],
     ['recording', null, ['url'], ['series', 'duration']],
-    ['webPage', null, ['url', 'siteName'], []],
+    ['webPage', null, ['url', 'siteName', 'accessDate'], []],
     ['other', null, [], []],
   ] as const)('%s: identifier %s, open %j, behind the button %j', (type, identifier, open, tucked) => {
     expect(sourceLayout(type)).toEqual({ identifier, open, tucked });
@@ -33,6 +32,12 @@ describe('keptHidden', () => {
 
   it('counts a tucked field as shown', () => {
     expect(keptHidden('recording', { series: 'Tarih Sohbetleri', duration: '58:12' })).toEqual([]);
+  });
+
+  it('lists a Date field once it holds a Date', () => {
+    const firstEditionDate = { calendar: 'gregorian', year: 1973 } as const;
+    expect(keptHidden('article', { firstEditionDate })).toEqual(['firstEditionDate']);
+    expect(keptHidden('book', { firstEditionDate })).toEqual([]);
   });
 
   it('ignores blank values', () => {
