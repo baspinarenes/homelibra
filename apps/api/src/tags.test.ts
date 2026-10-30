@@ -88,6 +88,16 @@ describe("A Note's Tags", () => {
     });
   });
 
+  it('chosen for a Comment that joins its Excerpt are added to the Excerpt’s Note', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı naibini seçerdi.', tags: ['kadı'] });
+
+    await api.notes.attachComment({ id, comment: 'Kiralama mı?', tags: ['naib', 'Kadı'] });
+
+    expect(names((await api.notes.get({ id })).tags)).toEqual(['kadı', 'naib']);
+  });
+
   it('are left alone by an edit that does not name them', async () => {
     const { api, sourceId } = await scholarWithSource();
     const id = uuidv7();

@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
 import { note, source } from '../db/schema';
-import { resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
+import { addNoteTags, resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
@@ -81,14 +81,25 @@ export const notesRouter = router({
    * already on the Note is never written over (CONFLICT).
    */
   attachComment: libraryProcedure
-    .input(z.object({ id: z.uuidv7(), comment: requiredText }))
+    .input(
+      z.object({
+        id: z.uuidv7(),
+        comment: requiredText,
+        /** Tags chosen in the box for the Comment: they join the Note's own. */
+        tags: tagNames.optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const [attached] = await ctx.tx
         .update(note)
         .set({ comment: input.comment, updatedAt: new Date() })
         .where(and(myNote(ctx.accountId, input.id), or(isNull(note.comment), eq(note.comment, input.comment))))
         .returning({ id: note.id });
-      if (attached) return;
+      if (attached) {
+        if (input.tags?.length)
+          await addNoteTags(ctx.tx, ctx.accountId, input.id, await resolveTags(ctx.tx, ctx.accountId, input.tags));
+        return;
+      }
       const [existing] = await ctx.tx.select({ id: note.id }).from(note).where(myNote(ctx.accountId, input.id));
       throw new TRPCError({ code: existing ? 'CONFLICT' : 'NOT_FOUND' });
     }),

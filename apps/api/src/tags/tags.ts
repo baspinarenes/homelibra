@@ -35,16 +35,21 @@ export async function resolveTags(tx: LibraryTx, accountId: string, names: strin
   return [...byIdentity.keys()].map((identity) => ids.get(identity)!);
 }
 
+/** Puts these Tags on the Note too; the ones it has stay. */
+export async function addNoteTags(tx: LibraryTx, accountId: string, noteId: string, tagIds: string[]) {
+  if (tagIds.length === 0) return;
+  await tx
+    .insert(noteTag)
+    .values(tagIds.map((tagId) => ({ noteId, tagId, accountId })))
+    .onConflictDoNothing();
+}
+
 /**
  * Leaves exactly these Tags on the Note. New links go in before old ones go,
  * so a Tag that stays is never left unused on the way, which would drop it.
  */
 export async function setNoteTags(tx: LibraryTx, accountId: string, noteId: string, tagIds: string[]) {
-  if (tagIds.length > 0)
-    await tx
-      .insert(noteTag)
-      .values(tagIds.map((tagId) => ({ noteId, tagId, accountId })))
-      .onConflictDoNothing();
+  await addNoteTags(tx, accountId, noteId, tagIds);
   await tx
     .delete(noteTag)
     .where(
