@@ -259,14 +259,19 @@ describe('the clean-up job', () => {
     const { api, sourceId } = await scholarWithSource();
     const id = uuidv7();
     await api.notes.create({ id, sourceId, comment: 'Naiplik bir tür kiralama mı?' });
+    // Deleted ten minutes ago, so the job, which sweeps every Library, only
+    // ever runs in the past and leaves the Geri al of test files running
+    // alongside alone.
+    const deletedAt = Date.now() - 10 * 60 * 1000;
+    t.passTime(deletedAt - Date.now());
     const { undoToken } = await api.notes.delete({ id });
     const record = sql`select count(*)::int as n from undo_record where id = ${undoToken}`;
     const left = async () => (await t.owner.execute<{ n: number }>(record))[0]?.n;
 
-    await t.api.jobs.deleteExpiredUndoRecords(new Date(Date.now() + 4 * 60 * 1000));
+    await t.api.jobs.deleteExpiredUndoRecords(new Date(deletedAt + 4 * 60 * 1000));
     expect(await left()).toBe(1);
 
-    await t.api.jobs.deleteExpiredUndoRecords(new Date(Date.now() + 5 * 60 * 1000));
+    await t.api.jobs.deleteExpiredUndoRecords(new Date(deletedAt + 5 * 60 * 1000 + 1000));
     expect(await left()).toBe(0);
   });
 });
