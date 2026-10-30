@@ -1,5 +1,5 @@
 {
-  "id": "ed8e0fe7-7f3c-4657-878b-e858ffecece0",
+  "id": "9dae2558-7934-4d4a-bfe2-42e1ed54f25b",
   "prevId": "7b53ee5d-508c-4bb5-89bd-b8f5b6925c0b",
   "version": "7",
   "dialect": "postgresql",
@@ -233,125 +233,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.note": {
-      "name": "note",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "account_id": {
-          "name": "account_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "source_id": {
-          "name": "source_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "locator": {
-          "name": "locator",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "excerpt": {
-          "name": "excerpt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "comment": {
-          "name": "comment",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "note_source_id_idx": {
-          "name": "note_source_id_idx",
-          "columns": [
-            {
-              "expression": "source_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "note_account_id_account_id_fk": {
-          "name": "note_account_id_account_id_fk",
-          "tableFrom": "note",
-          "tableTo": "account",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "note_source_fk": {
-          "name": "note_source_fk",
-          "tableFrom": "note",
-          "tableTo": "source",
-          "columnsFrom": [
-            "source_id",
-            "account_id"
-          ],
-          "columnsTo": [
-            "id",
-            "account_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "note_has_text": {
-          "name": "note_has_text",
-          "value": "coalesce(\"note\".\"excerpt\" ~ '[^[:space:]]', false) or coalesce(\"note\".\"comment\" ~ '[^[:space:]]', false)"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.session": {
       "name": "session",
       "schema": "",
@@ -506,6 +387,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "date": {
+          "name": "date",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_sort": {
+          "name": "date_sort",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "fields": {
           "name": "fields",
           "type": "jsonb",
@@ -561,16 +454,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "source_id_account_id_unique": {
-          "name": "source_id_account_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "account_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

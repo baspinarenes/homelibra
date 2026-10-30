@@ -1,3 +1,4 @@
+import type { CalendarDate } from '@homelibra/core/date';
 import { type SourceFieldValues, sourceTypes } from '@homelibra/core/source';
 import { sql } from 'drizzle-orm';
 import {
@@ -5,6 +6,7 @@ import {
   check,
   foreignKey,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -112,6 +114,10 @@ export const source = pgTable(
     isbn: text('isbn'),
     doi: text('doi'),
     bibliographicNote: text('bibliographic_note'),
+    /** The Date as entered: calendar, year and, if known, month and day (ADR-0002). */
+    date: jsonb('date').$type<CalendarDate>(),
+    /** Orders by Date across calendars; derived from `date` by core, never shown. */
+    dateSort: integer('date_sort'),
     /** Type-specific fields by key. A type change only hides the ones the new type lacks. */
     fields: jsonb('fields').$type<SourceFieldValues>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
