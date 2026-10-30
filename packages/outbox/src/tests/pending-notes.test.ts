@@ -9,11 +9,11 @@ const N2 = '01900000-0002-7000-8000-000000000002';
 const N3 = '01900000-0003-7000-8000-000000000003';
 const N4 = '01900000-0004-7000-8000-000000000004';
 
-const saved = { id: SAVED, locator: 's. 20', locatorSort: [20], excerpt: 'Sunucudaki', comment: null };
+const saved = { id: SAVED, locator: 's. 20', locatorSort: [20], excerpt: 'Sunucudaki', comment: null, tags: [] };
 
 const capture = (
   id: string,
-  note: { locator?: string | null; excerpt?: string; comment?: string },
+  note: { locator?: string | null; excerpt?: string; comment?: string; tags?: string[] },
   sourceId = SOURCE,
 ) => ({ type: 'createNote', note: { id, sourceId, ...note } }) satisfies Operation;
 
@@ -68,5 +68,28 @@ describe('withPendingNotes', () => {
       [SAVED, 'Sunucudaki', null],
       [N4, null, 'yorumum'],
     ]);
+  });
+
+  it("shows a waiting Note's Tags as the server will keep them: no #, once per identity", () => {
+    const [note] = withPendingNotes(
+      SOURCE,
+      [],
+      [capture(N2, { excerpt: 'alıntı', tags: ['#Hilâfet', 'hilâfet', 'Selanik'] })],
+    );
+
+    expect(note?.tags).toEqual([{ name: 'Hilâfet' }, { name: 'Selanik' }]);
+  });
+
+  it("adds the Tags chosen for a waiting Comment to its Excerpt's own", () => {
+    const [note] = withPendingNotes(
+      SOURCE,
+      [],
+      [
+        capture(N2, { excerpt: 'alıntı', tags: ['kadı'] }),
+        { type: 'attachComment', id: N2, comment: 'yorumum', tags: ['Kadı', 'naib'] },
+      ],
+    );
+
+    expect(note?.tags).toEqual([{ name: 'kadı' }, { name: 'naib' }]);
   });
 });

@@ -12,9 +12,11 @@ export type Operation =
         locator?: string | null;
         excerpt?: string | null;
         comment?: string | null;
+        /** Tag names from the picker, as notes.create takes them. */
+        tags?: string[];
       };
     }
-  | { type: 'attachComment'; id: string; comment: string }
+  | { type: 'attachComment'; id: string; comment: string; tags?: string[] }
   | { type: 'detachComment'; id: string; commentNoteId: string };
 
 /** A waiting operation as the device keeps it; `seq` is its place in the queue. */

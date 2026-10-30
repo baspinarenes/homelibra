@@ -14,7 +14,11 @@ export async function sendOperation(operation: Operation) {
       await trpcClient.notes.create.mutate(operation.note);
       break;
     case 'attachComment':
-      await trpcClient.notes.attachComment.mutate({ id: operation.id, comment: operation.comment });
+      await trpcClient.notes.attachComment.mutate({
+        id: operation.id,
+        comment: operation.comment,
+        tags: operation.tags,
+      });
       break;
     case 'detachComment':
       await trpcClient.notes.detachComment.mutate({ id: operation.id, commentNoteId: operation.commentNoteId });
@@ -23,5 +27,6 @@ export async function sendOperation(operation: Operation) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: trpcOptions.notes.pathKey() }),
     queryClient.invalidateQueries({ queryKey: trpcOptions.sources.pathKey() }),
+    queryClient.invalidateQueries({ queryKey: trpcOptions.tags.pathKey() }),
   ]);
 }

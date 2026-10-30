@@ -23,8 +23,22 @@ describe('Note', () => {
     await api.notes.create({ id: second, sourceId, locator: 's. 45', comment: 'Naiplik bir tür kiralama mı?' });
 
     expect(await api.notes.list({ sourceId })).toEqual([
-      { id: first, locator: 's. 45', locatorSort: [45], excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null },
-      { id: second, locator: 's. 45', locatorSort: [45], excerpt: null, comment: 'Naiplik bir tür kiralama mı?' },
+      {
+        id: first,
+        locator: 's. 45',
+        locatorSort: [45],
+        excerpt: 'Kadı, naibini kendisi seçerdi.',
+        comment: null,
+        tags: [],
+      },
+      {
+        id: second,
+        locator: 's. 45',
+        locatorSort: [45],
+        excerpt: null,
+        comment: 'Naiplik bir tür kiralama mı?',
+        tags: [],
+      },
     ]);
   });
 });
@@ -38,7 +52,7 @@ describe('Note creation', () => {
     await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
 
     expect(await api.notes.list({ sourceId })).toEqual([
-      { id, locator: 's. 45', locatorSort: [45], excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null },
+      { id, locator: 's. 45', locatorSort: [45], excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null, tags: [] },
     ]);
   });
 
@@ -55,7 +69,7 @@ describe('Note creation', () => {
     await api.notes.create({ id, sourceId, locator: ' ', comment: '  Genel değerlendirme.\n' });
 
     expect(await api.notes.list({ sourceId })).toEqual([
-      { id, locator: null, locatorSort: null, excerpt: null, comment: 'Genel değerlendirme.' },
+      { id, locator: null, locatorSort: null, excerpt: null, comment: 'Genel değerlendirme.', tags: [] },
     ]);
   });
 
@@ -109,6 +123,7 @@ describe("A Source's Notes in Locator order", () => {
       locatorSort: [45, 12],
       excerpt: null,
       comment: 's. 45, dn. 12',
+      tags: [],
     });
   });
 
@@ -135,6 +150,7 @@ describe('Note editing', () => {
       locatorSort: [46],
       excerpt: 'Kadı, naibini kendisi seçerdi.',
       comment: 'Kiralama?',
+      tags: [],
     });
   });
 
@@ -252,6 +268,7 @@ describe('A Comment attached to a Note', () => {
         locatorSort: [45],
         excerpt: 'Kadı, naibini kendisi seçerdi.',
         comment: 'Naiplik bir tür kiralama mı?',
+        tags: [],
       },
     ]);
   });
@@ -294,13 +311,14 @@ describe('Detaching a Comment (Geri al after attaching)', () => {
     await api.notes.detachComment({ id, commentNoteId });
 
     expect(await api.notes.list({ sourceId })).toEqual([
-      { id, locator: 's. 45', locatorSort: [45], excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null },
+      { id, locator: 's. 45', locatorSort: [45], excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null, tags: [] },
       {
         id: commentNoteId,
         locator: 's. 45',
         locatorSort: [45],
         excerpt: null,
         comment: 'Naiplik bir tür kiralama mı?',
+        tags: [],
       },
     ]);
   });
@@ -329,13 +347,14 @@ describe('Detaching a Comment (Geri al after attaching)', () => {
     await api.notes.detachComment({ id, commentNoteId });
 
     expect(await api.notes.list({ sourceId })).toEqual([
-      { id, locator: 's. 45', locatorSort: [45], excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null },
+      { id, locator: 's. 45', locatorSort: [45], excerpt: 'Kadı, naibini kendisi seçerdi.', comment: null, tags: [] },
       {
         id: commentNoteId,
         locator: 's. 45',
         locatorSort: [45],
         excerpt: null,
         comment: 'Naiplik bir tür kiralama mı?',
+        tags: [],
       },
     ]);
   });

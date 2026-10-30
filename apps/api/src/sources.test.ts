@@ -27,6 +27,7 @@ describe('Source', () => {
       date: null,
       fields: { publisher: 'İletişim', placeOfPublication: 'İstanbul' },
       cover: null,
+      tags: [],
     });
   });
 
