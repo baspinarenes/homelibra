@@ -71,6 +71,13 @@
       "when": 1793366833713,
       "tag": "0009_note_locator_sort",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793368805827,
+      "tag": "0010_search",
+      "breakpoints": true
     }
   ]
 }

@@ -158,6 +158,23 @@ export const tr = {
     saveFailed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     loadFailed: 'Not yüklenemedi.',
   },
+  // Ara: Library search (#55, ADR-0005).
+  search: {
+    placeholder: 'Notlarda ve kaynaklarda ara',
+    clear: 'Aramayı temizle',
+    hintScope: 'Notların alıntı ve yorumunda, kaynakların başlık, yazar, künye notu ve türe özel alanlarında arar.',
+    hintQuoteExample: '"tırnak"',
+    hintQuote: 'kesin arama',
+    hintExcludeExample: '-kelime',
+    hintExclude: 'hariç tutar',
+    hintNotSearched: 'Konum, etiket ve Tarih aranmaz.',
+    sources: 'Kaynaklar',
+    notes: 'Notlar',
+    allSources: 'Tüm kaynaklar ({{count}})',
+    fromComment: 'yorumdan',
+    empty: 'Sonuç yok.',
+    failed: 'Arama yapılamadı. Bağlantını kontrol edip yeniden dene.',
+  },
   sources: {
     sortLabel: 'Sıralama',
     byTitle: 'Başlık',

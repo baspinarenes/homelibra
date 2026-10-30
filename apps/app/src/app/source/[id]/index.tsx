@@ -3,6 +3,7 @@ import { formatDate } from '@homelibra/core/date';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -16,15 +17,22 @@ type ListedNote = inferRouterOutputs<AppRouter>['notes']['list'][number];
 /**
  * The Source page (#35): the Source's heading and its Notes in Locator order,
  * with no writing box. "Not al" opens Capture on it; a Note opens its editing.
+ * From a search result, `note` names the Note to show in its place, marked.
  */
 export default function SourceScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, note: shownId } = useLocalSearchParams<{ id: string; note?: string }>();
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
+  const list = useRef<FlatList<ListedNote>>(null);
+  const retried = useRef(false);
+  const shownIndex = notes.data?.findIndex((note) => note.id === shownId) ?? -1;
+  useEffect(() => {
+    if (shownIndex > 0) list.current?.scrollToIndex({ index: shownIndex, viewPosition: 0.3 });
+  }, [shownIndex]);
 
   if (source.isPending || notes.isPending || source.isError || notes.isError) {
     return (
@@ -50,6 +58,7 @@ export default function SourceScreen() {
 
   return (
     <FlatList
+      ref={list}
       style={styles.screen}
       contentContainerStyle={styles.content}
       data={notes.data}
@@ -86,11 +95,19 @@ export default function SourceScreen() {
           </View>
         </View>
       }
+      // Rows have no fixed height: scroll near it, then once more to it when it is laid out.
+      onScrollToIndexFailed={({ index, averageItemLength }) => {
+        list.current?.scrollToOffset({ offset: index * averageItemLength });
+        if (retried.current) return;
+        retried.current = true;
+        setTimeout(() => list.current?.scrollToIndex({ index, viewPosition: 0.3 }), 100);
+      }}
       ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
       renderItem={({ item: note, index }) => (
         <NoteRow
           note={note}
           divided={index > 0}
+          shown={note.id === shownId}
           onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
         />
       )}
@@ -99,7 +116,18 @@ export default function SourceScreen() {
 }
 
 /** Locator on the left (— when it has none), Excerpt and ↳ Comment on the right. */
-function NoteRow({ note, divided, onPress }: { note: ListedNote; divided: boolean; onPress: () => void }) {
+function NoteRow({
+  note,
+  divided,
+  shown,
+  onPress,
+}: {
+  note: ListedNote;
+  divided: boolean;
+  /** The Note a search result opened the page on. */
+  shown: boolean;
+  onPress: () => void;
+}) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   return (
@@ -107,7 +135,7 @@ function NoteRow({ note, divided, onPress }: { note: ListedNote; divided: boolea
       accessibilityRole="button"
       accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, divided && styles.divided, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.row, divided && styles.divided, shown && styles.shown, pressed && styles.pressed]}
     >
       <Text style={styles.locator}>{note.locator ?? '—'}</Text>
       <View style={styles.texts}>
@@ -144,6 +172,7 @@ const makeStyles = (c: Colors) =>
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
+    shown: { backgroundColor: c.accentSub, marginHorizontal: -space.lg, paddingHorizontal: space.lg },
     locator: { ...typeScale.locator, color: c.muted, width: 84, paddingTop: 4 },
     texts: { flex: 1, gap: 6 },
     excerpt: {
