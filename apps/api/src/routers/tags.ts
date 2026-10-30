@@ -1,16 +1,33 @@
 import { compareTr } from '@homelibra/core';
 import { tagIdentity } from '@homelibra/core/tag';
 import { TRPCError } from '@trpc/server';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
 import { collectionTag, noteTag, source, sourceTag, tag } from '../db/schema';
 import { tagParts } from '../tags/snapshot';
-import { mergeTag, resolveTags, setSourceTags, tagNameInput, tagNames, tagsOfSource } from '../tags/tags';
+import {
+  type LinkTable,
+  linkTables,
+  mergeTag,
+  resolveTags,
+  setSourceTags,
+  tagNameInput,
+  tagNames,
+  tagsOfSource,
+} from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo } from '../undo/undo';
 import { mySource } from '../sources/sources';
+
+/** `what` (an aggregate) over one link table's links to the Tag of the outer query, in this Library. */
+const ofLinks = (what: SQL, table: LinkTable, accountId: string) =>
+  sql`(select ${what} from ${table} l where l.tag_id = ${tag.id} and l.account_id = ${accountId})`;
+
+/** How many carriers in one link table the Tag of the outer query has. */
+const linkCount = (table: LinkTable, accountId: string) =>
+  sql<number>`${ofLinks(sql`count(*)`, table, accountId)}::int`;
 
 export const tagsRouter = router({
   /**
@@ -26,12 +43,12 @@ export const tagsRouter = router({
         .select({
           id: tag.id,
           name: tag.name,
-          noteCount: sql<number>`(select count(*) from ${noteTag} where ${noteTag.tagId} = ${tag.id} and ${noteTag.accountId} = ${ctx.accountId})::int`,
-          sourceCount: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id} and ${sourceTag.accountId} = ${ctx.accountId})::int`,
-          lastUsed: sql<string>`greatest(
-            (select max(${noteTag.createdAt}) from ${noteTag} where ${noteTag.tagId} = ${tag.id} and ${noteTag.accountId} = ${ctx.accountId}),
-            (select max(${sourceTag.createdAt}) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id} and ${sourceTag.accountId} = ${ctx.accountId}),
-            (select max(${collectionTag.createdAt}) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id} and ${collectionTag.accountId} = ${ctx.accountId}))`,
+          noteCount: linkCount(noteTag, ctx.accountId),
+          sourceCount: linkCount(sourceTag, ctx.accountId),
+          lastUsed: sql<string>`greatest(${sql.join(
+            linkTables.map(({ table }) => ofLinks(sql`max(l.created_at)`, table, ctx.accountId)),
+            sql`, `,
+          )})`,
         })
         .from(tag)
         .where(eq(tag.accountId, ctx.accountId));
@@ -114,9 +131,9 @@ export const tagsRouter = router({
     const [row] = await ctx.tx
       .select({
         name: tag.name,
-        notes: sql<number>`(select count(*) from ${noteTag} where ${noteTag.tagId} = ${tag.id} and ${noteTag.accountId} = ${ctx.accountId})::int`,
-        sources: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id} and ${sourceTag.accountId} = ${ctx.accountId})::int`,
-        collections: sql<number>`(select count(*) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id} and ${collectionTag.accountId} = ${ctx.accountId})::int`,
+        notes: linkCount(noteTag, ctx.accountId),
+        sources: linkCount(sourceTag, ctx.accountId),
+        collections: linkCount(collectionTag, ctx.accountId),
       })
       .from(tag)
       .where(and(eq(tag.id, input.id), eq(tag.accountId, ctx.accountId)));
