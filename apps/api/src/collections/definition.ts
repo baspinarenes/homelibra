@@ -1,8 +1,9 @@
 import { compareTr } from '@homelibra/core';
+import { TRPCError } from '@trpc/server';
 import { and, eq, notInArray } from 'drizzle-orm';
 
 import type { LibraryTx } from '../db/client';
-import { collectionTag, tag } from '../db/schema';
+import { collection, collectionTag, tag } from '../db/schema';
 import type { TagRef } from '../tags/tags';
 
 /**
@@ -49,4 +50,14 @@ export async function tagsOfCollection(tx: LibraryTx, accountId: string, collect
     .innerJoin(tag, and(eq(tag.id, collectionTag.tagId), eq(tag.accountId, accountId)))
     .where(and(eq(collectionTag.collectionId, collectionId), eq(collectionTag.accountId, accountId)));
   return rows.sort((a, b) => compareTr(a.name, b.name));
+}
+
+/** A Collection of this Library and its definition: its Tags and its switch. NOT_FOUND when there is none. */
+export async function collectionDefinition(tx: LibraryTx, accountId: string, id: string) {
+  const [row] = await tx
+    .select({ id: collection.id, name: collection.name, includeSourceNotes: collection.includeSourceNotes })
+    .from(collection)
+    .where(and(eq(collection.id, id), eq(collection.accountId, accountId)));
+  if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+  return { ...row, tags: await tagsOfCollection(tx, accountId, id) };
 }

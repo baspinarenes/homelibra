@@ -85,6 +85,19 @@ export async function collectionView(
 }
 
 /**
+ * The Notes a Collection's view or a Tag's page shows now: exactly those
+ * of {@link collectionView}, so searching it narrows what is on screen.
+ */
+export async function viewNoteIds(
+  tx: LibraryTx,
+  accountId: string,
+  definition: { tags: TagRef[]; includeSourceNotes: boolean },
+) {
+  const { groups } = await collectionView(tx, accountId, definition);
+  return groups.flatMap((group) => group.notes.map((n) => n.id));
+}
+
+/**
  * How many Notes a Collection's view shows now, for a query over
  * `collection`: the same membership as {@link collectionView}, counted in SQL.
  */
