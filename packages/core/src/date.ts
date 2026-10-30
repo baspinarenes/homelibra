@@ -11,3 +11,4 @@ export {
   type Month,
   sortValue,
 } from './lib/calendar-date';
+export { inYearRange, type YearBound, type YearRange, yearRange } from './lib/year-range';
