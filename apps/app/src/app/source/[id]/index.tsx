@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 
 import { NoteComposer } from '@/components/note-composer';
+import { NewMark, OrganizeEntry, OrganizeMode } from '@/components/organize-mode';
 import { OutboxStatus } from '@/components/outbox-status';
 import { SourceTags } from '@/components/source-tags';
 import { NoteTagsLine } from '@/components/tag-chips';
@@ -95,6 +96,11 @@ function SourcePage({
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const headerHeight = useHeaderHeight();
+  const trpc = useTRPC();
+  // "Düzenle · N etiketsiz" and the Notes marked "yeni" (#53).
+  const organize = useQuery(trpc.organize.source.queryOptions({ sourceId: source.id }));
+  const fresh = useMemo(() => new Set(organize.data?.newNoteIds), [organize.data]);
+  const [organizing, setOrganizing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   // "Devam et" opens the box with the focus in it.
   const [writing, setWriting] = useState(write);
@@ -139,6 +145,18 @@ function SourcePage({
   ]
     .filter(Boolean)
     .join(' · ');
+
+  // Düzenle mode is the same list, worked on; the writing box hides meanwhile.
+  if (organizing)
+    return (
+      <OrganizeMode
+        source={source}
+        notes={notes}
+        statuses={statuses}
+        fresh={fresh}
+        onClose={() => setOrganizing(false)}
+      />
+    );
 
   return (
     <KeyboardAvoidingView
@@ -192,6 +210,7 @@ function SourcePage({
               </View>
               <Text style={styles.byline}>{byline}</Text>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
+              <OrganizeEntry count={organize.data?.untaggedCount ?? 0} onPress={() => setOrganizing(true)} />
             </View>
           }
           ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
@@ -200,6 +219,7 @@ function SourcePage({
               note={note}
               divided={index > 0}
               marked={note.id === marked}
+              fresh={fresh.has(note.id)}
               status={statuses.get(note.id)}
               onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
               // A Note just come in is placed by estimate until its row is measured: place it again then.
@@ -242,6 +262,7 @@ function NoteRow({
   note,
   divided,
   marked,
+  fresh,
   status,
   onPress,
   onLayout,
@@ -249,6 +270,8 @@ function NoteRow({
   note: ListedNote;
   divided: boolean;
   marked: boolean;
+  /** Came into the Source after its last "Bitir". */
+  fresh: boolean;
   status: NoteStatus | undefined;
   onPress: () => void;
   onLayout: () => void;
@@ -274,7 +297,10 @@ function NoteRow({
       <View style={styles.texts}>
         {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
         {note.comment && <Text style={styles.comment}>{`↳ ${note.comment}`}</Text>}
-        <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
+        <View style={styles.marks}>
+          <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
+          {fresh && <NewMark />}
+        </View>
         {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
       </View>
     </Pressable>
@@ -316,6 +342,7 @@ const makeStyles = (c: Colors) =>
     },
     locator: { ...typeScale.locator, color: c.muted, width: 84, paddingTop: 4 },
     texts: { flex: 1, gap: 6 },
+    marks: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
     excerpt: {
       ...typeScale.excerpt,
       color: c.quoteInk,
