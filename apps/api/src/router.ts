@@ -1,4 +1,5 @@
 import { accountRouter } from './routers/account';
+import { lookupsRouter } from './routers/lookups';
 import { notesRouter } from './routers/notes';
 import { searchRouter } from './routers/search';
 import { sourcesRouter } from './routers/sources';
@@ -9,6 +10,7 @@ export const appRouter = router({
   sources: sourcesRouter,
   notes: notesRouter,
   search: searchRouter,
+  lookups: lookupsRouter,
 });
 
 export type AppRouter = typeof appRouter;

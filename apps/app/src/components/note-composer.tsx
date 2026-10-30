@@ -7,6 +7,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
@@ -26,7 +27,8 @@ import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyle
 
 type Mode = 'excerpt' | 'comment';
 
-const minInputHeight = 66;
+// One line of an Excerpt: the box rests closed under the Notes while the scholar reads.
+const minInputHeight = 47;
 const maxInputHeight = 220;
 
 /**
@@ -43,8 +45,9 @@ const attachRefused = (code: string | undefined) => code === 'CONFLICT' || code 
 const storedLocator = (locator: string) => locator.trim() || null;
 
 /**
- * Capture's one writing box. Alıntı or Yorum; the Locator carried over from
- * the previous Note sits above it. Enter is a new line: the button saves, and
+ * The writing box at the foot of the Source page, where Notes are captured
+ * (#87). Alıntı or Yorum; the Locator carried over from the Note captured
+ * last sits above it. Enter is a new line: the button saves, and
  * on the web Ctrl/Cmd+Enter does too, so a long Excerpt is never cut in two by
  * accident. A Comment written right after an Excerpt, at the same Locator,
  * joins that Excerpt's Note.
@@ -56,6 +59,8 @@ export function NoteComposer({
   carriedSince,
   expanded,
   onExpandedChange,
+  autoFocus,
+  onFocusChange,
   onSaved,
 }: {
   sourceId: string;
@@ -65,7 +70,11 @@ export function NoteComposer({
   carriedSince: number;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
-  /** The Note just saved, so the flow can mark it. */
+  /** Opens the box ready to write, as "Devam et" does. */
+  autoFocus?: boolean;
+  /** The box is open while its text has the focus. */
+  onFocusChange: (focused: boolean) => void;
+  /** The Note just saved, so the list can show it. */
   onSaved: (id: string) => void;
 }) {
   const { t } = useTranslation();
@@ -89,6 +98,13 @@ export function NoteComposer({
   // same Note again cannot make a second one.
   const attempt = useRef<{ id: string; key: string } | null>(null);
 
+  // Android keeps the focus when its keyboard is put away: let the box close
+  // with it, so the next tap opens it again (and brings the list back).
+  useEffect(() => {
+    const hidden = Keyboard.addListener('keyboardDidHide', () => inputRef.current?.blur());
+    return () => hidden.remove();
+  }, []);
+
   // A Locator gets old while the screen stays open.
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 15_000);
@@ -96,9 +112,8 @@ export function NoteComposer({
   }, []);
   const stale = locator.trim() !== '' && now - locatorSince > locatorCheckAfter;
 
-  const refreshFlow = () =>
+  const refreshNotes = () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: trpc.notes.flow.queryKey({ sourceId }) }),
       queryClient.invalidateQueries({ queryKey: trpc.notes.list.queryKey({ sourceId }) }),
       queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
     ]);
@@ -120,7 +135,7 @@ export function NoteComposer({
         } else {
           setLastExcerpt(null);
         }
-        await refreshFlow();
+        await refreshNotes();
       },
     }),
   );
@@ -130,7 +145,7 @@ export function NoteComposer({
     trpc.notes.detachComment.mutationOptions({
       onSuccess: async (_, { commentNoteId }) => {
         onSaved(commentNoteId);
-        await refreshFlow();
+        await refreshNotes();
       },
     }),
   );
@@ -149,7 +164,7 @@ export function NoteComposer({
             inputRef.current?.focus();
           },
         });
-        await refreshFlow();
+        await refreshNotes();
       },
       // The Note took another Comment or went away elsewhere: the text stays
       // in the box, to be saved as a Note of its own.
@@ -276,8 +291,15 @@ export function NoteComposer({
           ref={inputRef}
           accessibilityLabel={t(`capture.${mode}`)}
           multiline
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          autoFocus={autoFocus}
+          onFocus={() => {
+            setFocused(true);
+            onFocusChange(true);
+          }}
+          onBlur={() => {
+            setFocused(false);
+            onFocusChange(false);
+          }}
           value={text}
           onChangeText={setText}
           onKeyPress={(event) => {

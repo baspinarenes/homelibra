@@ -1,28 +1,40 @@
 import { describe, expect, it } from 'vitest';
 
-import { capturedAt, locatorGroups } from '../note';
+import { capturedAt, lastCaptured } from '../note';
 
-const note = (id: string, locator: string | null) => ({ id, locator });
+const start = Date.parse('2026-10-30T09:00:00Z');
 
-describe('locatorGroups', () => {
-  it('runs of Notes at the same Locator share one heading, in flow order', () => {
-    const flow = [note('1', 's. 12'), note('2', 's. 12'), note('3', 's. 13'), note('4', null), note('5', null)];
+/** A UUIDv7 for a Note captured this many minutes into the reading. */
+const idAt = (minute: number) => {
+  const hex = (start + minute * 60_000).toString(16).padStart(12, '0');
+  return `${hex.slice(0, 8)}-${hex.slice(8)}-7000-8000-000000000000`;
+};
+const note = (minute: number, locator: string | null) => ({ id: idAt(minute), locator });
 
-    expect(locatorGroups(flow)).toEqual([
-      { locator: 's. 12', notes: [flow[0], flow[1]] },
-      { locator: 's. 13', notes: [flow[2]] },
-      { locator: null, notes: [flow[3], flow[4]] },
-    ]);
+describe('lastCaptured', () => {
+  it('finds the Note captured last, wherever it stands in Locator order', () => {
+    // s. 113 was where the reading was; then the scholar went back to s. 87.
+    const notes = [note(0, null), note(5, 's. 87'), note(30, 's. 87'), note(10, 's. 113'), note(20, 's. 140')];
+
+    expect(lastCaptured(notes)?.note).toBe(notes[2]);
   });
 
-  it('starts a new heading when the scholar goes back to an earlier Locator', () => {
-    const flow = [note('1', 's. 12'), note('2', 's. 13'), note('3', 's. 12')];
+  it('dates the Locator from the first Note of its unbroken run', () => {
+    // In capture order: s. 12, s. 13, s. 13, s. 13. The run at s. 13 began at minute 4.
+    const notes = [note(0, 's. 12'), note(4, 's. 13'), note(6, 's. 13'), note(9, 's. 13')];
 
-    expect(locatorGroups(flow).map((group) => group.locator)).toEqual(['s. 12', 's. 13', 's. 12']);
+    expect(lastCaptured(notes)?.locatorSince).toEqual(new Date(start + 4 * 60_000));
   });
 
-  it('has no headings for an empty flow', () => {
-    expect(locatorGroups([])).toEqual([]);
+  it('starts the run again when the scholar comes back to a Locator after another', () => {
+    // In capture order: s. 12, s. 13, s. 12. The last run at s. 12 began at minute 8.
+    const notes = [note(0, 's. 12'), note(8, 's. 12'), note(3, 's. 13')];
+
+    expect(lastCaptured(notes)?.locatorSince).toEqual(new Date(start + 8 * 60_000));
+  });
+
+  it('is null for a Source with no Notes', () => {
+    expect(lastCaptured([])).toBeNull();
   });
 });
 

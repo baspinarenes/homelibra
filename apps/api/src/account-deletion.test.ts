@@ -89,7 +89,7 @@ describe('closing an Account', () => {
 describe('cancelling the deletion', () => {
   it('reopens the Library as it was for a scholar who signs in within 14 days', async () => {
     const { email, device, sourceId } = await scholarWithLibrary();
-    const before = await (await device.call()).notes.flow({ sourceId });
+    const before = await (await device.call()).notes.list({ sourceId });
     await deleteAccount(device, email);
 
     const back = await t.signIn(email, { invite: false });
@@ -98,7 +98,7 @@ describe('cancelling the deletion', () => {
     expect(await back.account()).toMatchObject({ deletionRequestedAt: null });
     const api = await back.call();
     expect(await api.sources.home()).toEqual({ sourceCount: 1 });
-    expect(await api.notes.flow({ sourceId })).toEqual(before);
+    expect(await api.notes.list({ sourceId })).toEqual(before);
   });
 });
 
@@ -146,7 +146,7 @@ describe('the 14th day', () => {
 
     for (const { email, sourceId } of [cancelled, open]) {
       const api = await (await t.signIn(email, { invite: false })).call();
-      expect(await api.notes.flow({ sourceId })).toHaveLength(1);
+      expect(await api.notes.list({ sourceId })).toHaveLength(1);
     }
   });
 });

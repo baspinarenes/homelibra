@@ -5,16 +5,22 @@ import { cors } from 'hono/cors';
 
 import { deleteClosedAccounts } from './account-deletion/account-deletion';
 import { type AuthOptions, createAuth } from './auth';
+import type { Crossref } from './lookups/crossref';
+import { lookups } from './lookups/lookups';
 import { appRouter } from './router';
 import type { Context } from './trpc/init';
 
 export type ApiOptions = AuthOptions & {
   /** Cross-origin web clients allowed in development; production is same-origin. */
   corsOrigins?: string[];
+  crossref: Crossref;
+  /** What time it is for the lookup cache's seven days; tests move it. The system clock by default. */
+  now?: () => Date;
 };
 
 export function createApi(options: ApiOptions) {
   const auth = createAuth(options);
+  const sharedLookups = lookups(options.db, { crossref: options.crossref }, options.now ?? (() => new Date()));
 
   async function createContext(headers: Headers): Promise<Context> {
     const session = await auth.api.getSession({ headers });
@@ -24,6 +30,7 @@ export function createApi(options: ApiOptions) {
       termsAccepted: !!session?.user.termsAcceptedAt,
       accountClosed: !!session?.user.deletionRequestedAt,
       mailer: options.mailer,
+      lookups: sharedLookups,
     };
   }
 

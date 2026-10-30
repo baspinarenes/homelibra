@@ -4,6 +4,7 @@ import {
   isFilled,
   isSourceDateField,
   keptHidden,
+  normalizeDoi,
   type SourceDateField,
   sourceDateFields,
   type SourceField,
@@ -14,7 +15,7 @@ import {
   type SourceType,
   sourceTypes,
 } from '@homelibra/core/source';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -65,6 +66,7 @@ export const emptyDraft: SourceDraft = {
 };
 
 type StoredSource = inferRouterOutputs<AppRouter>['sources']['get'];
+type DoiFill = NonNullable<inferRouterOutputs<AppRouter>['lookups']['doi']>;
 
 export function sourceToDraft(source: StoredSource): SourceDraft {
   const textFields = Object.fromEntries(Object.entries(source.fields).filter(([key]) => !isSourceDateField(key)));
@@ -76,6 +78,21 @@ export function sourceToDraft(source: StoredSource): SourceDraft {
     bibliographicNote: source.bibliographicNote ?? '',
     values: { ...textFields, isbn: source.isbn ?? '', doi: source.doi ?? '' },
     dates: draftDates(source.fields),
+  };
+}
+
+/**
+ * DOI ile doldur: what Crossref gave replaces what the form held, the rest
+ * stays. The Date comes Milâdî; the scholar may change its calendar after.
+ * Whatever the scholar corrects is saved in their Source only.
+ */
+function withDoiFill(draft: SourceDraft, { doi, title, author, date, fields }: DoiFill): SourceDraft {
+  return {
+    ...draft,
+    title: title ?? draft.title,
+    author: author ?? draft.author,
+    date: date ? dateToDraft(date) : draft.date,
+    values: { ...draft.values, ...fields, doi },
   };
 }
 
@@ -147,6 +164,13 @@ export function SourceForm({
   const wide = Platform.OS === 'web' && width >= wideMinWidth;
   const [draft, setDraft] = useState(initial);
   const [tuckedOpen, setTuckedOpen] = useState(false);
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const doiFill = useMutation({
+    mutationFn: (doi: string) => queryClient.fetchQuery(trpc.lookups.doi.queryOptions({ doi })),
+    onSuccess: (fill) => fill && setDraft((d) => withDoiFill(d, fill)),
+  });
+  const doi = normalizeDoi(draft.values.doi ?? '');
 
   const layout = sourceLayout(draft.type);
   const typeFields = [...layout.open, ...(tuckedOpen ? layout.tucked : [])];
@@ -161,8 +185,11 @@ export function SourceForm({
     setDraft((d) => ({ ...d, type }));
     setTuckedOpen(false);
   };
-  const setValue = (key: SourceIdentifier | SourceTextField, value: string) =>
+  const setValue = (key: SourceIdentifier | SourceTextField, value: string) => {
+    // What was said about the DOI before no longer holds.
+    if (key === 'doi') doiFill.reset();
     setDraft((d) => ({ ...d, values: { ...d.values, [key]: value } }));
+  };
   const setDate = (key: SourceDateField, value: DateDraft) =>
     setDraft((d) => ({ ...d, dates: { ...d.dates, [key]: value } }));
 
@@ -221,6 +248,29 @@ export function SourceForm({
         </View>
 
         {layout.identifier && fieldInput(layout.identifier, { autoCapitalize: 'none', autoCorrect: false })}
+        {layout.identifier === 'doi' && (
+          <View style={styles.lookup}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => doi && doiFill.mutate(doi)}
+              disabled={!doi || doiFill.isPending}
+              hitSlop={6}
+            >
+              <Text style={[styles.lookupAction, !doi && styles.inactive]}>
+                {doiFill.isPending ? t('sourceForm.doiFilling') : t('sourceForm.doiFill')}
+              </Text>
+            </Pressable>
+            {(doiFill.isSuccess || doiFill.isError) && (
+              <Text style={styles.lookupStatus}>
+                {doiFill.isError
+                  ? t('sourceForm.doiFailed')
+                  : doiFill.data
+                    ? t('sourceForm.doiFilled')
+                    : t('sourceForm.doiNotFound')}
+              </Text>
+            )}
+          </View>
+        )}
 
         <Field
           label={t('sourceForm.title')}
@@ -345,6 +395,9 @@ const makeStyles = (c: Colors) =>
     columns: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.lg, marginHorizontal: -space.sm },
     column: { width: '50%', paddingHorizontal: space.sm },
     more: { alignSelf: 'flex-start', paddingVertical: 6 },
+    lookup: { gap: 4, marginTop: -space.sm, alignItems: 'flex-start' },
+    lookupAction: { ...typeScale.button, color: c.accent },
+    lookupStatus: { ...typeScale.caption, color: c.muted },
     moreText: { ...typeScale.button, color: c.accent },
     moreCount: { ...typeScale.caption, color: c.muted },
     kept: {

@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 
 import { type Db, withLibrary } from '../db/client';
+import type { Lookups } from '../lookups/lookups';
 import type { Mailer } from '../mail/mailer';
 
 export type Context = {
@@ -12,6 +13,8 @@ export type Context = {
   /** Whether that Account asked to be deleted and has not cancelled yet. */
   accountClosed: boolean;
   mailer: Mailer;
+  /** ISBN and DOI lookups through the cache shared by every Library. */
+  lookups: Lookups;
 };
 
 /** The app's first-sign-in screen stands between the scholar and the Library until this goes away. */
@@ -35,14 +38,23 @@ export const accountProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 /**
+ * A procedure for a scholar whose Library is open (terms accepted, Account
+ * not closed) that works outside it, such as a lookup: no Library
+ * transaction, and no database handle at all.
+ */
+export const scholarProcedure = accountProcedure.use(({ ctx, next }) => {
+  if (!ctx.termsAccepted) throw new TRPCError({ code: 'FORBIDDEN', message: TERMS_NOT_ACCEPTED });
+  if (ctx.accountClosed) throw new TRPCError({ code: 'FORBIDDEN', message: ACCOUNT_CLOSED });
+  return next();
+});
+
+/**
  * A procedure inside the signed-in Account's Library. The whole call runs in
  * one transaction with row-level security set to that Account; `ctx.tx` is
  * the only database handle it gets.
  */
-export const libraryProcedure = accountProcedure.use(({ ctx, next }) => {
+export const libraryProcedure = scholarProcedure.use(({ ctx, next }) => {
   const { accountId } = ctx;
-  if (!ctx.termsAccepted) throw new TRPCError({ code: 'FORBIDDEN', message: TERMS_NOT_ACCEPTED });
-  if (ctx.accountClosed) throw new TRPCError({ code: 'FORBIDDEN', message: ACCOUNT_CLOSED });
   return withLibrary(ctx.db, accountId, async (tx) => {
     const result = await next({ ctx: { tx, accountId, db: undefined } });
     // Roll the transaction back when the procedure failed.

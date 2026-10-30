@@ -46,13 +46,13 @@ export default function HomeScreen() {
     );
   }
 
-  // Sources but no Notes yet: Capture opens on the newest Source.
+  // Sources but no Notes yet: there is no last Source to go on with, so the scholar picks one in Kaynaklar.
   if (home.data.sourceCount > 0) {
     return (
       <View style={styles.center}>
         <Text style={styles.lead}>{t('home.takeNoteLead')}</Text>
         <View style={styles.action}>
-          <PrimaryButton label={t('home.takeNote')} onPress={() => router.push('/capture')} />
+          <PrimaryButton label={t('home.takeNote')} onPress={() => router.navigate('/sources')} />
         </View>
       </View>
     );
@@ -71,8 +71,8 @@ export default function HomeScreen() {
 
 /**
  * Son not aldığın (#68, 3rd round): an unboxed section, all of it opening the
- * Source page; the small "Devam et" opens Capture on that Source, where the
- * last Locator is carried over.
+ * Source page as for reading; the small "Devam et" opens it ready to write,
+ * the box open with the last Locator carried over (#87).
  */
 function LastNotedSection({ lastNoted: { source, note } }: { lastNoted: LastNoted }) {
   const { t } = useTranslation();
@@ -115,7 +115,7 @@ function LastNotedSection({ lastNoted: { source, note } }: { lastNoted: LastNote
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push({ pathname: '/capture', params: { sourceId: source.id } })}
+        onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id, write: '1' } })}
         hitSlop={8}
         style={({ pressed }) => [styles.continue, pressed && styles.pressed]}
       >

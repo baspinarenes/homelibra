@@ -1,5 +1,5 @@
 {
-  "id": "6bd5a21a-e0aa-421b-8eac-a7ca41cb0980",
+  "id": "aaea55e5-9253-40d3-969a-1507b71de8da",
   "prevId": "4b146d8e-0111-4aa1-b3ec-b4fd0d27137b",
   "version": "7",
   "dialect": "postgresql",
@@ -251,6 +251,58 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.lookup_cache": {
+      "name": "lookup_cache",
+      "schema": "",
+      "columns": {
+        "kind": {
+          "name": "kind",
+          "type": "lookup_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "response": {
+          "name": "response",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "lookup_cache_kind_identifier_pk": {
+          "name": "lookup_cache_kind_identifier_pk",
+          "columns": [
+            "kind",
+            "identifier"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.note": {
       "name": "note",
       "schema": "",
@@ -297,16 +349,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "search_vector": {
-          "name": "search_vector",
-          "type": "tsvector",
-          "primaryKey": false,
-          "notNull": true,
-          "generated": {
-            "as": "hl_tsvector(excerpt) || hl_tsvector(comment)",
-            "type": "stored"
-          }
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -342,21 +384,6 @@
           "isUnique": false,
           "concurrently": false,
           "method": "btree",
-          "with": {}
-        },
-        "note_search_vector_idx": {
-          "name": "note_search_vector_idx",
-          "columns": [
-            {
-              "expression": "search_vector",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "gin",
           "with": {}
         }
       },
@@ -574,26 +601,6 @@
           "notNull": true,
           "default": "'{}'::jsonb"
         },
-        "search_vector": {
-          "name": "search_vector",
-          "type": "tsvector",
-          "primaryKey": false,
-          "notNull": true,
-          "generated": {
-            "as": "hl_tsvector(title) || hl_tsvector(author) || hl_tsvector(bibliographic_note) || hl_tsvector(hl_fields_text(fields))",
-            "type": "stored"
-          }
-        },
-        "search_text": {
-          "name": "search_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "generated": {
-            "as": "hl_fold_text(title || ' ' || coalesce(author, '') || ' ' || coalesce(bibliographic_note, '') || ' ' || coalesce(hl_fields_text(fields), ''))",
-            "type": "stored"
-          }
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -623,36 +630,6 @@
           "isUnique": false,
           "concurrently": false,
           "method": "btree",
-          "with": {}
-        },
-        "source_search_vector_idx": {
-          "name": "source_search_vector_idx",
-          "columns": [
-            {
-              "expression": "search_vector",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "gin",
-          "with": {}
-        },
-        "source_search_text_idx": {
-          "name": "source_search_text_idx",
-          "columns": [
-            {
-              "expression": "\"search_text\" gin_trgm_ops",
-              "asc": true,
-              "isExpression": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "gin",
           "with": {}
         }
       },
@@ -755,6 +732,14 @@
     }
   },
   "enums": {
+    "public.lookup_kind": {
+      "name": "lookup_kind",
+      "schema": "public",
+      "values": [
+        "doi",
+        "isbn"
+      ]
+    },
     "public.source_type": {
       "name": "source_type",
       "schema": "public",

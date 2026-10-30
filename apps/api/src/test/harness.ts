@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, vi } from 'vitest';
+import { normalizeDoi } from '@homelibra/core/source';
+import { afterAll, afterEach, vi } from 'vitest';
 
 import { createApi } from '../app';
 import { createDb } from '../db/client';
 import { invitations } from '../invitations/invitations';
+import type { Crossref } from '../lookups/crossref';
 import type { Mailer } from '../mail/mailer';
 import { appRouter } from '../router';
 import { testDatabaseUrl, testMigrationDatabaseUrl } from './db';
@@ -41,6 +43,32 @@ export function fakeMailer() {
       if (!code) throw new Error(`no code was sent to ${email}`);
       return code;
     },
+  };
+}
+
+/** A work as Crossref's REST API holds it; only DOI is certain to be there. */
+type PublishedWork = { DOI: string; [field: string]: unknown };
+
+/**
+ * Stands in for Crossref behind its adapter: it holds the works a test
+ * publishes and counts how often it was asked for each DOI.
+ */
+export function fakeCrossref() {
+  const works = new Map<string, PublishedWork>();
+  const asked: string[] = [];
+  const crossref: Crossref = {
+    async work(doi) {
+      asked.push(doi);
+      return works.get(doi) ?? null;
+    },
+  };
+  return {
+    crossref,
+    /** Crossref registers a work; it is found under its DOI in any case. */
+    publish(work: PublishedWork) {
+      works.set(normalizeDoi(work.DOI) ?? work.DOI, work);
+    },
+    askedFor: (doi: string) => asked.filter((d) => d === doi).length,
   };
 }
 
@@ -114,6 +142,13 @@ export function testApi() {
   const owner = createDb(testMigrationDatabaseUrl);
   const mail = fakeMailer();
   const google = fakeGoogle();
+  const crossref = fakeCrossref();
+  // Only the API's own clock moves: Better Auth shares the database with
+  // other test files and would take their sign-in codes for expired ones.
+  let passedMs = 0;
+  afterEach(() => {
+    passedMs = 0;
+  });
   const api = createApi({
     db,
     mailer: mail.mailer,
@@ -121,6 +156,8 @@ export function testApi() {
     secret: 'test-secret-that-is-at-least-32-characters-long',
     trustedOrigins: [WEB_APP],
     google: { clientId: 'test-client-id', clientSecret: 'test-client-secret' },
+    crossref: crossref.crossref,
+    now: () => new Date(Date.now() + passedMs),
   });
 
   afterAll(async () => {
@@ -230,10 +267,28 @@ export function testApi() {
     return api.http.request(`/api/auth${path}`, { method: 'POST', headers: json, body: JSON.stringify(body) });
   }
 
+  /** Moves the API's clock on, until the test ends. */
+  function passTime(ms: number) {
+    passedMs += ms;
+  }
+
   /** A caller with no session at all. */
   async function anonymous() {
     return appRouter.createCaller(await api.createContext(new Headers()));
   }
 
-  return { api, db, owner, mail, invite, uninvite, requestCode, signIn, signInWithGoogle, anonymous };
+  return {
+    api,
+    db,
+    owner,
+    mail,
+    crossref,
+    passTime,
+    invite,
+    uninvite,
+    requestCode,
+    signIn,
+    signInWithGoogle,
+    anonymous,
+  };
 }

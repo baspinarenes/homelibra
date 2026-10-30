@@ -1,38 +1,52 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
+import { lastCaptured } from '@homelibra/core/note';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useHeaderHeight } from 'expo-router/react-navigation';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-import { PrimaryButton } from '@/components/primary-button';
+import { NoteComposer } from '@/components/note-composer';
 import { TemplateCover } from '@/components/template-cover';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
+type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 type ListedNote = inferRouterOutputs<AppRouter>['notes']['list'][number];
 
+// Tries at placing a Note whose row is not laid out yet, and the wait between them in ms.
+const scrollRetries = 5;
+const scrollRetryAfter = 50;
+
+/** A Note the list keeps in view: just above the box while writing, or mid-screen when a search opened it. */
+type Pin = { id: string; at: 'box' | 'middle' };
+
 /**
- * The Source page (#35): the Source's heading and its Notes in Locator order,
- * with no writing box. "Not al" opens Capture on it; a Note opens its editing.
- * From a search result, `note` names the Note to show in its place, marked.
+ * The Source page (#35, #87): the Source's heading and its Notes in Locator
+ * order, with the writing box at its foot. Capture happens here; it has no
+ * screen of its own. "Devam et" opens the page ready to write (`write`), a
+ * search result on the Note it found (`note`), every other way in as for
+ * reading: the box closed and the list at the top.
  */
 export default function SourceScreen() {
-  const { id, note: shownId } = useLocalSearchParams<{ id: string; note?: string }>();
+  const { id, write, note } = useLocalSearchParams<{ id: string; write?: string; note?: string }>();
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
-  const router = useRouter();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
-  const list = useRef<FlatList<ListedNote>>(null);
-  const retried = useRef(false);
-  const shownIndex = notes.data?.findIndex((note) => note.id === shownId) ?? -1;
-  useEffect(() => {
-    if (shownIndex > 0) list.current?.scrollToIndex({ index: shownIndex, viewPosition: 0.3 });
-  }, [shownIndex]);
 
   if (source.isPending || notes.isPending || source.isError || notes.isError) {
     return (
@@ -46,72 +60,155 @@ export default function SourceScreen() {
     );
   }
 
+  return <SourcePage source={source.data} notes={notes.data} write={write === '1'} found={note} />;
+}
+
+function SourcePage({
+  source,
+  notes,
+  write,
+  found,
+}: {
+  source: Source;
+  notes: ListedNote[];
+  write: boolean;
+  found: string | undefined;
+}) {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
+  const router = useRouter();
+  const headerHeight = useHeaderHeight();
+  const [expanded, setExpanded] = useState(false);
+  // "Devam et" opens the box with the focus in it.
+  const [writing, setWriting] = useState(write);
+  // The Note saved last on this page.
+  const [freshId, setFreshId] = useState<string | null>(null);
+  const last = useMemo(() => lastCaptured(notes), [notes]);
+  const list = useRef<FlatList<ListedNote>>(null);
+  const pin = useRef<Pin | null>(
+    write && last ? { id: last.note.id, at: 'box' } : found ? { id: found, at: 'middle' } : null,
+  );
+  const retries = useRef(0);
+
+  // Again whenever the list's height or content changes: the keyboard opens, the box grows, a saved Note comes in.
+  const scrollToPin = () => {
+    const target = pin.current;
+    const index = target ? notes.findIndex((n) => n.id === target.id) : -1;
+    if (!target || index < 0) return;
+    // Above the box with room for the marked Note's outline.
+    const above = target.at === 'box';
+    list.current?.scrollToIndex({
+      index,
+      animated: false,
+      viewPosition: above ? 1 : 0.5,
+      viewOffset: above ? -space.md : 0,
+    });
+  };
+  const pinAboveBox = (id: string) => {
+    pin.current = { id, at: 'box' };
+    retries.current = 0;
+    scrollToPin();
+  };
+
+  // Outlined: the Note saved last here, else the one captured last while writing, else the one a search opened.
+  const marked = freshId ?? (writing ? last?.note.id : found) ?? null;
+
   // Yazar · Tarih · Künye notu · not sayısı, the Date as it was entered.
   const byline = [
-    source.data.author,
-    source.data.date && formatDate(source.data.date),
-    source.data.bibliographicNote,
-    t('sourcePage.noteCount', { count: notes.data.length }),
+    source.author,
+    source.date && formatDate(source.date),
+    source.bibliographicNote,
+    t('sourcePage.noteCount', { count: notes.length }),
   ]
     .filter(Boolean)
     .join(' · ');
 
   return (
-    <FlatList
-      ref={list}
+    <KeyboardAvoidingView
       style={styles.screen}
-      contentContainerStyle={styles.content}
-      data={notes.data}
-      keyExtractor={(note) => note.id}
-      ListHeaderComponent={
-        <View style={styles.heading}>
-          <Stack.Screen
-            options={{
-              title: '',
-              headerRight: () => (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id } })}
-                  hitSlop={8}
-                >
-                  <Text style={styles.headerAction}>{t('sourcePage.edit')}</Text>
-                </Pressable>
-              ),
-            }}
-          />
-          <View style={styles.identity}>
-            <TemplateCover type={source.data.type} />
-            <View style={styles.identityText}>
-              <Text style={styles.type}>{t(`sourceTypes.${source.data.type}.label`).toLocaleUpperCase('tr')}</Text>
-              <Text style={styles.title}>{source.data.title}</Text>
+      behavior={Platform.OS === 'web' ? undefined : 'padding'}
+      keyboardVerticalOffset={headerHeight}
+    >
+      <Stack.Screen
+        options={{
+          title: '',
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
+              hitSlop={8}
+            >
+              <Text style={styles.headerAction}>{t('sourcePage.edit')}</Text>
+            </Pressable>
+          ),
+        }}
+      />
+      {!expanded && (
+        <FlatList
+          ref={list}
+          style={styles.screen}
+          contentContainerStyle={styles.content}
+          data={notes}
+          extraData={marked}
+          keyExtractor={(note) => note.id}
+          keyboardShouldPersistTaps="handled"
+          onLayout={scrollToPin}
+          onContentSizeChange={scrollToPin}
+          // Rows not laid out yet: jump near the Note, then try again once they are.
+          onScrollToIndexFailed={({ index, averageItemLength }) => {
+            list.current?.scrollToOffset({ offset: averageItemLength * index, animated: false });
+            if (retries.current++ < scrollRetries) setTimeout(scrollToPin, scrollRetryAfter);
+          }}
+          // The scholar scrolls away: the list stops holding the Note in view.
+          onScrollBeginDrag={() => {
+            pin.current = null;
+          }}
+          ListHeaderComponent={
+            <View style={styles.heading}>
+              <View style={styles.identity}>
+                <TemplateCover type={source.type} />
+                <View style={styles.identityText}>
+                  <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
+                  <Text style={styles.title}>{source.title}</Text>
+                </View>
+              </View>
+              <Text style={styles.byline}>{byline}</Text>
             </View>
-          </View>
-          <Text style={styles.byline}>{byline}</Text>
-          <View style={styles.action}>
-            <PrimaryButton
-              label={t('sourcePage.takeNote')}
-              onPress={() => router.push({ pathname: '/capture', params: { sourceId: id } })}
+          }
+          ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
+          renderItem={({ item: note, index }) => (
+            <NoteRow
+              note={note}
+              divided={index > 0}
+              marked={note.id === marked}
+              onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
+              // A Note just come in is placed by estimate until its row is measured: place it again then.
+              onLayout={() => {
+                if (pin.current?.id === note.id) setTimeout(scrollToPin, 0);
+              }}
             />
-          </View>
-        </View>
-      }
-      // Rows have no fixed height: scroll near it, then once more to it when it is laid out.
-      onScrollToIndexFailed={({ index, averageItemLength }) => {
-        list.current?.scrollToOffset({ offset: index * averageItemLength });
-        if (retried.current) return;
-        retried.current = true;
-        setTimeout(() => list.current?.scrollToIndex({ index, viewPosition: 0.3 }), 100);
-      }}
-      ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
-      renderItem={({ item: note, index }) => (
-        <NoteRow
-          note={note}
-          divided={index > 0}
-          shown={note.id === shownId}
-          onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
+          )}
         />
       )}
-    />
+      <NoteComposer
+        sourceId={source.id}
+        sourceType={source.type}
+        carriedLocator={last?.note.locator ?? ''}
+        carriedSince={last ? last.locatorSince.getTime() : Date.now()}
+        expanded={expanded}
+        onExpandedChange={setExpanded}
+        autoFocus={write}
+        onFocusChange={(focused) => {
+          setWriting(focused);
+          if (focused && last) pinAboveBox(last.note.id);
+          else if (!focused) pin.current = null;
+        }}
+        onSaved={(id) => {
+          setFreshId(id);
+          pinAboveBox(id);
+        }}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
@@ -119,14 +216,15 @@ export default function SourceScreen() {
 function NoteRow({
   note,
   divided,
-  shown,
+  marked,
   onPress,
+  onLayout,
 }: {
   note: ListedNote;
   divided: boolean;
-  /** The Note a search result opened the page on. */
-  shown: boolean;
+  marked: boolean;
   onPress: () => void;
+  onLayout: () => void;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
@@ -135,7 +233,13 @@ function NoteRow({
       accessibilityRole="button"
       accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, divided && styles.divided, shown && styles.shown, pressed && styles.pressed]}
+      onLayout={onLayout}
+      style={({ pressed }) => [
+        styles.row,
+        divided && styles.divided,
+        marked && styles.marked,
+        pressed && styles.pressed,
+      ]}
     >
       <Text style={styles.locator}>{note.locator ?? '—'}</Text>
       <View style={styles.texts}>
@@ -149,7 +253,7 @@ function NoteRow({
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
+    content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     spinner: { color: c.accent },
@@ -168,11 +272,17 @@ const makeStyles = (c: Colors) =>
     type: { ...typeScale.micro, color: c.accent },
     title: { ...typeScale.sourceTitle, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
-    action: { alignSelf: 'flex-start' },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    shown: { backgroundColor: c.accentSub, marginHorizontal: -space.lg, paddingHorizontal: space.lg },
+    // An outline, so the row keeps its place while marked.
+    marked: {
+      outlineWidth: 2,
+      outlineStyle: 'solid',
+      outlineColor: c.accent,
+      outlineOffset: 3,
+      borderRadius: radius.cover,
+    },
     locator: { ...typeScale.locator, color: c.muted, width: 84, paddingTop: 4 },
     texts: { flex: 1, gap: 6 },
     excerpt: {

@@ -1,3 +1,5 @@
+import { byCapture } from './captured-at';
+
 // A time (dk:sn, sa:dk:sn) or a number, with a folio's b side right after it.
 const token = /(\d+(?::\d+){1,2})|(\d+)(b(?!\p{L}))?/gu;
 
@@ -45,7 +47,7 @@ function compareSortValues(a: readonly number[], b: readonly number[]) {
 }
 
 /**
- * Locator order, as the Source page and Capture list a Source's Notes:
+ * Locator order, as the Source page lists a Source's Notes:
  * Notes without a Locator first, then those whose Locator holds no number,
  * then by sort value; within each, oldest first.
  */
@@ -53,6 +55,6 @@ export function compareNotes(a: Placeable, b: Placeable): number {
   return (
     tier(a) - tier(b) ||
     (a.locatorSort && b.locatorSort ? compareSortValues(a.locatorSort, b.locatorSort) : 0) ||
-    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+    byCapture(a, b)
   );
 }
