@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { PlaceholderScreen } from '@/components/placeholder-screen';
 import { PrimaryButton } from '@/components/primary-button';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -30,8 +29,18 @@ export default function HomeScreen() {
     );
   }
 
-  // The Ana sayfa sections for a Library with Sources arrive with them.
-  if (home.data.sourceCount > 0) return <PlaceholderScreen />;
+  // Capture opens on the Source last noted in. The Ana sayfa sections for a
+  // Library with Sources (the last noted Source's card first) arrive with #46.
+  if (home.data.sourceCount > 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.lead}>{t('home.takeNoteLead')}</Text>
+        <View style={styles.action}>
+          <PrimaryButton label={t('home.takeNote')} onPress={() => router.push('/capture')} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.center}>

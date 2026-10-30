@@ -1,6 +1,20 @@
 import type { CalendarDate } from '@homelibra/core/date';
 import { type SourceFieldValues, sourceTypes } from '@homelibra/core/source';
-import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import {
+  boolean,
+  check,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 // Better Auth's models, renamed to the glossary: its "user" is our Account,
 // and its "account" (one row per sign-in method) is an account_provider.
@@ -113,5 +127,45 @@ export const source = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('source_account_id_idx').on(t.accountId)],
+  (t) => [
+    index('source_account_id_idx').on(t.accountId),
+    // What note_source_fk points at, so a Note's Source is always in its own Library.
+    unique('source_id_account_id_unique').on(t.id, t.accountId),
+  ],
+);
+
+/**
+ * A Note: an Excerpt, a Comment or both, at one Locator of one Source
+ * (GLOSSARY.md). Its id is a UUIDv7 made on the device that captured it, so
+ * sending it twice is harmless and id order is capture order (ADR-0008).
+ */
+export const note = pgTable(
+  'note',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    sourceId: uuid('source_id').notNull(),
+    /** Free-form, as the scholar would cite it; null speaks of the Source as a whole. */
+    locator: text('locator'),
+    excerpt: text('excerpt'),
+    comment: text('comment'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('note_source_id_idx').on(t.sourceId, t.id),
+    // Through account_id too: a Note can never sit on another Library's Source.
+    foreignKey({
+      name: 'note_source_fk',
+      columns: [t.sourceId, t.accountId],
+      foreignColumns: [source.id, source.accountId],
+    }).onDelete('cascade'),
+    // An Excerpt or a Comment with something other than whitespace in it.
+    check(
+      'note_has_text',
+      sql`coalesce(${t.excerpt} ~ '[^[:space:]]', false) or coalesce(${t.comment} ~ '[^[:space:]]', false)`,
+    ),
+  ],
 );

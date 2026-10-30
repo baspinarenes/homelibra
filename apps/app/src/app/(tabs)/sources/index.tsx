@@ -1,7 +1,7 @@
 import { formatDate } from '@homelibra/core/date';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
+import NotebookPen from 'lucide-react-native/icons/notebook-pen';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -14,7 +14,11 @@ import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme'
 
 type Sort = 'title' | 'author' | 'date';
 
-/** Kaynaklar: every Source, by Başlık, Yazar or Tarih. Okunuyor/Bitti sections arrive with Reading status (P1). */
+/**
+ * Kaynaklar: every Source, by Başlık, Yazar or Tarih. A row opens the Source
+ * form; its pen opens Capture on that Source. Okunuyor/Bitti sections arrive
+ * with Reading status (P1).
+ */
 export default function SourcesScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
@@ -73,25 +77,36 @@ export default function SourcesScreen() {
         // Yazar · Tarih, the Date as it was entered.
         const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
         return (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
-            style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
-          >
-            <TemplateCover type={source.type} />
-            <View style={styles.text}>
-              <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-              <Text style={styles.rowTitle} numberOfLines={2}>
-                {source.title}
-              </Text>
-              {byline !== '' && (
-                <Text style={styles.byline} numberOfLines={1}>
-                  {byline}
+          // Two buttons side by side: a button may not hold another on web.
+          <View style={[styles.row, index > 0 && styles.divided]}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
+              style={({ pressed }) => [styles.open, pressed && styles.pressed]}
+            >
+              <TemplateCover type={source.type} />
+              <View style={styles.text}>
+                <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
+                <Text style={styles.rowTitle} numberOfLines={2}>
+                  {source.title}
                 </Text>
-              )}
-            </View>
-            <ChevronRight color={styles.chevron.color} size={20} strokeWidth={1.6} />
-          </Pressable>
+                {byline !== '' && (
+                  <Text style={styles.byline} numberOfLines={1}>
+                    {byline}
+                  </Text>
+                )}
+              </View>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('sources.takeNote', { title: source.title })}
+              onPress={() => router.push({ pathname: '/capture', params: { sourceId: source.id } })}
+              hitSlop={8}
+              style={({ pressed }) => [styles.takeNote, pressed && styles.pressed]}
+            >
+              <NotebookPen color={styles.takeNoteIcon.color} size={20} strokeWidth={1.6} />
+            </Pressable>
+          </View>
         );
       }}
     />
@@ -115,12 +130,14 @@ const makeStyles = (c: Colors) =>
     action: { marginTop: space.lg },
     spinner: { color: c.accent },
     sort: { paddingVertical: space.md },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
+    row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    open: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     pressed: { opacity: 0.7 },
     text: { flex: 1, gap: 2 },
     type: { ...typeScale.micro, color: c.muted },
     rowTitle: { ...typeScale.sourceTitleSm, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
-    chevron: { color: c.faint },
+    takeNote: { padding: space.sm },
+    takeNoteIcon: { color: c.accent },
   });
