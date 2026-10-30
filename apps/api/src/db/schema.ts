@@ -211,6 +211,8 @@ export const note = pgTable(
   },
   (t) => [
     index('note_source_id_idx').on(t.sourceId, t.id),
+    // What note_tag_note_fk points at, so a Note's Tags are always in its own Library.
+    unique('note_id_account_id_unique').on(t.id, t.accountId),
     index('note_search_vector_idx').using('gin', t.searchVector),
     // Through account_id too: a Note can never sit on another Library's Source.
     foreignKey({
@@ -223,5 +225,87 @@ export const note = pgTable(
       'note_has_text',
       sql`coalesce(${t.excerpt} ~ '[^[:space:]]', false) or coalesce(${t.comment} ~ '[^[:space:]]', false)`,
     ),
+  ],
+);
+
+/**
+ * A Tag (GLOSSARY.md): shown as first entered, one per identity in a Library
+ * (core's tagIdentity). It lives while a Note or a Source carries it (a
+ * Collection too, once they exist); the database drops it with its last
+ * link, in the same transaction (0012_tags).
+ */
+export const tag = pgTable(
+  'tag',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    /** The spelling it was first entered with, without a leading #. */
+    name: text('name').notNull(),
+    /** What makes two names one Tag: core's tagIdentity of the name. */
+    identity: text('identity').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('tag_account_id_identity_unique').on(t.accountId, t.identity),
+    // What the link tables point at, so a link never crosses Libraries.
+    unique('tag_id_account_id_unique').on(t.id, t.accountId),
+  ],
+);
+
+/** A Tag on a Note: only the ones put on the Note itself, never its Source's (ADR-0003). */
+export const noteTag = pgTable(
+  'note_tag',
+  {
+    noteId: uuid('note_id').notNull(),
+    tagId: uuid('tag_id').notNull(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    /** When the Tag was put on: what "son kullanılan" orders by. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.noteId, t.tagId] }),
+    index('note_tag_tag_id_idx').on(t.tagId),
+    foreignKey({
+      name: 'note_tag_note_fk',
+      columns: [t.noteId, t.accountId],
+      foreignColumns: [note.id, note.accountId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'note_tag_tag_fk',
+      columns: [t.tagId, t.accountId],
+      foreignColumns: [tag.id, tag.accountId],
+    }).onDelete('cascade'),
+  ],
+);
+
+/** A Tag on a Source. It reaches the Source's Notes only inside a Collection (ADR-0003). */
+export const sourceTag = pgTable(
+  'source_tag',
+  {
+    sourceId: uuid('source_id').notNull(),
+    tagId: uuid('tag_id').notNull(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    /** When the Tag was put on: what "son kullanılan" orders by. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sourceId, t.tagId] }),
+    index('source_tag_tag_id_idx').on(t.tagId),
+    foreignKey({
+      name: 'source_tag_source_fk',
+      columns: [t.sourceId, t.accountId],
+      foreignColumns: [source.id, source.accountId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'source_tag_tag_fk',
+      columns: [t.tagId, t.accountId],
+      foreignColumns: [tag.id, tag.accountId],
+    }).onDelete('cascade'),
   ],
 );

@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
 import { note, source } from '../db/schema';
+import { resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
@@ -55,15 +56,22 @@ export const notesRouter = router({
           locator: optionalText,
           excerpt: optionalText,
           comment: optionalText,
+          /** Tag names from the "+ etiket" picker; untagged is the default. */
+          tags: tagNames.optional(),
         })
         .refine((input) => input.excerpt || input.comment, { message: 'An Excerpt or a Comment is needed' }),
     )
     .mutation(async ({ ctx, input }) => {
+      const { tags, ...values } = input;
       await assertSource(ctx.tx, ctx.accountId, input.sourceId);
-      await ctx.tx
+      const [created] = await ctx.tx
         .insert(note)
-        .values({ ...input, locatorSort: derivedSort(input.locator), accountId: ctx.accountId })
-        .onConflictDoNothing({ target: note.id });
+        .values({ ...values, locatorSort: derivedSort(input.locator), accountId: ctx.accountId })
+        .onConflictDoNothing({ target: note.id })
+        .returning({ id: note.id });
+      // Sent again, the Note keeps the Tags it has now, which may have changed since.
+      if (created && tags?.length)
+        await setNoteTags(ctx.tx, ctx.accountId, input.id, await resolveTags(ctx.tx, ctx.accountId, tags));
       return { id: input.id };
     }),
 
@@ -134,7 +142,13 @@ export const notesRouter = router({
       .select(noteColumns)
       .from(note)
       .where(and(eq(note.sourceId, input.sourceId), eq(note.accountId, ctx.accountId)));
-    return rows.sort(compareNotes);
+    const tags = await tagsOfNotes(
+      ctx.tx,
+      ctx.accountId,
+      rows.map((row) => row.id),
+    );
+    // Only each Note's own Tags; the Source's stay on the Source (ADR-0003).
+    return rows.sort(compareNotes).map((row) => ({ ...row, tags: tags.get(row.id) ?? [] }));
   }),
 
   get: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
@@ -143,7 +157,8 @@ export const notesRouter = router({
       .from(note)
       .where(and(eq(note.id, input.id), eq(note.accountId, ctx.accountId)));
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
-    return row;
+    const tags = await tagsOfNotes(ctx.tx, ctx.accountId, [row.id]);
+    return { ...row, tags: tags.get(row.id) ?? [] };
   }),
 
   /**
@@ -168,10 +183,12 @@ export const notesRouter = router({
           .nullish(),
         excerpt: optionalText.optional(),
         comment: optionalText.optional(),
+        /** All the Note's Tags, by name: what the picker leaves on it. */
+        tags: tagNames.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, locatorSort, ...changes } = input;
+      const { id, locatorSort, tags, ...changes } = input;
       const where = and(eq(note.id, id), eq(note.accountId, ctx.accountId));
       const [current] = await ctx.tx.select(noteColumns).from(note).where(where);
       if (!current) throw new TRPCError({ code: 'NOT_FOUND' });
@@ -190,6 +207,7 @@ export const notesRouter = router({
         .update(note)
         .set({ locator, excerpt, comment, locatorSort: sort, updatedAt: new Date() })
         .where(where);
+      if (tags) await setNoteTags(ctx.tx, ctx.accountId, id, await resolveTags(ctx.tx, ctx.accountId, tags));
       return { id };
     }),
 });

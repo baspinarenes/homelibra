@@ -14,6 +14,7 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
 import { note, source } from '../db/schema';
+import { tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
 // Only Tür and Başlık are required; nothing else is validated, so a
@@ -184,6 +185,6 @@ export const sourcesRouter = router({
       .from(source)
       .where(and(eq(source.id, input.id), eq(source.accountId, ctx.accountId)));
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
-    return row;
+    return { ...row, tags: await tagsOfSource(ctx.tx, ctx.accountId, row.id) };
   }),
 });
