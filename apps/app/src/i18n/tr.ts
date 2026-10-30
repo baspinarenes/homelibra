@@ -533,4 +533,21 @@ export const tr = {
     finishedSection: 'Bitti',
     all: 'Tümü ›',
   },
+  // Düzenle mode's selection: Birleştir, Taşı, Sil, and the keys on the web (#54).
+  selection: {
+    merge: 'Birleştir',
+    move: 'Taşı',
+    delete: 'Sil',
+    deleted: '{{count}} not silindi',
+    moved: '{{count}} not “{{title}}” kaynağına taşındı',
+    merged: '{{count}} not birleştirildi',
+    mergeNeedsTwo: 'Birleştirmek için en az iki not seç.',
+    pickFirst: 'Önce not seç.',
+    failed: 'Yapılamadı. Bağlantını kontrol edip yeniden dene.',
+    keys: 'j/k gezin · x seç · t etiket · Delete sil',
+    previewTitle: 'Birleştirme önizlemesi',
+    previewLead: '{{count}} not, ilkinin yerinde tek not olacak. Konumu ve metni burada düzeltebilirsin.',
+    close: 'Vazgeç',
+    mergeFailed: 'Birleştirilemedi. Bağlantını kontrol edip yeniden dene.',
+  },
 } as const;
