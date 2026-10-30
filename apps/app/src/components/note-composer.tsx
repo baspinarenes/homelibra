@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import Maximize2 from 'lucide-react-native/icons/maximize-2';
 import Minimize2 from 'lucide-react-native/icons/minimize-2';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -21,8 +21,9 @@ import { uuidv7 } from 'uuidv7';
 
 import { LocatorSheet } from '@/components/locator-sheet';
 import { Segment } from '@/components/segment';
-import { UndoBar, type UndoOffer } from '@/components/undo-bar';
+import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
+import { offerUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type Mode = 'excerpt' | 'comment';
@@ -92,7 +93,6 @@ export function NoteComposer({
   const [focused, setFocused] = useState(false);
   // The Excerpt saved last on this screen, which the next Comment joins.
   const [lastExcerpt, setLastExcerpt] = useState<{ id: string; locator: string | null } | null>(null);
-  const [undo, setUndo] = useState<UndoOffer | null>(null);
   const inputRef = useRef<TextInputInstance>(null);
   // The id a failed save used, kept while nothing changes, so sending the
   // same Note again cannot make a second one.
@@ -157,7 +157,7 @@ export function NoteComposer({
         setLastExcerpt(null);
         // Made now, so the Comment's own Note would sort where it was written.
         const commentNoteId = uuidv7();
-        setUndo({
+        offerUndo({
           message: t('capture.commentAttached'),
           undo: () => {
             detach.mutate({ id, commentNoteId });
@@ -207,8 +207,6 @@ export function NoteComposer({
     inputRef.current?.focus();
   };
 
-  const dismissUndo = useCallback(() => setUndo(null), []);
-
   // Native multiline inputs grow with their text; a web textarea needs telling.
   useLayoutEffect(() => {
     const node = inputRef.current as unknown as { style: { height: string }; scrollHeight: number } | null;
@@ -221,7 +219,7 @@ export function NoteComposer({
 
   return (
     <View style={[styles.composer, { paddingBottom: insets.bottom + space.md }, expanded && styles.composerExpanded]}>
-      <UndoBar offer={undo} onDismiss={dismissUndo} />
+      <SharedUndoBar />
       {attachTo && (
         <View style={styles.attach}>
           <Text style={styles.attachText} numberOfLines={1}>
@@ -329,7 +327,7 @@ export function NoteComposer({
             accessibilityLabel={t(expanded ? 'capture.collapse' : 'capture.expand')}
             onPress={() => {
               // Full screen covers where the bar would sit.
-              if (!expanded) setUndo(null);
+              if (!expanded) offerUndo(null);
               onExpandedChange(!expanded);
             }}
             hitSlop={6}

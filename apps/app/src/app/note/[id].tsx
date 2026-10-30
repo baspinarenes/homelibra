@@ -7,10 +7,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { DangerAction } from '@/components/danger-action';
 import { Field } from '@/components/field';
 import { PrimaryButton } from '@/components/primary-button';
+import { type PickedSource, SourcePicker } from '@/components/source-picker';
+import { SourceTypeIcon } from '@/components/source-type-icon';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
+import { offerServerUndo } from '@/lib/undo';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type StoredNote = inferRouterOutputs<AppRouter>['notes']['get'];
 
@@ -20,7 +24,11 @@ const derivedText = (locator: string) => {
   return value ? formatSortValue(value) : '';
 };
 
-/** Notu düzenle, opened from a Note on the Source page. */
+/**
+ * Notu düzenle, opened from a Note on the Source page. Its Kaynak field
+ * moves the Note to another Source on save, and "Notu sil" at its foot
+ * deletes it at once; both offer Geri al back on the Source page (#36).
+ */
 export default function EditNoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
@@ -62,21 +70,58 @@ function NoteForm({ note }: { note: StoredNote }) {
   const corrected =
     locator.trim() !== '' && sortValue !== null && sortValue.join() !== locatorSortValue(locator)?.join();
 
-  const update = useMutation(
-    trpc.notes.update.mutationOptions({
-      onSuccess: async () => {
+  const { colors } = useTheme();
+  const [pickingSource, setPickingSource] = useState(false);
+  // The Source chosen in the Kaynak field; the Note moves there on save.
+  const [moveTo, setMoveTo] = useState<PickedSource | null>(null);
+  const currentSource = useQuery(trpc.sources.get.queryOptions({ id: note.sourceId }));
+  const shownSource = moveTo ?? currentSource.data;
+
+  // Back to the Source page the Note was opened from.
+  const leave = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace({ pathname: '/source/[id]', params: { id: note.sourceId } });
+  };
+  // Everywhere a Note shows: its Source's list, Ana sayfa, search.
+  const refreshNotes = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: trpc.notes.pathKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
+    ]);
+
+  const updateNote = useMutation(trpc.notes.update.mutationOptions());
+  const moveNote = useMutation(trpc.notes.move.mutationOptions());
+  const update = useMutation({
+    mutationFn: async (input: Parameters<typeof updateNote.mutateAsync>[0]) => {
+      await updateNote.mutateAsync(input);
+      return moveTo ? { to: moveTo, ...(await moveNote.mutateAsync({ id: note.id, sourceId: moveTo.id })) } : null;
+    },
+    onSuccess: async (moved) => {
+      await refreshNotes();
+      leave();
+      if (moved) offerServerUndo(t('deletion.noteMoved', { title: moved.to.title }), moved.undoToken);
+    },
+  });
+
+  // Notu sil: no question asked, Geri al instead.
+  const remove = useMutation(
+    trpc.notes.delete.mutationOptions({
+      onSuccess: async ({ undoToken }) => {
+        leave();
+        offerServerUndo(t('deletion.noteDeleted'), undoToken);
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: trpc.notes.pathKey() }),
-          queryClient.invalidateQueries({ queryKey: trpc.sources.lastNoted.queryKey() }),
+          // Not notes.get: the deleted Note would only fail to load while its screen goes.
+          queryClient.invalidateQueries({ queryKey: trpc.notes.list.pathKey() }),
+          queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
+          queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
         ]);
-        if (router.canGoBack()) router.back();
-        else router.replace({ pathname: '/source/[id]', params: { id: note.sourceId } });
       },
     }),
   );
 
   const hasText = excerpt.trim() !== '' || comment.trim() !== '';
-  const canSave = hasText && !update.isPending;
+  const canSave = hasText && !update.isPending && !remove.isPending;
   const save = () =>
     canSave &&
     update.mutate({
@@ -109,6 +154,20 @@ function NoteForm({ note }: { note: StoredNote }) {
         }}
       />
       <View style={styles.form}>
+        <View style={styles.sourceField}>
+          <Text style={styles.label}>{t('deletion.source').toLocaleUpperCase('tr')}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('deletion.chooseSource')}
+            onPress={() => setPickingSource(true)}
+            style={({ pressed }) => [styles.source, pressed && styles.pressed]}
+          >
+            {shownSource && <SourceTypeIcon type={shownSource.type} color={colors.ink2} />}
+            <Text style={styles.sourceTitle} numberOfLines={2}>
+              {shownSource?.title ?? ''}
+            </Text>
+          </Pressable>
+        </View>
         <Field
           label={t('noteEdit.locator')}
           value={locator}
@@ -144,7 +203,25 @@ function NoteForm({ note }: { note: StoredNote }) {
         {!hasText && <Text style={styles.error}>{t('noteEdit.needsText')}</Text>}
         {update.isError && <Text style={styles.error}>{t('noteEdit.saveFailed')}</Text>}
         <PrimaryButton label={t('noteEdit.save')} onPress={save} busy={update.isPending} disabled={!canSave} />
+        <View style={styles.foot}>
+          {remove.isError && <Text style={styles.error}>{t('deletion.deleteFailed')}</Text>}
+          <DangerAction
+            label={t('deletion.deleteNote')}
+            onPress={() => remove.mutate({ id: note.id })}
+            busy={remove.isPending}
+            disabled={update.isPending}
+          />
+        </View>
       </View>
+      <SourcePicker
+        visible={pickingSource}
+        currentId={note.sourceId}
+        onPick={(picked) => {
+          setMoveTo(picked.id === note.sourceId ? null : picked);
+          setPickingSource(false);
+        }}
+        onClose={() => setPickingSource(false)}
+      />
     </ScrollView>
   );
 }
@@ -161,6 +238,23 @@ const makeStyles = (c: Colors) =>
     hint: { ...typeScale.caption, color: c.muted },
     link: { ...typeScale.caption, color: c.accent },
     error: { ...typeScale.body, color: c.danger },
+    sourceField: { gap: 6 },
+    label: { ...typeScale.micro, color: c.muted },
+    source: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      minHeight: 46,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderRadius: radius.input,
+      backgroundColor: c.surface,
+    },
+    sourceTitle: { ...typeScale.sourceTitleSm, flex: 1, color: c.fg },
+    pressed: { opacity: 0.7 },
+    foot: { gap: space.sm, marginTop: space.lg },
     headerSave: { ...typeScale.button, fontSize: 15, color: c.accent, paddingHorizontal: space.sm },
     inactive: { opacity: 0.45 },
   });
