@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Segment } from '@/components/segment';
 import { useTRPC } from '@/lib/trpc';
@@ -11,7 +12,7 @@ type Sort = 'name' | 'usage';
 
 /**
  * Etiketler (#49): every Tag in the Library, A–Z or Çok kullanılan, each with
- * "N not · M kaynak". A Tag's own page (a temporary Collection) arrives with #51.
+ * "N not · M kaynak". A row opens the Tag's page, a temporary Collection (#51).
  */
 export function TagList() {
   const { t } = useTranslation();
@@ -19,6 +20,7 @@ export function TagList() {
   const trpc = useTRPC();
   const [sort, setSort] = useState<Sort>('name');
   const tags = useQuery(trpc.tags.list.queryOptions({ sort }));
+  const router = useRouter();
 
   return (
     <View style={styles.screen}>
@@ -45,10 +47,14 @@ export function TagList() {
           keyExtractor={(tag) => tag.id}
           ListEmptyComponent={<Text style={[styles.lead, styles.status]}>{t('tags.empty')}</Text>}
           renderItem={({ item: tag, index }) => (
-            <View style={[styles.row, index > 0 && styles.divided]}>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => router.push({ pathname: '/tag/[id]', params: { id: tag.id } })}
+              style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+            >
               <Text style={styles.name}>{tag.name}</Text>
               <Text style={styles.counts}>{t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}</Text>
-            </View>
+            </Pressable>
           )}
         />
       )}
@@ -72,6 +78,7 @@ const makeStyles = (c: Colors) =>
       paddingVertical: space.md,
     },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
+    pressed: { opacity: 0.7 },
     name: { ...typeScale.body, flexShrink: 1, color: c.fg },
     counts: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
   });
