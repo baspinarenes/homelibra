@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
-import { PlaceholderScreen } from '@/components/placeholder-screen';
+import { CollectionList } from '@/components/collection-list';
 import { Segment } from '@/components/segment';
 import { TagList } from '@/components/tag-list';
 import { type Colors, space, useThemedStyles } from '@/theme';
@@ -34,8 +34,7 @@ export default function CollectionsScreen() {
           onChange={(next) => router.setParams({ view: next === 'tags' ? 'tags' : undefined })}
         />
       </View>
-      {/* Collections arrive in #51. */}
-      {view === 'tags' ? <TagList /> : <PlaceholderScreen />}
+      {view === 'tags' ? <TagList /> : <CollectionList />}
     </View>
   );
 }
