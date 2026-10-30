@@ -25,13 +25,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   type TextInputProps,
   useWindowDimensions,
   View,
 } from 'react-native';
 
 import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/components/date-input';
+import { Field } from '@/components/field';
 import { PrimaryButton } from '@/components/primary-button';
 import { SourceTypeIcon } from '@/components/source-type-icon';
 import { useTRPC } from '@/lib/trpc';
@@ -316,40 +316,6 @@ function TypeChip({ type, selected, onPress }: { type: SourceType; selected: boo
   );
 }
 
-function Field({
-  label,
-  required = false,
-  serif = false,
-  multiline = false,
-  ...input
-}: { label: string; required?: boolean; serif?: boolean } & TextInputProps) {
-  const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>
-        {label.toLocaleUpperCase('tr')}
-        {required && <Text style={styles.required}> *</Text>}
-      </Text>
-      <TextInput
-        accessibilityLabel={label}
-        placeholderTextColor={colors.muted2}
-        multiline={multiline}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={[
-          styles.input,
-          serif && styles.inputSerif,
-          multiline && styles.inputMultiline,
-          focused && styles.focused,
-        ]}
-        {...input}
-      />
-    </View>
-  );
-}
-
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
@@ -358,22 +324,6 @@ const makeStyles = (c: Colors) =>
     formWide: { width: '100%', maxWidth: 860, alignSelf: 'center' },
     field: { gap: 6 },
     label: { ...typeScale.micro, color: c.muted },
-    required: { color: c.accent },
-    input: {
-      ...typeScale.body,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.input,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      minHeight: 46,
-    },
-    inputSerif: { fontFamily: typeScale.sourceTitle.fontFamily, fontSize: 19, lineHeight: 24 },
-    inputMultiline: { minHeight: 92, textAlignVertical: 'top' },
-    // Design system Input: accent border and a 3px accent-soft ring.
-    focused: { borderColor: c.accent, outlineColor: c.accentSoft, outlineWidth: 3, outlineStyle: 'solid' },
     types: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -3 },
     typeCell: { padding: 3 },
     typeChip: {

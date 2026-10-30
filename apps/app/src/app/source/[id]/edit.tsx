@@ -7,7 +7,7 @@ import { draftToInput, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/co
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
-/** Kaynağı düzenle. The Source page arrives later; until then a Kaynaklar row opens this. */
+/** Kaynağı düzenle, opened from the Source page. */
 export default function EditSourceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();

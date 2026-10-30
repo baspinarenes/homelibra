@@ -64,6 +64,13 @@
       "when": 1793363675239,
       "tag": "0008_account_deletion",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793366833713,
+      "tag": "0009_note_locator_sort",
+      "breakpoints": true
     }
   ]
 }

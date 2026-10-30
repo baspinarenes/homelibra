@@ -16,7 +16,7 @@ type Sort = 'title' | 'author' | 'date';
 
 /**
  * Kaynaklar: every Source, by Başlık, Yazar or Tarih. A row opens the Source
- * form; its pen opens Capture on that Source. Okunuyor/Bitti sections arrive
+ * page; its pen opens Capture on that Source. Okunuyor/Bitti sections arrive
  * with Reading status (P1).
  */
 export default function SourcesScreen() {
