@@ -386,6 +386,23 @@ export const tr = {
     synced: 'eşitlendi',
     needsConnection: 'Bağlantı gerekiyor',
     searchNeedsConnection: 'Arama için bağlantı gerekiyor',
+    // #58: a Note whose Source was deleted elsewhere while it waited.
+    sourceGone: 'Kaynağı silinmiş',
+    lostNotes: '{{count}} notun kaynağı silinmiş',
+    lostTitle: 'Kaynağı silinmiş',
+    lostLead:
+      'Bu notların kaynağı, notlar gönderilmeyi beklerken başka bir yerde silindi. Bir nota dokun; Kaynak alanından yeni bir kaynak seç ya da notu sil.',
+    lostNone: 'Kaynağı silinmiş not kalmadı.',
+    chooseNewSource: 'Kaynağı silinmiş · yeni kaynak seç',
+    noteNotFound: 'Bu not bu telefonda yok; bağlantı gelince açılır.',
+    addSourceNeedsConnection: 'Kaynak eklemek için bağlantı gerekiyor.',
+    editSourceNeedsConnection: 'Kaynağı kaydetmek ya da silmek için bağlantı gerekiyor.',
+    signOutWarning:
+      '{{count}} not henüz gönderilmedi. Çıkış yaparsan, bu hesapla yeniden girene kadar bu telefonda bekler.',
+    sendFirst: 'Önce gönder',
+    signOutAnyway: 'Yine de çık',
+    cancel: 'Vazgeç',
+    notSent: '{{count}} not gönderilemedi.',
   },
   deletion: {
     deleteNote: 'Notu sil',
