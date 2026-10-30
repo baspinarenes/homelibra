@@ -81,14 +81,17 @@ export async function setSourceTags(tx: LibraryTx, accountId: string, sourceId: 
 }
 
 /**
- * The tables linking a carrier to a Tag, with the carrier's column. A Tag
- * merge moves every one of them: Notes, Sources and Collections.
+ * The tables linking a carrier to a Tag, with the carrier's column: Notes,
+ * Sources and Collections. A Tag merge moves every one of them, and a Tag
+ * snapshot reads and restores them (tags/snapshot.ts).
  */
-const linkTables = [
-  { table: noteTag, carrier: 'note_id' },
-  { table: sourceTag, carrier: 'source_id' },
-  { table: collectionTag, carrier: 'collection_id' },
-];
+export const linkTables = [
+  { table: noteTag, carrier: noteTag.noteId },
+  { table: sourceTag, carrier: sourceTag.sourceId },
+  { table: collectionTag, carrier: collectionTag.collectionId },
+] as const;
+
+export type LinkTable = (typeof linkTables)[number]['table'];
 
 /**
  * Tag merge (#3): every Note, Source and Collection using `fromId` uses
@@ -97,7 +100,7 @@ const linkTables = [
  */
 export async function mergeTag(tx: LibraryTx, accountId: string, fromId: string, intoId: string) {
   for (const { table, carrier } of linkTables) {
-    const column = sql.raw(carrier);
+    const column = sql.raw(carrier.name);
     await tx.execute(sql`
       update ${table} l set tag_id = ${intoId}
        where l.tag_id = ${fromId} and l.account_id = ${accountId}
