@@ -2,7 +2,7 @@ import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 
 import type { LibraryTx } from '../db/client';
-import { noteTag, sourceTag, tag } from '../db/schema';
+import { collectionTag, noteTag, sourceTag, tag } from '../db/schema';
 
 /** Rows as `to_jsonb` gives them, the form of an undo snapshot's parts (src/undo/undo.ts). */
 type Rows = Record<string, unknown>[];
@@ -10,14 +10,21 @@ type Rows = Record<string, unknown>[];
 /**
  * The Tag parts of an undo snapshot, by table name, for Notes and Sources
  * about to be deleted, or Tags (Tag sil): their links, and every Tag those
- * point at. Read before the delete, since the links cascade with their
- * carriers and their Tag, and a Tag left unused goes too (0013_tags).
+ * point at. A deleted Tag's Collection references are read too. Read before
+ * the delete, since the links cascade with their carriers and their Tag,
+ * and a Tag left unused goes too (0013_tags).
  */
 export async function tagParts(
   tx: LibraryTx,
   accountId: string,
   { noteIds = [], sourceIds = [], tagIds = [] }: { noteIds?: string[]; sourceIds?: string[]; tagIds?: string[] },
-): Promise<{ tag: Rows; note_tag: Rows; source_tag: Rows }> {
+): Promise<{ tag: Rows; note_tag: Rows; source_tag: Rows; collection_tag: Rows }> {
+  const collectionLinks = tagIds.length
+    ? await tx
+        .select({ row: sql<Record<string, unknown>>`to_jsonb(${collectionTag})` })
+        .from(collectionTag)
+        .where(and(inArray(collectionTag.tagId, tagIds), eq(collectionTag.accountId, accountId)))
+    : [];
   const noteLinks =
     noteIds.length || tagIds.length
       ? await tx
@@ -59,6 +66,7 @@ export async function tagParts(
     tag: tags.map(({ row }) => row),
     note_tag: noteLinks.map(({ row }) => row),
     source_tag: sourceLinks.map(({ row }) => row),
+    collection_tag: collectionLinks.map(({ row }) => row),
   };
 }
 
@@ -74,13 +82,13 @@ export async function reinsertTags(tx: LibraryTx, rows: Rows) {
 }
 
 /**
- * Geri al for a link table (note_tag or source_tag), after the Tags: each
- * link goes to the Library's Tag of its Tag's identity. That is the same
- * Tag, unless the scholar named it again meanwhile, after it had gone: then
- * the new one, under its new spelling.
+ * Geri al for a link table (note_tag, source_tag or collection_tag), after
+ * the Tags: each link goes to the Library's Tag of its Tag's identity. That
+ * is the same Tag, unless the scholar named it again meanwhile, after it had
+ * gone: then the new one, under its new spelling.
  */
 export async function reinsertTagLinks(tx: LibraryTx, table: PgTable, accountId: string, rows: Rows, tags: Rows) {
-  const carrier = sql.raw(table === noteTag ? 'note_id' : 'source_id');
+  const carrier = sql.raw(table === noteTag ? 'note_id' : table === sourceTag ? 'source_id' : 'collection_id');
   await tx.execute(sql`
     insert into ${table} (${carrier}, tag_id, account_id, created_at)
     select r.${carrier}, t.id, r.account_id, r.created_at

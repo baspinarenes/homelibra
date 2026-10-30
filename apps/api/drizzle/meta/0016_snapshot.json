@@ -1,5 +1,5 @@
 {
-  "id": "cc3089ba-cadd-4f92-9700-9c02591434e4",
+  "id": "4bdb8cc5-936b-4771-9e1c-7cc7dadd1ff2",
   "prevId": "9ace5f18-6933-401d-8572-3cb33a290cbe",
   "version": "7",
   "dialect": "postgresql",
@@ -206,6 +206,203 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.collection": {
+      "name": "collection",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "include_source_notes": {
+          "name": "include_source_notes",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "collection_account_id_idx": {
+          "name": "collection_account_id_idx",
+          "columns": [
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "collection_account_id_account_id_fk": {
+          "name": "collection_account_id_account_id_fk",
+          "tableFrom": "collection",
+          "tableTo": "account",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "collection_id_account_id_unique": {
+          "name": "collection_id_account_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "account_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.collection_tag": {
+      "name": "collection_tag",
+      "schema": "",
+      "columns": {
+        "collection_id": {
+          "name": "collection_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "collection_tag_tag_id_idx": {
+          "name": "collection_tag_tag_id_idx",
+          "columns": [
+            {
+              "expression": "tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "collection_tag_account_id_account_id_fk": {
+          "name": "collection_tag_account_id_account_id_fk",
+          "tableFrom": "collection_tag",
+          "tableTo": "account",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "collection_tag_collection_fk": {
+          "name": "collection_tag_collection_fk",
+          "tableFrom": "collection_tag",
+          "tableTo": "collection",
+          "columnsFrom": [
+            "collection_id",
+            "account_id"
+          ],
+          "columnsTo": [
+            "id",
+            "account_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "collection_tag_tag_fk": {
+          "name": "collection_tag_tag_fk",
+          "tableFrom": "collection_tag",
+          "tableTo": "tag",
+          "columnsFrom": [
+            "tag_id",
+            "account_id"
+          ],
+          "columnsTo": [
+            "id",
+            "account_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "collection_tag_collection_id_tag_id_pk": {
+          "name": "collection_tag_collection_id_tag_id_pk",
+          "columns": [
+            "collection_id",
+            "tag_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -766,14 +963,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "reading_status": {
-          "name": "reading_status",
-          "type": "reading_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'reading'"
-        },
         "search_vector": {
           "name": "search_vector",
           "type": "tsvector",
@@ -1242,14 +1431,6 @@
       "values": [
         "doi",
         "isbn"
-      ]
-    },
-    "public.reading_status": {
-      "name": "reading_status",
-      "schema": "public",
-      "values": [
-        "reading",
-        "finished"
       ]
     },
     "public.source_type": {

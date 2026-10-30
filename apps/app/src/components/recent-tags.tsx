@@ -36,10 +36,15 @@ export function RecentTags() {
         </Pressable>
       </View>
       {tags.data.map((tag, index) => (
-        <View key={tag.id} style={[styles.row, index > 0 && styles.divided]}>
+        <Pressable
+          key={tag.id}
+          accessibilityRole="link"
+          onPress={() => router.push({ pathname: '/tag/[id]', params: { id: tag.id } })}
+          style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+        >
           <Text style={styles.name}>{tag.name}</Text>
           <Text style={styles.counts}>{t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}</Text>
-        </View>
+        </Pressable>
       ))}
     </View>
   );
