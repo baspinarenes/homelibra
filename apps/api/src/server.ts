@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/node';
 import { createApi } from './app';
 import { createDb } from './db/client';
 import { env } from './env';
+import { crossrefClient } from './lookups/crossref';
 import { consoleMailer, resendMailer } from './mail/mailer';
 
 const api = createApi({
@@ -13,6 +14,7 @@ const api = createApi({
   secret: env.BETTER_AUTH_SECRET,
   trustedOrigins: [...env.TRUSTED_ORIGINS, ...env.CORS_ORIGINS],
   corsOrigins: env.CORS_ORIGINS,
+  crossref: crossrefClient(),
   google:
     env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
       ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
