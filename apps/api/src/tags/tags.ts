@@ -8,7 +8,8 @@ import type { LibraryTx } from '../db/client';
 import { noteTag, sourceTag, tag } from '../db/schema';
 
 /** A Tag's name as the picker sends it: trimmed, without a leading #, never empty. */
-export const tagNames = z.array(z.string().transform(tagName).pipe(z.string().min(1).max(200))).max(100);
+export const tagNameInput = z.string().transform(tagName).pipe(z.string().min(1).max(200));
+export const tagNames = z.array(tagNameInput).max(100);
 
 export type TagRef = { id: string; name: string };
 
@@ -77,6 +78,32 @@ export async function setSourceTags(tx: LibraryTx, accountId: string, sourceId: 
         tagIds.length > 0 ? notInArray(sourceTag.tagId, tagIds) : undefined,
       ),
     );
+}
+
+/**
+ * The tables linking a carrier to a Tag, with the carrier's column. A Tag
+ * merge moves every one of them; Collections join here with collection_tag (#51).
+ */
+const linkTables = [
+  { table: noteTag, carrier: 'note_id' },
+  { table: sourceTag, carrier: 'source_id' },
+];
+
+/**
+ * Tag merge (#3): every Note and Source carrying `fromId` carries `intoId`
+ * instead, as from when it first did; one that carried both keeps its one
+ * link. Then `fromId` goes, and its name with it.
+ */
+export async function mergeTag(tx: LibraryTx, accountId: string, fromId: string, intoId: string) {
+  for (const { table, carrier } of linkTables) {
+    const column = sql.raw(carrier);
+    await tx.execute(sql`
+      update ${table} l set tag_id = ${intoId}
+       where l.tag_id = ${fromId} and l.account_id = ${accountId}
+         and not exists (select from ${table} x where x.${column} = l.${column} and x.tag_id = ${intoId})`);
+  }
+  // Takes the links left (to carriers that had both) with it.
+  await tx.delete(tag).where(and(eq(tag.id, fromId), eq(tag.accountId, accountId)));
 }
 
 const byName = (a: TagRef, b: TagRef) => compareTr(a.name, b.name);
