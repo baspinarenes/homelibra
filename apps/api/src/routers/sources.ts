@@ -16,12 +16,13 @@ import { z } from 'zod';
 
 import { coverColumns, coverOf } from '../covers/covers';
 import { note, source } from '../db/schema';
+import { waiting, waitingCount } from '../organize/waiting';
 import { dateFilter, inDates } from '../search/dates';
+import { mySource } from '../sources/sources';
 import { tagParts } from '../tags/snapshot';
 import { tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo, storedRow } from '../undo/undo';
-import { waiting, waitingCount } from './organize';
 
 // Only Tür and Başlık are required; nothing else is validated, so a
 // non-standard citation still goes in (#40, story 44). Blank means empty;
@@ -123,11 +124,14 @@ export const sourcesRouter = router({
           readingStatus: source.readingStatus,
           ...coverColumns,
           // Spelled out: drizzle leaves a one-table select's columns unqualified.
-          noteCount: sql<number>`(select count(*) from ${note} n where n.source_id = source.id)::int`,
-          lastNoteId: sql<string | null>`(select n.id from ${note} n where n.source_id = source.id
+          noteCount: sql<number>`(select count(*) from ${note} n
+                                   where n.source_id = source.id and n.account_id = ${ctx.accountId})::int`,
+          lastNoteId: sql<string | null>`(select n.id from ${note} n
+                                           where n.source_id = source.id and n.account_id = ${ctx.accountId}
                                            order by n.id desc limit 1)`,
           untaggedCount: sql<number>`(select count(*) from ${note} n
-                                       where n.source_id = source.id and ${waiting('n', 'source')})::int`,
+                                       where n.source_id = source.id and n.account_id = ${ctx.accountId}
+                                         and ${waiting(ctx.accountId, 'n', 'source')})::int`,
         })
         .from(source)
         .where(and(eq(source.accountId, ctx.accountId), inDates(input.dates, sql`${source.dateSort}`)));
@@ -240,17 +244,14 @@ export const sourcesRouter = router({
         }),
         updatedAt: new Date(),
       })
-      .where(and(eq(source.id, id), eq(source.accountId, ctx.accountId)))
+      .where(mySource(ctx.accountId, id))
       .returning({ id: source.id });
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     return { id };
   }),
 
   get: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
-    const [row] = await ctx.tx
-      .select(sourceColumns)
-      .from(source)
-      .where(and(eq(source.id, input.id), eq(source.accountId, ctx.accountId)));
+    const [row] = await ctx.tx.select(sourceColumns).from(source).where(mySource(ctx.accountId, input.id));
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     return { ...coverOf(row), tags: await tagsOfSource(ctx.tx, ctx.accountId, row.id) };
   }),
@@ -265,7 +266,7 @@ export const sourcesRouter = router({
   setReadingStatus: libraryProcedure
     .input(z.object({ id: z.uuid(), status: z.enum(source.readingStatus.enumValues) }))
     .mutation(async ({ ctx, input }) => {
-      const mine = and(eq(source.id, input.id), eq(source.accountId, ctx.accountId));
+      const mine = mySource(ctx.accountId, input.id);
       const [before] = await ctx.tx.select({ status: source.readingStatus }).from(source).where(mine).for('update');
       if (!before) throw new TRPCError({ code: 'NOT_FOUND' });
       if (before.status === input.status) return { untaggedCount: 0 };
@@ -281,7 +282,7 @@ export const sourcesRouter = router({
    * that is already gone changes nothing and offers no Geri al.
    */
   delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
-    const mine = and(eq(source.id, input.id), eq(source.accountId, ctx.accountId));
+    const mine = mySource(ctx.accountId, input.id);
     // Read under the lock first: the delete takes the Notes along by cascade.
     const [deleted] = await ctx.tx
       .select({ row: storedRow(source) })

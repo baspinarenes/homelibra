@@ -1,14 +1,9 @@
+import { UNDO_CONFLICT, UNDO_EXPIRED } from '@homelibra/core/errors';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { libraryProcedure } from '../trpc/init';
 import { applyUndo } from '../undo/undo';
-
-/** The token is unknown here or its Geri al outlived the server's few minutes. */
-export const UNDO_EXPIRED = 'UNDO_EXPIRED';
-
-/** What the token's operation took cannot go back as it was, such as a Note whose Source is gone too. */
-export const UNDO_CONFLICT = 'UNDO_CONFLICT';
 
 /** Postgres's foreign-key and unique violations. */
 const refusedByDatabase = (error: unknown) => {

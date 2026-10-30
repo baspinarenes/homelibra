@@ -1,3 +1,4 @@
+import { SOURCE_NOT_FOUND } from '@homelibra/core/errors';
 import {
   type Operation,
   openOutbox,
@@ -10,6 +11,7 @@ import {
   type Transport,
 } from '@homelibra/outbox';
 import { TRPCClientError } from '@trpc/client';
+import type { TRPC_ERROR_CODE_KEY } from '@trpc/server';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 import {
   createContext,
@@ -83,10 +85,8 @@ function sqliteStorage(accountId: string): OutboxStorage {
   };
 }
 
-/** The API's "kaynak yok" (apps/api routers/notes.ts). */
-const SOURCE_NOT_FOUND = 'SOURCE_NOT_FOUND';
 /** Answers the server will give an operation every time it is sent: waiting would not change them. */
-const refusals = new Set(['BAD_REQUEST', 'NOT_FOUND', 'CONFLICT']);
+const refusals = new Set<TRPC_ERROR_CODE_KEY | undefined>(['BAD_REQUEST', 'NOT_FOUND', 'CONFLICT']);
 
 /**
  * The outbox's way to the API. A lost connection, a server error or an

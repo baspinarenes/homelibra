@@ -46,49 +46,47 @@ export async function addNoteTags(tx: LibraryTx, accountId: string, noteId: stri
 }
 
 /**
- * Leaves exactly these Tags on the Note. New links go in before old ones go,
- * so a Tag that stays is never left unused on the way, which would drop it.
+ * The tables linking a carrier to a Tag, with the carrier's column: Notes,
+ * Sources and Collections. A Tag merge moves every one of them, and a Tag
+ * snapshot reads and restores them (tags/snapshot.ts).
  */
-export async function setNoteTags(tx: LibraryTx, accountId: string, noteId: string, tagIds: string[]) {
-  await addNoteTags(tx, accountId, noteId, tagIds);
-  await tx
-    .delete(noteTag)
-    .where(
-      and(
-        eq(noteTag.noteId, noteId),
-        eq(noteTag.accountId, accountId),
-        tagIds.length > 0 ? notInArray(noteTag.tagId, tagIds) : undefined,
-      ),
-    );
-}
+export const linkTables = [
+  { table: noteTag, carrier: noteTag.noteId },
+  { table: sourceTag, carrier: sourceTag.sourceId },
+  { table: collectionTag, carrier: collectionTag.collectionId },
+] as const;
 
-/** Leaves exactly these Tags on the Source; its Notes are not touched (ADR-0003). */
-export async function setSourceTags(tx: LibraryTx, accountId: string, sourceId: string, tagIds: string[]) {
-  if (tagIds.length > 0)
-    await tx
-      .insert(sourceTag)
-      .values(tagIds.map((tagId) => ({ sourceId, tagId, accountId })))
-      .onConflictDoNothing();
-  await tx
-    .delete(sourceTag)
-    .where(
-      and(
-        eq(sourceTag.sourceId, sourceId),
-        eq(sourceTag.accountId, accountId),
-        tagIds.length > 0 ? notInArray(sourceTag.tagId, tagIds) : undefined,
-      ),
-    );
-}
+export type LinkTable = (typeof linkTables)[number]['table'];
+
+/** The carrier's column of a link table. */
+export const carrierOf = (table: LinkTable) => linkTables.find((link) => link.table === table)!.carrier;
 
 /**
- * The tables linking a carrier to a Tag, with the carrier's column. A Tag
- * merge moves every one of them: Notes, Sources and Collections.
+ * Leaves exactly these Tags on a Note, Source or Collection (`carrierId`,
+ * through `table`, its link table). New links go in before old ones go, so
+ * a Tag that stays is never left unused on the way, which would drop it.
  */
-const linkTables = [
-  { table: noteTag, carrier: 'note_id' },
-  { table: sourceTag, carrier: 'source_id' },
-  { table: collectionTag, carrier: 'collection_id' },
-];
+export async function setTags(tx: LibraryTx, accountId: string, table: LinkTable, carrierId: string, tagIds: string[]) {
+  const carrier = carrierOf(table);
+  if (tagIds.length > 0) {
+    const rows = sql.join(
+      tagIds.map((tagId) => sql`(${carrierId}, ${tagId}, ${accountId})`),
+      sql`, `,
+    );
+    await tx.execute(
+      sql`insert into ${table} (${sql.raw(carrier.name)}, tag_id, account_id) values ${rows} on conflict do nothing`,
+    );
+  }
+  await tx
+    .delete(table)
+    .where(
+      and(
+        eq(carrier, carrierId),
+        eq(table.accountId, accountId),
+        tagIds.length > 0 ? notInArray(table.tagId, tagIds) : undefined,
+      ),
+    );
+}
 
 /**
  * Tag merge (#3): every Note, Source and Collection using `fromId` uses
@@ -97,11 +95,12 @@ const linkTables = [
  */
 export async function mergeTag(tx: LibraryTx, accountId: string, fromId: string, intoId: string) {
   for (const { table, carrier } of linkTables) {
-    const column = sql.raw(carrier);
+    const column = sql.raw(carrier.name);
     await tx.execute(sql`
       update ${table} l set tag_id = ${intoId}
        where l.tag_id = ${fromId} and l.account_id = ${accountId}
-         and not exists (select from ${table} x where x.${column} = l.${column} and x.tag_id = ${intoId})`);
+         and not exists (select from ${table} x
+                          where x.${column} = l.${column} and x.tag_id = ${intoId} and x.account_id = ${accountId})`);
   }
   // Takes the links left (to carriers that had both) with it.
   await tx.delete(tag).where(and(eq(tag.id, fromId), eq(tag.accountId, accountId)));

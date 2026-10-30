@@ -53,7 +53,14 @@ export default function EditNoteScreen() {
   if (note) shown.current = note;
 
   if (shown.current)
-    return <NoteForm key={id} note={shown.current} sourceGone={state.status.get(id) === 'sourceGone'} />;
+    return (
+      <NoteForm
+        key={id}
+        note={shown.current}
+        sourceGone={state.status.get(id) === 'sourceGone'}
+        refused={state.status.get(id) === 'refused'}
+      />
+    );
   return (
     <View style={styles.center}>
       {fetched.isError ? (
@@ -67,7 +74,11 @@ export default function EditNoteScreen() {
   );
 }
 
-function NoteForm({ note, sourceGone }: { note: KnownNote; sourceGone: boolean }) {
+/**
+ * `sourceGone`: its Source was deleted elsewhere while it waited; `refused`:
+ * the server refused its text ("gönderilemedi"), and saving sends it again.
+ */
+function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: boolean; refused: boolean }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
@@ -169,6 +180,7 @@ function NoteForm({ note, sourceGone }: { note: KnownNote; sourceGone: boolean }
         }}
       />
       <View style={styles.form}>
+        {refused && <Text style={styles.warning}>{t('outbox.refusedLead')}</Text>}
         <View style={styles.sourceField}>
           <Text style={styles.label}>{t('deletion.source').toLocaleUpperCase('tr')}</Text>
           <Pressable
@@ -259,6 +271,7 @@ const makeStyles = (c: Colors) =>
     hint: { ...typeScale.caption, color: c.muted },
     link: { ...typeScale.caption, color: c.accent },
     error: { ...typeScale.body, color: c.danger },
+    warning: { ...typeScale.body, color: c.warn },
     sourceField: { gap: 6 },
     label: { ...typeScale.micro, color: c.muted },
     source: {

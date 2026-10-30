@@ -1,12 +1,14 @@
+import { SOURCE_NOT_FOUND } from '@homelibra/core/errors';
 import { compareNotes, locatorSortValue } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
-import { note, source } from '../db/schema';
+import { note, noteTag, source } from '../db/schema';
 import { deleteNotes, mergeSelected, moveNotes, selectionLimit } from '../notes/selection';
-import { addNoteTags, resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
+import { mySource } from '../sources/sources';
+import { addNoteTags, resolveTags, setTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
@@ -30,19 +32,9 @@ const noteColumns = {
 /** The sort value a Locator gets until the scholar corrects it. */
 const derivedSort = (locator: string | null) => (locator === null ? null : locatorSortValue(locator));
 
-/**
- * "Kaynak yok": the Source a Note is captured for or moved to is not in this
- * Library, deleted meanwhile perhaps. The outbox keeps such a Note waiting
- * as "Kaynağı silinmiş" until another Source is chosen (#36).
- */
-export const SOURCE_NOT_FOUND = 'SOURCE_NOT_FOUND';
-
 /** Fails with NOT_FOUND ({@link SOURCE_NOT_FOUND}) unless the Source is in this Library. */
 async function assertSource(tx: LibraryTx, accountId: string, sourceId: string) {
-  const [row] = await tx
-    .select({ id: source.id })
-    .from(source)
-    .where(and(eq(source.id, sourceId), eq(source.accountId, accountId)));
+  const [row] = await tx.select({ id: source.id }).from(source).where(mySource(accountId, sourceId));
   if (!row) throw new TRPCError({ code: 'NOT_FOUND', message: SOURCE_NOT_FOUND });
 }
 
@@ -84,7 +76,7 @@ export const notesRouter = router({
         .returning({ id: note.id });
       // Sent again, the Note keeps the Tags it has now, which may have changed since.
       if (created && tags?.length)
-        await setNoteTags(ctx.tx, ctx.accountId, input.id, await resolveTags(ctx.tx, ctx.accountId, tags));
+        await setTags(ctx.tx, ctx.accountId, noteTag, input.id, await resolveTags(ctx.tx, ctx.accountId, tags));
       return { id: input.id };
     }),
 
@@ -233,7 +225,7 @@ export const notesRouter = router({
         .update(note)
         .set({ locator, excerpt, comment, locatorSort: sort, updatedAt: new Date() })
         .where(where);
-      if (tags) await setNoteTags(ctx.tx, ctx.accountId, id, await resolveTags(ctx.tx, ctx.accountId, tags));
+      if (tags) await setTags(ctx.tx, ctx.accountId, noteTag, id, await resolveTags(ctx.tx, ctx.accountId, tags));
       return { id };
     }),
 

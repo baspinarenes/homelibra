@@ -1,7 +1,8 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import type { LibraryTx } from '../db/client';
-import { collection, collectionTag, tag } from '../db/schema';
+import { collection } from '../db/schema';
+import { tagParts } from '../tags/snapshot';
 import { recordUndo, storedRow } from '../undo/undo';
 
 /**
@@ -19,30 +20,9 @@ export async function deleteCollection(tx: LibraryTx, accountId: string, id: str
     .where(mine)
     .for('update');
   if (!found) return null;
-  const links = await tx
-    .select({ row: storedRow(collectionTag), tagId: collectionTag.tagId })
-    .from(collectionTag)
-    .where(and(eq(collectionTag.collectionId, id), eq(collectionTag.accountId, accountId)));
-  const tags = links.length
-    ? await tx
-        .select({ row: storedRow(tag) })
-        .from(tag)
-        .where(
-          and(
-            inArray(
-              tag.id,
-              links.map((link) => link.tagId),
-            ),
-            eq(tag.accountId, accountId),
-          ),
-        )
-    : [];
+  const tags = await tagParts(tx, accountId, { collectionIds: [id] });
   await tx.delete(collection).where(mine);
   return recordUndo(tx, accountId, now, {
-    reinsert: {
-      collection: [found.row],
-      collection_tag: links.map((link) => link.row),
-      tag: tags.map((t) => t.row),
-    },
+    reinsert: { collection: [found.row], ...tags },
   });
 }

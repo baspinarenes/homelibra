@@ -37,6 +37,9 @@ export function fakeServer() {
   const deletedSources = new Set<string>();
   const undos = new Map<string, () => void>();
   const received: Operation[] = [];
+  // Texts the server refuses in a Note, as it refuses one that fails its checks.
+  const refusedTexts = new Set<string>();
+  const refusesText = (...texts: (string | null | undefined)[]) => texts.some((text) => text && refusedTexts.has(text));
   let connection: 'up' | 'down' | 'cutAfterReply' = 'up';
   let hold: { release: () => void; promise: Promise<void> } | null = null;
 
@@ -52,6 +55,7 @@ export function fakeServer() {
       case 'createNote': {
         const { id, sourceId, locator = null, excerpt = null, comment = null } = operation.note;
         if (deletedSources.has(sourceId)) return { outcome: 'sourceGone' };
+        if (refusesText(locator, excerpt, comment)) return { outcome: 'refused' };
         // on conflict (id) do nothing
         if (!notes.has(id)) notes.set(id, { sourceId, locator, excerpt, comment });
         return { outcome: 'done' };
@@ -75,6 +79,7 @@ export function fakeServer() {
         // An edit that reaches a deleted Note is ignored.
         if (!note) return { outcome: 'done' };
         const { locator, excerpt, comment } = operation;
+        if (refusesText(locator, excerpt, comment)) return { outcome: 'refused' };
         if (locator !== undefined) note.locator = locator;
         if (excerpt !== undefined) note.excerpt = excerpt;
         if (comment !== undefined) note.comment = comment;
@@ -126,6 +131,8 @@ export function fakeServer() {
       deletedSources.add(id);
       for (const [noteId, note] of notes) if (note.sourceId === id) notes.delete(noteId);
     },
+    /** From now on the server refuses, for good, a Note carrying this text. */
+    refuseText: (text: string) => refusedTexts.add(text),
     goOffline: () => (connection = 'down'),
     goOnline: () => (connection = 'up'),
     /** The server acts, but the reply never reaches the phone. */

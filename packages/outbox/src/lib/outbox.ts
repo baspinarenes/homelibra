@@ -19,9 +19,10 @@ export type Outbox = {
   /**
    * Sends the waiting operations in order, until none is left or one fails;
    * the ones after a failure wait for the next drain. A Note whose Source the
-   * server no longer has waits as "Kaynağı silinmiş" and holds only its own
-   * operations back. One drain runs at a time: calling it while one runs
-   * joins that one.
+   * server no longer has waits as "Kaynağı silinmiş", and one whose text the
+   * server refuses for good as "gönderilemedi" (until it is edited or
+   * deleted); either holds only its own operations back. One drain runs at
+   * a time: calling it while one runs joins that one.
    */
   drain(): Promise<void>;
   /** A new object on every change, so React can read it as an external store. */
@@ -52,6 +53,27 @@ function retarget(operation: Operation, sourceId: string): Operation {
   return operation;
 }
 
+type UpdateNote = Extract<Operation, { type: 'updateNote' }>;
+
+type EditFields = Partial<Omit<UpdateNote, 'type' | 'id'>>;
+
+/** What an edit sets, without the fields it leaves as they are. */
+const setBy = ({ type: _, id: __, ...fields }: UpdateNote): EditFields =>
+  Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
+
+/** A new Note takes no sort value: the edit, sent after it, corrects that. */
+const noteFields = ({ locatorSort: _, ...fields }: EditFields) => fields;
+
+/** A refused operation with the scholar's edit in place of what it carried. */
+function withEdit(operation: Operation, edit: UpdateNote): Operation {
+  if (operation.type === 'updateNote') return { ...operation, ...setBy(edit) };
+  if (operation.type === 'createNote') return { ...operation, note: { ...operation.note, ...noteFields(setBy(edit)) } };
+  return operation;
+}
+
+/** An operation that carries a Note's text, which a refusal must not lose. */
+const carriesText = (operation: Operation) => operation.type === 'createNote' || operation.type === 'updateNote';
+
 /**
  * A Comment its Excerpt's Note no longer takes becomes a Note of its own,
  * as Geri al would make it: the text is never lost.
@@ -61,6 +83,9 @@ function asOwnNote(operation: Operation): Operation | null {
   const { id, sourceId, locator } = operation.ownNote;
   return { type: 'createNote', note: { id, sourceId, locator, comment: operation.comment, tags: operation.tags } };
 }
+
+/** A Note held back by the operation `seq`, and why: its status. */
+type Parked = { seq: number; why: 'sourceGone' | 'refused' };
 
 type Settled = { promise: Promise<Reply | null>; settle: (reply: Reply | null) => void };
 function settled(): Settled {
@@ -73,8 +98,9 @@ function settled(): Settled {
 export async function openOutbox({ storage, transport }: OpenOutbox): Promise<Outbox> {
   const queue: StoredOperation[] = await storage.list();
   const synced = new Set<string>();
-  // Notes the server said "kaynak yok" to, and the operation it refused.
-  const parked = new Map<string, number>();
+  // Notes held back, with the operation the server answered "kaynak yok" to,
+  // or refused for good: a Note's text is never dropped.
+  const parked = new Map<string, Parked>();
   // How each operation applied since opening ended: the server's reply, or
   // null when it left the queue unsent.
   const outcomes = new Map<number, Settled>();
@@ -87,7 +113,8 @@ export async function openOutbox({ storage, transport }: OpenOutbox): Promise<Ou
     for (const id of synced) status.set(id, 'synced');
     for (const { seq, operation } of queue) {
       for (const id of notesOf(operation)) {
-        if (parked.has(id)) status.set(id, 'sourceGone');
+        const held = parked.get(id);
+        if (held) status.set(id, held.why);
         else if (status.get(id) !== 'sending') status.set(id, seq === sending ? 'sending' : 'queued');
       }
     }
@@ -109,7 +136,7 @@ export async function openOutbox({ storage, transport }: OpenOutbox): Promise<Ou
   const take = async (rows: readonly StoredOperation[]) => {
     const seqs = new Set(rows.map((row) => row.seq));
     for (let i = queue.length - 1; i >= 0; i--) if (seqs.has(queue[i]!.seq)) queue.splice(i, 1);
-    for (const [id, seq] of parked) if (seqs.has(seq)) parked.delete(id);
+    for (const [id, { seq }] of parked) if (seqs.has(seq)) parked.delete(id);
     changed();
     for (const { seq } of rows) {
       await storage.remove(seq);
@@ -127,7 +154,7 @@ export async function openOutbox({ storage, transport }: OpenOutbox): Promise<Ou
     return seq;
   };
 
-  /** The next operation to send: the oldest one not about a Note held back as "Kaynağı silinmiş". */
+  /** The next operation to send: the oldest one not about a Note held back (Kaynağı silinmiş, gönderilemedi). */
   const next = () => {
     const held = new Set(parked.keys());
     for (const row of queue) {
@@ -154,13 +181,17 @@ export async function openOutbox({ storage, transport }: OpenOutbox): Promise<Ou
       // Still "sending" until the queue shows the reply, so nothing applied
       // meanwhile takes the operation out from under it.
       if (reply.outcome === 'sourceGone' && (operation.type === 'createNote' || operation.type === 'moveNote')) {
-        parked.set(notesOf(operation)[0]!, seq);
+        parked.set(notesOf(operation)[0]!, { seq, why: 'sourceGone' });
       } else if (reply.outcome === 'refused' && asOwnNote(operation)) {
         // Sent next, in the refused operation's place.
         head.operation = asOwnNote(operation)!;
         await storage.replace(seq, head.operation);
+      } else if (reply.outcome === 'refused' && carriesText(operation)) {
+        // "Gönderilemedi": it waits, with its text, to be edited or deleted.
+        parked.set(notesOf(operation)[0]!, { seq, why: 'refused' });
       } else {
-        // Done, or refused for good with nothing to keep: it leaves the queue.
+        // Done, or refused for good with no text to keep (a move, a deletion):
+        // it leaves the queue.
         queue.splice(queue.indexOf(head), 1);
         if (reply.outcome === 'done') for (const id of notesOf(operation)) synced.add(id);
         await storage.remove(seq);
@@ -223,15 +254,16 @@ export async function openOutbox({ storage, transport }: OpenOutbox): Promise<Ou
         },
       };
     }
-    // A move the server refused needs no sending before the Note goes.
-    const refused = parked.get(operation.id);
+    // A move or an edit the server refused needs no sending before the Note goes.
+    const refused = parked.get(operation.id)?.seq;
     if (refused !== undefined && alone) await take(rows.filter((row) => row.seq === refused));
     return { undo: undoQueued(await enqueue(operation)) };
   };
 
   const moveNote = async (operation: Extract<Operation, { type: 'moveNote' }>): Promise<Receipt> => {
-    const refused = parked.get(operation.id);
-    const row = queue.find((r) => r.seq === refused);
+    const held = parked.get(operation.id);
+    const row = held?.why === 'sourceGone' ? queue.find((r) => r.seq === held.seq) : undefined;
+    // Otherwise it waits its turn; behind a refused text, until that is edited.
     if (!row) return { undo: undoQueued(await enqueue(operation)) };
     // Kaynağı silinmiş: the new Source takes the refused operation's place,
     // and the Note goes out to it.
@@ -243,10 +275,26 @@ export async function openOutbox({ storage, transport }: OpenOutbox): Promise<Ou
     return { undo: null };
   };
 
+  const updateNote = async (operation: UpdateNote): Promise<Receipt> => {
+    const held = parked.get(operation.id);
+    const row = held?.why === 'refused' ? queue.find((r) => r.seq === held.seq) : undefined;
+    if (row) {
+      // Gönderilemedi: the edit takes the refused text's place, and it goes
+      // out again. The edit itself still follows, after what else waited for
+      // the Note, so the scholar's last word is the one kept.
+      row.operation = withEdit(row.operation, operation);
+      parked.delete(operation.id);
+      await storage.replace(row.seq, row.operation);
+    }
+    await enqueue(operation);
+    return { undo: null };
+  };
+
   return {
     async apply(operation) {
       if (operation.type === 'deleteNote') return deleteNote(operation);
       if (operation.type === 'moveNote') return moveNote(operation);
+      if (operation.type === 'updateNote') return updateNote(operation);
       await enqueue(operation);
       return { undo: null };
     },

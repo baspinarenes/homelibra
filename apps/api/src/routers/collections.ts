@@ -4,16 +4,11 @@ import { and, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
-import {
-  collectionDefinition,
-  setCollectionTags,
-  tagsOfCollection,
-  tagsOfCollections,
-} from '../collections/definition';
+import { collectionDefinition, tagsOfCollection, tagsOfCollections } from '../collections/definition';
 import { deleteCollection } from '../collections/delete';
 import { collectionView, memberCount } from '../collections/view';
-import { account, collection, tag } from '../db/schema';
-import { resolveTags, tagNames } from '../tags/tags';
+import { account, collection, collectionTag, tag } from '../db/schema';
+import { resolveTags, setTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
 const collectionName = z.string().trim().min(1).max(200);
@@ -33,7 +28,7 @@ export const collectionsRouter = router({
       await ctx.tx
         .insert(collection)
         .values({ id, accountId: ctx.accountId, name: input.name, includeSourceNotes: input.includeSourceNotes });
-      await setCollectionTags(ctx.tx, ctx.accountId, id, await resolveTags(ctx.tx, ctx.accountId, input.tags));
+      await setTags(ctx.tx, ctx.accountId, collectionTag, id, await resolveTags(ctx.tx, ctx.accountId, input.tags));
       return { id };
     }),
 
@@ -70,7 +65,7 @@ export const collectionsRouter = router({
       .returning({ id: collection.id });
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     const tagIds = await resolveTags(ctx.tx, ctx.accountId, input.names);
-    await setCollectionTags(ctx.tx, ctx.accountId, input.id, tagIds);
+    await setTags(ctx.tx, ctx.accountId, collectionTag, input.id, tagIds);
     return tagsOfCollection(ctx.tx, ctx.accountId, input.id);
   }),
 
