@@ -5,17 +5,18 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { PlaceholderScreen } from '@/components/placeholder-screen';
 import { PrimaryButton } from '@/components/primary-button';
 import { useTRPC } from '@/lib/trpc';
-import { colors, space } from '@/theme';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const home = useQuery(trpc.sources.home.queryOptions());
 
   if (home.isPending) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} />
+        <ActivityIndicator color={styles.spinner.color} />
       </View>
     );
   }
@@ -42,16 +43,18 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: space.xl,
-    gap: space.sm,
-    backgroundColor: colors.page,
-  },
-  title: { fontSize: 20, fontWeight: '600', color: colors.fg },
-  lead: { fontSize: 15, color: colors.muted, textAlign: 'center' },
-  action: { marginTop: space.lg },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: space.xl,
+      gap: space.sm,
+      backgroundColor: c.page,
+    },
+    title: { ...typeScale.title, color: c.fg, textAlign: 'center' },
+    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    action: { marginTop: space.lg },
+    spinner: { color: c.accent },
+  });

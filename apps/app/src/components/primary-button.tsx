@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, space } from '@/theme';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 export function PrimaryButton({
   label,
@@ -14,6 +14,7 @@ export function PrimaryButton({
   disabled?: boolean;
 }) {
   const inactive = busy || disabled;
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -21,20 +22,21 @@ export function PrimaryButton({
       disabled={inactive}
       style={({ pressed }) => [styles.button, inactive && styles.inactive, pressed && styles.pressed]}
     >
-      {busy ? <ActivityIndicator color={colors.accentFg} /> : <Text style={styles.label}>{label}</Text>}
+      {busy ? <ActivityIndicator color={styles.label.color} /> : <Text style={styles.label}>{label}</Text>}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: colors.accent,
-    borderRadius: 8,
-    paddingVertical: space.md,
-    paddingHorizontal: space.xl,
-    alignItems: 'center',
-  },
-  inactive: { opacity: 0.5 },
-  pressed: { opacity: 0.8 },
-  label: { color: colors.accentFg, fontSize: 16, fontWeight: '600' },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    button: {
+      backgroundColor: c.accent,
+      borderRadius: radius.button,
+      paddingVertical: space.md,
+      paddingHorizontal: space.xl,
+      alignItems: 'center',
+    },
+    inactive: { opacity: 0.5 },
+    pressed: { opacity: 0.8 },
+    label: { ...typeScale.button, fontSize: 15, color: c.accentFg },
+  });

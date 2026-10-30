@@ -93,6 +93,18 @@ importers:
       '@better-auth/expo':
         specifier: ^1.7.14
         version: 1.7.14(@better-auth/core@1.7.14(@better-auth/utils@0.5.1)(@better-fetch/fetch@1.3.3)(better-call@1.4.4(zod@4.6.7))(jose@6.2.13)(kysely@0.29.7)(nanostores@1.5.5))(better-auth@1.7.14(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(kysely@0.29.7)(postgres@3.4.9))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.5(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))))(expo-constants@58.0.14)(expo-linking@58.0.15)(expo-secure-store@58.0.2(expo@58.0.21))(expo-web-browser@58.0.7(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)))
+      '@expo-google-fonts/charis-sil':
+        specifier: ^0.4.0
+        version: 0.4.0
+      '@expo-google-fonts/eb-garamond':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@expo-google-fonts/reddit-mono':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/reddit-sans':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@homelibra/api':
         specifier: workspace:*
         version: link:../api
@@ -120,6 +132,9 @@ importers:
       expo-constants:
         specifier: ~58.0.14
         version: 58.0.14(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(typescript@6.0.3)
+      expo-font:
+        specifier: ~58.0.11
+        version: 58.0.11(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       expo-linking:
         specifier: ~58.0.15
         version: 58.0.15(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
@@ -1198,6 +1213,18 @@ packages:
   '@eslint/plugin-kit@0.7.3':
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@expo-google-fonts/charis-sil@0.4.0':
+    resolution: {integrity: sha512-pbwyNbHiK9OWHjsyQhALuol6MA5weiPXvkgrVMtc8JfdfXGvqncDf+n5O8zpGMLVXNE0zHkZiNFcZMORf5u7YA==}
+
+  '@expo-google-fonts/eb-garamond@0.4.3':
+    resolution: {integrity: sha512-8HsDPKN6vDlzxZLgo3UFcyr4uvtY33TBpM65owySnF8cy8hq0ss8AWmBvT/lMRJ/wfcoaPP8gFQsizPRvr0nqg==}
+
+  '@expo-google-fonts/reddit-mono@0.4.2':
+    resolution: {integrity: sha512-IOz2BHTS/kOZA5v7kS+lJrv237orloBOj/xwVanabyFkGj+nkeYmhB30bF46/JT3Gij2c8r548joldLkICS62Q==}
+
+  '@expo-google-fonts/reddit-sans@0.4.2':
+    resolution: {integrity: sha512-BlFTZwbClwZkTZQWWuyzRU+QO0oYod/1aimcO/XxBOBAII9ZinJsZPK3HwVY8DWfE+No9hOLG7hKmvLq4CZ6/w==}
 
   '@expo/cli@58.1.17':
     resolution: {integrity: sha512-2WKvwrq9Sr0jj4vFVt7dPtbHoxFzaSp4s5Bsk1FDmCQjZhQlWZjb7j6igBYCs0nBzZZ4UyBdSMY2hwmDhRmPQA==}
@@ -5271,6 +5298,14 @@ snapshots:
     dependencies:
       '@eslint/core': 1.2.1
       levn: 0.4.1
+
+  '@expo-google-fonts/charis-sil@0.4.0': {}
+
+  '@expo-google-fonts/eb-garamond@0.4.3': {}
+
+  '@expo-google-fonts/reddit-mono@0.4.2': {}
+
+  '@expo-google-fonts/reddit-sans@0.4.2': {}
 
   '@expo/cli@58.1.17(@expo/dom-webview@58.0.2)(@expo/metro-runtime@58.0.15)(expo-constants@58.0.14)(expo-font@58.0.11(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo-router@58.0.28)(expo@58.0.21)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)':
     dependencies:

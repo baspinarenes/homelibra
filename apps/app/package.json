@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@better-auth/expo": "^1.7.14",
+    "@expo-google-fonts/charis-sil": "^0.4.0",
+    "@expo-google-fonts/eb-garamond": "^0.4.3",
+    "@expo-google-fonts/reddit-mono": "^0.4.2",
+    "@expo-google-fonts/reddit-sans": "^0.4.2",
     "@homelibra/api": "workspace:*",
     "@homelibra/core": "workspace:*",
     "@tanstack/react-query": "^5.105.0",
@@ -19,6 +23,7 @@
     "better-auth": "^1.7.14",
     "expo": "~58.0.21",
     "expo-constants": "~58.0.14",
+    "expo-font": "~58.0.11",
     "expo-linking": "~58.0.15",
     "expo-localization": "~58.0.5",
     "expo-router": "~58.0.28",
