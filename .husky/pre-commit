@@ -2,3 +2,4 @@ pnpm exec lint-staged
 pnpm typecheck
 pnpm lint:boundaries
 pnpm --filter @homelibra/core test
+pnpm --filter @homelibra/outbox test

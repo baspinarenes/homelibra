@@ -10,7 +10,8 @@ import { ContactLink } from '@/components/privacy-sections';
 import { SecondaryButton } from '@/components/secondary-button';
 import { SettingsSection, SettingsText } from '@/components/settings-list';
 import { authClient } from '@/lib/auth-client';
-import { queryClient, useTRPC } from '@/lib/trpc';
+import { forgetQueries } from '@/lib/query-provider';
+import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
@@ -41,7 +42,7 @@ export default function AccountDeletionScreen() {
       // The API has already ended every session; this forgets this device's.
       onSuccess: async () => {
         await authClient.signOut().catch(() => {});
-        queryClient.clear();
+        await forgetQueries();
         await refetch();
       },
     }),

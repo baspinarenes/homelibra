@@ -375,4 +375,14 @@ export const tr = {
     recent: 'Son kullanılan etiketler',
     all: 'Tümü ›',
   },
+  // The phone's outbox: offline Capture (#57, ADR-0008).
+  outbox: {
+    offline: 'Çevrimdışı',
+    waiting: '{{count}} not bekliyor',
+    queued: 'kuyrukta',
+    sending: 'gönderiliyor',
+    synced: 'eşitlendi',
+    needsConnection: 'Bağlantı gerekiyor',
+    searchNeedsConnection: 'Arama için bağlantı gerekiyor',
+  },
 } as const;

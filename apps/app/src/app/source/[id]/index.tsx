@@ -1,6 +1,7 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { lastCaptured } from '@homelibra/core/note';
+import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,14 +20,15 @@ import {
 } from 'react-native';
 
 import { NoteComposer } from '@/components/note-composer';
+import { OutboxStatus } from '@/components/outbox-status';
 import { SourceTags } from '@/components/source-tags';
 import { NoteTagsLine } from '@/components/tag-chips';
 import { TemplateCover } from '@/components/template-cover';
+import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
-type ListedNote = inferRouterOutputs<AppRouter>['notes']['list'][number];
 
 // Tries at placing a Note whose row is not laid out yet, and the wait between them in ms.
 const scrollRetries = 5;
@@ -49,12 +51,23 @@ export default function SourceScreen() {
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
+  const { state } = useOutbox();
+  // The Notes still in the outbox go on top of what the server (or, offline,
+  // the phone's cache) last said.
+  const shown = useMemo(
+    () => notes.data && withPendingNotes(id, notes.data, state.pending),
+    [id, notes.data, state.pending],
+  );
 
-  if (source.isPending || notes.isPending || source.isError || notes.isError) {
+  // What the page last showed stays up while a refetch fails or waits for the network.
+  if (!source.data || !shown) {
+    const waitingForNetwork = source.fetchStatus === 'paused' || notes.fetchStatus === 'paused';
     return (
       <View style={styles.center}>
         {source.isError || notes.isError ? (
           <Text style={styles.lead}>{t('sourcePage.loadFailed')}</Text>
+        ) : waitingForNetwork ? (
+          <Text style={styles.lead}>{t('outbox.needsConnection')}</Text>
         ) : (
           <ActivityIndicator color={styles.spinner.color} />
         )}
@@ -62,17 +75,19 @@ export default function SourceScreen() {
     );
   }
 
-  return <SourcePage source={source.data} notes={notes.data} write={write === '1'} found={note} />;
+  return <SourcePage source={source.data} notes={shown} statuses={state.status} write={write === '1'} found={note} />;
 }
 
 function SourcePage({
   source,
   notes,
+  statuses,
   write,
   found,
 }: {
   source: Source;
   notes: ListedNote[];
+  statuses: ReadonlyMap<string, NoteStatus>;
   write: boolean;
   found: string | undefined;
 }) {
@@ -134,6 +149,7 @@ function SourcePage({
       <Stack.Screen
         options={{
           title: '',
+          headerTitle: () => <OutboxStatus />,
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
@@ -151,7 +167,7 @@ function SourcePage({
           style={styles.screen}
           contentContainerStyle={styles.content}
           data={notes}
-          extraData={marked}
+          extraData={[marked, statuses]}
           keyExtractor={(note) => note.id}
           keyboardShouldPersistTaps="handled"
           onLayout={scrollToPin}
@@ -184,6 +200,7 @@ function SourcePage({
               note={note}
               divided={index > 0}
               marked={note.id === marked}
+              status={statuses.get(note.id)}
               onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
               // A Note just come in is placed by estimate until its row is measured: place it again then.
               onLayout={() => {
@@ -215,26 +232,35 @@ function SourcePage({
   );
 }
 
-/** Locator on the left (— when it has none), Excerpt and ↳ Comment on the right. */
+/**
+ * Locator on the left (— when it has none), Excerpt and ↳ Comment on the
+ * right; under them, on the phone, where the outbox has the Note:
+ * kuyrukta / gönderiliyor / eşitlendi. A Note still waiting opens for
+ * editing once it is sent.
+ */
 function NoteRow({
   note,
   divided,
   marked,
+  status,
   onPress,
   onLayout,
 }: {
   note: ListedNote;
   divided: boolean;
   marked: boolean;
+  status: NoteStatus | undefined;
   onPress: () => void;
   onLayout: () => void;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const waiting = status === 'queued' || status === 'sending';
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityHint={t('sourcePage.editNote')}
+      accessibilityHint={waiting ? undefined : t('sourcePage.editNote')}
+      disabled={waiting}
       onPress={onPress}
       onLayout={onLayout}
       style={({ pressed }) => [
@@ -249,6 +275,7 @@ function NoteRow({
         {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
         {note.comment && <Text style={styles.comment}>{`↳ ${note.comment}`}</Text>}
         <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
+        {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
       </View>
     </Pressable>
   );
@@ -297,4 +324,6 @@ const makeStyles = (c: Colors) =>
       paddingLeft: 11,
     },
     comment: { ...typeScale.body, fontSize: 14.5, color: c.ink3 },
+    status: { ...typeScale.caption, color: c.muted2 },
+    waiting: { color: c.warn },
   });

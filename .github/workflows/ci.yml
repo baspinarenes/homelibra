@@ -21,6 +21,8 @@ jobs:
       - run: pnpm lint
       - name: core tests
         run: pnpm --filter @homelibra/core test
+      - name: outbox tests
+        run: pnpm --filter @homelibra/outbox test
 
   api:
     runs-on: ubuntu-latest
