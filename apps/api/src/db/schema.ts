@@ -154,6 +154,13 @@ export const source = pgTable(
     /** Type-specific fields by key. A type change only hides the ones the new type lacks. */
     fields: jsonb('fields').$type<SourceFieldValues>().notNull().default({}),
     /**
+     * The Cover's two files in the covers bucket, both or neither (ADR-0011):
+     * the large one for the Source page, the small one for lists. A replaced
+     * Cover gets new keys, so a file never changes under its key.
+     */
+    coverKeyLarge: text('cover_key_large'),
+    coverKeySmall: text('cover_key_small'),
+    /**
      * What search matches by word: Başlık, Yazar, Künye notu and the
      * type-specific text fields, through the search functions of 0011_search.
      */
@@ -177,6 +184,7 @@ export const source = pgTable(
     unique('source_id_account_id_unique').on(t.id, t.accountId),
     index('source_search_vector_idx').using('gin', t.searchVector),
     index('source_search_text_idx').using('gin', sql`${t.searchText} gin_trgm_ops`),
+    check('source_cover_keys_together', sql`(${t.coverKeyLarge} is null) = (${t.coverKeySmall} is null)`),
   ],
 );
 

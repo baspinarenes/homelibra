@@ -5,9 +5,11 @@ import { cors } from 'hono/cors';
 
 import { deleteClosedAccounts } from './account-deletion/account-deletion';
 import { type AuthOptions, createAuth } from './auth';
+import { deleteUnusedCovers, readCover } from './covers/covers';
 import type { Crossref } from './lookups/crossref';
 import { lookups } from './lookups/lookups';
 import { appRouter } from './router';
+import type { ObjectStorage } from './storage/object-storage';
 import { deleteExpiredUndoRecords } from './undo/undo';
 import type { Context } from './trpc/init';
 
@@ -15,6 +17,8 @@ export type ApiOptions = AuthOptions & {
   /** Cross-origin web clients allowed in development; production is same-origin. */
   corsOrigins?: string[];
   crossref: Crossref;
+  /** The private covers bucket (ADR-0011). */
+  covers: ObjectStorage;
   /** What time it is for the lookup cache's seven days and Geri al; tests move it. The system clock by default. */
   now?: () => Date;
 };
@@ -33,6 +37,7 @@ export function createApi(options: ApiOptions) {
       accountClosed: !!session?.user.deletionRequestedAt,
       mailer: options.mailer,
       lookups: sharedLookups,
+      covers: options.covers,
       now,
     };
   }
@@ -43,6 +48,20 @@ export function createApi(options: ApiOptions) {
   }
   http.get('/health', (c) => c.text('ok'));
   http.on(['GET', 'POST'], '/auth/*', (c) => auth.handler(c.req.raw));
+  // A Cover's file, for the Library whose Source has it. Its key changes with
+  // the picture, so it is cached for good; not found looks the same whether
+  // the key is another Library's, unused or its file is gone (ADR-0011).
+  http.get('/covers/:key{.+}', async (c) => {
+    const context = await createContext(c.req.raw.headers);
+    if (!context.accountId) return c.body(null, 401);
+    if (!context.termsAccepted || context.accountClosed) return c.body(null, 403);
+    const bytes = await readCover(options.db, options.covers, context.accountId, c.req.param('key'));
+    if (!bytes) return c.body(null, 404);
+    return c.body(bytes, 200, {
+      'content-type': 'image/jpeg',
+      'cache-control': 'private, max-age=31536000, immutable',
+    });
+  });
   http.all('/trpc/*', (c) =>
     fetchRequestHandler({
       endpoint: '/api/trpc',
@@ -61,6 +80,7 @@ export function createApi(options: ApiOptions) {
   const jobs = {
     deleteClosedAccounts: (now: Date) => deleteClosedAccounts(options.db, now),
     deleteExpiredUndoRecords: (now: Date) => deleteExpiredUndoRecords(options.db, now),
+    deleteUnusedCovers: (now: Date) => deleteUnusedCovers(options.db, options.covers, now),
   };
 
   return { auth, http, createContext, jobs };
