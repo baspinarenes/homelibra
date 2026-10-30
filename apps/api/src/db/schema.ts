@@ -1,4 +1,5 @@
-import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { type SourceFieldValues, sourceTypes } from '@homelibra/core/source';
+import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 // Better Auth's models, renamed to the glossary: its "user" is our Account,
 // and its "account" (one row per sign-in method) is an account_provider.
@@ -70,7 +71,8 @@ export const verification = pgTable(
 // Library tables. Every one carries account_id and is guarded by a row-level
 // security policy in a hand-written migration (ADR-0006).
 
-/** Only what the empty Library needs; #43 adds the Source fields. */
+export const sourceType = pgEnum('source_type', sourceTypes);
+
 export const source = pgTable(
   'source',
   {
@@ -78,8 +80,16 @@ export const source = pgTable(
     accountId: uuid('account_id')
       .notNull()
       .references(() => account.id, { onDelete: 'cascade' }),
+    type: sourceType('type').notNull(),
     title: text('title').notNull(),
+    author: text('author'),
+    isbn: text('isbn'),
+    doi: text('doi'),
+    bibliographicNote: text('bibliographic_note'),
+    /** Type-specific fields by key. A type change only hides the ones the new type lacks. */
+    fields: jsonb('fields').$type<SourceFieldValues>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('source_account_id_idx').on(t.accountId)],
 );

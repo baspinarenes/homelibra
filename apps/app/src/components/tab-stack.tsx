@@ -14,18 +14,21 @@ export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
  */
 export function TabStack({ title, headerRight }: { title: TabTitleKey; headerRight?: () => ReactNode }) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.page },
-        headerShadowVisible: false,
-        headerTintColor: colors.fg,
-        headerTitleStyle: { fontFamily: fonts.serifMedium, fontSize: 21 },
-        contentStyle: { backgroundColor: colors.page },
-      }}
-    >
+    <Stack screenOptions={useHeaderOptions()}>
       <Stack.Screen name="index" options={{ title: t(title), headerRight }} />
     </Stack>
   );
+}
+
+/** The paper header every stack screen uses, in a tab or pushed over the tabs. */
+export function useHeaderOptions() {
+  const { colors } = useTheme();
+  return {
+    headerStyle: { backgroundColor: colors.page },
+    headerShadowVisible: false,
+    headerTintColor: colors.fg,
+    headerTitleStyle: { fontFamily: fonts.serifMedium, fontSize: 21 },
+    contentStyle: { backgroundColor: colors.page },
+  };
 }
