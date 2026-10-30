@@ -8,7 +8,7 @@ import type { TagRef } from '../tags/tags';
 /**
  * Leaves exactly these Tags in the Collection's definition. New ones go in
  * before old ones go, so a Tag that stays is never left unused on the way;
- * one let go that nothing else uses goes (0014_collections).
+ * one let go that nothing else uses goes (0016_collections).
  */
 export async function setCollectionTags(tx: LibraryTx, accountId: string, collectionId: string, tagIds: string[]) {
   if (tagIds.length > 0)

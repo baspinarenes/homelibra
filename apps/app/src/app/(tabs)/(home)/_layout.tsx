@@ -1,5 +1,13 @@
+import { Stack } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+
 import { TabStack } from '@/components/tab-stack';
 
 export default function HomeStack() {
-  return <TabStack title="tabs.home" />;
+  const { t } = useTranslation();
+  return (
+    <TabStack title="tabs.home">
+      <Stack.Screen name="organize" options={{ title: t('organize.title') }} />
+    </TabStack>
+  );
 }

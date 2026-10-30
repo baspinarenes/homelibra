@@ -60,12 +60,16 @@ export type StoredRow = Record<string, unknown>;
  *   delete and listed here too.
  * - `revert`: rows the operation changed, as their `id` and the columns'
  *   earlier values (a move: the Note's Source and when it entered it).
+ * - `remove`: rows the operation added, as the columns that identify them
+ *   (bulk tagging: only the links it put on, `note_id` and `tag_id`, never
+ *   the ones the Notes had already). A Tag left unused by that goes too.
  *
- * Undo puts `reinsert` back first, then applies `revert`.
+ * Undo takes `remove` away first, then puts `reinsert` back, then applies `revert`.
  */
 export type UndoSnapshot = {
   reinsert?: Record<string, StoredRow[]>;
   revert?: Record<string, StoredRow[]>;
+  remove?: Record<string, StoredRow[]>;
 };
 
 const quoted = (name: string) => `"${name.replaceAll('"', '""')}"`;
@@ -123,10 +127,23 @@ async function revert(tx: LibraryTx, table: PgTable, accountId: string, rows: St
      where ${table}."id" = r."id" and ${table}."account_id" = ${accountId}`);
 }
 
+async function remove(tx: LibraryTx, table: PgTable, accountId: string, rows: StoredRow[]) {
+  const writable = new Set(writableColumns(table));
+  // Rows of one operation are identified by the same columns.
+  const columns = Object.keys(rows[0] ?? {});
+  if (!columns.length) return;
+  if (columns.some((name) => !writable.has(name))) throw new Error(`cannot remove ${getTableName(table)}: ${columns}`);
+  const match = sql.raw(columns.map((name) => `t.${quoted(name)} = r.${quoted(name)}`).join(' and '));
+  await tx.execute(sql`
+    delete from ${table} t
+     using jsonb_populate_recordset(null::${table}, ${JSON.stringify(rows)}::jsonb) r
+     where ${match} and t."account_id" = ${accountId}`);
+}
+
 /**
- * Geri al: puts back what the token's operation took. Asked again for a
- * token already applied, it changes nothing. A token that never was this
- * Library's or outlived {@link UNDO_LIFETIME_MS} is `expired`. A database
+ * Geri al: puts back what the token's operation took, and takes away what
+ * it added. Asked again for a token already applied, it changes nothing. A
+ * token that never was this Library's or outlived {@link UNDO_LIFETIME_MS} is `expired`. A database
  * refusal (the Source a Note goes back to is gone too) is thrown: the
  * caller's transaction rolls back and the record stays untouched.
  */
@@ -145,6 +162,11 @@ export async function applyUndo(
   if (record.undoneAt) return 'applied';
   if (record.expiresAt <= now) return 'expired';
   const snapshot = record.snapshot as UndoSnapshot;
+  // Children before parents: a link goes before what it points at.
+  for (const { table } of [...restorable].reverse()) {
+    const rows = snapshot.remove?.[getTableName(table)];
+    if (rows?.length) await remove(tx, table, accountId, rows);
+  }
   for (const { table, reinsert: own } of restorable) {
     const rows = snapshot.reinsert?.[getTableName(table)];
     if (!rows?.length) continue;

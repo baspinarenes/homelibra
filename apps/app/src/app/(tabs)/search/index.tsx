@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 
-import { TemplateCover } from '@/components/template-cover';
+import { SourceCover } from '@/components/source-cover';
 import { useOffline } from '@/lib/network';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
@@ -211,7 +211,7 @@ function SourceRow({ source, divided }: { source: SourceResult; divided: boolean
       onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
       style={({ pressed }) => [styles.sourceRow, divided && styles.divided, pressed && styles.pressed]}
     >
-      <TemplateCover type={source.type} />
+      <SourceCover type={source.type} cover={source.cover} />
       <View style={styles.sourceText}>
         <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
         <Text style={styles.sourceTitle} numberOfLines={2}>

@@ -28,5 +28,6 @@ export async function sendOperation(operation: Operation) {
     queryClient.invalidateQueries({ queryKey: trpcOptions.notes.pathKey() }),
     queryClient.invalidateQueries({ queryKey: trpcOptions.sources.pathKey() }),
     queryClient.invalidateQueries({ queryKey: trpcOptions.tags.pathKey() }),
+    queryClient.invalidateQueries({ queryKey: trpcOptions.organize.pathKey() }),
   ]);
 }

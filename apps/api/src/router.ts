@@ -1,7 +1,9 @@
 import { accountRouter } from './routers/account';
 import { collectionsRouter } from './routers/collections';
+import { coversRouter } from './routers/covers';
 import { lookupsRouter } from './routers/lookups';
 import { notesRouter } from './routers/notes';
+import { organizeRouter } from './routers/organize';
 import { searchRouter } from './routers/search';
 import { sourcesRouter } from './routers/sources';
 import { tagsRouter } from './routers/tags';
@@ -16,6 +18,8 @@ export const appRouter = router({
   lookups: lookupsRouter,
   tags: tagsRouter,
   collections: collectionsRouter,
+  covers: coversRouter,
+  organize: organizeRouter,
   undo: undoProcedure,
 });
 

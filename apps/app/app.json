@@ -37,7 +37,15 @@
           "project": "homelibra-app"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Homelibra, kaynaklarına kapak çekebilmen için kamerayı kullanır.",
+          "photosPermission": "Homelibra, kaynaklarına kapak seçebilmen için fotoğraflarına erişir.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

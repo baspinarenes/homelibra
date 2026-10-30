@@ -1,5 +1,5 @@
 {
-  "id": "2f62899a-e3cf-4f60-bdf5-c990936f51d6",
+  "id": "5014e3e6-19dd-417f-822d-2afa2db478a6",
   "prevId": "7060b372-9cfa-4fd4-9676-832d5982c05f",
   "version": "7",
   "dialect": "postgresql",
@@ -206,203 +206,6 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.collection": {
-      "name": "collection",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "account_id": {
-          "name": "account_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "include_source_notes": {
-          "name": "include_source_notes",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "collection_account_id_idx": {
-          "name": "collection_account_id_idx",
-          "columns": [
-            {
-              "expression": "account_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "collection_account_id_account_id_fk": {
-          "name": "collection_account_id_account_id_fk",
-          "tableFrom": "collection",
-          "tableTo": "account",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "collection_id_account_id_unique": {
-          "name": "collection_id_account_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "account_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.collection_tag": {
-      "name": "collection_tag",
-      "schema": "",
-      "columns": {
-        "collection_id": {
-          "name": "collection_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tag_id": {
-          "name": "tag_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "account_id": {
-          "name": "account_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "collection_tag_tag_id_idx": {
-          "name": "collection_tag_tag_id_idx",
-          "columns": [
-            {
-              "expression": "tag_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "collection_tag_account_id_account_id_fk": {
-          "name": "collection_tag_account_id_account_id_fk",
-          "tableFrom": "collection_tag",
-          "tableTo": "account",
-          "columnsFrom": [
-            "account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "collection_tag_collection_fk": {
-          "name": "collection_tag_collection_fk",
-          "tableFrom": "collection_tag",
-          "tableTo": "collection",
-          "columnsFrom": [
-            "collection_id",
-            "account_id"
-          ],
-          "columnsTo": [
-            "id",
-            "account_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "collection_tag_tag_fk": {
-          "name": "collection_tag_tag_fk",
-          "tableFrom": "collection_tag",
-          "tableTo": "tag",
-          "columnsFrom": [
-            "tag_id",
-            "account_id"
-          ],
-          "columnsTo": [
-            "id",
-            "account_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "collection_tag_collection_id_tag_id_pk": {
-          "name": "collection_tag_collection_id_tag_id_pk",
-          "columns": [
-            "collection_id",
-            "tag_id"
-          ]
-        }
-      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -945,6 +748,18 @@
           "notNull": true,
           "default": "'{}'::jsonb"
         },
+        "cover_key_large": {
+          "name": "cover_key_large",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cover_key_small": {
+          "name": "cover_key_small",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "search_vector": {
           "name": "search_vector",
           "type": "tsvector",
@@ -1054,7 +869,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "source_cover_keys_together": {
+          "name": "source_cover_keys_together",
+          "value": "(\"source\".\"cover_key_large\" is null) = (\"source\".\"cover_key_small\" is null)"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.source_tag": {

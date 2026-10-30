@@ -1,0 +1,1 @@
+ALTER TABLE "source" ADD COLUMN "last_finished_at" timestamp with time zone;
