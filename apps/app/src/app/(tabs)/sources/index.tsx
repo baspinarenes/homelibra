@@ -7,7 +7,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 
 import { PrimaryButton } from '@/components/primary-button';
 import { Segment } from '@/components/segment';
-import { TemplateCover } from '@/components/template-cover';
+import { SourceCover } from '@/components/source-cover';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
@@ -81,7 +81,7 @@ export default function SourcesScreen() {
             onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
             style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
           >
-            <TemplateCover type={source.type} />
+            <SourceCover type={source.type} cover={source.cover} />
             <View style={styles.text}>
               <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
               <Text style={styles.rowTitle} numberOfLines={2}>

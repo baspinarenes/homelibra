@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/primary-button';
-import { TemplateCover } from '@/components/template-cover';
+import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -93,7 +93,7 @@ function LastNotedSection({ lastNoted: { source, note } }: { lastNoted: LastNote
           <Text style={styles.when}>{elapsed(t, note.capturedAt)}</Text>
         </View>
         <View style={styles.identity}>
-          <TemplateCover type={source.type} />
+          <SourceCover type={source.type} cover={source.cover} />
           <View style={styles.identityText}>
             <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
             <Text style={styles.sourceTitle} numberOfLines={2}>

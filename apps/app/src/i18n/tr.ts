@@ -384,4 +384,22 @@ export const tr = {
     cancel: 'Vazgeç',
     deleteFailed: 'Silinemedi. Bağlantını kontrol edip yeniden dene.',
   },
+  // A Source's Cover (#63, ADR-0011).
+  cover: {
+    title: 'Kapak',
+    add: 'Kapak ekle',
+    change: 'Kapağı değiştir',
+    close: 'Kapat',
+    camera: 'Fotoğraf çek',
+    library: 'Galeriden seç',
+    file: 'Dosya seç',
+    dropHint: 'ya da bir resmi buraya sürükle',
+    remove: 'Kapağı kaldır',
+    replaced: 'Kapak değiştirildi',
+    removed: 'Kapak kaldırıldı',
+    needsConnection: 'Kapak eklemek için bağlantı gerekiyor',
+    cameraDenied: 'Kamera izni verilmedi.',
+    failed: 'Kapak eklenemedi. Bağlantını kontrol edip yeniden dene.',
+    removeFailed: 'Kapak kaldırılamadı. Bağlantını kontrol edip yeniden dene.',
+  },
 } as const;

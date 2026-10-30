@@ -19,9 +19,9 @@ import {
   View,
 } from 'react-native';
 
+import { CoverEditor } from '@/components/cover-editor';
 import { NoteComposer } from '@/components/note-composer';
 import { OutboxStatus } from '@/components/outbox-status';
-import { TemplateCover } from '@/components/template-cover';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -183,7 +183,7 @@ function SourcePage({
           ListHeaderComponent={
             <View style={styles.heading}>
               <View style={styles.identity}>
-                <TemplateCover type={source.type} />
+                <CoverEditor sourceId={source.id} type={source.type} cover={source.cover} />
                 <View style={styles.identityText}>
                   <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
                   <Text style={styles.title}>{source.title}</Text>
