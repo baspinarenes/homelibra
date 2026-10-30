@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { PlaceholderScreen } from '@/components/placeholder-screen';
 import { Segment } from '@/components/segment';
+import { TagList } from '@/components/tag-list';
 import { type Colors, space, useThemedStyles } from '@/theme';
 
 type CollectionsView = 'collections' | 'tags';
@@ -33,8 +34,8 @@ export default function CollectionsScreen() {
           onChange={(next) => router.setParams({ view: next === 'tags' ? 'tags' : undefined })}
         />
       </View>
-      {/* Collections and the Tag list arrive in #51. */}
-      <PlaceholderScreen />
+      {/* Collections arrive in #51. */}
+      {view === 'tags' ? <TagList /> : <PlaceholderScreen />}
     </View>
   );
 }

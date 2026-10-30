@@ -352,4 +352,27 @@ export const tr = {
   account: {
     signOut: 'Çıkış yap',
   },
+  // Tag: the picker, the chips on Notes and Sources, Etiketler and Ana sayfa's list (#49).
+  tags: {
+    add: '+ etiket',
+    untagged: 'etiketsiz',
+    field: 'Etiketler',
+    noteTitle: 'Bu notun etiketleri',
+    sourceTitle: 'Kaynağın etiketleri',
+    none: 'Etiket yok; etiketsiz de kaydedilir.',
+    search: 'Etiket ara ya da yeni yaz',
+    newTag: '+ “{{name}}” yeni etiket',
+    remove: '{{name}} etiketini kaldır',
+    done: 'Tamam',
+    close: 'Kapat',
+    counts: '{{notes}} not · {{sources}} kaynak',
+    sortLabel: 'Sıralama',
+    sortName: 'A–Z',
+    sortUsage: 'Çok kullanılan',
+    empty: 'Henüz etiketin yok. Bir nota ya da kaynağa “+ etiket” ile takabilirsin.',
+    loadFailed: 'Etiketler yüklenemedi.',
+    saveFailed: 'Etiketler kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
+    recent: 'Son kullanılan etiketler',
+    all: 'Tümü ›',
+  },
 } as const;

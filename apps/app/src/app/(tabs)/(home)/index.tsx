@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/primary-button';
+import { RecentTags } from '@/components/recent-tags';
 import { TemplateCover } from '@/components/template-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
@@ -42,6 +43,7 @@ export default function HomeScreen() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <LastNotedSection lastNoted={lastNoted.data} />
+        <RecentTags />
       </ScrollView>
     );
   }

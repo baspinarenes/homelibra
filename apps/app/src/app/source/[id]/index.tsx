@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 
 import { NoteComposer } from '@/components/note-composer';
+import { SourceTags } from '@/components/source-tags';
+import { NoteTagsLine } from '@/components/tag-chips';
 import { TemplateCover } from '@/components/template-cover';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -173,6 +175,7 @@ function SourcePage({
                 </View>
               </View>
               <Text style={styles.byline}>{byline}</Text>
+              <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
             </View>
           }
           ListEmptyComponent={<Text style={styles.empty}>{t('sourcePage.empty')}</Text>}
@@ -245,6 +248,7 @@ function NoteRow({
       <View style={styles.texts}>
         {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
         {note.comment && <Text style={styles.comment}>{`↳ ${note.comment}`}</Text>}
+        <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
       </View>
     </Pressable>
   );
