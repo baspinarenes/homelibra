@@ -5,10 +5,9 @@ import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
 import { note, source } from '../db/schema';
-import { tagParts } from '../tags/snapshot';
+import { deleteNotes, mergeSelected, moveNotes, selectionLimit } from '../notes/selection';
 import { addNoteTags, resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
-import { recordUndo, storedRow } from '../undo/undo';
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
 const optionalText = z
@@ -244,18 +243,42 @@ export const notesRouter = router({
    * changes nothing and offers no Geri al.
    */
   delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
-    // Read first: the Note's Tag links go with it, and a Tag only it carried too.
-    const tags = await tagParts(ctx.tx, ctx.accountId, { noteIds: [input.id] });
-    const deleted = await ctx.tx
-      .delete(note)
-      .where(myNote(ctx.accountId, input.id))
-      .returning({ row: storedRow(note) });
-    if (!deleted.length) return { undoToken: null };
-    const undoToken = await recordUndo(ctx.tx, ctx.accountId, ctx.now(), {
-      reinsert: { note: deleted.map(({ row }) => row), ...tags },
-    });
+    const { undoToken } = await deleteNotes(ctx.tx, ctx.accountId, ctx.now(), [input.id]);
     return { undoToken };
   }),
+
+  /**
+   * Sil, from Düzenle mode's selection (#36): the Notes go at once, with no
+   * confirmation, and one token brings them all back ("N not silindi ·
+   * Geri al"). Notes not in this Library, or gone already, are skipped.
+   */
+  deleteMany: libraryProcedure
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(selectionLimit) }))
+    .mutation(({ ctx, input }) => deleteNotes(ctx.tx, ctx.accountId, ctx.now(), input.ids)),
+
+  /**
+   * Birleştir, from Düzenle mode's selection (#13): two or more Notes of one
+   * Source, side by side or not, become the first in Locator order, as the
+   * merge preview showed it (core's mergeNotes) with the Locator and texts
+   * corrected there. The others go; the token takes it all back (Geri al).
+   */
+  merge: libraryProcedure
+    .input(
+      z.object({
+        ids: z
+          .array(z.uuid())
+          .min(2)
+          .max(selectionLimit)
+          .refine((ids) => new Set(ids).size === ids.length, 'Each Note once'),
+        locator: optionalText.optional(),
+        excerpt: optionalText.optional(),
+        comment: optionalText.optional(),
+      }),
+    )
+    .mutation(({ ctx, input }) => {
+      const { ids, ...edits } = input;
+      return mergeSelected(ctx.tx, ctx.accountId, ctx.now(), ids, edits);
+    }),
 
   /**
    * The Kaynak field of note editing: the Note goes to another Source with
@@ -266,18 +289,19 @@ export const notesRouter = router({
    */
   move: libraryProcedure.input(z.object({ id: z.uuid(), sourceId: z.uuid() })).mutation(async ({ ctx, input }) => {
     await assertSource(ctx.tx, ctx.accountId, input.sourceId);
-    const [before] = await ctx.tx
-      .select({ sourceId: note.sourceId, row: storedRow(note, [note.sourceId, note.enteredSourceAt]) })
-      .from(note)
-      .where(myNote(ctx.accountId, input.id))
-      .for('update');
-    if (!before || before.sourceId === input.sourceId) return { undoToken: null };
-    const now = ctx.now();
-    await ctx.tx
-      .update(note)
-      .set({ sourceId: input.sourceId, enteredSourceAt: now, updatedAt: now })
-      .where(myNote(ctx.accountId, input.id));
-    const undoToken = await recordUndo(ctx.tx, ctx.accountId, now, { revert: { note: [before.row] } });
+    const { undoToken } = await moveNotes(ctx.tx, ctx.accountId, ctx.now(), [input.id], input.sourceId);
     return { undoToken };
   }),
+
+  /**
+   * Taşı, from Düzenle mode's selection (#36): every selected Note goes to
+   * the Source as `move` takes one, and one token takes them all back. Two
+   * Sources opened twice become one this way: move all, delete the empty one.
+   */
+  moveMany: libraryProcedure
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(selectionLimit), sourceId: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await assertSource(ctx.tx, ctx.accountId, input.sourceId);
+      return moveNotes(ctx.tx, ctx.accountId, ctx.now(), input.ids, input.sourceId);
+    }),
 });
