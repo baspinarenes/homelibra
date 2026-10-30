@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint';
 // locale-blind case functions are banned. See spec #40, "Platform ve yapı".
 const turkishCase = [
   {
-    selector: "CallExpression[callee.property.name=/^to(Upper|Lower)Case$/], CallExpression[callee.property.value=/^to(Upper|Lower)Case$/]",
+    selector:
+      'CallExpression[callee.property.name=/^to(Upper|Lower)Case$/], CallExpression[callee.property.value=/^to(Upper|Lower)Case$/]',
     message: "Use toLocaleUpperCase('tr') / toLocaleLowerCase('tr'); bare case conversion breaks I/ı and İ/i.",
   },
   {

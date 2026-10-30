@@ -17,8 +17,7 @@ export const trpcClient = createTRPCClient<AppRouter>({
       url: `${apiUrl}/api/trpc`,
       // Web sends the httpOnly session cookie itself; native reads the
       // session from SecureStore and passes it as a header.
-      fetch: (url, options) =>
-        fetch(url, { ...options, credentials: Platform.OS === 'web' ? 'include' : 'omit' }),
+      fetch: (url, options) => fetch(url, { ...options, credentials: Platform.OS === 'web' ? 'include' : 'omit' }),
       headers: async () => {
         if (Platform.OS === 'web') return {};
         const cookie = await authClient.getCookie();

@@ -1,0 +1,13 @@
+# Generated
+pnpm-lock.yaml
+skills-lock.json
+apps/api/drizzle/
+apps/app/.expo/
+apps/app/expo-env.d.ts
+
+# Skills installed from upstream; edits would be overwritten on update
+.agents/
+.claude/skills/
+
+# Prose: Prettier pads tables to their widest cell, which wrecks the research docs
+*.md

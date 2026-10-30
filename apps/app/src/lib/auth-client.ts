@@ -13,8 +13,5 @@ import { apiUrl } from './api-url';
 export const authClient = createAuthClient({
   baseURL: apiUrl,
   basePath: '/api/auth',
-  plugins: [
-    emailOTPClient(),
-    expoClient({ scheme: 'homelibra', storagePrefix: 'homelibra', storage: SecureStore }),
-  ],
+  plugins: [emailOTPClient(), expoClient({ scheme: 'homelibra', storagePrefix: 'homelibra', storage: SecureStore })],
 });
