@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { noteTag, source, sourceTag, tag } from '../db/schema';
+import { collectionTag, noteTag, source, sourceTag, tag } from '../db/schema';
 import { resolveTags, setSourceTags, tagNames, tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
@@ -25,7 +25,8 @@ export const tagsRouter = router({
           sourceCount: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id})::int`,
           lastUsed: sql<string>`greatest(
             (select max(${noteTag.createdAt}) from ${noteTag} where ${noteTag.tagId} = ${tag.id}),
-            (select max(${sourceTag.createdAt}) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id}))`,
+            (select max(${sourceTag.createdAt}) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id}),
+            (select max(${collectionTag.createdAt}) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id}))`,
         })
         .from(tag)
         .where(eq(tag.accountId, ctx.accountId));
