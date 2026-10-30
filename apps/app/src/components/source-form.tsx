@@ -18,7 +18,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Platform,
@@ -151,12 +151,15 @@ export function SourceForm({
   saving,
   failed,
   onSave,
+  footer,
 }: {
   screenTitle: string;
   initial: SourceDraft;
   saving: boolean;
   failed: boolean;
   onSave: (draft: SourceDraft) => void;
+  /** Under the save button, at the form's very foot: Kaynağı sil when editing. */
+  footer?: ReactNode;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
@@ -340,6 +343,7 @@ export function SourceForm({
         <View style={wide && styles.saveWide}>
           <PrimaryButton label={t('sourceForm.save')} onPress={save} busy={saving} disabled={!canSave} />
         </View>
+        {footer}
       </View>
     </ScrollView>
   );

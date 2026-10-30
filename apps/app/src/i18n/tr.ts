@@ -344,6 +344,8 @@ export const tr = {
   },
   undo: {
     action: 'Geri al',
+    failed: 'Geri alınamadı. Bağlantını kontrol edip yeniden dene.',
+    gone: 'Artık geri alınamıyor.',
   },
   placeholder: {
     comingSoon: 'Bu bölüm yakında.',
@@ -361,5 +363,25 @@ export const tr = {
     synced: 'eşitlendi',
     needsConnection: 'Bağlantı gerekiyor',
     searchNeedsConnection: 'Arama için bağlantı gerekiyor',
+  },
+  deletion: {
+    deleteNote: 'Notu sil',
+    noteDeleted: 'Not silindi',
+    source: 'Kaynak',
+    chooseSource: 'Kaynak seç',
+    filterSources: 'Kaynaklarda bul',
+    noSourceMatches: 'Bu adla bir kaynak yok.',
+    current: 'şu anki',
+    sourcesFailed: 'Kaynaklar yüklenemedi.',
+    close: 'Kapat',
+    noteMoved: 'Not “{{title}}” kaynağına taşındı',
+    deleteSource: 'Kaynağı sil',
+    sourceDeleted: '“{{title}}” silindi',
+    // <title> is set in italics.
+    confirmSource:
+      '<title>{{title}}</title> ve {{count}} notu silinecek. Notları korumak istiyorsan önce başka kaynağa taşı.',
+    confirm: 'Sil',
+    cancel: 'Vazgeç',
+    deleteFailed: 'Silinemedi. Bağlantını kontrol edip yeniden dene.',
   },
 } as const;

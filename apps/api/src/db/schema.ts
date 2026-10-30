@@ -202,6 +202,12 @@ export const note = pgTable(
     locatorSort: doublePrecision('locator_sort').array(),
     excerpt: text('excerpt'),
     comment: text('comment'),
+    /**
+     * When the Note came into its Source: captured, or moved there from
+     * another. Organizing pass counts a Note "yeni" by it; capture time stays
+     * the id's and a move never changes it (#36).
+     */
+    enteredSourceAt: timestamp('entered_source_at', { withTimezone: true }).notNull().defaultNow(),
     /** What search matches: the Excerpt's and the Comment's words (ADR-0010). Locator is not searched. */
     searchVector: tsvector('search_vector')
       .notNull()
@@ -224,4 +230,27 @@ export const note = pgTable(
       sql`coalesce(${t.excerpt} ~ '[^[:space:]]', false) or coalesce(${t.comment} ~ '[^[:space:]]', false)`,
     ),
   ],
+);
+
+/**
+ * What Geri al needs to take one operation back (#40, "Silme ve Geri al"):
+ * the rows it deleted and the values it changed, as a snapshot whose shape
+ * lives in src/undo/undo.ts. Its id is the token the operation returned. A
+ * record outlives the app's Geri al bar by minutes and the clean-up job then
+ * deletes it; nothing else reads it.
+ */
+export const undoRecord = pgTable(
+  'undo_record',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    snapshot: jsonb('snapshot').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    /** When Geri al was applied; asked again, it changes nothing. */
+    undoneAt: timestamp('undone_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('undo_record_account_id_idx').on(t.accountId), index('undo_record_expires_at_idx').on(t.expiresAt)],
 );

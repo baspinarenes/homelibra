@@ -15,6 +15,8 @@ export type Context = {
   mailer: Mailer;
   /** ISBN and DOI lookups through the cache shared by every Library. */
   lookups: Lookups;
+  /** What time it is for the API: Geri al's lifetime, when a Note entered its Source. Tests move it. */
+  now: () => Date;
 };
 
 /** The app's first-sign-in screen stands between the scholar and the Library until this goes away. */
