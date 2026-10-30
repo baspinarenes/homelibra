@@ -11,8 +11,8 @@ import type { LibraryTx } from '../db/client';
 import { source, tag } from '../db/schema';
 import { dateFilter, inDates } from '../search/dates';
 import { joined, type Segment, snippet } from '../search/snippet';
-import { libraryProcedure, router } from '../trpc/init';
 import { mySource } from '../sources/sources';
+import { libraryProcedure, router } from '../trpc/init';
 
 /** How a result matched its worst query word: the tiers of the search contract (ADR-0005). */
 export type Match = 'exact' | 'stem' | 'prefix' | 'part';

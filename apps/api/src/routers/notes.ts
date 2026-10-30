@@ -6,9 +6,9 @@ import { z } from 'zod';
 import type { LibraryTx } from '../db/client';
 import { note, source } from '../db/schema';
 import { deleteNotes, mergeSelected, moveNotes, selectionLimit } from '../notes/selection';
+import { mySource } from '../sources/sources';
 import { addNoteTags, resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
-import { mySource } from '../sources/sources';
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
 const optionalText = z

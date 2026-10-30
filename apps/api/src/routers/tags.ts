@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
 import { collectionTag, noteTag, source, sourceTag, tag } from '../db/schema';
+import { mySource } from '../sources/sources';
 import { tagParts } from '../tags/snapshot';
 import {
   type LinkTable,
@@ -19,7 +20,6 @@ import {
 } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo } from '../undo/undo';
-import { mySource } from '../sources/sources';
 
 /** `what` (an aggregate) over one link table's links to the Tag of the outer query, in this Library. */
 const ofLinks = (what: SQL, table: LinkTable, accountId: string) =>
