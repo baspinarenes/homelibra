@@ -16,6 +16,7 @@
     "@expo-google-fonts/reddit-sans": "^0.4.2",
     "@homelibra/api": "workspace:*",
     "@homelibra/core": "workspace:*",
+    "@homelibra/outbox": "workspace:*",
     "@sentry/react-native": "~8.28.0",
     "@tanstack/query-async-storage-persister": "^5.105.0",
     "@tanstack/react-query": "^5.105.0",
