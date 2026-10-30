@@ -17,6 +17,7 @@ import { TagChips } from '@/components/tag-chips';
 import { TagPicker } from '@/components/tag-picker';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useOrganizeKeys } from '@/lib/organize-keys';
+import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -120,12 +121,8 @@ export function OrganizeMode({
       const identities = new Set(names.map(tagIdentity));
       return [...names, ...last.filter((name) => !identities.has(tagIdentity(name)))].slice(0, recentCount);
     });
-  const refresh = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: trpc.notes.pathKey() }),
-      queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() }),
-      queryClient.invalidateQueries({ queryKey: trpc.tags.pathKey() }),
-    ]);
+  // Tags show in Collections as well as on the Notes.
+  const refresh = () => refreshLibrary();
 
   // One Note's "+ etiket": what the picker leaves on it.
   const setNoteTags = useMutation(trpc.notes.update.mutationOptions({ onSuccess: refresh }));

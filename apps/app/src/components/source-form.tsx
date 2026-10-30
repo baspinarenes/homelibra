@@ -37,6 +37,7 @@ import { Field } from '@/components/field';
 import { AcceptedCover, type IsbnSuggestion, IsbnLookup, type SuggestedCover } from '@/components/isbn-suggestion';
 import { PrimaryButton } from '@/components/primary-button';
 import { SourceTypeIcon } from '@/components/source-type-icon';
+import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles, wideMinWidth } from '@/theme';
 
@@ -129,14 +130,11 @@ function filledDates(dates: SourceDraft['dates']): Partial<Record<SourceDateFiel
   );
 }
 
-/** After a save: refresh every Source query and go back to where the form was opened. */
+/** After a save: refresh wherever the Source shows and go back to where the form was opened. */
 export function useLeaveAfterSave() {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const router = useRouter();
   return async () => {
-    await queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() });
-    await queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() });
+    await refreshLibrary();
     if (router.canGoBack()) router.back();
     else router.replace('/sources');
   };

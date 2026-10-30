@@ -1,11 +1,12 @@
 import type { ListedNote } from '@homelibra/outbox';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MergePreview } from '@/components/merge-preview';
 import { type PickedSource, SourcePicker } from '@/components/source-picker';
+import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -28,19 +29,11 @@ export function useSelectionActions({
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const [merging, setMerging] = useState<ListedNote[] | null>(null);
   const [moving, setMoving] = useState(false);
 
-  // Where the Notes were, went or came back: the Source pages, lists, search, Tags, Düzenlenecekler.
-  const refresh = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: trpc.notes.pathKey() }),
-      queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
-      queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
-      queryClient.invalidateQueries({ queryKey: trpc.tags.pathKey() }),
-      queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() }),
-    ]);
+  // Where the Notes were, went or came back.
+  const refresh = () => refreshLibrary();
 
   const deleteMany = useMutation(
     trpc.notes.deleteMany.mutationOptions({

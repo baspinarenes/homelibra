@@ -1,5 +1,5 @@
 import { withPendingNotes } from '@homelibra/outbox';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfte
 import { useOffline } from '@/lib/network';
 import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';
+import { refreshLibrary } from '@/lib/refresh-library';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo } from '@/lib/undo';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -71,7 +72,6 @@ function DeleteSource({ id, title }: { id: string; title: string }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const router = useRouter();
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
   const [confirming, setConfirming] = useState(false);
@@ -86,13 +86,7 @@ function DeleteSource({ id, title }: { id: string; title: string }) {
         if (router.canDismiss()) router.dismissAll();
         else router.replace('/sources');
         offerServerUndo(t('deletion.sourceDeleted', { title }), undoToken);
-        // Not sources.get or this Source's Notes: they would only fail to load while their screens go.
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: trpc.sources.list.pathKey() }),
-          queryClient.invalidateQueries({ queryKey: trpc.sources.home.pathKey() }),
-          queryClient.invalidateQueries({ queryKey: trpc.sources.lastNoted.pathKey() }),
-          queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
-        ]);
+        await refreshLibrary(id);
       },
     }),
   );
