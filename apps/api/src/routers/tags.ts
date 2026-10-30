@@ -108,8 +108,9 @@ export const tagsRouter = router({
 
   /**
    * What Sil in the ⋯ menu asks with: how many Notes and Sources carry the
-   * Tag themselves ("'kadı' 212 nottan, 3 kaynaktan … kaldırılacak"). A
-   * Source's Tag is not on its Notes (ADR-0003), so they are not counted.
+   * Tag themselves and how many Collections use it ("'kadı' 212 nottan, 3
+   * kaynaktan ve 2 dosyadan kaldırılacak"). A Source's Tag is not on its
+   * Notes (ADR-0003).
    */
   deleteImpact: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
     const [row] = await ctx.tx
@@ -117,6 +118,7 @@ export const tagsRouter = router({
         name: tag.name,
         notes: sql<number>`(select count(*) from ${noteTag} where ${noteTag.tagId} = ${tag.id})::int`,
         sources: sql<number>`(select count(*) from ${sourceTag} where ${sourceTag.tagId} = ${tag.id})::int`,
+        collections: sql<number>`(select count(*) from ${collectionTag} where ${collectionTag.tagId} = ${tag.id})::int`,
       })
       .from(tag)
       .where(and(eq(tag.id, input.id), eq(tag.accountId, ctx.accountId)));
@@ -125,9 +127,9 @@ export const tagsRouter = router({
   }),
 
   /**
-   * Tag sil, once confirmed: the Tag comes off every Note and Source and
-   * goes. The token takes it back with all its links (Geri al). A Tag
-   * already gone changes nothing and offers no Geri al.
+   * Tag sil, once confirmed: the Tag comes off every Note, Source and
+   * Collection and goes. The token takes it back with all its links (Geri
+   * al). A Tag already gone changes nothing and offers no Geri al.
    */
   delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
     const [row] = await ctx.tx

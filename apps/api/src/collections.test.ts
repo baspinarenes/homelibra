@@ -379,3 +379,55 @@ describe('A Tag’s page', () => {
     });
   });
 });
+
+describe('Tag merge and Tag sil reach Collections (#3, #36)', () => {
+  /** Two Collections using "Cemiyet", one of them "İttihat ve Terakki" too. */
+  async function cemiyetInCollections() {
+    const api = await scholar();
+    const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Jön Türkler' });
+    await capture(api, sourceId, { excerpt: 'Selanik şubesi.', tags: ['Cemiyet'] });
+    const { id: draft } = await api.collections.create({ name: 'Taslak', tags: ['Cemiyet'] });
+    const { id: article } = await api.collections.create({
+      name: 'Makale',
+      tags: ['Cemiyet', 'İttihat ve Terakki'],
+    });
+    const tags = await api.tags.list({ sort: 'name' });
+    const tagNamed = (name: string) => tags.find((tag) => tag.name === name)!;
+    return { api, draft, article, cemiyet: tagNamed('Cemiyet'), ittihat: tagNamed('İttihat ve Terakki') };
+  }
+
+  it('merge moves the Collections to the Tag that stays, one using both keeping it once', async () => {
+    const { api, draft, article, cemiyet, ittihat } = await cemiyetInCollections();
+
+    await api.tags.merge({ id: cemiyet.id, intoId: ittihat.id });
+
+    expect(names((await api.collections.view({ id: draft })).tags)).toEqual(['İttihat ve Terakki']);
+    expect(names((await api.collections.view({ id: article })).tags)).toEqual(['İttihat ve Terakki']);
+    expect(texts(await api.collections.view({ id: draft }))).toEqual(['Selanik şubesi.']);
+  });
+
+  it('delete first tells how many Collections it comes out of', async () => {
+    const { api, cemiyet, ittihat } = await cemiyetInCollections();
+
+    expect(await api.tags.deleteImpact({ id: cemiyet.id })).toEqual({
+      name: 'Cemiyet',
+      notes: 1,
+      sources: 0,
+      collections: 2,
+    });
+    expect(await api.tags.deleteImpact({ id: ittihat.id })).toMatchObject({ notes: 0, collections: 1 });
+  });
+
+  it('delete takes it out of every Collection, and Geri al puts it back in them', async () => {
+    const { api, draft, article, cemiyet } = await cemiyetInCollections();
+
+    const { undoToken } = await api.tags.delete({ id: cemiyet.id });
+    expect(names((await api.collections.view({ id: draft })).tags)).toEqual([]);
+    expect(names((await api.collections.view({ id: article })).tags)).toEqual(['İttihat ve Terakki']);
+
+    await api.undo({ token: undoToken! });
+    expect(names((await api.collections.view({ id: draft })).tags)).toEqual(['Cemiyet']);
+    expect(names((await api.collections.view({ id: article })).tags)).toEqual(['Cemiyet', 'İttihat ve Terakki']);
+    expect(texts(await api.collections.view({ id: draft }))).toEqual(['Selanik şubesi.']);
+  });
+});

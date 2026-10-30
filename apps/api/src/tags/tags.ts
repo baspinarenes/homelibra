@@ -5,7 +5,7 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
-import { noteTag, sourceTag, tag } from '../db/schema';
+import { collectionTag, noteTag, sourceTag, tag } from '../db/schema';
 
 /** A Tag's name as the picker sends it: trimmed, without a leading #, never empty. */
 export const tagNameInput = z.string().transform(tagName).pipe(z.string().min(1).max(200));
@@ -82,17 +82,18 @@ export async function setSourceTags(tx: LibraryTx, accountId: string, sourceId: 
 
 /**
  * The tables linking a carrier to a Tag, with the carrier's column. A Tag
- * merge moves every one of them; Collections join here with collection_tag (#51).
+ * merge moves every one of them: Notes, Sources and Collections.
  */
 const linkTables = [
   { table: noteTag, carrier: 'note_id' },
   { table: sourceTag, carrier: 'source_id' },
+  { table: collectionTag, carrier: 'collection_id' },
 ];
 
 /**
- * Tag merge (#3): every Note and Source carrying `fromId` carries `intoId`
- * instead, as from when it first did; one that carried both keeps its one
- * link. Then `fromId` goes, and its name with it.
+ * Tag merge (#3): every Note, Source and Collection using `fromId` uses
+ * `intoId` instead, as from when it first did; one that used both keeps its
+ * one link. Then `fromId` goes, and its name with it.
  */
 export async function mergeTag(tx: LibraryTx, accountId: string, fromId: string, intoId: string) {
   for (const { table, carrier } of linkTables) {
