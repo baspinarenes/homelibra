@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 import { TemplateCover } from '@/components/template-cover';
+import { useOffline } from '@/lib/network';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
@@ -42,6 +43,7 @@ export default function SearchScreen() {
   const trpc = useTRPC();
   const [text, setText] = useState('');
   const query = useSettled(text.trim());
+  const offline = useOffline();
   const [allSources, setAllSources] = useState(false);
   const results = useInfiniteQuery({
     ...trpc.search.library.infiniteQueryOptions({ query }, { getNextPageParam: (page) => page.nextCursor }),
@@ -56,8 +58,12 @@ export default function SearchScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerTitle: () => <SearchBox value={text} onChange={setText} /> }} />
-      {query === '' ? (
+      <Stack.Screen options={{ headerTitle: () => <SearchBox value={text} onChange={setText} offline={offline} /> }} />
+      {offline ? (
+        <View style={styles.center}>
+          <Text style={styles.lead}>{t('outbox.searchNeedsConnection')}</Text>
+        </View>
+      ) : query === '' ? (
         <Hint />
       ) : results.isPending ? (
         <View style={styles.center}>
@@ -126,7 +132,16 @@ function useSettled(value: string, delay = 250) {
   return settled;
 }
 
-function SearchBox({ value, onChange }: { value: string; onChange: (text: string) => void }) {
+/** Offline it says a search needs the connection, so no result is taken for "not yok". */
+function SearchBox({
+  value,
+  onChange,
+  offline,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+  offline: boolean;
+}) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
@@ -137,7 +152,8 @@ function SearchBox({ value, onChange }: { value: string; onChange: (text: string
     <View style={[styles.box, { width: Math.min(BOX_WIDTH, width - 2 * space.lg) }]}>
       <TextInput
         accessibilityLabel={t('tabs.search')}
-        placeholder={t('search.placeholder')}
+        placeholder={t(offline ? 'outbox.searchNeedsConnection' : 'search.placeholder')}
+        editable={!offline}
         placeholderTextColor={colors.muted2}
         value={value}
         onChangeText={onChange}

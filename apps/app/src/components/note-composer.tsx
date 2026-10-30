@@ -1,5 +1,5 @@
 import type { SourceType } from '@homelibra/core/source';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { TRPCClientError } from '@trpc/client';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import Maximize2 from 'lucide-react-native/icons/maximize-2';
 import Minimize2 from 'lucide-react-native/icons/minimize-2';
@@ -22,7 +22,7 @@ import { uuidv7 } from 'uuidv7';
 import { LocatorSheet } from '@/components/locator-sheet';
 import { Segment } from '@/components/segment';
 import { SharedUndoBar } from '@/components/undo-bar';
-import { useTRPC } from '@/lib/trpc';
+import { useOutbox } from '@/lib/outbox';
 import { offerUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
@@ -82,8 +82,9 @@ export function NoteComposer({
   const styles = useThemedStyles(makeStyles);
   const { colors, shadow } = useTheme();
   const insets = useSafeAreaInsets();
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
+  const { apply } = useOutbox();
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<'save' | 'attach' | 'undo' | null>(null);
   const [mode, setMode] = useState<Mode>('excerpt');
   const [text, setText] = useState('');
   const [locator, setLocator] = useState(carriedLocator);
@@ -112,47 +113,38 @@ export function NoteComposer({
   }, []);
   const stale = locator.trim() !== '' && now - locatorSince > locatorCheckAfter;
 
-  const refreshNotes = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: trpc.notes.list.queryKey({ sourceId }) }),
-      queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
-    ]);
-
   const saved = (id: string) => {
     onSaved(id);
     setText('');
     onExpandedChange(false);
   };
 
-  const create = useMutation(
-    trpc.notes.create.mutationOptions({
-      onSuccess: async ({ id }, note) => {
-        attempt.current = null;
-        saved(id);
-        if (note.excerpt) {
-          setLastExcerpt({ id, locator: storedLocator(note.locator ?? '') });
-          setMode('comment');
-        } else {
-          setLastExcerpt(null);
-        }
-        await refreshNotes();
-      },
-    }),
-  );
-
   // Geri al after attaching: the Comment becomes a Note of its own, never lost.
-  const detach = useMutation(
-    trpc.notes.detachComment.mutationOptions({
-      onSuccess: async (_, { commentNoteId }) => {
-        onSaved(commentNoteId);
-        await refreshNotes();
-      },
-    }),
-  );
+  const detach = async (id: string, commentNoteId: string) => {
+    setFailure(null);
+    try {
+      await apply({ type: 'detachComment', id, commentNoteId });
+      onSaved(commentNoteId);
+    } catch {
+      setFailure('undo');
+    }
+  };
 
-  const attach = useMutation(
-    trpc.notes.attachComment.mutationOptions({
-      onSuccess: async (_, { id }) => {
+  const attachTo =
+    mode === 'comment' && lastExcerpt && lastExcerpt.locator === storedLocator(locator) ? lastExcerpt : null;
+
+  const canSave = text.trim() !== '' && !busy;
+  // Through the outbox, which sends now or once the connection returns; the
+  // box does not know which. A failure comes back only where there is no
+  // outbox (the web).
+  const save = async () => {
+    if (!canSave) return;
+    setBusy(true);
+    setFailure(null);
+    try {
+      if (attachTo) {
+        const { id } = attachTo;
+        await apply({ type: 'attachComment', id, comment: text });
         saved(id);
         setLastExcerpt(null);
         // Made now, so the Comment's own Note would sort where it was written.
@@ -160,35 +152,34 @@ export function NoteComposer({
         offerUndo({
           message: t('capture.commentAttached'),
           undo: () => {
-            detach.mutate({ id, commentNoteId });
+            void detach(id, commentNoteId);
             inputRef.current?.focus();
           },
         });
-        await refreshNotes();
-      },
+        return;
+      }
+      const note = { sourceId, locator, ...(mode === 'excerpt' ? { excerpt: text } : { comment: text }) };
+      const key = JSON.stringify(note);
+      if (attempt.current?.key !== key) attempt.current = { id: uuidv7(), key };
+      const { id } = attempt.current;
+      await apply({ type: 'createNote', note: { id, ...note } });
+      attempt.current = null;
+      saved(id);
+      if (mode === 'excerpt') {
+        setLastExcerpt({ id, locator: storedLocator(locator) });
+        setMode('comment');
+      } else {
+        setLastExcerpt(null);
+      }
+    } catch (error) {
       // The Note took another Comment or went away elsewhere: the text stays
       // in the box, to be saved as a Note of its own.
-      onError: (error) => {
-        if (attachRefused(error.data?.code)) setLastExcerpt(null);
-      },
-    }),
-  );
-
-  const attachTo =
-    mode === 'comment' && lastExcerpt && lastExcerpt.locator === storedLocator(locator) ? lastExcerpt : null;
-
-  const busy = create.isPending || attach.isPending;
-  const canSave = text.trim() !== '' && !busy;
-  const save = () => {
-    if (!canSave) return;
-    if (attachTo) {
-      attach.mutate({ id: attachTo.id, comment: text });
-      return;
+      const refused = attachTo && attachRefused(error instanceof TRPCClientError ? error.data?.code : undefined);
+      if (refused) setLastExcerpt(null);
+      setFailure(refused ? 'attach' : 'save');
+    } finally {
+      setBusy(false);
     }
-    const note = { sourceId, locator, ...(mode === 'excerpt' ? { excerpt: text } : { comment: text }) };
-    const key = JSON.stringify(note);
-    if (attempt.current?.key !== key) attempt.current = { id: uuidv7(), key };
-    create.mutate({ id: attempt.current.id, ...note });
   };
 
   // Looking at the Locator, changed or not, starts its age again.
@@ -310,7 +301,7 @@ export function NoteComposer({
             };
             if (Platform.OS !== 'web' || key.key !== 'Enter' || !(key.ctrlKey || key.metaKey)) return;
             key.preventDefault();
-            save();
+            void save();
           }}
           placeholder={t(mode === 'excerpt' ? 'capture.excerptPlaceholder' : 'capture.commentPlaceholder')}
           placeholderTextColor={colors.muted2}
@@ -359,12 +350,17 @@ export function NoteComposer({
           </Pressable>
         </View>
       </View>
-      {(create.isError || attach.isError) && (
+      {failure && (
         <Text style={styles.error}>
-          {t(attachRefused(attach.error?.data?.code) ? 'capture.attachFailed' : 'capture.saveFailed')}
+          {t(
+            failure === 'attach'
+              ? 'capture.attachFailed'
+              : failure === 'undo'
+                ? 'capture.undoFailed'
+                : 'capture.saveFailed',
+          )}
         </Text>
       )}
-      {detach.isError && <Text style={styles.error}>{t('capture.undoFailed')}</Text>}
       <LocatorSheet
         visible={editingLocator}
         sourceType={sourceType}
