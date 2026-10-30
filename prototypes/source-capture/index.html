@@ -1,0 +1,1047 @@
+<!doctype html>
+<!--
+  PROTOTYPE, throwaway. Never merged.
+  Question (#87): Source sayfası ile Capture, bir ekran mı iki ekran mı?
+  Four variants side by side (?variant=all) or one at a time (?variant=A|B|C|D):
+  A bugünkü iki ekran, B kutu Source sayfasının altında, C ince Capture,
+  D kutu Source bilgilerinin hemen altında, notlar aşağı doğru (Enes'in önerisi).
+  Open in a browser; no build step. Notes live in memory and are shared by all phones.
+  Karar (#87): B. Ayrı Capture ekranı yok; yazma kutusu Source sayfasının altında.
+-->
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Source sayfası ve Capture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Charis+SIL&family=EB+Garamond:wght@400;500&family=Reddit+Mono:wght@500&family=Reddit+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --page: #f6f2ea;
+        --surface: #fffefb;
+        --line: #eae3d5;
+        --lineSoft: #f0e9dc;
+        --lineStrong: #8f8572;
+        --fg: #2a2520;
+        --ink3: #3f3a33;
+        --ink2: #6a6358;
+        --muted: #756c60;
+        --muted2: #a99f8e;
+        --faint: #c2baaa;
+        --accent: #a65a40;
+        --accentFg: #fff6ee;
+        --accentSoft: #f4e4da;
+        --chipBg: #efe7d7;
+        --chipInk: #6c5e3f;
+        --quoteBar: #dcc9b0;
+        --quoteInk: #4a443b;
+        --warn: #8f5e14;
+        --warnSoft: #f3e6cc;
+        --mark: #f5de9c;
+        --serif: 'EB Garamond', Georgia, serif;
+        --quote: 'Charis SIL', Georgia, serif;
+        --sans: 'Reddit Sans', system-ui, sans-serif;
+        --mono: 'Reddit Mono', ui-monospace, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #e4ddd0;
+        color: var(--fg);
+        font-family: var(--sans);
+      }
+      .top {
+        padding: 18px 24px 8px;
+        max-width: 1500px;
+      }
+      .top h1 {
+        font: 500 24px/1.2 var(--serif);
+        margin: 0 0 6px;
+      }
+      .top p {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: var(--ink2);
+        max-width: 900px;
+        line-height: 1.45;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin: 8px 0 4px;
+      }
+      .controls .lbl {
+        font: 500 10.5px/1 var(--mono);
+        letter-spacing: 1.4px;
+        color: var(--muted);
+        margin-right: 4px;
+      }
+      .controls button {
+        font: 600 13px/1 var(--sans);
+        padding: 8px 11px;
+        border-radius: 8px;
+        border: 1px solid var(--lineStrong);
+        background: var(--surface);
+        color: var(--fg);
+        cursor: pointer;
+      }
+      .controls button.on {
+        background: var(--fg);
+        color: var(--page);
+        border-color: var(--fg);
+      }
+      .controls .sep {
+        width: 1px;
+        height: 22px;
+        background: var(--faint);
+        margin: 0 6px;
+      }
+      .row {
+        display: flex;
+        gap: 28px;
+        padding: 14px 24px 90px;
+        overflow-x: auto;
+        align-items: flex-start;
+      }
+      .col {
+        flex: 0 0 auto;
+        width: 360px;
+      }
+      .col h2 {
+        font: 600 15px/1.3 var(--sans);
+        margin: 0 0 3px;
+      }
+      .col .why {
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: var(--ink2);
+        margin: 0 0 10px;
+        min-height: 54px;
+      }
+
+      /* Phone */
+      .phone {
+        width: 360px;
+        height: 740px;
+        border-radius: 26px;
+        border: 8px solid #2a2520;
+        background: var(--page);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        box-shadow: 0 8px 22px rgba(42, 37, 32, 0.18);
+      }
+      .status {
+        height: 22px;
+        flex: 0 0 auto;
+        font: 500 11px/22px var(--mono);
+        color: var(--ink2);
+        padding: 0 16px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .appbar {
+        height: 46px;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--line);
+        background: var(--page);
+      }
+      .appbar .back {
+        font: 400 26px/1 var(--sans);
+        color: var(--accent);
+        cursor: pointer;
+        width: 22px;
+      }
+      .appbar .ttl {
+        flex: 1;
+        min-width: 0;
+      }
+      .appbar .ttl .t {
+        font: 500 16px/1.15 var(--serif);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .appbar .ttl .k {
+        font: 500 9.5px/1.2 var(--mono);
+        letter-spacing: 1.3px;
+        color: var(--accent);
+      }
+      .appbar .act {
+        font: 600 14px/1 var(--sans);
+        color: var(--accent);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      .scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+      }
+      .kbd {
+        flex: 0 0 auto;
+        height: 268px;
+        background: #d5cfc4;
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 5px;
+        padding: 10px 4px;
+        align-content: start;
+      }
+      .kbd span {
+        height: 40px;
+        border-radius: 5px;
+        background: #f4f1ea;
+        box-shadow: 0 1px 0 #a8a094;
+        font: 400 15px/40px var(--sans);
+        text-align: center;
+        color: #3f3a33;
+      }
+      .kbd .wide {
+        grid-column: span 5;
+      }
+      .kbd .hide {
+        grid-column: span 2;
+        font-size: 11px;
+        cursor: pointer;
+        background: #bdb5a8;
+      }
+      .toast {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 14px;
+        background: var(--fg);
+        color: var(--page);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 13px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        z-index: 5;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+
+      /* Source page heading */
+      .heading {
+        padding: 10px 16px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+      }
+      .identity {
+        display: flex;
+        gap: 13px;
+        align-items: center;
+      }
+      .cover {
+        width: 44px;
+        height: 62px;
+        border-radius: 3px;
+        flex: 0 0 auto;
+        background: repeating-linear-gradient(135deg, #a0634a 0 6px, #b47a60 6px 12px);
+      }
+      .cover.sm {
+        width: 26px;
+        height: 36px;
+      }
+      .type {
+        font: 500 10.5px/14px var(--mono);
+        letter-spacing: 1.4px;
+        color: var(--accent);
+      }
+      .stitle {
+        font: 500 21px/25px var(--serif);
+      }
+      .byline {
+        font-size: 12.5px;
+        line-height: 17px;
+        color: var(--muted);
+      }
+      .btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        font: 600 13.5px/1 var(--sans);
+        padding: 9px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--fg);
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: var(--accentFg);
+        border-color: var(--accent);
+      }
+      .btn .warn {
+        color: var(--warn);
+      }
+
+      /* Notes */
+      .notes {
+        padding: 0 16px 16px;
+      }
+      .nrow {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-top: 1px solid var(--lineSoft);
+        cursor: pointer;
+        border-radius: 0;
+      }
+      .nrow:first-child {
+        border-top: 0;
+      }
+      .nrow .loc {
+        font: 500 12.5px/17px var(--mono);
+        color: var(--muted);
+        width: 74px;
+        flex: 0 0 auto;
+        padding-top: 4px;
+      }
+      .nrow .tx {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .ex {
+        font: 400 15.5px/24px var(--quote);
+        color: var(--quoteInk);
+        border-left: 2px solid var(--quoteBar);
+        padding-left: 11px;
+      }
+      .cm {
+        font-size: 14px;
+        line-height: 21px;
+        color: var(--ink3);
+      }
+      .tags {
+        font-size: 11.5px;
+        color: var(--muted2);
+      }
+      .fresh {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      .last-badge {
+        font: 500 9.5px/1 var(--mono);
+        letter-spacing: 1px;
+        color: var(--accent);
+        margin-left: 6px;
+      }
+
+      /* Capture flow (A): Locator headings, notes as bubbles */
+      .flow {
+        padding: 8px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .gh {
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 1.2px;
+        color: var(--muted);
+        padding: 10px 0 2px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .gh::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--line);
+      }
+      .bub {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 11px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        cursor: pointer;
+      }
+
+      /* Writing box */
+      .composer {
+        flex: 0 0 auto;
+        background: var(--page);
+        border-top: 1px solid var(--line);
+        padding: 8px 12px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .composer.top {
+        border-top: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .crow {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .chip {
+        font: 500 12.5px/1 var(--mono);
+        padding: 6px 8px;
+        border-radius: 6px;
+        background: var(--chipBg);
+        color: var(--chipInk);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .seg {
+        display: flex;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-left: auto;
+      }
+      .seg span {
+        font: 600 12px/1 var(--sans);
+        padding: 6px 9px;
+        cursor: pointer;
+        color: var(--ink2);
+      }
+      .seg span.on {
+        background: var(--fg);
+        color: var(--page);
+      }
+      .tag {
+        font: 600 12px/1 var(--sans);
+        color: var(--muted);
+        padding: 6px 4px;
+        cursor: pointer;
+      }
+      .input {
+        display: flex;
+        gap: 6px;
+        align-items: flex-end;
+      }
+      textarea {
+        flex: 1;
+        resize: none;
+        border: 1px solid var(--lineStrong);
+        border-radius: 8px;
+        padding: 8px 10px;
+        min-height: 40px;
+        max-height: 120px;
+        font: 400 15px/22px var(--sans);
+        background: var(--surface);
+        color: var(--fg);
+        outline: none;
+      }
+      textarea.q {
+        font-family: var(--quote);
+        background: #fbf6ec;
+      }
+      textarea.collapsed {
+        border-color: var(--line);
+        color: var(--muted);
+      }
+      .send {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: 0;
+        background: var(--accent);
+        color: var(--accentFg);
+        font: 600 18px/1 var(--sans);
+        cursor: pointer;
+      }
+
+      /* C: thin Capture */
+      .recent {
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        justify-content: flex-end;
+        min-height: 100%;
+      }
+      .recent .lbl {
+        font: 500 10.5px/14px var(--mono);
+        letter-spacing: 1.4px;
+        color: var(--muted);
+      }
+      .recent .all {
+        font: 600 13px/1 var(--sans);
+        color: var(--accent);
+        cursor: pointer;
+        padding: 6px 0;
+      }
+
+      /* Switcher */
+      .switcher {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        background: #2a2520;
+        color: #f6f2ea;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+        font: 600 13px/1 var(--sans);
+      }
+      .switcher button {
+        background: none;
+        border: 0;
+        color: inherit;
+        font: inherit;
+        padding: 8px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .switcher button:hover {
+        background: #3f3a33;
+      }
+      .switcher .cur {
+        padding: 0 8px;
+        min-width: 200px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <h1>
+        Source sayfası ile Capture: bir ekran mı, iki ekran mı?
+        <span style="color: var(--muted); font-size: 16px">#87 · prototip</span>
+      </h1>
+      <p>
+        Dört telefonda aynı Kitap ve aynı notlar var. Notlar ortak: birine kaydettiğin not hepsinde görünür. Kutuya
+        dokununca klavye açılır, böylece yazarken ekranda ne kaldığı görünür. Yukarıdaki senaryo düğmeleri her telefonda
+        aynı notu kaydeder, sonra listeyi o nota kaydırır. Son yakalanan not
+        <span class="last-badge" style="margin: 0">SON</span> işaretini taşır. s. 140, okumanın başında Sonuç bölümüne
+        göz atarken alındı.
+      </p>
+      <div class="controls">
+        <span class="lbl">DURUM</span>
+        <button data-mode="reading">Okurken (klavye kapalı)</button>
+        <button data-mode="writing">Yazarken (klavye açık)</button>
+        <span class="sep"></span>
+        <span class="lbl">SENARYO</span>
+        <button data-scn="same">s. 113'e bir not daha</button>
+        <button data-scn="back">s. 87'ye geri dön</button>
+        <button data-scn="next">s. 114'e geç</button>
+        <button data-scn="reset">Sıfırla</button>
+      </div>
+    </div>
+    <div class="row" id="row"></div>
+    <div class="switcher" id="switcher"></div>
+
+    <script>
+      const VARIANTS = {
+        A: {
+          name: 'Bugün: iki ekran',
+          why: 'Source sayfası (kutu yok) → "Not al" → Capture. #81 sonrası Capture akışı da Locator sırasında, yani aynı liste iki ekranda.',
+        },
+        B: {
+          name: 'Tek ekran, kutu altta',
+          why: 'Ayrı Capture yok. Source sayfasının altında sohbet gibi kutu; liste Locator sırasında. Yazarken liste son yakalanan nota kayar.',
+        },
+        C: {
+          name: 'İnce Capture',
+          why: 'Tam liste yalnızca Source sayfasında. "Not al" ince bir Capture açar: kutu, Locator ve son 3 not (yakalanma sırasıyla, en yenisi kutunun hemen üstünde).',
+        },
+        D: {
+          name: 'Tek ekran, kutu üstte (Enes)',
+          why: "Source bilgileri, altında kutu, onun altında notlar Locator sırasında aşağı doğru. Yazarken başlık kayar, kutu tepeye yapışır, altında o anki Locator'ın notları.",
+        },
+      };
+      const KEYS = Object.keys(VARIANTS);
+
+      const SEED = [
+        {
+          loc: '',
+          ex: '',
+          cm: 'Taşra idaresi üzerine en derli toplu çalışma; arşiv kullanımı zayıf.',
+          tags: 'tanzimat',
+        },
+        {
+          loc: 'Önsöz',
+          ex: 'Bu çalışma 1840–1876 arasındaki vilayet nizamnamelerini esas almaktadır.',
+          cm: '',
+          tags: '',
+        },
+        {
+          loc: 's. 140',
+          ex: 'Sonuç olarak merkezîleşme taşrada yeni bir yerel seçkin tabakası doğurmuştur.',
+          cm: '',
+          tags: '',
+        },
+        { loc: 's. 12', ex: 'Muhassıllık uygulaması iki yıl içinde terk edilmiştir.', cm: '', tags: 'muhassıllık' },
+        {
+          loc: 's. 34',
+          ex: "Meclis-i Vâlâ'ya taşradan gelen arzlar, valinin raporuyla birlikte görüşülürdü.",
+          cm: '',
+          tags: '',
+        },
+        { loc: 's. 34', ex: '', cm: "Arz-ı hâl örnekleri için dipnot 41'e bak.", tags: '' },
+        {
+          loc: 's. 87',
+          ex: "1864 Vilayet Nizamnamesi önce Tuna'da bir deneme olarak uygulanmıştır.",
+          cm: 'Deneme vilayeti fikri: Tuna neden seçildi?',
+          tags: 'vilayet',
+        },
+        {
+          loc: 's. 87–88',
+          ex: 'Vilayet meclislerine gayrimüslim üyelerin alınması yerel tepkiyle karşılanmıştır.',
+          cm: '',
+          tags: '',
+        },
+        { loc: 's. 112', ex: 'Kaza müdürlerinin atanmasında merkezin tercihi belirleyici olmuştur.', cm: '', tags: '' },
+        { loc: 's. 112', ex: '', cm: "BOA İ.MVL'de karşılığı var mı?", tags: '' },
+        {
+          loc: 's. 113',
+          ex: 'Nahiye teşkilatı ancak 1871 nizamnamesiyle kurumsallaşmıştır.',
+          cm: 'Bu tarih 3. bölümdeki tabloyla çelişiyor.',
+          tags: '',
+        },
+      ];
+      let notes, seq;
+      function reset() {
+        seq = 0;
+        notes = SEED.map((n) => ({ ...n, id: 'n' + ++seq, seq }));
+      }
+      reset();
+
+      // compareNotes after #81: Konumsuz first, then Locators with no number (capture order), then by numbers.
+      function sortKey(loc) {
+        const nums = (loc.match(/\d+/g) || []).map(Number);
+        return nums.length ? nums : null;
+      }
+      function compare(a, b) {
+        const rank = (n) => (!n.loc ? 0 : sortKey(n.loc) ? 2 : 1);
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+        if (rank(a) === 2) {
+          const x = sortKey(a.loc),
+            y = sortKey(b.loc);
+          for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] !== y[i]) return x[i] - y[i];
+          if (x.length !== y.length) return x.length - y.length;
+        }
+        return a.seq - b.seq;
+      }
+      const sorted = () => [...notes].sort(compare);
+      const lastNote = () => notes.reduce((a, b) => (a.seq > b.seq ? a : b));
+      const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+      // Per-phone UI state.
+      const phones = {};
+      for (const k of KEYS)
+        phones[k] = {
+          screen: 'source',
+          writing: false,
+          mode: 'excerpt',
+          loc: lastNote().loc,
+          draft: '',
+          freshId: null,
+          toast: '',
+        };
+
+      function noteRow(n, opts = {}) {
+        const isLast = n.id === lastNote().id;
+        return `<div class="nrow ${opts.fresh === n.id ? 'fresh' : ''}" data-note="${n.id}">
+    <div class="loc">${esc(n.loc || '—')}${isLast ? '<div class="last-badge" style="margin:4px 0 0">SON</div>' : ''}</div>
+    <div class="tx">
+      ${n.ex ? `<div class="ex">${esc(n.ex)}</div>` : ''}
+      ${n.cm ? `<div class="cm">↳ ${esc(n.cm)}</div>` : ''}
+      <div class="tags">${n.tags ? '#' + esc(n.tags) : 'etiketsiz'}</div>
+    </div></div>`;
+      }
+      function bubble(n, fresh) {
+        const isLast = n.id === lastNote().id;
+        return `<div class="bub ${fresh === n.id ? 'fresh' : ''}" data-note="${n.id}">
+    ${n.ex ? `<div class="ex">${esc(n.ex)}</div>` : ''}
+    ${n.cm ? `<div class="cm">${n.ex ? '↳ ' : ''}${esc(n.cm)}</div>` : ''}
+    ${isLast ? '<div class="last-badge" style="margin:0">SON</div>' : ''}</div>`;
+      }
+      function heading(withTakeNote) {
+        const untagged = notes.filter((n) => !n.tags).length;
+        return `<div class="heading">
+    <div class="identity"><div class="cover"></div><div>
+      <div class="type">KİTAP</div>
+      <div class="stitle">Tanzimat'tan Meşrutiyet'e Taşra İdaresi</div></div></div>
+    <div class="byline">M. Aydın · 2009 · ${notes.length} not</div>
+    <div class="btns">
+      <span class="btn">Düzenle · <span class="warn">${untagged} etiketsiz</span></span>
+      ${withTakeNote ? '<span class="btn primary" data-act="take">Not al</span>' : ''}
+      <span class="btn">Bu kaynakta ara</span>
+    </div></div>`;
+      }
+      function composer(k, where = '') {
+        const p = phones[k];
+        const q = p.mode === 'excerpt';
+        return `<div class="composer ${where}">
+    <div class="crow">
+      <span class="chip" data-act="loc">${esc(p.loc || 'Konumsuz')} ▾</span>
+      <span class="tag">+ etiket</span>
+      <div class="seg"><span class="${q ? 'on' : ''}" data-act="mode-ex">Alıntı</span><span class="${q ? '' : 'on'}" data-act="mode-cm">Yorum</span></div>
+    </div>
+    <div class="input">
+      <textarea rows="1" class="${q ? 'q' : ''} ${p.writing ? '' : 'collapsed'}" placeholder="${q ? 'Alıntıyı yaz…' : 'Yorumunu yaz…'}">${esc(p.draft)}</textarea>
+      <button class="send" data-act="save">↑</button>
+    </div></div>`;
+      }
+      const keyboard = () => {
+        const keys = 'q w e r t y u ı o p a s d f g h j k l ş z x c v b n m ö ç'.split(' ');
+        return `<div class="kbd">${keys.map((c) => `<span>${c}</span>`).join('')}<span class="hide" data-act="hide">gizle</span><span class="wide">boşluk</span><span>↵</span></div>`;
+      };
+      function appbar(title, kicker, right, back = true) {
+        return `<div class="status"><span>14:32</span><span>●●● 82%</span></div>
+    <div class="appbar">${back ? '<span class="back" data-act="back">‹</span>' : ''}
+    <div class="ttl">${kicker ? `<div class="k">${kicker}</div>` : ''}<div class="t">${title}</div></div>
+    ${right ? `<span class="act">${right}</span>` : ''}</div>`;
+      }
+
+      // ---------- Variants ----------
+      function renderA(k) {
+        const p = phones.A;
+        if (p.screen === 'source') {
+          return (
+            appbar('', '', 'Düzenle') +
+            `<div class="body"><div class="scroll">${heading(true)}
+      <div class="notes">${sorted()
+        .map((n) => noteRow(n, { fresh: p.freshId }))
+        .join('')}</div></div></div>`
+          );
+        }
+        // Capture after #81: Locator order, one heading per Locator, box at the bottom.
+        let html = '',
+          prev;
+        for (const n of sorted()) {
+          if (n.loc !== prev) html += `<div class="gh">${esc(n.loc || 'KONUMSUZ')}</div>`;
+          prev = n.loc;
+          html += bubble(n, p.freshId);
+        }
+        return (
+          appbar("Tanzimat'tan Meşrutiyet'e Taşra…", 'KİTAP ▾', 'Kaynağa git ›') +
+          `<div class="body"><div class="scroll"><div class="flow">${html}</div></div>${composer(k)}${p.writing ? keyboard() : ''}</div>`
+        );
+      }
+      function renderB(k) {
+        const p = phones.B;
+        return (
+          appbar('', '', 'Düzenle') +
+          `<div class="body"><div class="scroll">${heading(false)}
+    <div class="notes">${sorted()
+      .map((n) => noteRow(n, { fresh: p.freshId }))
+      .join('')}</div></div>
+    ${composer(k)}${p.writing ? keyboard() : ''}</div>`
+        );
+      }
+      function renderC(k) {
+        const p = phones.C;
+        if (p.screen === 'source') {
+          return (
+            appbar('', '', 'Düzenle') +
+            `<div class="body"><div class="scroll">${heading(true)}
+      <div class="notes">${sorted()
+        .map((n) => noteRow(n, { fresh: p.freshId }))
+        .join('')}</div></div></div>`
+          );
+        }
+        const recent = [...notes].sort((a, b) => a.seq - b.seq).slice(-3);
+        return (
+          appbar("Tanzimat'tan Meşrutiyet'e Taşra…", 'KİTAP', 'Tüm notlar ›') +
+          `<div class="body"><div class="scroll"><div class="recent">
+      <div class="lbl">SON ALDIKLARIN</div>
+      ${recent.map((n) => `<div class="gh" style="padding-top:2px">${esc(n.loc || 'KONUMSUZ')}</div>` + bubble(n, p.freshId)).join('')}
+    </div></div>${composer(k)}${p.writing ? keyboard() : ''}</div>`
+        );
+      }
+      function renderD(k) {
+        const p = phones.D;
+        const list = `<div class="notes">${sorted()
+          .map((n) => noteRow(n, { fresh: p.freshId }))
+          .join('')}</div>`;
+        if (!p.writing) {
+          return (
+            appbar('', '', 'Düzenle') +
+            `<div class="body"><div class="scroll">${heading(false)}${composer(k, 'top')}${list}</div></div>`
+          );
+        }
+        // Writing: the heading has scrolled away and the box sticks to the top.
+        return (
+          appbar("Tanzimat'tan Meşrutiyet'e Taşra…", 'KİTAP', 'Bitti') +
+          `<div class="body">${composer(k, 'top')}<div class="scroll">${list}</div>${keyboard()}</div>`
+        );
+      }
+      const RENDER = { A: renderA, B: renderB, C: renderC, D: renderD };
+
+      // ---------- Mount ----------
+      const params = new URLSearchParams(location.search);
+      let only = params.get('variant');
+      if (!KEYS.includes(only)) only = null;
+
+      function mountRow() {
+        const row = document.getElementById('row');
+        const shown = only ? [only] : KEYS;
+        row.innerHTML = shown
+          .map(
+            (k) => `<div class="col"><h2>${k} · ${VARIANTS[k].name}</h2><p class="why">${VARIANTS[k].why}</p>
+    <div class="phone" id="ph-${k}"></div></div>`,
+          )
+          .join('');
+        shown.forEach(render);
+        const sw = document.getElementById('switcher');
+        sw.innerHTML = `<button data-sw="-1">←</button><span class="cur">${only ? `${only} (${VARIANTS[only].name})` : 'Hepsi yan yana'}</span><button data-sw="1">→</button>`;
+      }
+
+      function render(k) {
+        const el = document.getElementById('ph-' + k);
+        if (!el) return;
+        const p = phones[k];
+        el.innerHTML = RENDER[k](k) + `<div class="toast ${p.toast ? 'show' : ''}">${esc(p.toast)}</div>`;
+        const ta = el.querySelector('textarea');
+        if (ta) {
+          ta.addEventListener('focus', () => {
+            if (!p.writing) {
+              openWriting(k);
+            }
+          });
+          ta.addEventListener('input', () => {
+            p.draft = ta.value;
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+          });
+        }
+        scrollToTarget(k);
+      }
+
+      // Where each variant puts the eye while writing: the note just saved, otherwise the last captured note.
+      function scrollToTarget(k) {
+        const p = phones[k];
+        const el = document.getElementById('ph-' + k);
+        const sc = el.querySelector('.scroll');
+        if (!sc) return;
+        const writingView = p.writing || (k === 'A' && p.screen === 'capture') || (k === 'C' && p.screen === 'capture');
+        const targetId = p.freshId || (writingView ? lastNote().id : null);
+        sc.style.scrollBehavior = 'auto';
+        if (k === 'C' && p.screen === 'capture') {
+          sc.scrollTop = sc.scrollHeight;
+          return;
+        }
+        if (!targetId) {
+          sc.scrollTop = 0;
+          return;
+        }
+        const t = sc.querySelector(`[data-note="${targetId}"]`);
+        if (!t) return;
+        const top = t.offsetTop - sc.offsetTop;
+        if (k === 'D' && p.writing) {
+          // The current Locator's notes sit right under the box.
+          const loc = notes.find((n) => n.id === targetId).loc;
+          const first = sc.querySelector(`[data-note="${sorted().find((n) => n.loc === loc).id}"]`);
+          sc.scrollTop = first.offsetTop - sc.offsetTop - 4;
+        } else {
+          // Chat-like screens keep the target just above the box.
+          sc.scrollTop = top - sc.clientHeight + t.offsetHeight + 16;
+        }
+      }
+
+      function openWriting(k) {
+        const p = phones[k];
+        p.writing = true;
+        if (k === 'A' || k === 'C') p.screen = 'capture';
+        render(k);
+        const ta = document.getElementById('ph-' + k).querySelector('textarea');
+        if (ta) {
+          ta.focus({ preventScroll: true });
+          const v = ta.value;
+          ta.value = '';
+          ta.value = v;
+        }
+      }
+
+      function flash(k, msg) {
+        phones[k].toast = msg;
+        render(k);
+        setTimeout(() => {
+          phones[k].toast = '';
+          const t = document.querySelector(`#ph-${k} .toast`);
+          t && t.classList.remove('show');
+        }, 1600);
+      }
+
+      function saveNote(k, text, mode, loc) {
+        const n = {
+          id: 'n' + ++seq,
+          seq,
+          loc,
+          ex: mode === 'excerpt' ? text : '',
+          cm: mode === 'comment' ? text : '',
+          tags: '',
+        };
+        notes.push(n);
+        for (const key of KEYS) {
+          phones[key].freshId = null;
+          if (key !== k) render(key);
+        }
+        if (k) phones[k].freshId = n.id;
+        return n;
+      }
+
+      document.addEventListener('click', (e) => {
+        const sw = e.target.closest('[data-sw]');
+        if (sw) {
+          const order = [null, ...KEYS];
+          const i = (order.indexOf(only) + Number(sw.dataset.sw) + order.length) % order.length;
+          only = order[i];
+          const u = new URL(location.href);
+          only ? u.searchParams.set('variant', only) : u.searchParams.set('variant', 'all');
+          history.replaceState(null, '', u);
+          mountRow();
+          return;
+        }
+        const mode = e.target.closest('[data-mode]');
+        if (mode) {
+          for (const k of KEYS) {
+            const p = phones[k];
+            p.writing = mode.dataset.mode === 'writing';
+            if (k === 'A' || k === 'C') p.screen = p.writing ? 'capture' : 'source';
+            p.freshId = null;
+            render(k);
+          }
+          document.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('on', b === mode));
+          return;
+        }
+        const scn = e.target.closest('[data-scn]');
+        if (scn) {
+          const s = scn.dataset.scn;
+          if (s === 'reset') {
+            reset();
+            for (const k of KEYS)
+              Object.assign(phones[k], {
+                screen: 'source',
+                writing: false,
+                loc: lastNote().loc,
+                draft: '',
+                freshId: null,
+              });
+            KEYS.forEach(render);
+            return;
+          }
+          const plan = {
+            same: ['s. 113', 'comment', 'Nahiye müdürlerinin maaşları için Ek 4.'],
+            back: ['s. 87', 'excerpt', 'Tuna Vilayeti nizamnamesi üç yıl sonra bütün vilayetlere yayılmıştır.'],
+            next: ['s. 114', 'excerpt', 'Nahiye meclisleri seçimle oluşmaz, kaza meclisi tarafından belirlenirdi.'],
+          }[s];
+          const n = saveNote(null, plan[2], plan[1], plan[0]);
+          for (const k of KEYS) {
+            const p = phones[k];
+            Object.assign(p, { writing: true, loc: plan[0], freshId: n.id, draft: '' });
+            if (k === 'A' || k === 'C') p.screen = 'capture';
+            render(k);
+          }
+          document
+            .querySelectorAll('[data-mode]')
+            .forEach((b) => b.classList.toggle('on', b.dataset.mode === 'writing'));
+          return;
+        }
+        const ph = e.target.closest('.phone');
+        if (!ph) return;
+        const k = ph.id.slice(3);
+        const p = phones[k];
+        const act = e.target.closest('[data-act]')?.dataset.act;
+        if (act === 'take') return openWriting(k);
+        if (act === 'back') {
+          if ((k === 'A' || k === 'C') && p.screen === 'capture') {
+            p.screen = 'source';
+            p.writing = false;
+            p.freshId = null;
+            return render(k);
+          }
+          return flash(k, 'Kaynaklar listesine döner');
+        }
+        if (act === 'hide') {
+          p.writing = false;
+          if (k === 'D') p.freshId = null;
+          return render(k);
+        }
+        if (act === 'mode-ex' || act === 'mode-cm') {
+          p.mode = act === 'mode-ex' ? 'excerpt' : 'comment';
+          return render(k);
+        }
+        if (act === 'loc') {
+          const v = prompt('Locator (boş = Konumsuz)', p.loc);
+          if (v !== null) {
+            p.loc = v.trim();
+            render(k);
+          }
+          return;
+        }
+        if (act === 'save') {
+          if (!p.draft.trim()) return openWriting(k);
+          saveNote(k, p.draft.trim(), p.mode, p.loc);
+          p.draft = '';
+          if (p.mode === 'excerpt') p.mode = 'comment';
+          render(k);
+          return;
+        }
+        if (e.target.closest('.act') && k === 'A' && p.screen === 'capture') {
+          p.screen = 'source';
+          p.writing = false;
+          return render(k);
+        }
+        if (e.target.closest('.act') && k === 'C' && p.screen === 'capture') {
+          p.screen = 'source';
+          p.writing = false;
+          return render(k);
+        }
+        if (e.target.closest('.act') && k === 'D' && p.writing) {
+          p.writing = false;
+          p.freshId = null;
+          return render(k);
+        }
+        if (e.target.closest('[data-note]')) return flash(k, 'Not düzenleme açılır (/note/[id])');
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.target.closest('input, textarea, [contenteditable]')) return;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+          document.querySelector(`[data-sw="${e.key === 'ArrowLeft' ? -1 : 1}"]`).click();
+      });
+
+      document.querySelector('[data-mode="reading"]').classList.add('on');
+      mountRow();
+    </script>
+  </body>
+</html>
