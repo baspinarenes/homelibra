@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { and, eq, getTableName, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { coverOf } from '../covers/covers';
 import { note, noteTag, source } from '../db/schema';
 import { resolveTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
@@ -32,8 +33,16 @@ export const organizeRouter = router({
    * status, P1, will put the finished ones first.)
    */
   list: libraryProcedure.query(async ({ ctx }) => {
-    const rows = await ctx.tx.execute<{ id: string; type: SourceType; title: string; untagged: number; last: string }>(
-      sql`select s.id, s.type, s.title, w.untagged, l.last
+    const rows = await ctx.tx.execute<{
+      id: string;
+      type: SourceType;
+      title: string;
+      large: string | null;
+      small: string | null;
+      untagged: number;
+      last: string;
+    }>(
+      sql`select s.id, s.type, s.title, s.cover_key_large as large, s.cover_key_small as small, w.untagged, l.last
             from ${source} s
             join lateral (select count(*)::int as untagged from ${note} n
                            where n.source_id = s.id and n.account_id = s.account_id and ${waiting('n', 's')}) w
@@ -46,13 +55,17 @@ export const organizeRouter = router({
     );
     return [...rows]
       .sort((a, b) => (a.last < b.last ? 1 : a.last > b.last ? -1 : compareTr(a.title, b.title)))
-      .map((row) => ({
-        id: row.id,
-        type: row.type,
-        title: row.title,
-        untaggedCount: row.untagged,
-        lastNoteAt: capturedAt(row.last).toISOString(),
-      }));
+      .map((row) =>
+        coverOf({
+          id: row.id,
+          type: row.type,
+          title: row.title,
+          coverKeyLarge: row.large,
+          coverKeySmall: row.small,
+          untaggedCount: row.untagged,
+          lastNoteAt: capturedAt(row.last).toISOString(),
+        }),
+      );
   }),
 
   /**

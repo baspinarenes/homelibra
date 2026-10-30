@@ -3,6 +3,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { type Db, withLibrary } from '../db/client';
 import type { Lookups } from '../lookups/lookups';
 import type { Mailer } from '../mail/mailer';
+import type { ObjectStorage } from '../storage/object-storage';
 
 export type Context = {
   db: Db;
@@ -15,6 +16,8 @@ export type Context = {
   mailer: Mailer;
   /** ISBN and DOI lookups through the cache shared by every Library. */
   lookups: Lookups;
+  /** The private covers bucket (ADR-0011). */
+  covers: ObjectStorage;
   /** What time it is for the API: Geri al's lifetime, when a Note entered its Source. Tests move it. */
   now: () => Date;
 };

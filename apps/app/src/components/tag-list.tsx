@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Segment } from '@/components/segment';
+import { TagActions, TagMenuButton, type TagRef } from '@/components/tag-actions';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
@@ -11,7 +12,8 @@ type Sort = 'name' | 'usage';
 
 /**
  * Etiketler (#49): every Tag in the Library, A–Z or Çok kullanılan, each with
- * "N not · M kaynak". A Tag's own page (a temporary Collection) arrives with #51.
+ * "N not · M kaynak", and ⋯ to rename, merge or delete one (#50). A Tag's
+ * own page (a temporary Collection) arrives with #51.
  */
 export function TagList() {
   const { t } = useTranslation();
@@ -19,6 +21,7 @@ export function TagList() {
   const trpc = useTRPC();
   const [sort, setSort] = useState<Sort>('name');
   const tags = useQuery(trpc.tags.list.queryOptions({ sort }));
+  const [acting, setActing] = useState<TagRef | null>(null);
 
   return (
     <View style={styles.screen}>
@@ -48,10 +51,12 @@ export function TagList() {
             <View style={[styles.row, index > 0 && styles.divided]}>
               <Text style={styles.name}>{tag.name}</Text>
               <Text style={styles.counts}>{t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}</Text>
+              <TagMenuButton name={tag.name} onPress={() => setActing({ id: tag.id, name: tag.name })} />
             </View>
           )}
         />
       )}
+      <TagActions key={acting?.id} tag={acting} onClose={() => setActing(null)} />
     </View>
   );
 }
@@ -66,12 +71,12 @@ const makeStyles = (c: Colors) =>
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center', paddingHorizontal: space.lg },
     row: {
       flexDirection: 'row',
-      alignItems: 'baseline',
+      alignItems: 'center',
       justifyContent: 'space-between',
       gap: space.md,
-      paddingVertical: space.md,
+      paddingVertical: space.xs,
     },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    name: { ...typeScale.body, flexShrink: 1, color: c.fg },
+    name: { ...typeScale.body, flex: 1, color: c.fg },
     counts: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
   });

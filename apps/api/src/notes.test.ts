@@ -233,6 +233,7 @@ describe("Ana sayfa's last noted Source", () => {
         title: 'Taşrada Kadı ve Naib',
         author: 'Halil İnalcık',
         date: { calendar: 'gregorian', year: 1965 },
+        cover: null,
       },
       note: {
         id: last,

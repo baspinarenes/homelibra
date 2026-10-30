@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 
 import type { LibraryTx } from '../db/client';
@@ -9,33 +9,51 @@ type Rows = Record<string, unknown>[];
 
 /**
  * The Tag parts of an undo snapshot, by table name, for Notes and Sources
- * about to be deleted: their links, and every Tag those point at. Read
- * before the delete, since the links cascade with their carriers and a Tag
- * left unused goes too (0013_tags).
+ * about to be deleted, or Tags (Tag sil): their links, and every Tag those
+ * point at. Read before the delete, since the links cascade with their
+ * carriers and their Tag, and a Tag left unused goes too (0013_tags).
  */
 export async function tagParts(
   tx: LibraryTx,
   accountId: string,
-  { noteIds = [], sourceIds = [] }: { noteIds?: string[]; sourceIds?: string[] },
+  { noteIds = [], sourceIds = [], tagIds = [] }: { noteIds?: string[]; sourceIds?: string[]; tagIds?: string[] },
 ): Promise<{ tag: Rows; note_tag: Rows; source_tag: Rows }> {
-  const noteLinks = noteIds.length
-    ? await tx
-        .select({ row: sql<Record<string, unknown>>`to_jsonb(${noteTag})`, tagId: noteTag.tagId })
-        .from(noteTag)
-        .where(and(inArray(noteTag.noteId, noteIds), eq(noteTag.accountId, accountId)))
-    : [];
-  const sourceLinks = sourceIds.length
-    ? await tx
-        .select({ row: sql<Record<string, unknown>>`to_jsonb(${sourceTag})`, tagId: sourceTag.tagId })
-        .from(sourceTag)
-        .where(and(inArray(sourceTag.sourceId, sourceIds), eq(sourceTag.accountId, accountId)))
-    : [];
-  const tagIds = [...new Set([...noteLinks, ...sourceLinks].map((link) => link.tagId))];
-  const tags = tagIds.length
+  const noteLinks =
+    noteIds.length || tagIds.length
+      ? await tx
+          .select({ row: sql<Record<string, unknown>>`to_jsonb(${noteTag})`, tagId: noteTag.tagId })
+          .from(noteTag)
+          .where(
+            and(
+              or(
+                noteIds.length ? inArray(noteTag.noteId, noteIds) : undefined,
+                tagIds.length ? inArray(noteTag.tagId, tagIds) : undefined,
+              ),
+              eq(noteTag.accountId, accountId),
+            ),
+          )
+      : [];
+  const sourceLinks =
+    sourceIds.length || tagIds.length
+      ? await tx
+          .select({ row: sql<Record<string, unknown>>`to_jsonb(${sourceTag})`, tagId: sourceTag.tagId })
+          .from(sourceTag)
+          .where(
+            and(
+              or(
+                sourceIds.length ? inArray(sourceTag.sourceId, sourceIds) : undefined,
+                tagIds.length ? inArray(sourceTag.tagId, tagIds) : undefined,
+              ),
+              eq(sourceTag.accountId, accountId),
+            ),
+          )
+      : [];
+  const allTagIds = [...new Set([...tagIds, ...noteLinks.map((l) => l.tagId), ...sourceLinks.map((l) => l.tagId)])];
+  const tags = allTagIds.length
     ? await tx
         .select({ row: sql<Record<string, unknown>>`to_jsonb(${tag})` })
         .from(tag)
-        .where(and(inArray(tag.id, tagIds), eq(tag.accountId, accountId)))
+        .where(and(inArray(tag.id, allTagIds), eq(tag.accountId, accountId)))
     : [];
   return {
     tag: tags.map(({ row }) => row),

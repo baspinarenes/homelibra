@@ -1,5 +1,5 @@
 {
-  "id": "f93391fb-a540-4ce9-8d83-ad11002d8692",
+  "id": "5014e3e6-19dd-417f-822d-2afa2db478a6",
   "prevId": "7060b372-9cfa-4fd4-9676-832d5982c05f",
   "version": "7",
   "dialect": "postgresql",
@@ -748,9 +748,15 @@
           "notNull": true,
           "default": "'{}'::jsonb"
         },
-        "last_finished_at": {
-          "name": "last_finished_at",
-          "type": "timestamp with time zone",
+        "cover_key_large": {
+          "name": "cover_key_large",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cover_key_small": {
+          "name": "cover_key_small",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -863,7 +869,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "source_cover_keys_together": {
+          "name": "source_cover_keys_together",
+          "value": "(\"source\".\"cover_key_large\" is null) = (\"source\".\"cover_key_small\" is null)"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.source_tag": {

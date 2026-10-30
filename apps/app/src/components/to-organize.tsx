@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { TemplateCover } from '@/components/template-cover';
+import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -50,7 +50,7 @@ export function ToOrganizeStrip() {
   );
 }
 
-/** A Düzenlenecekler row: cover, title, when the last Note came, "N etiketsiz"; it opens the Source page. */
+/** A Düzenlenecekler row: Cover, title, when the last Note came, "N etiketsiz"; it opens the Source page. */
 export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided: boolean }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
@@ -61,7 +61,7 @@ export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided
       onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
       style={({ pressed }) => [styles.row, divided && styles.divided, pressed && styles.pressed]}
     >
-      <TemplateCover type={source.type} />
+      <SourceCover type={source.type} cover={source.cover} />
       <View style={styles.rowText}>
         <Text style={styles.title} numberOfLines={2}>
           {source.title}

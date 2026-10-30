@@ -1,4 +1,5 @@
 import { accountRouter } from './routers/account';
+import { coversRouter } from './routers/covers';
 import { lookupsRouter } from './routers/lookups';
 import { notesRouter } from './routers/notes';
 import { organizeRouter } from './routers/organize';
@@ -15,6 +16,7 @@ export const appRouter = router({
   search: searchRouter,
   lookups: lookupsRouter,
   tags: tagsRouter,
+  covers: coversRouter,
   organize: organizeRouter,
   undo: undoProcedure,
 });

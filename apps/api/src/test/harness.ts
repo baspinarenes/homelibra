@@ -9,6 +9,7 @@ import { invitations } from '../invitations/invitations';
 import type { Crossref } from '../lookups/crossref';
 import type { Mailer } from '../mail/mailer';
 import { appRouter } from '../router';
+import type { ObjectStorage } from '../storage/object-storage';
 import { testDatabaseUrl, testMigrationDatabaseUrl } from './db';
 
 /** Captures codes and notices instead of sending them. */
@@ -69,6 +70,35 @@ export function fakeCrossref() {
       works.set(normalizeDoi(work.DOI) ?? work.DOI, work);
     },
     askedFor: (doi: string) => asked.filter((d) => d === doi).length,
+  };
+}
+
+/**
+ * Stands in for an S3 bucket behind its adapter: files in memory, each
+ * stamped with the API's clock when it was written, so a test can let them
+ * age. `lose` takes a file away behind the API's back, as a storage fault would.
+ */
+export function fakeObjectStorage(now: () => Date) {
+  const files = new Map<string, { bytes: Uint8Array<ArrayBuffer>; contentType: string; storedAt: Date }>();
+  const storage: ObjectStorage = {
+    async put(key, bytes, contentType) {
+      files.set(key, { bytes: new Uint8Array(bytes), contentType, storedAt: now() });
+    },
+    async get(key) {
+      return files.get(key)?.bytes ?? null;
+    },
+    async *list() {
+      for (const [key, { storedAt }] of files) yield { key, storedAt };
+    },
+    async delete(keys) {
+      for (const key of keys) files.delete(key);
+    },
+  };
+  return {
+    storage,
+    has: (key: string) => files.has(key),
+    put: (key: string, bytes: Uint8Array) => storage.put(key, bytes, 'image/jpeg'),
+    lose: (key: string) => files.delete(key),
   };
 }
 
@@ -149,6 +179,8 @@ export function testApi() {
   afterEach(() => {
     passedMs = 0;
   });
+  const now = () => new Date(Date.now() + passedMs);
+  const covers = fakeObjectStorage(now);
   const api = createApi({
     db,
     mailer: mail.mailer,
@@ -157,7 +189,8 @@ export function testApi() {
     trustedOrigins: [WEB_APP],
     google: { clientId: 'test-client-id', clientSecret: 'test-client-secret' },
     crossref: crossref.crossref,
-    now: () => new Date(Date.now() + passedMs),
+    covers: covers.storage,
+    now,
   });
 
   afterAll(async () => {
@@ -251,6 +284,8 @@ export function testApi() {
         if (!now) throw new Error('the session has ended');
         return now.user;
       },
+      /** A plain HTTP GET from this device, such as an image the app shows. */
+      get: (path: string) => api.http.request(path, { headers }),
       /** A tRPC caller for one request from this device. */
       call: async () => appRouter.createCaller(await api.createContext(headers)),
       /** Asks for a code at the new address, as Ayarlar does over HTTP. */
@@ -283,6 +318,7 @@ export function testApi() {
     owner,
     mail,
     crossref,
+    covers,
     passTime,
     invite,
     uninvite,
