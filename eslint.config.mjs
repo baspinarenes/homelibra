@@ -16,6 +16,16 @@ const turkishCase = [
   },
 ];
 
+// The app's Hermes lacks Array.prototype.toSorted, though TypeScript's ES2023
+// lib and Node (where the tests run) both have it. Calling it is a crash on
+// every native platform.
+const hermesGaps = [
+  {
+    selector: "MemberExpression[property.name='toSorted']",
+    message: 'Hermes has no toSorted; use [...xs].sort(compare).',
+  },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -37,7 +47,7 @@ export default tseslint.config(
       globals: { ...globals.node, ...globals.browser },
     },
     rules: {
-      'no-restricted-syntax': ['error', ...turkishCase],
+      'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
