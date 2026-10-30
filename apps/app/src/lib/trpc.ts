@@ -1,8 +1,8 @@
 import type { AppRouter } from '@homelibra/api';
-import { QueryClient } from '@tanstack/react-query';
+import { focusManager, QueryClient } from '@tanstack/react-query';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import { createTRPCContext } from '@trpc/tanstack-react-query';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { apiUrl } from './api-url';
 import { authClient } from './auth-client';
@@ -10,6 +10,16 @@ import { authClient } from './auth-client';
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 
 export const queryClient = new QueryClient();
+
+// Native has no window focus, so a query that failed (API unreachable at
+// launch, say) would stay failed. Coming back to the app counts as focus and
+// refetches it, as returning to the tab does on web.
+if (Platform.OS !== 'web') {
+  focusManager.setEventListener((handleFocus) => {
+    const subscription = AppState.addEventListener('change', (state) => handleFocus(state === 'active'));
+    return () => subscription.remove();
+  });
+}
 
 export const trpcClient = createTRPCClient<AppRouter>({
   links: [
