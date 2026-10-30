@@ -24,7 +24,13 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-localization", "expo-font"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-font",
+      ["@sentry/react-native/expo", { "organization": "enes-baspnar", "project": "homelibra-app" }]
+    ],
     "experiments": {
       "typedRoutes": true
     }

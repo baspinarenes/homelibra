@@ -1,9 +1,11 @@
+import '@/lib/sentry';
 import '@/i18n';
 
 import { CharisSIL_400Regular } from '@expo-google-fonts/charis-sil';
 import { EBGaramond_400Regular, EBGaramond_500Medium } from '@expo-google-fonts/eb-garamond';
 import { RedditMono_500Medium } from '@expo-google-fonts/reddit-mono';
 import { RedditSans_400Regular, RedditSans_500Medium, RedditSans_600SemiBold } from '@expo-google-fonts/reddit-sans';
+import * as Sentry from '@sentry/react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -15,7 +17,9 @@ import { authClient } from '@/lib/auth-client';
 import { queryClient, TRPCProvider, trpcClient } from '@/lib/trpc';
 import { useTheme } from '@/theme';
 
-export default function RootLayout() {
+export default Sentry.wrap(RootLayout);
+
+function RootLayout() {
   const { data: session, isPending } = authClient.useSession();
   const { colors } = useTheme();
   // Keys must match `fonts` in theme.ts. A font that fails to load falls back to the system font.

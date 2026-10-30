@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -31,6 +32,11 @@ export function createApi(options: ApiOptions) {
       req: c.req.raw,
       router: appRouter,
       createContext: () => createContext(c.req.raw.headers),
+      // tRPC turns thrown errors into responses, so Hono never sees them.
+      // Report only the unexpected ones, not UNAUTHORIZED and the like.
+      onError: ({ error }) => {
+        if (error.code === 'INTERNAL_SERVER_ERROR') Sentry.captureException(error.cause ?? error);
+      },
     }),
   );
 
