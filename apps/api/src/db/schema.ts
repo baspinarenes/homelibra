@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  customType,
   doublePrecision,
   foreignKey,
   index,
@@ -125,6 +126,9 @@ export const lookupCache = pgTable(
   (t) => [primaryKey({ columns: [t.kind, t.identifier] })],
 );
 
+/** Written only by the database: search columns are generated from the text (ADR-0010). */
+const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
+
 // Library tables. Every one carries account_id and is guarded by a row-level
 // security policy in a hand-written migration (ADR-0006).
 
@@ -149,6 +153,21 @@ export const source = pgTable(
     dateSort: integer('date_sort'),
     /** Type-specific fields by key. A type change only hides the ones the new type lacks. */
     fields: jsonb('fields').$type<SourceFieldValues>().notNull().default({}),
+    /**
+     * What search matches by word: Başlık, Yazar, Künye notu and the
+     * type-specific text fields, through the search functions of 0011_search.
+     */
+    searchVector: tsvector('search_vector')
+      .notNull()
+      .generatedAlwaysAs(
+        sql`hl_tsvector(title) || hl_tsvector(author) || hl_tsvector(bibliographic_note) || hl_tsvector(hl_fields_text(fields))`,
+      ),
+    /** The same fields folded to one plain text, for matches inside a word (pg_trgm). */
+    searchText: text('search_text')
+      .notNull()
+      .generatedAlwaysAs(
+        sql`hl_fold_text(title || ' ' || coalesce(author, '') || ' ' || coalesce(bibliographic_note, '') || ' ' || coalesce(hl_fields_text(fields), ''))`,
+      ),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -156,6 +175,8 @@ export const source = pgTable(
     index('source_account_id_idx').on(t.accountId),
     // What note_source_fk points at, so a Note's Source is always in its own Library.
     unique('source_id_account_id_unique').on(t.id, t.accountId),
+    index('source_search_vector_idx').using('gin', t.searchVector),
+    index('source_search_text_idx').using('gin', sql`${t.searchText} gin_trgm_ops`),
   ],
 );
 
@@ -181,11 +202,16 @@ export const note = pgTable(
     locatorSort: doublePrecision('locator_sort').array(),
     excerpt: text('excerpt'),
     comment: text('comment'),
+    /** What search matches: the Excerpt's and the Comment's words (ADR-0010). Locator is not searched. */
+    searchVector: tsvector('search_vector')
+      .notNull()
+      .generatedAlwaysAs(sql`hl_tsvector(excerpt) || hl_tsvector(comment)`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index('note_source_id_idx').on(t.sourceId, t.id),
+    index('note_search_vector_idx').using('gin', t.searchVector),
     // Through account_id too: a Note can never sit on another Library's Source.
     foreignKey({
       name: 'note_source_fk',
