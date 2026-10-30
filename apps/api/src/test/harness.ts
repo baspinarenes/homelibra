@@ -7,6 +7,7 @@ import { createApi } from '../app';
 import { createDb } from '../db/client';
 import { invitations } from '../invitations/invitations';
 import type { Crossref } from '../lookups/crossref';
+import type { OpenLibrary } from '../lookups/openlibrary';
 import type { Mailer } from '../mail/mailer';
 import { appRouter } from '../router';
 import type { ObjectStorage } from '../storage/object-storage';
@@ -70,6 +71,47 @@ export function fakeCrossref() {
       works.set(normalizeDoi(work.DOI) ?? work.DOI, work);
     },
     askedFor: (doi: string) => asked.filter((d) => d === doi).length,
+  };
+}
+
+/**
+ * Stands in for Open Library behind its adapter: the editions and cover
+ * pictures a test publishes under their ISBN-13, and how often it was asked
+ * for each. `fail` makes it answer with an error, as when it is down.
+ */
+export function fakeOpenLibrary() {
+  const books = new Map<string, unknown>();
+  const covers = new Map<string, Uint8Array>();
+  const asked: string[] = [];
+  const askedCover: string[] = [];
+  let down = false;
+  const openLibrary: OpenLibrary = {
+    async book(isbn) {
+      asked.push(isbn);
+      if (down) throw new Error('Open Library: 503');
+      return books.get(isbn) ?? null;
+    },
+    async cover(isbn) {
+      askedCover.push(isbn);
+      if (down) throw new Error('Open Library covers: 503');
+      return covers.get(isbn) ?? null;
+    },
+  };
+  return {
+    openLibrary,
+    /** Open Library catalogues an edition, as its Books API gives it (jscmd=data). */
+    publish(isbn: string, edition: unknown) {
+      books.set(isbn, edition);
+    },
+    /** Someone uploads a cover picture for the edition. */
+    publishCover(isbn: string, picture: Uint8Array) {
+      covers.set(isbn, picture);
+    },
+    fail(failing = true) {
+      down = failing;
+    },
+    askedFor: (isbn: string) => asked.filter((i) => i === isbn).length,
+    coverAskedFor: (isbn: string) => askedCover.filter((i) => i === isbn).length,
   };
 }
 
@@ -173,11 +215,13 @@ export function testApi() {
   const mail = fakeMailer();
   const google = fakeGoogle();
   const crossref = fakeCrossref();
+  const openLibrary = fakeOpenLibrary();
   // Only the API's own clock moves: Better Auth shares the database with
   // other test files and would take their sign-in codes for expired ones.
   let passedMs = 0;
   afterEach(() => {
     passedMs = 0;
+    openLibrary.fail(false);
   });
   const now = () => new Date(Date.now() + passedMs);
   const covers = fakeObjectStorage(now);
@@ -189,6 +233,7 @@ export function testApi() {
     trustedOrigins: [WEB_APP],
     google: { clientId: 'test-client-id', clientSecret: 'test-client-secret' },
     crossref: crossref.crossref,
+    openLibrary: openLibrary.openLibrary,
     covers: covers.storage,
     now,
   });
@@ -318,6 +363,7 @@ export function testApi() {
     owner,
     mail,
     crossref,
+    openLibrary,
     covers,
     passTime,
     invite,

@@ -4,7 +4,7 @@ import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import X from 'lucide-react-native/icons/x';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -17,8 +17,11 @@ import {
   View,
 } from 'react-native';
 
+import { DateFilter, useDateFilter } from '@/components/date-filter';
+import { Segment } from '@/components/segment';
 import { SourceCover } from '@/components/source-cover';
 import { useOffline } from '@/lib/network';
+import { useSettled } from '@/lib/settled';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
@@ -32,10 +35,15 @@ const BOX_WIDTH = 640;
 /** Sources shown before "Tüm kaynaklar". */
 const FIRST_SOURCES = 3;
 
+/** Tümü / Notlar / Kaynaklar. */
+type Kind = 'all' | 'notes' | 'sources';
+
 /**
  * Ara: the whole Library searched by the words of its Notes and Sources
  * (ADR-0005). The box in the top bar sends the query as typed; the server
- * folds, stems, ranks and marks the matching words (ADR-0010).
+ * folds, stems, ranks and marks the matching words (ADR-0010). Under it,
+ * Tümü / Notlar / Kaynaklar and the Tarih filter, which keeps the Sources,
+ * and the Notes whose Source, dated in its years (#40, story 154).
  */
 export default function SearchScreen() {
   const { t } = useTranslation();
@@ -44,21 +52,43 @@ export default function SearchScreen() {
   const [text, setText] = useState('');
   const query = useSettled(text.trim());
   const offline = useOffline();
-  const [allSources, setAllSources] = useState(false);
+  const [kind, setKind] = useState<Kind>('all');
+  const dates = useDateFilter();
   const results = useInfiniteQuery({
-    ...trpc.search.library.infiniteQueryOptions({ query }, { getNextPageParam: (page) => page.nextCursor }),
+    ...trpc.search.library.infiniteQueryOptions(
+      { query, dates: dates.range },
+      { getNextPageParam: (page) => page.nextCursor },
+    ),
     enabled: query !== '',
     // Keep the last results on screen while the next query runs.
     placeholderData: keepPreviousData,
   });
-  useEffect(() => setAllSources(false), [query]);
   const first = results.data?.pages[0];
-  const sources = first?.sources ?? [];
-  const notes = results.data?.pages.flatMap((page) => page.notes) ?? [];
+  const sources = kind === 'notes' ? [] : (first?.sources ?? []);
+  const notes = kind === 'sources' ? [] : (results.data?.pages.flatMap((page) => page.notes) ?? []);
+  const hidden = first?.hiddenUndated;
 
   return (
-    <>
+    <View style={styles.screen}>
       <Stack.Screen options={{ headerTitle: () => <SearchBox value={text} onChange={setText} offline={offline} /> }} />
+      {!offline && (
+        <View style={styles.controls}>
+          <Segment
+            label={t('noteSearch.kindLabel')}
+            options={[
+              { value: 'all', label: t('noteSearch.all') },
+              { value: 'notes', label: t('noteSearch.notes') },
+              { value: 'sources', label: t('noteSearch.sources') },
+            ]}
+            value={kind}
+            onChange={setKind}
+          />
+          <DateFilter draft={dates.draft} onChange={dates.setDraft} />
+          {query !== '' && hidden && (hidden.sources > 0 || hidden.notes > 0) && (
+            <Text style={styles.hidden}>{t('dateFilter.hiddenResults', hidden)}</Text>
+          )}
+        </View>
+      )}
       {offline ? (
         <View style={styles.center}>
           <Text style={styles.lead}>{t('outbox.searchNeedsConnection')}</Text>
@@ -89,13 +119,13 @@ export default function SearchScreen() {
               {sources.length > 0 && (
                 <View style={styles.sources}>
                   <GroupHeading label={t('search.sources')} count={sources.length} />
-                  {(allSources ? sources : sources.slice(0, FIRST_SOURCES)).map((source, i) => (
+                  {(kind === 'sources' ? sources : sources.slice(0, FIRST_SOURCES)).map((source, i) => (
                     <SourceRow key={source.id} source={source} divided={i > 0} />
                   ))}
-                  {!allSources && sources.length > FIRST_SOURCES && (
+                  {kind === 'all' && sources.length > FIRST_SOURCES && (
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => setAllSources(true)}
+                      onPress={() => setKind('sources')}
                       style={({ pressed }) => [styles.allSources, pressed && styles.pressed]}
                     >
                       <Text style={styles.allSourcesText}>{t('search.allSources', { count: sources.length })}</Text>
@@ -108,7 +138,7 @@ export default function SearchScreen() {
           }
           renderItem={({ item: note, index }) => <NoteRow note={note} divided={index > 0} />}
           onEndReached={() => {
-            if (results.hasNextPage && !results.isFetchingNextPage) void results.fetchNextPage();
+            if (kind !== 'sources' && results.hasNextPage && !results.isFetchingNextPage) void results.fetchNextPage();
           }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
@@ -118,18 +148,8 @@ export default function SearchScreen() {
           }
         />
       )}
-    </>
+    </View>
   );
-}
-
-/** The text after the scholar stops typing for a moment, so a search does not run on every key. */
-function useSettled(value: string, delay = 250) {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return settled;
 }
 
 /** Offline it says a search needs the connection, so no result is taken for "not yok". */
@@ -267,6 +287,8 @@ const makeStyles = (c: Colors) =>
     screen: { flex: 1, backgroundColor: c.page },
     content: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
     sources: { paddingBottom: space.lg },
+    controls: { gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md },
+    hidden: { ...typeScale.caption, color: c.muted },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     spinner: { color: c.accent },

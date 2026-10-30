@@ -65,6 +65,7 @@ function RootLayout() {
                   <Stack.Screen name="source/[id]/index" options={pushedScreen} />
                   <Stack.Screen name="source/[id]/edit" options={pushedScreen} />
                   <Stack.Screen name="note/[id]" options={pushedScreen} />
+                  <Stack.Screen name="lost-notes" options={pushedScreen} />
                   <Stack.Screen name="collection/[id]" options={pushedScreen} />
                   <Stack.Screen name="tag/[id]" options={pushedScreen} />
                 </Stack.Protected>

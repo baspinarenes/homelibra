@@ -134,6 +134,13 @@
       "when": 1793382867357,
       "tag": "0018_usage_counts",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793383049796,
+      "tag": "0019_isbn_cover",
+      "breakpoints": true
     }
   ]
 }

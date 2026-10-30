@@ -10,6 +10,7 @@ import { CollectionMenu, CopyMarkdownButton } from '@/components/collection-acti
 import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
 import { DefinitionTags } from '@/components/definition-tags';
 import { NameInput } from '@/components/name-input';
+import { narrowView, SearchField, useCollectionSearch, useSearchText } from '@/components/note-search';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -19,8 +20,10 @@ type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
 /**
  * A Collection (#51): its name, its Tags as chips, the source-notes switch
  * and the count in a fixed bar, its Notes by Source under it. Every change
- * in the bar is kept in the definition. Beside the name, the Markdown copy;
- * in the header, the ⋯ menu with Dosyayı sil (#52). The search box arrives in #56.
+ * in the bar is kept in the definition, apart from the search box, which
+ * only narrows what is shown. Beside the name, the Markdown copy of the
+ * Notes shown (only the matches while searching); in the header, the ⋯
+ * menu with Dosyayı sil (#52).
  */
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -70,6 +73,9 @@ function CollectionPage({ collection }: { collection: Collection }) {
   const setTags = useMutation(trpc.collections.setTags.mutationOptions({ onSuccess: refresh }));
   const setSwitch = useMutation(trpc.collections.setIncludeSourceNotes.mutationOptions({ onSuccess: refresh }));
   const failed = rename.isError || setTags.isError || setSwitch.isError;
+  const search = useSearchText();
+  const searched = useCollectionSearch(collection.id, search.query);
+  const shown = narrowView(collection, searched.matches);
 
   // While saving, the bar shows what was chosen.
   const tagNames = setTags.isPending ? setTags.variables.names : collection.tags.map((tag) => tag.name);
@@ -97,7 +103,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
           >
             <Text style={styles.name}>{collection.name}</Text>
           </Pressable>
-          <CopyMarkdownButton view={collection} />
+          <CopyMarkdownButton view={shown} />
         </View>
       )}
       <DefinitionTags names={tagNames} onChange={(names) => setTags.mutate({ id: collection.id, names })} />
@@ -106,7 +112,9 @@ function CollectionPage({ collection }: { collection: Collection }) {
         count={collection.sourceOnlyCount}
         onChange={(value) => setSwitch.mutate({ id: collection.id, includeSourceNotes: value })}
       />
-      <ViewCount view={collection} />
+      <SearchField value={search.text} onChange={search.setText} placeholder={t('noteSearch.inView')} />
+      <ViewCount view={shown} of={collection} />
+      {searched.failed && <Text style={styles.error}>{t('noteSearch.failed')}</Text>}
       {failed && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
     </>
   );
@@ -115,9 +123,16 @@ function CollectionPage({ collection }: { collection: Collection }) {
     <View style={styles.page}>
       <Stack.Screen options={{ headerRight: () => <CollectionMenu collection={collection} /> }} />
       <CollectionView
-        view={collection}
+        view={shown}
         bar={bar}
-        empty={collection.tags.length === 0 ? t('collection.emptyNoTags') : t('collection.emptyNoNotes')}
+        matches={searched.matches}
+        empty={
+          searched.matches
+            ? t('noteSearch.viewEmpty')
+            : collection.tags.length === 0
+              ? t('collection.emptyNoTags')
+              : t('collection.emptyNoNotes')
+        }
       />
       <View pointerEvents="box-none" style={styles.foot}>
         <SharedUndoBar />

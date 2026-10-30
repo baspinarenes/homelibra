@@ -27,8 +27,8 @@ type Filter = 'untagged' | 'all';
 /** Tags kept as one-tap chips at the top, the last used first. */
 const recentCount = 8;
 
-/** A Note the phone's outbox has not sent yet: the server cannot tag it, so Düzenle leaves it out. */
-const unsent = (status: NoteStatus | undefined) => status === 'queued' || status === 'sending';
+/** A Note the phone's outbox has not sent yet (or whose Source is gone): Düzenle leaves it out, nor is it merged. */
+const unsent = (status: NoteStatus | undefined) => status !== undefined && status !== 'synced';
 
 /** Shift held on a web click: select every Note from the last one picked. */
 function withShift(event: GestureResponderEvent) {
@@ -73,7 +73,7 @@ export function NewMark() {
  * (selection-actions.tsx), each with Geri al; on the web by keys too
  * (j/k, x, t, Delete: lib/organize-keys.ts). Bitir writes the
  * moment on the Source and leaves the mode. Online only: the phone's
- * unsent Notes are left out (the "Bağlantı gerekiyor" gate is #58's).
+ * unsent Notes are left out; the Source page sends them before entering.
  */
 export function OrganizeMode({
   source,

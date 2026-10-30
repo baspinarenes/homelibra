@@ -149,11 +149,14 @@ export function NoteComposer({
     try {
       if (attachTo) {
         const { id } = attachTo;
-        await apply({ type: 'attachComment', id, comment: text, tags });
+        // Made now, so the Comment's own Note would sort where it was written.
+        // Geri al splits it off with this id; so does the outbox, should the
+        // Excerpt's Note no longer take the Comment once it is sent (#58).
+        const commentNoteId = uuidv7();
+        const ownNote = { id: commentNoteId, sourceId, locator: storedLocator(locator) };
+        await apply({ type: 'attachComment', id, comment: text, tags, ownNote });
         saved(id);
         setLastExcerpt(null);
-        // Made now, so the Comment's own Note would sort where it was written.
-        const commentNoteId = uuidv7();
         offerUndo({
           message: t('capture.commentAttached'),
           undo: () => {

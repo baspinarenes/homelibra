@@ -8,6 +8,7 @@ import { type AuthOptions, createAuth } from './auth';
 import { deleteUnusedCovers, readCover } from './covers/covers';
 import { libraryExport } from './export/library-export';
 import type { Crossref } from './lookups/crossref';
+import type { OpenLibrary } from './lookups/openlibrary';
 import { lookups } from './lookups/lookups';
 import { appRouter } from './router';
 import type { ObjectStorage } from './storage/object-storage';
@@ -18,6 +19,7 @@ export type ApiOptions = AuthOptions & {
   /** Cross-origin web clients allowed in development; production is same-origin. */
   corsOrigins?: string[];
   crossref: Crossref;
+  openLibrary: OpenLibrary;
   /** The private covers bucket (ADR-0011). */
   covers: ObjectStorage;
   /** What time it is for the lookup cache's seven days and Geri al; tests move it. The system clock by default. */
@@ -27,7 +29,12 @@ export type ApiOptions = AuthOptions & {
 export function createApi(options: ApiOptions) {
   const auth = createAuth(options);
   const now = options.now ?? (() => new Date());
-  const sharedLookups = lookups(options.db, { crossref: options.crossref }, now);
+  const sharedLookups = lookups(
+    options.db,
+    { crossref: options.crossref, openLibrary: options.openLibrary },
+    options.covers,
+    now,
+  );
 
   async function createContext(headers: Headers): Promise<Context> {
     const session = await auth.api.getSession({ headers });

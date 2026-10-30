@@ -386,6 +386,23 @@ export const tr = {
     synced: 'eşitlendi',
     needsConnection: 'Bağlantı gerekiyor',
     searchNeedsConnection: 'Arama için bağlantı gerekiyor',
+    // #58: a Note whose Source was deleted elsewhere while it waited.
+    sourceGone: 'Kaynağı silinmiş',
+    lostNotes: '{{count}} notun kaynağı silinmiş',
+    lostTitle: 'Kaynağı silinmiş',
+    lostLead:
+      'Bu notların kaynağı, notlar gönderilmeyi beklerken başka bir yerde silindi. Bir nota dokun; Kaynak alanından yeni bir kaynak seç ya da notu sil.',
+    lostNone: 'Kaynağı silinmiş not kalmadı.',
+    chooseNewSource: 'Kaynağı silinmiş · yeni kaynak seç',
+    noteNotFound: 'Bu not bu telefonda yok; bağlantı gelince açılır.',
+    addSourceNeedsConnection: 'Kaynak eklemek için bağlantı gerekiyor.',
+    editSourceNeedsConnection: 'Kaynağı kaydetmek ya da silmek için bağlantı gerekiyor.',
+    signOutWarning:
+      '{{count}} not henüz gönderilmedi. Çıkış yaparsan, bu hesapla yeniden girene kadar bu telefonda bekler.',
+    sendFirst: 'Önce gönder',
+    signOutAnyway: 'Yine de çık',
+    cancel: 'Vazgeç',
+    notSent: '{{count}} not gönderilemedi.',
   },
   deletion: {
     deleteNote: 'Notu sil',
@@ -517,6 +534,46 @@ export const tr = {
     tagged: '{{count}} nota etiket takıldı',
     tagFailed: 'Etiketlenemedi. Bağlantını kontrol edip yeniden dene.',
   },
+  // "Bu kaynakta ara", the search box of a Collection or a Tag's page, and Ara's selector (#56).
+  noteSearch: {
+    inSource: 'Bu kaynakta ara',
+    inView: 'Bu görünümde ara',
+    close: 'Kapat',
+    clear: 'Aramayı temizle',
+    sourceEmpty: 'Bu kaynakta eşleşen not yok.',
+    viewEmpty: 'Eşleşen not yok.',
+    matchCount: '{{shown}} / {{count}} not',
+    viewMatchCounts: '{{shown}} / {{notes}} not · {{sources}} kaynak',
+    failed: 'Arama yapılamadı. Bağlantını kontrol edip yeniden dene.',
+    kindLabel: 'Sonuçlar',
+    all: 'Tümü',
+    notes: 'Notlar',
+    sources: 'Kaynaklar',
+  },
+  // The Tarih filter of Kaynaklar and Ara (#56, story 164).
+  dateFilter: {
+    label: 'Tarih: {{range}}',
+    any: 'tümü',
+    from: 'Başlangıç',
+    to: 'Bitiş',
+    year: 'yıl',
+    open: '…',
+    clear: 'Temizle',
+    changeCalendar: '{{side}} yılının takvimini değiştir: {{calendar}}',
+    lead: 'Kaynak Tarih’ine göre süz. Takvim çipine dokun: Milâdî → Hicrî → Rumî.',
+    hint: '≈ {{from}}–{{to}} Milâdî. Kaynaklar Tarih’lerinin yaklaşık Milâdî değeriyle süzülür; tarihsiz kaynaklar gizlenir.',
+    notInCalendar: '{{year}} yılı {{calendar}} takviminde yok.',
+    hiddenSources: '{{count}} tarihsiz kaynak gizli',
+    hiddenResults: 'Tarihsiz kaynaklardan {{sources}} kaynak ve {{notes}} not gizli',
+    noSources: 'Bu tarih aralığında kaynak yok.',
+  },
+  // Kaynaklar's "Son not" order and the counts on its rows (#56, story 165).
+  sourceList: {
+    byLast: 'Son not',
+    count: '{{count}} kaynak',
+    notes: '{{count}} not',
+    noNotes: 'notsuz',
+  },
   // A Collection's Markdown copy and its top bar menu (#52).
   collectionActions: {
     copy: 'Markdown olarak kopyala',
@@ -576,5 +633,25 @@ export const tr = {
     markdown:
       'kaynaklar/: her kaynak için bir Markdown dosyası, notlar Konum sırasıyla; hiçbir araç olmadan okumak için.',
     covers: 'kapaklar/: kaynakların kapakları.',
+  },
+  // ISBN ile öner from Open Library, with its cover (#65).
+  isbn: {
+    suggest: 'ISBN ile öner',
+    asking: "Open Library'ye soruluyor…",
+    notFound: "Open Library bu ISBN'i bulamadı. Alanları elle doldurabilirsin.",
+    failed: 'Öneri alınamadı. Bağlantını kontrol edip yeniden dene.',
+    accepted: 'Öneri forma aktarıldı. Alanları kontrol et; düzelttiklerin yalnız bu kaynakta kalır.',
+    title: 'ISBN önerisi',
+    lead: "Open Library'nin {{isbn}} için verdikleri. Doğru kitap mı, kontrol et; forma aktardıktan sonra düzeltebilirsin.",
+    year: 'Yıl (Milâdî)',
+    none: '—',
+    coverCredit: 'Kapak: Open Library',
+    useCover: 'Kapağı da kullan',
+    accept: 'Forma aktar',
+    dismiss: 'Vazgeç',
+    close: 'Kapat',
+    coverOnSave: 'Kapak: Open Library · kaydedince eklenecek',
+    dropCover: 'Kapağı alma',
+    coverFailed: "Kaynak kaydedildi, ama Open Library'nin kapağı eklenemedi.",
   },
 } as const;

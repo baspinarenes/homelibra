@@ -4,8 +4,12 @@ import {
   type Outbox,
   type OutboxState,
   type OutboxStorage,
+  type Receipt,
+  type Reply,
   type StoredOperation,
+  type Transport,
 } from '@homelibra/outbox';
+import { TRPCClientError } from '@trpc/client';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 import {
   createContext,
@@ -21,14 +25,14 @@ import { AppState } from 'react-native';
 
 import { authClient } from './auth-client';
 import { useOffline } from './network';
-import { sendOperation } from './send-operation';
+import { sendOperation, undoOperation } from './send-operation';
 
 // The phone's outbox (ADR-0008): operations wait in a small expo-sqlite
 // table and are sent in order when the app comes to the foreground or the
 // network returns. Only native builds see this file; the web's outbox.tsx
 // has none, so SQLite never enters the web bundle.
 
-export type ApplyOperation = (operation: Operation) => Promise<void>;
+export type ApplyOperation = (operation: Operation) => Promise<Receipt>;
 
 /** How often waiting operations are tried again while online, after a send failed. */
 const retryEvery = 30_000;
@@ -70,19 +74,48 @@ function sqliteStorage(accountId: string): OutboxStorage {
       );
       return result.lastInsertRowId;
     },
+    async replace(seq, operation) {
+      await db.runAsync('update outbox set operation = ? where seq = ?', JSON.stringify(operation), seq);
+    },
     async remove(seq) {
       await db.runAsync('delete from outbox where seq = ?', seq);
     },
   };
 }
 
-const OutboxContext = createContext<{ apply: ApplyOperation; state: OutboxState } | null>(null);
+/** The API's "kaynak yok" (apps/api routers/notes.ts). */
+const SOURCE_NOT_FOUND = 'SOURCE_NOT_FOUND';
+/** Answers the server will give an operation every time it is sent: waiting would not change them. */
+const refusals = new Set(['BAD_REQUEST', 'NOT_FOUND', 'CONFLICT']);
+
+/**
+ * The outbox's way to the API. A lost connection, a server error or an
+ * expired session reject, and the operation waits to be sent again; a
+ * refusal the server would repeat is answered, so the queue can go on.
+ */
+const transport: Transport = {
+  async send(operation): Promise<Reply> {
+    try {
+      const { undoToken } = await sendOperation(operation);
+      return { outcome: 'done', undoToken };
+    } catch (error) {
+      if (!(error instanceof TRPCClientError)) throw error;
+      if (error.message === SOURCE_NOT_FOUND) return { outcome: 'sourceGone' };
+      if (refusals.has(error.data?.code)) return { outcome: 'refused' };
+      throw error;
+    }
+  },
+  undo: undoOperation,
+};
+
+type OutboxValue = { apply: ApplyOperation; state: OutboxState; drain: () => Promise<number> };
+const OutboxContext = createContext<OutboxValue | null>(null);
 
 export function OutboxProvider({ children }: { children: ReactNode }) {
   const { data: session } = authClient.useSession();
   const accountId = session?.user.id ?? null;
   const opening = useMemo(
-    () => (accountId ? openOutbox({ storage: sqliteStorage(accountId), transport: { send: sendOperation } }) : null),
+    () => (accountId ? openOutbox({ storage: sqliteStorage(accountId), transport }) : null),
     [accountId],
   );
   const [outbox, setOutbox] = useState<Outbox | null>(null);
@@ -121,11 +154,17 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
   const apply = useCallback<ApplyOperation>(
     async (operation) => {
       if (!opening) throw new Error('Signed out');
-      await (await opening).apply(operation);
+      return (await opening).apply(operation);
     },
     [opening],
   );
-  const value = useMemo(() => ({ apply, state }), [apply, state]);
+  const drain = useCallback(async () => {
+    if (!opening) return 0;
+    const outbox = await opening;
+    await outbox.drain();
+    return outbox.state().waiting;
+  }, [opening]);
+  const value = useMemo(() => ({ apply, state, drain }), [apply, state, drain]);
   return <OutboxContext value={value}>{children}</OutboxContext>;
 }
 
@@ -133,9 +172,10 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
  * "İşlemi uygula", the screens' one way to change Notes, and what is
  * waiting to be sent. A screen does not know whether it is online: `apply`
  * resolves once the operation is safe (sent on the web, queued here) and
- * rejects when it is not.
+ * rejects when it is not. `drain` sends what waits, before an online-only
+ * operation such as Düzenle mode; it resolves with how many Notes still wait.
  */
-export function useOutbox(): { apply: ApplyOperation; state: OutboxState } {
+export function useOutbox(): OutboxValue {
   const value = useContext(OutboxContext);
   if (!value) throw new Error('useOutbox needs an OutboxProvider');
   return value;

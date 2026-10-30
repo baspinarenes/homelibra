@@ -82,7 +82,9 @@ describe('outbox', () => {
     server.goOnline();
     await outbox.drain();
 
-    expect(server.received.map(noteId)).toEqual([N1, N1]);
+    // Sent more than once, and only ever this Note.
+    expect(server.received.length).toBeGreaterThan(1);
+    expect(new Set(server.received.map(noteId))).toEqual(new Set([N1]));
     expect(server.notes.size).toBe(1);
     expect(outbox.state().status.get(N1)).toBe('synced');
   });

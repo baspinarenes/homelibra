@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, SectionList, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { MarkedText, type Match, type Matches } from '@/components/note-search';
 import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 /** What a Collection's view and a Tag's page have in common. */
@@ -21,9 +22,20 @@ type Note = Group['notes'][number];
  * the caller fills, then the Notes grouped by Source in the order the API
  * gives, each Source's heading sticking under the bar while its Notes
  * scroll. The same layout on the phone and the desktop. A Source's heading
- * opens the Source page; a Note opens there, in place.
+ * opens the Source page; a Note opens there, in place. While its search
+ * box finds Notes, `matches` marks the words they matched.
  */
-export function CollectionView({ view, bar, empty }: { view: ViewData; bar: ReactNode; empty: string }) {
+export function CollectionView({
+  view,
+  bar,
+  empty,
+  matches = null,
+}: {
+  view: ViewData;
+  bar: ReactNode;
+  empty: string;
+  matches?: Matches | null;
+}) {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const sections = view.groups.map((group) => ({ key: group.source.id, source: group.source, data: group.notes }));
@@ -35,6 +47,7 @@ export function CollectionView({ view, bar, empty }: { view: ViewData; bar: Reac
         contentContainerStyle={styles.content}
         sections={sections}
         keyExtractor={(note) => note.id}
+        extraData={matches}
         stickySectionHeadersEnabled
         ListEmptyComponent={<Text style={styles.empty}>{empty}</Text>}
         renderSectionHeader={({ section }) => (
@@ -46,6 +59,7 @@ export function CollectionView({ view, bar, empty }: { view: ViewData; bar: Reac
         renderItem={({ item: note, index, section }) => (
           <NoteRow
             note={note}
+            match={matches?.get(note.id)}
             divided={index > 0}
             onPress={() => router.push({ pathname: '/source/[id]', params: { id: section.source.id, note: note.id } })}
           />
@@ -80,7 +94,17 @@ function SourceHeading({ source, onPress }: { source: Group['source']; onPress: 
  * right, and under them why the Note is here: its own Tags in the
  * definition, or in another colour the Source's that brought it.
  */
-function NoteRow({ note, divided, onPress }: { note: Note; divided: boolean; onPress: () => void }) {
+function NoteRow({
+  note,
+  match,
+  divided,
+  onPress,
+}: {
+  note: Note;
+  match: Match | undefined;
+  divided: boolean;
+  onPress: () => void;
+}) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const names = note.why.tags.map((tag) => tag.name).join(', ');
@@ -93,8 +117,8 @@ function NoteRow({ note, divided, onPress }: { note: Note; divided: boolean; onP
     >
       <Text style={styles.locator}>{note.locator ?? '—'}</Text>
       <View style={styles.texts}>
-        {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
-        {note.comment && <Text style={styles.comment}>{`↳ ${note.comment}`}</Text>}
+        {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} style={styles.excerpt} />}
+        {note.comment && <MarkedText text={note.comment} marks={match?.comment} style={styles.comment} prefix="↳ " />}
         {note.why.via === 'note' ? (
           <Text style={styles.why}>{names}</Text>
         ) : (
@@ -137,12 +161,16 @@ export function SourceNotesSwitch({
   );
 }
 
-/** "N not · M kaynak". */
-export function ViewCount({ view }: { view: ViewData }) {
+/** "N not · M kaynak"; while a search narrows the view, "2 / 15 not · 1 kaynak" against the whole view's `of`. */
+export function ViewCount({ view, of }: { view: ViewData; of?: ViewData }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   return (
-    <Text style={styles.count}>{t('collection.counts', { notes: view.noteCount, sources: view.sourceCount })}</Text>
+    <Text style={styles.count}>
+      {of && of !== view
+        ? t('noteSearch.viewMatchCounts', { shown: view.noteCount, notes: of.noteCount, sources: view.sourceCount })
+        : t('collection.counts', { notes: view.noteCount, sources: view.sourceCount })}
+    </Text>
   );
 }
 

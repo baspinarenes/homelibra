@@ -18,7 +18,7 @@ import { recordUndo } from '../undo/undo';
  * Source's last "Bitir"; before the first one, every untagged Note. Taking
  * a Tag off an older Note later does not bring it back.
  */
-const waiting = (n: string, s: string) =>
+export const waiting = (n: string, s: string) =>
   sql.raw(`not exists (select 1 from note_tag nt where nt.note_id = ${n}.id)
     and (${s}.last_finished_at is null or ${n}.entered_source_at > ${s}.last_finished_at)`);
 

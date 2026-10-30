@@ -33,14 +33,20 @@ export function snippet(marks: Segment[]): Segment[] {
   const last = kept.at(-1);
   if (end < marks.length && last && !/[\p{L}\p{N}]/u.test(last.text)) kept.pop();
 
+  const out = joined(kept);
+  if (start > 0) prepend(out, '…');
+  if (end < marks.length) append(out, '…');
+  return out;
+}
+
+/** A whole text's runs, neighbouring runs that are not matches joined into one. */
+export function joined(marks: Segment[]): Segment[] {
   const out: Segment[] = [];
-  for (const segment of kept) {
+  for (const segment of marks) {
     const previous = out.at(-1);
     if (previous && !previous.hit && !segment.hit) previous.text += segment.text;
     else out.push({ ...segment });
   }
-  if (start > 0) prepend(out, '…');
-  if (end < marks.length) append(out, '…');
   return out;
 }
 
