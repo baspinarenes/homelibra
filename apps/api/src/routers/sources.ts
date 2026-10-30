@@ -1,4 +1,5 @@
 import { compareTr } from '@homelibra/core';
+import { capturedAt } from '@homelibra/core/note';
 import { type CalendarDate, calendars, sortValue } from '@homelibra/core/date';
 import {
   isFilled,
@@ -19,6 +20,7 @@ import { tagParts } from '../tags/snapshot';
 import { tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo, storedRow } from '../undo/undo';
+import { waitingCount } from './organize';
 
 // Only Tür and Başlık are required; nothing else is validated, so a
 // non-standard citation still goes in (#40, story 44). Blank means empty;
@@ -86,6 +88,7 @@ const sourceColumns = {
   bibliographicNote: source.bibliographicNote,
   date: source.date,
   fields: source.fields,
+  readingStatus: source.readingStatus,
   ...coverColumns,
 };
 
@@ -98,7 +101,8 @@ export const sourcesRouter = router({
 
   /**
    * The Kaynaklar list, by Başlık, by Yazar or by Tarih (oldest first, across
-   * calendars); Sources without a Yazar or a Tarih come last.
+   * calendars); Sources without a Yazar or a Tarih come last. Each with its
+   * Reading status: the app splits the list into Okunuyor and Bitti.
    */
   list: libraryProcedure
     .input(z.object({ sort: z.enum(['title', 'author', 'date']) }))
@@ -111,6 +115,7 @@ export const sourcesRouter = router({
           author: source.author,
           date: source.date,
           dateSort: source.dateSort,
+          readingStatus: source.readingStatus,
           ...coverColumns,
         })
         .from(source)
@@ -130,7 +135,11 @@ export const sourcesRouter = router({
       return rows.sort(order[input.sort]).map(({ dateSort: _, ...row }) => coverOf(row));
     }),
 
-  /** Ana sayfa's "Son not aldığın": the latest Note and its Source, or null before the first Note. */
+  /**
+   * Ana sayfa's "Son not aldığın" and "Devam et": the latest Note of a Source
+   * being read, and that Source. With no such Note, the latest Note of all
+   * rather than nothing; null before the first Note.
+   */
   lastNoted: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx
       .select({
@@ -153,12 +162,39 @@ export const sourcesRouter = router({
       .from(note)
       .innerJoin(source, and(eq(source.id, note.sourceId), eq(source.accountId, ctx.accountId)))
       .where(eq(note.accountId, ctx.accountId))
-      .orderBy(desc(note.id))
+      .orderBy(sql`${source.readingStatus} = 'finished'`, desc(note.id))
       .limit(1);
     // A string, as the app receives it over JSON.
     return row
       ? { source: coverOf(row.source), note: { ...row.note, capturedAt: row.note.capturedAt.toISOString() } }
       : null;
+  }),
+
+  /**
+   * Ana sayfa's Okunuyor: the Sources being read, the last noted first, then
+   * the ones without a Note yet, the newest first.
+   */
+  reading: libraryProcedure.query(async ({ ctx }) => {
+    const lastNote = sql<string | null>`max(${note.id}::text)`;
+    const rows = await ctx.tx
+      .select({
+        id: source.id,
+        type: source.type,
+        title: source.title,
+        author: source.author,
+        date: source.date,
+        ...coverColumns,
+        lastNote,
+      })
+      .from(source)
+      .leftJoin(note, and(eq(note.sourceId, source.id), eq(note.accountId, source.accountId)))
+      .where(and(eq(source.accountId, ctx.accountId), eq(source.readingStatus, 'reading')))
+      .groupBy(source.id)
+      .orderBy(sql`${lastNote} desc nulls last`, desc(source.id));
+    return rows.map(({ lastNote: last, ...row }) => ({
+      ...coverOf(row),
+      lastNoteAt: last && capturedAt(last).toISOString(),
+    }));
   }),
 
   create: libraryProcedure.input(sourceInput).mutation(async ({ ctx, input }) => {
@@ -201,6 +237,25 @@ export const sourcesRouter = router({
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     return { ...coverOf(row), tags: await tagsOfSource(ctx.tx, ctx.accountId, row.id) };
   }),
+
+  /**
+   * The Reading status button on the Source page's heading: okunuyor or
+   * bitti, nothing else (no date, no history). Finishing a Source says how
+   * many Notes Organizing pass still waits on there, so the app can offer
+   * "Şimdi düzenle / Sonra" (#13); otherwise, and when it was finished
+   * already, 0.
+   */
+  setReadingStatus: libraryProcedure
+    .input(z.object({ id: z.uuid(), status: z.enum(source.readingStatus.enumValues) }))
+    .mutation(async ({ ctx, input }) => {
+      const mine = and(eq(source.id, input.id), eq(source.accountId, ctx.accountId));
+      const [before] = await ctx.tx.select({ status: source.readingStatus }).from(source).where(mine).for('update');
+      if (!before) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (before.status === input.status) return { untaggedCount: 0 };
+      await ctx.tx.update(source).set({ readingStatus: input.status, updatedAt: new Date() }).where(mine);
+      const finishing = input.status === 'finished';
+      return { untaggedCount: finishing ? await waitingCount(ctx.tx, ctx.accountId, input.id) : 0 };
+    }),
 
   /**
    * Kaynağı sil, from the Source form: the Source goes with all its Notes

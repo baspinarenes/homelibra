@@ -136,6 +136,9 @@ const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
 
 export const sourceType = pgEnum('source_type', sourceTypes);
 
+/** Reading status (GLOSSARY.md): being read, or finished for now. */
+export const readingStatus = pgEnum('reading_status', ['reading', 'finished']);
+
 export const source = pgTable(
   'source',
   {
@@ -168,6 +171,11 @@ export const source = pgTable(
      * Source after it, and the Source page marks them "yeni".
      */
     lastFinishedAt: timestamp('last_finished_at', { withTimezone: true }),
+    /**
+     * Reading status: a new Source is being read; only the scholar finishes
+     * it or reads it again, never a Note. No history, date or count.
+     */
+    readingStatus: readingStatus('reading_status').notNull().default('reading'),
     /**
      * What search matches by word: Başlık, Yazar, Künye notu and the
      * type-specific text fields, through the search functions of 0011_search.
