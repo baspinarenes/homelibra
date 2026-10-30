@@ -13,6 +13,8 @@ export interface Mailer {
   sendEmailChangeCode(newEmail: string, code: string): Promise<void>;
   /** Tells the address an Account just left where it went, in case the scholar did not ask for it. */
   sendEmailChangedNotice(oldEmail: string, newEmail: string): Promise<void>;
+  /** The code that confirms Hesabı sil, so neither a slip nor someone else holding the device deletes the Account. */
+  sendAccountDeletionCode(email: string, code: string): Promise<void>;
 }
 
 type Message = { to: string; subject: string; text: string };
@@ -33,6 +35,11 @@ const messages = {
     subject: 'Homelibra hesabının e-posta adresi değişti',
     text: `Homelibra hesabının e-posta adresi ${newEmail} olarak değiştirildi. Bundan sonra girişler o adresle yapılır.\n\nBu değişikliği sen yapmadıysan hemen ${contactEmail} adresine yaz.`,
   }),
+  accountDeletionCode: (email: string, code: string): Message => ({
+    to: email,
+    subject: `Homelibra hesap silme kodun: ${code}`,
+    text: `Homelibra hesabını silmek için kodun: ${code}\n\nKod 10 dakika geçerli. Onaylarsan hesabın hemen kapanır; 14 gün içinde giriş yapıp silmeyi iptal edebilirsin. Sonra hesabın ve kütüphanen kalıcı olarak silinir.\n\nBunu sen istemediysen bu e-postayı yok say ve ${contactEmail} adresine yaz.`,
+  }),
 };
 
 /** A Mailer that hands every message to `deliver`. */
@@ -41,6 +48,7 @@ function mailerFrom(deliver: (message: Message) => Promise<void>): Mailer {
     sendSignInCode: (email, code) => deliver(messages.signInCode(email, code)),
     sendEmailChangeCode: (newEmail, code) => deliver(messages.emailChangeCode(newEmail, code)),
     sendEmailChangedNotice: (oldEmail, newEmail) => deliver(messages.emailChangedNotice(oldEmail, newEmail)),
+    sendAccountDeletionCode: (email, code) => deliver(messages.accountDeletionCode(email, code)),
   };
 }
 

@@ -23,6 +23,9 @@ export function fakeMailer() {
     async sendEmailChangedNotice(email, newEmail) {
       notices.push({ email, newEmail });
     },
+    async sendAccountDeletionCode(email, code) {
+      sent.push({ email, code });
+    },
   };
   return {
     mailer,
