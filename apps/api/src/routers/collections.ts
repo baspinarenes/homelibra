@@ -1,6 +1,6 @@
 import { compareTr } from '@homelibra/core';
 import { TRPCError } from '@trpc/server';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
@@ -8,7 +8,7 @@ import { setCollectionTags, tagsOfCollection, tagsOfCollections } from '../colle
 import { deleteCollection } from '../collections/delete';
 import { collectionView, memberCount } from '../collections/view';
 import type { LibraryTx } from '../db/client';
-import { collection, tag } from '../db/schema';
+import { account, collection, tag } from '../db/schema';
 import { resolveTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
@@ -98,6 +98,17 @@ export const collectionsRouter = router({
   delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => ({
     undoToken: await deleteCollection(ctx.tx, ctx.accountId, input.id, ctx.now()),
   })),
+
+  /**
+   * "Markdown olarak kopyala" happened: the app builds the copy itself and
+   * sends this on the side, unawaited. One counter per Account (#40).
+   */
+  copied: libraryProcedure.mutation(async ({ ctx }) => {
+    await ctx.tx
+      .update(account)
+      .set({ markdownCopies: sql`${account.markdownCopies} + 1` })
+      .where(eq(account.id, ctx.accountId));
+  }),
 
   /** The Collection's definition and its view, worked out now (#3). */
   view: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
