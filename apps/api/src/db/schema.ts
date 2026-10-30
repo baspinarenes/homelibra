@@ -109,17 +109,20 @@ export const invitation = pgTable('invitation', {
  * The shared lookup cache (ADR-0006): what a provider returned for a
  * normalised DOI or ISBN-13, exactly as it came, for every Library. Not
  * Library data, so no account_id and no row-level security; a scholar's
- * corrections stay in their own Source and never come here.
+ * corrections stay in their own Source and never come here. An
+ * `isbn_cover` row is Open Library's cover of an ISBN-13: the keys of its
+ * resized files under `isbn/` in the covers bucket (ADR-0011), or null when
+ * it has none. A scholar's own Cover never comes here either.
  */
-export const lookupKind = pgEnum('lookup_kind', ['doi', 'isbn']);
+export const lookupKind = pgEnum('lookup_kind', ['doi', 'isbn', 'isbn_cover']);
 
 export const lookupCache = pgTable(
   'lookup_cache',
   {
     kind: lookupKind('kind').notNull(),
     identifier: text('identifier').notNull(),
-    provider: text('provider').$type<'crossref'>().notNull(),
-    /** The provider's answer as it came; null when it knew nothing ("bulunamadı"). */
+    provider: text('provider').$type<'crossref' | 'openlibrary'>().notNull(),
+    /** The provider's answer as it came (for a cover, where its files are kept); null when it knew nothing ("bulunamadı"). */
     response: jsonb('response'),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
   },

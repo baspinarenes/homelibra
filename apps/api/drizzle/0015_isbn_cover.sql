@@ -1,0 +1,1 @@
+ALTER TYPE "public"."lookup_kind" ADD VALUE 'isbn_cover';
