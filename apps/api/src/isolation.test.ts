@@ -63,9 +63,9 @@ describe('Library isolation', () => {
     await expect(naib.notes.create({ id: uuidv7(), sourceId, comment: 'Benim notum' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
-    await expect(naib.notes.flow({ sourceId })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(naib.notes.list({ sourceId })).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
-    expect(await kadi.notes.flow({ sourceId })).toEqual([expect.objectContaining({ locator: 'gml. 3' })]);
+    expect(await kadi.notes.list({ sourceId })).toEqual([expect.objectContaining({ locator: 'gml. 3' })]);
   });
 
   it("the database refuses a Note on another Library's Source even past the API", async () => {
