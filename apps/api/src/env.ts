@@ -3,7 +3,12 @@ import { z } from 'zod';
 const commaSeparatedList = z
   .string()
   .default('')
-  .transform((s) => s.split(',').map((x) => x.trim()).filter(Boolean));
+  .transform((s) =>
+    s
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean),
+  );
 
 export const env = z
   .object({

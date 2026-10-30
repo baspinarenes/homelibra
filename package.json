@@ -9,12 +9,16 @@
     "typecheck": "pnpm -r --parallel typecheck",
     "lint": "eslint .",
     "test": "pnpm -r test",
-    "db:up": "docker compose up -d --build postgres"
+    "db:up": "docker compose up -d --build postgres",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "eslint": "^10.13.0",
     "globals": "^17.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1"
   }
