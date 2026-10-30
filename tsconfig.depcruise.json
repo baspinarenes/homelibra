@@ -1,0 +1,7 @@
+{
+  "//": "Read only by dependency-cruiser (.dependency-cruiser.cjs), so it can follow the app's @/ alias. Mirrors apps/app/tsconfig.json; tsc never uses this file.",
+  "compilerOptions": {
+    "paths": { "@/*": ["./apps/app/src/*"] }
+  },
+  "include": ["apps/app/src"]
+}
