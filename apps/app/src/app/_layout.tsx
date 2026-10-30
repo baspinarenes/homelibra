@@ -21,7 +21,7 @@ import { useTheme } from '@/theme';
 export default Sentry.wrap(RootLayout);
 
 function RootLayout() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, isRefetching } = authClient.useSession();
   const { scheme, colors } = useTheme();
   // Pushed over the tabs (the Source form), so they keep a back button.
   const pushedScreen = { ...useHeaderOptions(), headerShown: true };
@@ -35,7 +35,10 @@ function RootLayout() {
     RedditSans_600SemiBold,
     RedditMono_500Medium,
   });
-  const loading = isPending || (!fontsLoaded && !fontError);
+  // Better Auth refetches the session on window focus and, while signed out,
+  // marks that refetch pending too. Showing the splash then would unmount the
+  // sign-in screen and lose its step, typed code and ?error= message.
+  const loading = (isPending && !isRefetching) || (!fontsLoaded && !fontError);
 
   return (
     <SafeAreaProvider>

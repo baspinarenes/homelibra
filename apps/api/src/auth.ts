@@ -1,14 +1,23 @@
 import { expo } from '@better-auth/expo';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { emailOTP } from 'better-auth/plugins';
 import { uuidv7 } from 'uuidv7';
 
 import type { Db } from './db/client';
 import * as schema from './db/schema';
+import { invitations } from './invitations/invitations';
 import type { Mailer } from './mail/mailer';
 
 const DAY_SECONDS = 60 * 60 * 24;
+
+/** The app's sign-in screen shows "Homelibra şu an davetle açık" for this code. */
+const NOT_INVITED = 'NOT_INVITED';
+
+function notInvited() {
+  return new APIError('FORBIDDEN', { code: NOT_INVITED, message: 'Homelibra is invitation-only for now.' });
+}
 
 export type AuthOptions = {
   db: Db;
@@ -16,9 +25,13 @@ export type AuthOptions = {
   baseURL: string;
   secret: string;
   trustedOrigins: string[];
+  /** Google sign-in's OAuth client; without it only email codes work. */
+  google?: { clientId: string; clientSecret: string };
 };
 
-export function createAuth({ db, mailer, baseURL, secret, trustedOrigins }: AuthOptions) {
+export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google }: AuthOptions) {
+  const invited = invitations(db);
+
   return betterAuth({
     baseURL,
     basePath: '/api/auth',
@@ -33,6 +46,9 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins }: Auth
         verification: schema.verification,
       },
     }),
+    // Google lands in the Account that already has its address: Better Auth
+    // links the two when Google says it verified the address.
+    socialProviders: google ? { google } : {},
     user: { modelName: 'account' },
     account: {
       modelName: 'account_provider',
@@ -48,6 +64,27 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins }: Auth
     },
     advanced: {
       database: { generateId: () => uuidv7() },
+    },
+    databaseHooks: {
+      // Only an Invitation opens an Account, whichever way the scholar
+      // arrives. Google's callback turns this error into a redirect to the
+      // app's error URL with ?error=NOT_INVITED.
+      user: {
+        create: {
+          async before(user) {
+            if (!(await invited.isInvited(user.email))) throw notInvited();
+          },
+        },
+      },
+    },
+    hooks: {
+      // Closed beta: no code leaves for an address that has neither an
+      // Invitation nor an Account. An open Account stays open even after the
+      // Operator takes its address off the list.
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== '/email-otp/send-verification-otp' || ctx.body?.type !== 'sign-in') return;
+        if (!(await invited.mayRequestCode(String(ctx.body.email)))) throw notInvited();
+      }),
     },
     plugins: [
       emailOTP({
