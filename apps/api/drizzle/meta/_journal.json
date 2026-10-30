@@ -92,6 +92,13 @@
       "when": 1793378485684,
       "tag": "0012_undo_record",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793380015278,
+      "tag": "0013_cover",
+      "breakpoints": true
     }
   ]
 }

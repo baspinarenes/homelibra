@@ -3,6 +3,7 @@ import type { SourceType } from '@homelibra/core/source';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { coverOf } from '../covers/covers';
 import { type Segment, snippet } from '../search/snippet';
 import { libraryProcedure, router } from '../trpc/init';
 
@@ -39,8 +40,11 @@ export const searchRouter = router({
               title: string;
               author: string | null;
               date: CalendarDate | null;
+              coverKeyLarge: string | null;
+              coverKeySmall: string | null;
             }>(sql`
-      select s.id, h.tier, s.type, s.title, s.author, s.date
+      select s.id, h.tier, s.type, s.title, s.author, s.date,
+             s.cover_key_large as "coverKeyLarge", s.cover_key_small as "coverKeySmall"
         from hl_search_sources(${query}, ${ctx.accountId}) h
         join source s on s.id = h.source_id
        order by h.rnk`);
@@ -66,7 +70,7 @@ export const searchRouter = router({
        limit ${NOTE_PAGE} offset ${offset}`);
       const noteTotal = notes[0]?.total ?? 0;
       return {
-        sources: sources.map(({ tier, ...row }) => ({ ...row, match: matchOf(tier) })),
+        sources: sources.map(({ tier, ...row }) => ({ ...coverOf(row), match: matchOf(tier) })),
         notes: notes.map((row) => {
           // The part shown comes from the Excerpt unless only the Comment matched.
           const fromComment = !row.excerpt_marks?.some((s) => s.hit) && !!row.comment_marks?.some((s) => s.hit);

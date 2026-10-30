@@ -13,6 +13,7 @@ import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
+import { coverColumns, coverOf } from '../covers/covers';
 import { note, source } from '../db/schema';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo, storedRow } from '../undo/undo';
@@ -83,6 +84,7 @@ const sourceColumns = {
   bibliographicNote: source.bibliographicNote,
   date: source.date,
   fields: source.fields,
+  ...coverColumns,
 };
 
 export const sourcesRouter = router({
@@ -107,6 +109,7 @@ export const sourcesRouter = router({
           author: source.author,
           date: source.date,
           dateSort: source.dateSort,
+          ...coverColumns,
         })
         .from(source)
         .where(eq(source.accountId, ctx.accountId));
@@ -122,14 +125,21 @@ export const sourcesRouter = router({
         author: (a, b) => lastWhenNull(a.author, b.author, compareTr) || byTitle(a, b),
         date: (a, b) => lastWhenNull(a.dateSort, b.dateSort, (x, y) => x - y) || byTitle(a, b),
       };
-      return rows.sort(order[input.sort]).map(({ dateSort: _, ...row }) => row);
+      return rows.sort(order[input.sort]).map(({ dateSort: _, ...row }) => coverOf(row));
     }),
 
   /** Ana sayfa's "Son not aldığın": the latest Note and its Source, or null before the first Note. */
   lastNoted: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx
       .select({
-        source: { id: source.id, type: source.type, title: source.title, author: source.author, date: source.date },
+        source: {
+          id: source.id,
+          type: source.type,
+          title: source.title,
+          author: source.author,
+          date: source.date,
+          ...coverColumns,
+        },
         note: {
           id: note.id,
           locator: note.locator,
@@ -144,7 +154,9 @@ export const sourcesRouter = router({
       .orderBy(desc(note.id))
       .limit(1);
     // A string, as the app receives it over JSON.
-    return row ? { ...row, note: { ...row.note, capturedAt: row.note.capturedAt.toISOString() } } : null;
+    return row
+      ? { source: coverOf(row.source), note: { ...row.note, capturedAt: row.note.capturedAt.toISOString() } }
+      : null;
   }),
 
   create: libraryProcedure.input(sourceInput).mutation(async ({ ctx, input }) => {
@@ -185,7 +197,7 @@ export const sourcesRouter = router({
       .from(source)
       .where(and(eq(source.id, input.id), eq(source.accountId, ctx.accountId)));
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
-    return row;
+    return coverOf(row);
   }),
 
   /**
