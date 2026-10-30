@@ -14,6 +14,7 @@ import {
   type TextInputInstance,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { uuidv7 } from 'uuidv7';
 
 import { Segment } from '@/components/segment';
@@ -22,7 +23,7 @@ import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyle
 
 type Mode = 'excerpt' | 'comment';
 
-const minInputHeight = 46;
+const minInputHeight = 66;
 const maxInputHeight = 220;
 
 /**
@@ -35,21 +36,26 @@ export function NoteComposer({
   carriedLocator,
   expanded,
   onExpandedChange,
+  onSaved,
 }: {
   sourceId: string;
   carriedLocator: string;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
+  /** The Note just saved, so the flow can mark it. */
+  onSaved: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors, shadow } = useTheme();
+  const insets = useSafeAreaInsets();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>('excerpt');
   const [text, setText] = useState('');
   const [locator, setLocator] = useState(carriedLocator);
   const [editingLocator, setEditingLocator] = useState(false);
+  const [focused, setFocused] = useState(false);
   const inputRef = useRef<TextInputInstance>(null);
   // The id a failed save used, kept while nothing changes, so sending the
   // same Note again cannot make a second one.
@@ -57,8 +63,9 @@ export function NoteComposer({
 
   const create = useMutation(
     trpc.notes.create.mutationOptions({
-      onSuccess: async () => {
+      onSuccess: async ({ id }) => {
         attempt.current = null;
+        onSaved(id);
         setText('');
         onExpandedChange(false);
         await Promise.all([
@@ -93,7 +100,7 @@ export function NoteComposer({
   }, [text, mode, expanded]);
 
   return (
-    <View style={[styles.composer, expanded && styles.composerExpanded]}>
+    <View style={[styles.composer, { paddingBottom: insets.bottom + space.md }, expanded && styles.composerExpanded]}>
       <View style={styles.controls}>
         {editingLocator ? (
           <View style={styles.locatorEdit}>
@@ -139,6 +146,7 @@ export function NoteComposer({
         )}
         <View style={styles.mode}>
           <Segment
+            compact
             label={t('capture.mode')}
             options={[
               { value: 'excerpt', label: t('capture.excerpt') },
@@ -158,7 +166,11 @@ export function NoteComposer({
           ref={inputRef}
           accessibilityLabel={t(`capture.${mode}`)}
           multiline
-          onFocus={() => setEditingLocator(false)}
+          onFocus={() => {
+            setEditingLocator(false);
+            setFocused(true);
+          }}
+          onBlur={() => setFocused(false)}
           value={text}
           onChangeText={setText}
           placeholder={t(mode === 'excerpt' ? 'capture.excerptPlaceholder' : 'capture.commentPlaceholder')}
@@ -167,6 +179,7 @@ export function NoteComposer({
             styles.input,
             mode === 'excerpt' ? styles.excerpt : styles.comment,
             expanded ? styles.inputExpanded : styles.inputGrowing,
+            focused && styles.focused,
           ]}
         />
         <View style={[styles.side, expanded && styles.sideExpanded]}>
@@ -178,9 +191,9 @@ export function NoteComposer({
             style={({ pressed }) => [styles.expand, pressed && styles.pressed]}
           >
             {expanded ? (
-              <Minimize2 color={colors.muted} size={16} strokeWidth={1.6} />
+              <Minimize2 color={colors.fg} size={15} strokeWidth={1.6} />
             ) : (
-              <Maximize2 color={colors.muted} size={16} strokeWidth={1.6} />
+              <Maximize2 color={colors.fg} size={15} strokeWidth={1.6} />
             )}
           </Pressable>
           <Pressable
@@ -188,7 +201,12 @@ export function NoteComposer({
             accessibilityLabel={t('capture.save')}
             onPress={save}
             disabled={!canSave}
-            style={({ pressed }) => [styles.send, !canSave && styles.inactive, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.send,
+              canSave && { boxShadow: shadow.lift },
+              !canSave && styles.inactive,
+              pressed && styles.pressed,
+            ]}
           >
             {create.isPending ? (
               <ActivityIndicator color={colors.accentFg} />
@@ -205,25 +223,25 @@ export function NoteComposer({
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
+    // Design system Capture (#68): the box sits on card ground under a rule.
     composer: {
-      gap: space.sm,
-      paddingHorizontal: space.md,
-      paddingTop: space.sm + 2,
-      paddingBottom: space.md,
+      gap: 9,
+      paddingHorizontal: 14,
+      paddingTop: 11,
       borderTopWidth: 1,
       borderTopColor: c.line,
-      backgroundColor: c.page,
+      backgroundColor: c.surface,
     },
     composerExpanded: { flex: 1, borderTopWidth: 0 },
     controls: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     locatorChip: {
       flexShrink: 1,
-      paddingVertical: 5,
-      paddingHorizontal: 10,
+      paddingVertical: 4,
+      paddingHorizontal: 11,
       borderRadius: radius.chip,
       backgroundColor: c.accentSoft,
     },
-    locatorText: { ...typeScale.locator, fontSize: 13, color: c.accent },
+    locatorText: { ...typeScale.locator, fontSize: 13, lineHeight: 18, color: c.accent },
     locatorNone: { ...typeScale.label, color: c.accent },
     locatorEdit: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
     locatorInput: {
@@ -236,7 +254,7 @@ const makeStyles = (c: Colors) =>
       borderWidth: 1,
       borderColor: c.accent,
       borderRadius: radius.chip,
-      backgroundColor: c.surface,
+      backgroundColor: c.page,
     },
     noLocator: { paddingVertical: 5, paddingHorizontal: 4 },
     noLocatorText: { ...typeScale.label, color: c.muted },
@@ -249,12 +267,14 @@ const makeStyles = (c: Colors) =>
       color: c.fg,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
-      paddingHorizontal: 14,
-      paddingTop: 11,
-      paddingBottom: 11,
+      borderRadius: radius.card,
+      paddingHorizontal: 13,
+      paddingTop: 10,
+      paddingBottom: 10,
       textAlignVertical: 'top',
     },
+    // Only the accent border, as in the design; no browser focus ring on web.
+    focused: { borderColor: c.accent, outlineWidth: 0 },
     inputGrowing: { minHeight: minInputHeight, maxHeight: maxInputHeight },
     inputExpanded: { height: '100%' },
     // The author's words: the quote face on a ground of its own, with the quote rule.
@@ -265,25 +285,25 @@ const makeStyles = (c: Colors) =>
       borderLeftWidth: 2,
       borderLeftColor: c.quoteBar,
     },
-    comment: { ...typeScale.body, backgroundColor: c.surface },
-    side: { gap: space.sm, alignItems: 'center' },
+    comment: { ...typeScale.body, color: c.ink3, backgroundColor: c.page },
+    side: { gap: 6, alignItems: 'center' },
     sideExpanded: { justifyContent: 'flex-end' },
     expand: {
-      width: 32,
-      height: 32,
+      width: 34,
+      height: 34,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.button,
+      borderRadius: radius.pill,
       backgroundColor: c.surface,
     },
     send: {
-      width: 44,
-      height: 44,
+      width: 46,
+      height: 46,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.button,
+      borderRadius: radius.card,
       backgroundColor: c.accent,
     },
     inactive: { opacity: 0.35 },
