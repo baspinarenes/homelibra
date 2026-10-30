@@ -1,5 +1,5 @@
 {
-  "id": "e08c4645-6d76-49ca-8b10-4a9ba24dfc43",
+  "id": "5270f456-adc1-426a-acb4-8b1c5d724dd0",
   "prevId": "4bdb8cc5-936b-4771-9e1c-7cc7dadd1ff2",
   "version": "7",
   "dialect": "postgresql",
@@ -963,6 +963,14 @@
           "primaryKey": false,
           "notNull": false
         },
+        "reading_status": {
+          "name": "reading_status",
+          "type": "reading_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'reading'"
+        },
         "search_vector": {
           "name": "search_vector",
           "type": "tsvector",
@@ -1430,8 +1438,15 @@
       "schema": "public",
       "values": [
         "doi",
-        "isbn",
-        "isbn_cover"
+        "isbn"
+      ]
+    },
+    "public.reading_status": {
+      "name": "reading_status",
+      "schema": "public",
+      "values": [
+        "reading",
+        "finished"
       ]
     },
     "public.source_type": {

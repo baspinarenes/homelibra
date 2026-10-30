@@ -124,8 +124,15 @@
     {
       "idx": 17,
       "version": "7",
-      "when": 1793382722519,
-      "tag": "0017_isbn_cover",
+      "when": 1793382576260,
+      "tag": "0017_reading_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793382889041,
+      "tag": "0018_isbn_cover",
       "breakpoints": true
     }
   ]
