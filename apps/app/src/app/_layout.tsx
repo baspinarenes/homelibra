@@ -17,7 +17,7 @@ import { useTheme } from '@/theme';
 
 export default function RootLayout() {
   const { data: session, isPending } = authClient.useSession();
-  const { colors } = useTheme();
+  const { scheme, colors } = useTheme();
   // Keys must match `fonts` in theme.ts. A font that fails to load falls back to the system font.
   const [fontsLoaded, fontError] = useFonts({
     EBGaramond_400Regular,
@@ -34,7 +34,8 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          <StatusBar style="auto" />
+          {/* Follows the app's theme, which Ayarlar can pin away from the system's. */}
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
           {loading ? (
             <View style={[styles.splash, { backgroundColor: colors.page }]}>
               <ActivityIndicator color={colors.accent} />

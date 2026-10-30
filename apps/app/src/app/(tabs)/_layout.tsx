@@ -11,12 +11,15 @@ const RAIL_MIN_WIDTH = 720;
 const tabs: { route: string; icon: TabIconName }[] = [
   { route: '(home)', icon: 'home' },
   { route: 'sources', icon: 'sources' },
-  { route: 'tags', icon: 'tags' },
   { route: 'collections', icon: 'collections' },
   { route: 'search', icon: 'search' },
+  { route: 'settings', icon: 'settings' },
 ];
 
-/** Five tabs: a bottom bar on the phone, a left rail on desktop web. */
+/**
+ * Five tabs: a bottom bar on the phone, a left rail on desktop web. Etiketler
+ * is not a tab: it is the second view inside Dosyalar.
+ */
 export default function TabsLayout() {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();

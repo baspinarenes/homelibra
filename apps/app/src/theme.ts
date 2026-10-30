@@ -1,5 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { useColorScheme } from 'react-native';
+
+import { loadThemePreference, saveThemePreference, type ThemePreference } from '@/lib/theme-preference';
+
+export type { ThemePreference };
 
 // Tokens from the visual identity decision (#68) and its design system:
 // paper ground, ink text, one accent (Terracotta). Light and dark share the key names.
@@ -113,9 +117,29 @@ export const type = {
   locator: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: 17 },
 } as const;
 
-/** The theme follows the system for now; the Sistem / Açık / Koyu choice in Ayarlar comes later. */
+let preference: ThemePreference = loadThemePreference();
+const listeners = new Set<() => void>();
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+/** The Sistem / Açık / Koyu choice in Ayarlar, kept on this device. Sistem by default. */
+export function useThemePreference(): ThemePreference {
+  return useSyncExternalStore(subscribe, () => preference);
+}
+
+export function setThemePreference(next: ThemePreference) {
+  preference = next;
+  saveThemePreference(next);
+  listeners.forEach((listener) => listener());
+}
+
+/** The theme follows the system unless Ayarlar pins it to Açık or Koyu. */
 export function useTheme() {
-  const scheme: Scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const system = useColorScheme();
+  const choice = useThemePreference();
+  const scheme: Scheme = choice === 'system' ? (system === 'dark' ? 'dark' : 'light') : choice;
   return { scheme, colors: palette[scheme] as Colors, shadow: shadows[scheme] };
 }
 
