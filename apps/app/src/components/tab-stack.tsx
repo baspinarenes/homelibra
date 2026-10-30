@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { tr } from '@/i18n/tr';
 
-import { colors } from '@/theme';
+import { fonts, useTheme } from '@/theme';
 
 export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
 
@@ -14,11 +14,14 @@ export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
  */
 export function TabStack({ title, headerRight }: { title: TabTitleKey; headerRight?: () => ReactNode }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
+        headerStyle: { backgroundColor: colors.page },
+        headerShadowVisible: false,
         headerTintColor: colors.fg,
+        headerTitleStyle: { fontFamily: fonts.serifMedium, fontSize: 21 },
         contentStyle: { backgroundColor: colors.page },
       }}
     >

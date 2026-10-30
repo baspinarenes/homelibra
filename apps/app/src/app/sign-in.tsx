@@ -5,12 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/primary-button';
 import { authClient } from '@/lib/auth-client';
-import { colors, space } from '@/theme';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Step = { kind: 'email' } | { kind: 'code'; email: string };
 
 export default function SignInScreen() {
   const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
   const [step, setStep] = useState<Step>({ kind: 'email' });
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -48,6 +49,7 @@ export default function SignInScreen() {
               <Text style={styles.label}>{t('signIn.emailLabel')}</Text>
               <TextInput
                 style={styles.input}
+                placeholderTextColor={styles.placeholder.color}
                 value={email}
                 onChangeText={setEmail}
                 placeholder={t('signIn.emailPlaceholder')}
@@ -73,6 +75,7 @@ export default function SignInScreen() {
               <Text style={styles.label}>{t('signIn.codeLabel')}</Text>
               <TextInput
                 style={[styles.input, styles.code]}
+                placeholderTextColor={styles.placeholder.color}
                 value={code}
                 onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
                 placeholder="000000"
@@ -110,36 +113,46 @@ export default function SignInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.page },
-  center: { flex: 1, justifyContent: 'center', padding: space.lg },
-  card: {
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: space.xl,
-    gap: space.sm,
-  },
-  title: { fontSize: 24, fontWeight: '600', color: colors.accent, marginBottom: space.sm },
-  lead: { fontSize: 15, color: colors.fg, marginBottom: space.sm },
-  label: { fontSize: 13, fontWeight: '600', color: colors.muted },
-  input: {
-    borderColor: colors.line,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
-    fontSize: 16,
-    color: colors.fg,
-  },
-  code: { fontSize: 24, letterSpacing: 8, textAlign: 'center' },
-  hint: { fontSize: 13, color: colors.muted },
-  action: { marginTop: space.md },
-  links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
-  link: { color: colors.accent, fontSize: 14 },
-  error: { color: colors.warn, fontSize: 14, marginTop: space.sm },
-});
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    page: { flex: 1, backgroundColor: c.page },
+    center: { flex: 1, justifyContent: 'center', padding: space.lg },
+    card: {
+      alignSelf: 'center',
+      width: '100%',
+      maxWidth: 420,
+      backgroundColor: c.surface,
+      borderColor: c.line,
+      borderWidth: 1,
+      borderRadius: radius.card,
+      padding: space.xl,
+      gap: space.sm,
+    },
+    title: { ...typeScale.title, color: c.fg, marginBottom: space.sm },
+    lead: { ...typeScale.body, color: c.ink2, marginBottom: space.sm },
+    label: { ...typeScale.micro, textTransform: 'uppercase', color: c.muted },
+    input: {
+      borderColor: c.line,
+      borderWidth: 1,
+      borderRadius: radius.input,
+      paddingHorizontal: space.md,
+      paddingVertical: space.md,
+      ...typeScale.body,
+      fontSize: 16,
+      color: c.fg,
+      backgroundColor: c.surface,
+    },
+    code: {
+      fontFamily: typeScale.locator.fontFamily,
+      fontSize: 24,
+      lineHeight: 30,
+      letterSpacing: 8,
+      textAlign: 'center',
+    },
+    hint: { ...typeScale.caption, color: c.muted },
+    action: { marginTop: space.md },
+    links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
+    link: { ...typeScale.label, color: c.accent },
+    error: { ...typeScale.label, color: c.warn, marginTop: space.sm },
+    placeholder: { color: c.muted2 },
+  });
