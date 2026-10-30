@@ -136,6 +136,7 @@ export function useLeaveAfterSave() {
   const router = useRouter();
   return async () => {
     await queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() });
+    await queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() });
     if (router.canGoBack()) router.back();
     else router.replace('/sources');
   };

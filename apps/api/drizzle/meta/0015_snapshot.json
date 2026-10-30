@@ -1,5 +1,5 @@
 {
-  "id": "45264ad2-9484-459f-9856-c76e6d7732df",
+  "id": "9ace5f18-6933-401d-8572-3cb33a290cbe",
   "prevId": "5014e3e6-19dd-417f-822d-2afa2db478a6",
   "version": "7",
   "dialect": "postgresql",
@@ -760,6 +760,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "last_finished_at": {
+          "name": "last_finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "search_vector": {
           "name": "search_vector",
           "type": "tsvector",
@@ -1227,8 +1233,7 @@
       "schema": "public",
       "values": [
         "doi",
-        "isbn",
-        "isbn_cover"
+        "isbn"
       ]
     },
     "public.source_type": {

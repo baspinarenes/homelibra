@@ -9,6 +9,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { PrimaryButton } from '@/components/primary-button';
 import { RecentTags } from '@/components/recent-tags';
 import { SourceCover } from '@/components/source-cover';
+import { ToOrganizeStrip } from '@/components/to-organize';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -43,6 +44,7 @@ export default function HomeScreen() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <LastNotedSection lastNoted={lastNoted.data} />
+        <ToOrganizeStrip />
         <RecentTags />
       </ScrollView>
     );

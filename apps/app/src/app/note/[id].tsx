@@ -91,6 +91,7 @@ function NoteForm({ note }: { note: StoredNote }) {
       queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
       queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
       queryClient.invalidateQueries({ queryKey: trpc.tags.pathKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() }),
     ]);
 
   const updateNote = useMutation(trpc.notes.update.mutationOptions());
@@ -119,6 +120,7 @@ function NoteForm({ note }: { note: StoredNote }) {
           queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
           queryClient.invalidateQueries({ queryKey: trpc.search.pathKey() }),
           queryClient.invalidateQueries({ queryKey: trpc.tags.pathKey() }),
+          queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() }),
         ]);
       },
     }),
