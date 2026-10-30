@@ -1,3 +1,4 @@
+import type { SourceType } from '@homelibra/core/source';
 import { useMemo, useSyncExternalStore } from 'react';
 import { useColorScheme } from 'react-native';
 
@@ -67,18 +68,21 @@ export const palette = {
 export type Scheme = keyof typeof palette;
 export type Colors = { readonly [K in keyof typeof palette.light]: string };
 
-// Template cover stripes; the same in both themes.
-export const coverColors = {
-  kitap: '#A0634A',
-  makale: '#5E7A9A',
-  tez: '#8A6B8A',
-  arsiv: '#7A6B4A',
-  yazma: '#8C6A3C',
-  sureli: '#6B8A6B',
-  kayit: '#9A6B7A',
-  web: '#4F7F86',
-  diger: '#6B6B6B',
-} as const;
+// Template cover stripes, one colour per Source type; the same in both themes.
+export const coverColors: Record<SourceType, string> = {
+  book: '#A0634A',
+  article: '#5E7A9A',
+  thesis: '#8A6B8A',
+  archive: '#7A6B4A',
+  manuscript: '#8C6A3C',
+  periodical: '#6B8A6B',
+  recording: '#9A6B7A',
+  webPage: '#4F7F86',
+  other: '#6B6B6B',
+};
+
+// From this width up, web gets the left tab rail and the two-column Source form.
+export const wideMinWidth = 720;
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, gutter: 22, xl: 24, xxl: 32 } as const;
 
