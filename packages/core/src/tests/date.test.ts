@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { calendarMonths, formatDate, formatGregorianRange, gregorianRange, sortValue } from '../date';
+import {
+  calendarMonths,
+  formatDate,
+  formatGregorianRange,
+  gregorianRange,
+  isExactInGregorian,
+  sortValue,
+} from '../date';
 
 const day = (year: number, month: number, d: number) => ({ year, month, day: d });
 
@@ -233,5 +240,19 @@ describe('formatGregorianRange', () => {
   it('writes nothing for a Milâdî Date or one that does not exist', () => {
     expect(formatGregorianRange({ calendar: 'gregorian', year: 1893 })).toBeNull();
     expect(formatGregorianRange({ calendar: 'hijri', year: 1310, month: 2, day: 30 })).toBeNull();
+  });
+});
+
+// Research §Öneri 2–3: Rumî is the Julian calendar with a fixed offset, so its
+// Milâdî day is exact; Hicrî is arithmetic and drifts a day or two; Rumî
+// before 1256 is numbered by an inferred rule.
+describe('isExactInGregorian', () => {
+  it.each([
+    [true, 'a Rumî Date from 1256', { calendar: 'rumi', year: 1324, month: 1, day: 1 }],
+    [true, 'a Milâdî Date', { calendar: 'gregorian', year: 1893 }],
+    [false, 'a Hicrî Date', { calendar: 'hijri', year: 1310, month: 12, day: 29 }],
+    [false, 'a Rumî Date before 1256', { calendar: 'rumi', year: 1250, month: 3, day: 1 }],
+  ] as const)('is %s for %s', (exact, _, date) => {
+    expect(isExactInGregorian(date)).toBe(exact);
   });
 });

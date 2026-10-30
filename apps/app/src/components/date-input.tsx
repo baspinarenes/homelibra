@@ -5,6 +5,7 @@ import {
   calendars,
   formatDate,
   formatGregorianRange,
+  isExactInGregorian,
   type Month,
   sortValue,
 } from '@homelibra/core/date';
@@ -40,7 +41,7 @@ export function readDateDraft({ calendar, day, month, year }: DateDraft): ReadDa
  * The Date field (#18 §1, Sade): a chip beside the label cycles Milâdî →
  * Hicrî → Rumî, always starting at Milâdî; then Gün · Ay · Yıl. Changing the
  * calendar clears Ay and Gün and keeps Yıl; Gün opens once Ay is chosen.
- * Under the field: the approximate Milâdî days and the form the Date is shown in.
+ * Under the field: the Milâdî days (≈ when approximate) and the form the Date is shown in.
  * `today` replaces the chip with a Bugün button, for Erişim tarihi (always Milâdî).
  */
 export function DateInput({
@@ -146,7 +147,11 @@ export function DateInput({
       ) : (
         read.date && (
           <View>
-            {range && <Text style={styles.hint}>{t('date.approximate', { range })}</Text>}
+            {range && (
+              <Text style={styles.hint}>
+                {t(isExactInGregorian(read.date) ? 'date.exact' : 'date.approximate', { range })}
+              </Text>
+            )}
             <Text style={styles.hint}>{t('date.shownAs', { date: formatDate(read.date) })}</Text>
           </View>
         )

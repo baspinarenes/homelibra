@@ -98,7 +98,7 @@ export const tr = {
     },
     periodical: {
       label: 'Süreli yayın',
-      dateLabel: 'İlk sayı tarihi',
+      dateLabel: 'Tarih',
       scope: 'gazete, dergi koleksiyonu',
       titleExample: 'Tanin',
       authorExample: 'boş bırakılabilir',
@@ -156,6 +156,7 @@ export const tr = {
     monthWithAbbreviation: '{{name}} ({{abbreviation}})',
     today: 'Bugün',
     approximate: '≈ {{range}}, yalnızca sıralama için',
+    exact: 'Milâdî: {{range}}, yalnızca sıralama için',
     shownAs: 'Görünecek: {{date}}',
     needsYear: 'Yıl gerekli.',
     notInCalendar: 'Bu tarih {{calendar}} takvimde yok.',
