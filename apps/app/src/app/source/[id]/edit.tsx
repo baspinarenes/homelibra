@@ -6,8 +6,9 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DangerAction } from '@/components/danger-action';
-import { draftToInput, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
-import { useTRPC } from '@/lib/trpc';
+import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
+import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
+import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo } from '@/lib/undo';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
@@ -18,7 +19,14 @@ export default function EditSourceScreen() {
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
-  const update = useMutation(trpc.sources.update.mutationOptions({ onSuccess: useLeaveAfterSave() }));
+  const giveCover = useGiveSuggestedCover();
+  const update = useMutation({
+    mutationFn: async (draft: SourceDraft) => {
+      await trpcClient.sources.update.mutate({ id, ...draftToInput(draft) });
+      await giveCover(id, draft.suggestedCover);
+    },
+    onSuccess: useLeaveAfterSave(),
+  });
 
   if (source.isPending || source.isError) {
     return (
@@ -39,7 +47,7 @@ export default function EditSourceScreen() {
       initial={sourceToDraft(source.data)}
       saving={update.isPending}
       failed={update.isError}
-      onSave={(draft) => update.mutate({ id, ...draftToInput(draft) })}
+      onSave={(draft) => update.mutate(draft)}
       footer={<DeleteSource id={id} title={source.data.title} />}
     />
   );
