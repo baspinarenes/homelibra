@@ -154,6 +154,12 @@ export const source = pgTable(
     /** Type-specific fields by key. A type change only hides the ones the new type lacks. */
     fields: jsonb('fields').$type<SourceFieldValues>().notNull().default({}),
     /**
+     * The last "Bitir" of an Organizing pass on this Source; null before the
+     * first. Düzenlenecekler counts only the untagged Notes that entered the
+     * Source after it, and the Source page marks them "yeni".
+     */
+    lastFinishedAt: timestamp('last_finished_at', { withTimezone: true }),
+    /**
      * What search matches by word: Başlık, Yazar, Künye notu and the
      * type-specific text fields, through the search functions of 0011_search.
      */
