@@ -124,22 +124,6 @@ export const sourcesRouter = router({
       return rows.sort(order[input.sort]).map(({ dateSort: _, ...row }) => row);
     }),
 
-  /**
-   * Capture's Source list and its default (the first): the Source with the
-   * latest Note first, then those without Notes, newest first. Note and
-   * Source ids are UUIDv7, so id order is time order.
-   */
-  byLastNote: libraryProcedure.query(async ({ ctx }) => {
-    const lastNote = sql`(select ${note.id} from ${note}
-        where ${note.sourceId} = ${source.id} and ${note.accountId} = ${ctx.accountId}
-        order by ${note.id} desc limit 1)`;
-    return ctx.tx
-      .select({ id: source.id, type: source.type, title: source.title, author: source.author })
-      .from(source)
-      .where(eq(source.accountId, ctx.accountId))
-      .orderBy(sql`${lastNote} desc nulls last`, desc(source.id));
-  }),
-
   /** Ana sayfa's "Son not aldığın": the latest Note and its Source, or null before the first Note. */
   lastNoted: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx

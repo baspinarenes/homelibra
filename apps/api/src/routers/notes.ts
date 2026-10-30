@@ -1,6 +1,6 @@
 import { compareNotes, locatorSortValue } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
-import { and, asc, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, isNull, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
@@ -124,17 +124,10 @@ export const notesRouter = router({
       });
     }),
 
-  /** A Source's Notes as Capture shows them: oldest first, by their UUIDv7 ids. */
-  flow: libraryProcedure.input(z.object({ sourceId: z.uuid() })).query(async ({ ctx, input }) => {
-    await assertSource(ctx.tx, ctx.accountId, input.sourceId);
-    return ctx.tx
-      .select({ id: note.id, locator: note.locator, excerpt: note.excerpt, comment: note.comment })
-      .from(note)
-      .where(and(eq(note.sourceId, input.sourceId), eq(note.accountId, ctx.accountId)))
-      .orderBy(asc(note.id));
-  }),
-
-  /** A Source's Notes as the Source page lists them: in Locator order (core's compareNotes). */
+  /**
+   * A Source's Notes, listed in one place: the Source page, in Locator order
+   * (core's compareNotes), with the writing box under them (#87).
+   */
   list: libraryProcedure.input(z.object({ sourceId: z.uuid() })).query(async ({ ctx, input }) => {
     await assertSource(ctx.tx, ctx.accountId, input.sourceId);
     const rows = await ctx.tx

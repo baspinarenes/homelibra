@@ -20,7 +20,7 @@ const derivedText = (locator: string) => {
   return value ? formatSortValue(value) : '';
 };
 
-/** Notu düzenle, opened from the Source page and from Capture's flow. */
+/** Notu düzenle, opened from a Note on the Source page. */
 export default function EditNoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();

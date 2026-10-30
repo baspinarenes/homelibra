@@ -136,9 +136,8 @@ export const tr = {
   },
   sourcePage: {
     edit: 'Düzenle',
-    takeNote: 'Not al',
     noteCount: '{{count}} not',
-    empty: 'Bu kaynaktan henüz not yok.',
+    empty: 'Bu kaynaktan henüz not yok. Aşağıya yazmaya başla.',
     loadFailed: 'Kaynak yüklenemedi.',
     editNote: 'Notu düzenle',
   },
@@ -167,7 +166,6 @@ export const tr = {
     emptyTitle: 'Henüz kaynak yok',
     emptyLead: 'Okuduğun bir kitabı, makaleyi ya da arşiv fonunu ekle.',
     loadFailed: 'Kaynaklar yüklenemedi.',
-    takeNote: 'Not al: {{title}}',
   },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
@@ -296,12 +294,6 @@ export const tr = {
     loadFailed: 'Kaynak yüklenemedi.',
   },
   capture: {
-    chooseSource: 'Kaynak seç',
-    empty: 'Bu kaynaktan henüz not yok. Aşağıya yazmaya başla.',
-    loadFailed: 'Notlar yüklenemedi.',
-    noSource: 'Bu kaynak bulunamadı.',
-    goToSource: 'Kaynağa git ›',
-    editNote: 'Notu düzenle',
     mode: 'Alıntı ya da yorum',
     excerpt: 'Alıntı',
     comment: 'Yorum',
@@ -327,15 +319,6 @@ export const tr = {
     collapse: 'Küçült',
     save: 'Kaydet',
     saveFailed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
-  },
-  sourcePicker: {
-    title: 'Kaynak seç',
-    close: 'Kapat',
-    current: 'Seçili',
-    quickAdd: 'Yeni kaynak · ayrıntılar sonra',
-    titlePlaceholder: 'Başlık',
-    add: 'Ekle ve seç',
-    addFailed: 'Eklenemedi. Bağlantını kontrol edip yeniden dene.',
   },
   undo: {
     action: 'Geri al',
