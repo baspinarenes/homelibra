@@ -22,6 +22,13 @@
       "when": 1793309448947,
       "tag": "0002_library_isolation",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793342189914,
+      "tag": "0003_source_fields",
+      "breakpoints": true
     }
   ]
 }

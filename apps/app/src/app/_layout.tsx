@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useHeaderOptions } from '@/components/tab-stack';
 import { authClient } from '@/lib/auth-client';
 import { queryClient, TRPCProvider, trpcClient } from '@/lib/trpc';
 import { useTheme } from '@/theme';
@@ -18,6 +19,8 @@ import { useTheme } from '@/theme';
 export default function RootLayout() {
   const { data: session, isPending } = authClient.useSession();
   const { scheme, colors } = useTheme();
+  // Pushed over the tabs (the Source form), so they keep a back button.
+  const pushedScreen = { ...useHeaderOptions(), headerShown: true };
   // Keys must match `fonts` in theme.ts. A font that fails to load falls back to the system font.
   const [fontsLoaded, fontError] = useFonts({
     EBGaramond_400Regular,
@@ -44,6 +47,8 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
               <Stack.Protected guard={!!session}>
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="source/new" options={pushedScreen} />
+                <Stack.Screen name="source/[id]" options={pushedScreen} />
               </Stack.Protected>
               <Stack.Protected guard={!session}>
                 <Stack.Screen name="sign-in" />

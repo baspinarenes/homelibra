@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -11,6 +12,7 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
+  const router = useRouter();
   const home = useQuery(trpc.sources.home.queryOptions());
 
   if (home.isPending) {
@@ -36,8 +38,7 @@ export default function HomeScreen() {
       <Text style={styles.title}>{t('home.emptyTitle')}</Text>
       <Text style={styles.lead}>{t('home.emptyLead')}</Text>
       <View style={styles.action}>
-        {/* The Source form arrives in #43. */}
-        <PrimaryButton label={t('home.addFirstSource')} onPress={() => {}} />
+        <PrimaryButton label={t('home.addFirstSource')} onPress={() => router.push('/source/new')} />
       </View>
     </View>
   );
