@@ -5,6 +5,7 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
 import { setCollectionTags, tagsOfCollection, tagsOfCollections } from '../collections/definition';
+import { deleteCollection } from '../collections/delete';
 import { collectionView, memberCount } from '../collections/view';
 import type { LibraryTx } from '../db/client';
 import { collection, tag } from '../db/schema';
@@ -89,6 +90,14 @@ export const collectionsRouter = router({
         .returning({ id: collection.id });
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     }),
+
+  /**
+   * Dosyayı sil, from the Collection's top bar: no confirmation, a Geri al
+   * token instead. Notes and Tags stay, but for a Tag only it kept.
+   */
+  delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => ({
+    undoToken: await deleteCollection(ctx.tx, ctx.accountId, input.id, ctx.now()),
+  })),
 
   /** The Collection's definition and its view, worked out now (#3). */
   view: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
