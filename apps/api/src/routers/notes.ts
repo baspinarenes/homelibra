@@ -8,6 +8,7 @@ import { note, source } from '../db/schema';
 import { deleteNotes, mergeSelected, moveNotes, selectionLimit } from '../notes/selection';
 import { addNoteTags, resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
+import { mySource } from '../sources/sources';
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
 const optionalText = z
@@ -39,10 +40,7 @@ export const SOURCE_NOT_FOUND = 'SOURCE_NOT_FOUND';
 
 /** Fails with NOT_FOUND ({@link SOURCE_NOT_FOUND}) unless the Source is in this Library. */
 async function assertSource(tx: LibraryTx, accountId: string, sourceId: string) {
-  const [row] = await tx
-    .select({ id: source.id })
-    .from(source)
-    .where(and(eq(source.id, sourceId), eq(source.accountId, accountId)));
+  const [row] = await tx.select({ id: source.id }).from(source).where(mySource(accountId, sourceId));
   if (!row) throw new TRPCError({ code: 'NOT_FOUND', message: SOURCE_NOT_FOUND });
 }
 

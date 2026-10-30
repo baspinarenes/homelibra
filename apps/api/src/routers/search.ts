@@ -12,6 +12,7 @@ import { source, tag } from '../db/schema';
 import { dateFilter, inDates } from '../search/dates';
 import { joined, type Segment, snippet } from '../search/snippet';
 import { libraryProcedure, router } from '../trpc/init';
+import { mySource } from '../sources/sources';
 
 /** How a result matched its worst query word: the tiers of the search contract (ADR-0005). */
 export type Match = 'exact' | 'stem' | 'prefix' | 'part';
@@ -151,10 +152,7 @@ export const searchRouter = router({
 
   /** "Bu kaynakta ara": the Source's own Notes that match, by the Library search's rules. */
   source: libraryProcedure.input(z.object({ sourceId: z.uuid(), query: queryText })).query(async ({ ctx, input }) => {
-    const [found] = await ctx.tx
-      .select({ id: source.id })
-      .from(source)
-      .where(and(eq(source.id, input.sourceId), eq(source.accountId, ctx.accountId)));
+    const [found] = await ctx.tx.select({ id: source.id }).from(source).where(mySource(ctx.accountId, input.sourceId));
     if (!found) throw new TRPCError({ code: 'NOT_FOUND' });
     return notesIn(ctx.tx, ctx.accountId, input.query, sql`n.source_id = ${input.sourceId}`);
   }),

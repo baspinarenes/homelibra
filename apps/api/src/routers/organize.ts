@@ -10,6 +10,7 @@ import { note, noteTag, source } from '../db/schema';
 import { resolveTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo } from '../undo/undo';
+import { mySource } from '../sources/sources';
 
 /**
  * Whether the Note `n` of the Source `s` (SQL aliases) is one Organizing
@@ -35,9 +36,6 @@ export async function waitingCount(tx: LibraryTx, accountId: string, sourceId: s
 }
 
 type SourceType = (typeof source.$inferSelect)['type'];
-
-/** The Source with this id, when it is in this Library. */
-const mySource = (accountId: string, id: string) => and(eq(source.id, id), eq(source.accountId, accountId));
 
 export const organizeRouter = router({
   /**

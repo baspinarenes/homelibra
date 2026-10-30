@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { COVER_MAX_BYTES, type CoverSize, isJpeg, storeCover } from '../covers/covers';
 import type { LibraryTx } from '../db/client';
 import { source } from '../db/schema';
+import { mySource } from '../sources/sources';
 import type { ObjectStorage } from '../storage/object-storage';
 import { libraryProcedure, router } from '../trpc/init';
 import { isbn } from './lookups';
@@ -30,6 +30,21 @@ function decode(size: CoverSize, text: string) {
 export const OPEN_LIBRARY_COVER_NOT_FOUND = 'OPEN_LIBRARY_COVER_NOT_FOUND';
 
 /**
+ * The Source's Cover as it is, locked for a change: its large file's key
+ * (null without a Cover) and the snapshot Geri al reverts to. NOT_FOUND when
+ * the Source is gone or never was this Library's.
+ */
+async function coverBefore(tx: LibraryTx, accountId: string, sourceId: string) {
+  const [before] = await tx
+    .select({ row: storedRow(source, [source.coverKeyLarge, source.coverKeySmall]), large: source.coverKeyLarge })
+    .from(source)
+    .where(mySource(accountId, sourceId))
+    .for('update');
+  if (!before) throw new TRPCError({ code: 'NOT_FOUND' });
+  return before;
+}
+
+/**
  * Gives the Source these files as its Cover, in place of any it had.
  * Replacing one offers Geri al, which brings the earlier Cover back; adding
  * the first does not.
@@ -39,15 +54,12 @@ async function giveCover(
   sourceId: string,
   files: Record<CoverSize, Uint8Array>,
 ) {
-  const mine = and(eq(source.id, sourceId), eq(source.accountId, ctx.accountId));
-  const [before] = await ctx.tx
-    .select({ row: storedRow(source, [source.coverKeyLarge, source.coverKeySmall]), large: source.coverKeyLarge })
-    .from(source)
-    .where(mine)
-    .for('update');
-  if (!before) throw new TRPCError({ code: 'NOT_FOUND' });
+  const before = await coverBefore(ctx.tx, ctx.accountId, sourceId);
   const cover = await storeCover(ctx.covers, ctx.accountId, files);
-  await ctx.tx.update(source).set({ coverKeyLarge: cover.large, coverKeySmall: cover.small }).where(mine);
+  await ctx.tx
+    .update(source)
+    .set({ coverKeyLarge: cover.large, coverKeySmall: cover.small })
+    .where(mySource(ctx.accountId, sourceId));
   const undoToken = before.large
     ? await recordUndo(ctx.tx, ctx.accountId, ctx.now(), { revert: { source: [before.row] } })
     : null;
@@ -87,15 +99,12 @@ export const coversRouter = router({
 
   /** Kapağı kaldır: no question asked, Geri al brings it back. A Source without a Cover offers none. */
   remove: libraryProcedure.input(z.object({ sourceId: z.uuid() })).mutation(async ({ ctx, input }) => {
-    const mine = and(eq(source.id, input.sourceId), eq(source.accountId, ctx.accountId));
-    const [before] = await ctx.tx
-      .select({ row: storedRow(source, [source.coverKeyLarge, source.coverKeySmall]), large: source.coverKeyLarge })
-      .from(source)
-      .where(mine)
-      .for('update');
-    if (!before) throw new TRPCError({ code: 'NOT_FOUND' });
+    const before = await coverBefore(ctx.tx, ctx.accountId, input.sourceId);
     if (!before.large) return { undoToken: null };
-    await ctx.tx.update(source).set({ coverKeyLarge: null, coverKeySmall: null }).where(mine);
+    await ctx.tx
+      .update(source)
+      .set({ coverKeyLarge: null, coverKeySmall: null })
+      .where(mySource(ctx.accountId, input.sourceId));
     const undoToken = await recordUndo(ctx.tx, ctx.accountId, ctx.now(), { revert: { source: [before.row] } });
     return { undoToken };
   }),

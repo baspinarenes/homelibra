@@ -21,6 +21,7 @@ import { tagParts } from '../tags/snapshot';
 import { tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo, storedRow } from '../undo/undo';
+import { mySource } from '../sources/sources';
 import { waiting, waitingCount } from './organize';
 
 // Only Tür and Başlık are required; nothing else is validated, so a
@@ -243,17 +244,14 @@ export const sourcesRouter = router({
         }),
         updatedAt: new Date(),
       })
-      .where(and(eq(source.id, id), eq(source.accountId, ctx.accountId)))
+      .where(mySource(ctx.accountId, id))
       .returning({ id: source.id });
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     return { id };
   }),
 
   get: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
-    const [row] = await ctx.tx
-      .select(sourceColumns)
-      .from(source)
-      .where(and(eq(source.id, input.id), eq(source.accountId, ctx.accountId)));
+    const [row] = await ctx.tx.select(sourceColumns).from(source).where(mySource(ctx.accountId, input.id));
     if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
     return { ...coverOf(row), tags: await tagsOfSource(ctx.tx, ctx.accountId, row.id) };
   }),
@@ -268,7 +266,7 @@ export const sourcesRouter = router({
   setReadingStatus: libraryProcedure
     .input(z.object({ id: z.uuid(), status: z.enum(source.readingStatus.enumValues) }))
     .mutation(async ({ ctx, input }) => {
-      const mine = and(eq(source.id, input.id), eq(source.accountId, ctx.accountId));
+      const mine = mySource(ctx.accountId, input.id);
       const [before] = await ctx.tx.select({ status: source.readingStatus }).from(source).where(mine).for('update');
       if (!before) throw new TRPCError({ code: 'NOT_FOUND' });
       if (before.status === input.status) return { untaggedCount: 0 };
@@ -284,7 +282,7 @@ export const sourcesRouter = router({
    * that is already gone changes nothing and offers no Geri al.
    */
   delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
-    const mine = and(eq(source.id, input.id), eq(source.accountId, ctx.accountId));
+    const mine = mySource(ctx.accountId, input.id);
     // Read under the lock first: the delete takes the Notes along by cascade.
     const [deleted] = await ctx.tx
       .select({ row: storedRow(source) })

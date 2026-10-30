@@ -10,6 +10,7 @@ import { tagParts } from '../tags/snapshot';
 import { mergeTag, resolveTags, setSourceTags, tagNameInput, tagNames, tagsOfSource } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 import { recordUndo } from '../undo/undo';
+import { mySource } from '../sources/sources';
 
 export const tagsRouter = router({
   /**
@@ -55,10 +56,7 @@ export const tagsRouter = router({
   setOnSource: libraryProcedure
     .input(z.object({ sourceId: z.uuid(), names: tagNames }))
     .mutation(async ({ ctx, input }) => {
-      const [row] = await ctx.tx
-        .select({ id: source.id })
-        .from(source)
-        .where(and(eq(source.id, input.sourceId), eq(source.accountId, ctx.accountId)));
+      const [row] = await ctx.tx.select({ id: source.id }).from(source).where(mySource(ctx.accountId, input.sourceId));
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
       const tagIds = await resolveTags(ctx.tx, ctx.accountId, input.names);
       await setSourceTags(ctx.tx, ctx.accountId, input.sourceId, tagIds);
