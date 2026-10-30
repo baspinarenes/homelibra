@@ -5,6 +5,7 @@ import { and, eq, getTableName, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { coverOf } from '../covers/covers';
+import type { LibraryTx } from '../db/client';
 import { note, noteTag, source } from '../db/schema';
 import { resolveTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
@@ -21,6 +22,16 @@ const waiting = (n: string, s: string) =>
   sql.raw(`not exists (select 1 from note_tag nt where nt.note_id = ${n}.id)
     and (${s}.last_finished_at is null or ${n}.entered_source_at > ${s}.last_finished_at)`);
 
+/** How many of the Source's Notes Organizing pass waits on, as Düzenlenecekler counts them. */
+export async function waitingCount(tx: LibraryTx, accountId: string, sourceId: string) {
+  const [row] = await tx.execute<{ count: number }>(
+    sql`select count(*)::int as count from ${note} n
+          join ${source} s on s.id = n.source_id and s.account_id = n.account_id
+         where n.source_id = ${sourceId} and n.account_id = ${accountId} and ${waiting('n', 's')}`,
+  );
+  return row?.count ?? 0;
+}
+
 type SourceType = (typeof source.$inferSelect)['type'];
 
 /** The Source with this id, when it is in this Library. */
@@ -29,8 +40,8 @@ const mySource = (accountId: string, id: string) => and(eq(source.id, id), eq(so
 export const organizeRouter = router({
   /**
    * Düzenlenecekler: the Sources with at least one Note waiting, how many,
-   * and when their last Note was captured; the last noted first. (Reading
-   * status, P1, will put the finished ones first.)
+   * and when their last Note was captured; the finished ones first (marked
+   * "bitti"), each part the last noted first.
    */
   list: libraryProcedure.query(async ({ ctx }) => {
     const rows = await ctx.tx.execute<{
@@ -39,10 +50,12 @@ export const organizeRouter = router({
       title: string;
       large: string | null;
       small: string | null;
+      finished: boolean;
       untagged: number;
       last: string;
     }>(
-      sql`select s.id, s.type, s.title, s.cover_key_large as large, s.cover_key_small as small, w.untagged, l.last
+      sql`select s.id, s.type, s.title, s.cover_key_large as large, s.cover_key_small as small,
+                  s.reading_status = 'finished' as finished, w.untagged, l.last
             from ${source} s
             join lateral (select count(*)::int as untagged from ${note} n
                            where n.source_id = s.id and n.account_id = s.account_id and ${waiting('n', 's')}) w
@@ -54,7 +67,11 @@ export const organizeRouter = router({
            where s.account_id = ${ctx.accountId}`,
     );
     return [...rows]
-      .sort((a, b) => (a.last < b.last ? 1 : a.last > b.last ? -1 : compareTr(a.title, b.title)))
+      .sort(
+        (a, b) =>
+          Number(b.finished) - Number(a.finished) ||
+          (a.last < b.last ? 1 : a.last > b.last ? -1 : compareTr(a.title, b.title)),
+      )
       .map((row) =>
         coverOf({
           id: row.id,
@@ -62,6 +79,7 @@ export const organizeRouter = router({
           title: row.title,
           coverKeyLarge: row.large,
           coverKeySmall: row.small,
+          finished: row.finished,
           untaggedCount: row.untagged,
           lastNoteAt: capturedAt(row.last).toISOString(),
         }),

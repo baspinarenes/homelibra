@@ -517,4 +517,20 @@ export const tr = {
     tagged: '{{count}} nota etiket takıldı',
     tagFailed: 'Etiketlenemedi. Bağlantını kontrol edip yeniden dene.',
   },
+  // Reading status (#62): okunuyor or bitti, and the lists it orders.
+  readingStatus: {
+    reading: 'okunuyor',
+    finished: 'bitti',
+    label: 'Okuma durumu: {{status}}',
+    toFinished: 'Bitti yap',
+    toReading: 'Yeniden okunuyor yap',
+    failed: 'Okuma durumu değiştirilemedi. Bağlantını kontrol edip yeniden dene.',
+    needsConnection: 'Okuma durumunu değiştirmek için bağlantı gerekiyor',
+    untagged: '{{count}} etiketsiz not var.',
+    organizeNow: 'Şimdi düzenle',
+    later: 'Sonra',
+    readingSection: 'Okunuyor',
+    finishedSection: 'Bitti',
+    all: 'Tümü ›',
+  },
 } as const;
