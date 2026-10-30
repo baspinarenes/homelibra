@@ -1,5 +1,5 @@
 {
-  "id": "fad5f98b-e7db-4f9c-b18a-3fe6b8aa9db8",
+  "id": "9dae2558-7934-4d4a-bfe2-42e1ed54f25b",
   "prevId": "7b53ee5d-508c-4bb5-89bd-b8f5b6925c0b",
   "version": "7",
   "dialect": "postgresql",
@@ -35,18 +35,6 @@
         },
         "image": {
           "name": "image",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "terms_accepted_at": {
-          "name": "terms_accepted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "terms_version": {
-          "name": "terms_version",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -396,6 +384,18 @@
         "bibliographic_note": {
           "name": "bibliographic_note",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date": {
+          "name": "date",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_sort": {
+          "name": "date_sort",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },

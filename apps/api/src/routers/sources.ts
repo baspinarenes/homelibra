@@ -1,5 +1,13 @@
 import { compareTr } from '@homelibra/core';
-import { type SourceField, sourceFields, type SourceFieldValues, sourceTypes } from '@homelibra/core/source';
+import { type CalendarDate, calendars, sortValue } from '@homelibra/core/date';
+import {
+  isFilled,
+  isSourceDateField,
+  type SourceField,
+  sourceFields,
+  type SourceFieldValues,
+  sourceTypes,
+} from '@homelibra/core/source';
 import { TRPCError } from '@trpc/server';
 import { and, count, eq, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
@@ -16,14 +24,37 @@ const optionalText = z
   .nullish()
   .transform((value) => (value === undefined ? undefined : value?.trim() || null));
 
-/** Type-specific fields by key: the filled ones and the ones the scholar cleared. */
-const fieldsPatch = z.partialRecord(z.enum(sourceFields), z.string()).transform((values) => {
-  const entries = Object.entries(values) as [SourceField, string][];
-  return {
-    filled: Object.fromEntries(entries.filter(([, value]) => value.trim())) as SourceFieldValues,
-    cleared: entries.filter(([, value]) => !value.trim()).map(([key]) => key),
-  };
-});
+/** A Date that exists in its calendar; 20 Şubat 1332 r. or 30 Safer does not. */
+const calendarDate = z
+  .strictObject({
+    calendar: z.enum(calendars),
+    year: z.int(),
+    month: z.int().optional(),
+    day: z.int().optional(),
+  })
+  .refine((date): date is CalendarDate => sortValue(date) !== null, 'This date does not exist in its calendar');
+
+/** Erişim tarihi is always Milâdî (#18 §4). */
+const fieldDate = (key: SourceField) =>
+  key === 'accessDate' ? calendarDate.refine((date) => date.calendar === 'gregorian', 'Always Milâdî') : calendarDate;
+
+/**
+ * Type-specific fields by key: the filled ones and the ones the scholar
+ * cleared, a text field with a blank and a Date field with null.
+ */
+const fieldsPatch = z
+  .strictObject(
+    Object.fromEntries(
+      sourceFields.map((key) => [key, (isSourceDateField(key) ? fieldDate(key).nullable() : z.string()).optional()]),
+    ) as Record<SourceField, z.ZodOptional<z.ZodString | z.ZodNullable<typeof calendarDate>>>,
+  )
+  .transform((values) => {
+    const entries = Object.entries(values) as [SourceField, string | CalendarDate | null][];
+    return {
+      filled: Object.fromEntries(entries.filter(([, value]) => isFilled(value))) as SourceFieldValues,
+      cleared: entries.filter(([, value]) => !isFilled(value)).map(([key]) => key),
+    };
+  });
 
 const sourceInput = z.object({
   type: z.enum(sourceTypes),
@@ -32,8 +63,14 @@ const sourceInput = z.object({
   isbn: optionalText,
   doi: optionalText,
   bibliographicNote: optionalText,
+  /** Null empties it; left out (in an update) leaves it unchanged. */
+  date: calendarDate.nullish(),
   fields: fieldsPatch.optional(),
 });
+
+/** The Date's columns: as entered, and the value that orders it. */
+const dateColumns = (date: CalendarDate | null | undefined) =>
+  date === undefined ? {} : { date, dateSort: date && sortValue(date) };
 
 const sourceColumns = {
   id: source.id,
@@ -43,6 +80,7 @@ const sourceColumns = {
   isbn: source.isbn,
   doi: source.doi,
   bibliographicNote: source.bibliographicNote,
+  date: source.date,
   fields: source.fields,
 };
 
@@ -53,26 +91,45 @@ export const sourcesRouter = router({
     return { sourceCount: row?.sourceCount ?? 0 };
   }),
 
-  /** The Kaynaklar list, by Başlık or by Yazar; Sources without a Yazar come last. */
-  list: libraryProcedure.input(z.object({ sort: z.enum(['title', 'author']) })).query(async ({ ctx, input }) => {
-    const rows = await ctx.tx
-      .select({ id: source.id, type: source.type, title: source.title, author: source.author })
-      .from(source)
-      .where(eq(source.accountId, ctx.accountId));
-    const byTitle = (a: (typeof rows)[number], b: (typeof rows)[number]) => compareTr(a.title, b.title);
-    if (input.sort === 'title') return rows.sort(byTitle);
-    return rows.sort((a, b) => {
-      if (a.author === b.author) return byTitle(a, b);
-      if (a.author === null) return 1;
-      if (b.author === null) return -1;
-      return compareTr(a.author, b.author) || byTitle(a, b);
-    });
-  }),
+  /**
+   * The Kaynaklar list, by Başlık, by Yazar or by Tarih (oldest first, across
+   * calendars); Sources without a Yazar or a Tarih come last.
+   */
+  list: libraryProcedure
+    .input(z.object({ sort: z.enum(['title', 'author', 'date']) }))
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.tx
+        .select({
+          id: source.id,
+          type: source.type,
+          title: source.title,
+          author: source.author,
+          date: source.date,
+          dateSort: source.dateSort,
+        })
+        .from(source)
+        .where(eq(source.accountId, ctx.accountId));
+      type Row = (typeof rows)[number];
+      const byTitle = (a: Row, b: Row) => compareTr(a.title, b.title);
+      const lastWhenNull = <T>(a: T | null, b: T | null, compare: (a: T, b: T) => number) => {
+        if (a === null) return b === null ? 0 : 1;
+        if (b === null) return -1;
+        return compare(a, b);
+      };
+      const order: Record<typeof input.sort, (a: Row, b: Row) => number> = {
+        title: byTitle,
+        author: (a, b) => lastWhenNull(a.author, b.author, compareTr) || byTitle(a, b),
+        date: (a, b) => lastWhenNull(a.dateSort, b.dateSort, (x, y) => x - y) || byTitle(a, b),
+      };
+      return rows.sort(order[input.sort]).map(({ dateSort: _, ...row }) => row);
+    }),
 
   create: libraryProcedure.input(sourceInput).mutation(async ({ ctx, input }) => {
     const id = uuidv7();
-    const { fields: patch, ...columns } = input;
-    await ctx.tx.insert(source).values({ ...columns, fields: patch?.filled, id, accountId: ctx.accountId });
+    const { fields: patch, date, ...columns } = input;
+    await ctx.tx
+      .insert(source)
+      .values({ ...columns, ...dateColumns(date), fields: patch?.filled, id, accountId: ctx.accountId });
     return { id };
   }),
 
@@ -81,11 +138,12 @@ export const sourcesRouter = router({
    * fields the new type lacks stay stored and come back with the old type.
    */
   update: libraryProcedure.input(sourceInput.partial().extend({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
-    const { id, fields: patch, ...columns } = input;
+    const { id, fields: patch, date, ...columns } = input;
     const [row] = await ctx.tx
       .update(source)
       .set({
         ...columns,
+        ...dateColumns(date),
         ...(patch && {
           fields: sql`(${source.fields} || ${JSON.stringify(patch.filled)}::jsonb)
               - array(select jsonb_array_elements_text(${JSON.stringify(patch.cleared)}::jsonb))`,

@@ -1,5 +1,6 @@
+import type { CalendarDate } from '@homelibra/core/date';
 import { type SourceFieldValues, sourceTypes } from '@homelibra/core/source';
-import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 // Better Auth's models, renamed to the glossary: its "user" is our Account,
 // and its "account" (one row per sign-in method) is an account_provider.
@@ -103,6 +104,10 @@ export const source = pgTable(
     isbn: text('isbn'),
     doi: text('doi'),
     bibliographicNote: text('bibliographic_note'),
+    /** The Date as entered: calendar, year and, if known, month and day (ADR-0002). */
+    date: jsonb('date').$type<CalendarDate>(),
+    /** Orders by Date across calendars; derived from `date` by core, never shown. */
+    dateSort: integer('date_sort'),
     /** Type-specific fields by key. A type change only hides the ones the new type lacks. */
     fields: jsonb('fields').$type<SourceFieldValues>().notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
