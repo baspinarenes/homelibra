@@ -4,9 +4,22 @@ export const tr = {
   tabs: {
     home: 'Ana sayfa',
     sources: 'Kaynaklar',
-    tags: 'Etiketler',
     collections: 'Dosyalar',
     search: 'Ara',
+    settings: 'Ayarlar',
+  },
+  collections: {
+    viewLabel: 'Görünüm',
+    collections: 'Dosyalar',
+    tags: 'Etiketler',
+  },
+  settings: {
+    appearance: 'Görünüm',
+    themeLabel: 'Tema',
+    themeSystem: 'Sistem',
+    themeLight: 'Açık',
+    themeDark: 'Koyu',
+    account: 'Hesap',
   },
   signIn: {
     title: 'Homelibra',
