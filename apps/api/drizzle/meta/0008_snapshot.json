@@ -1,5 +1,5 @@
 {
-  "id": "e7fca2f7-283c-4895-b098-3b52c29b9d42",
+  "id": "07ab3cbe-6740-49b8-9f94-876ebf32f9c6",
   "prevId": "33659fb5-e938-4a7b-98dc-18b961f40038",
   "version": "7",
   "dialect": "postgresql",
@@ -48,6 +48,12 @@
         "terms_version": {
           "name": "terms_version",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deletion_requested_at": {
+          "name": "deletion_requested_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -270,12 +276,6 @@
         "locator": {
           "name": "locator",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "locator_sort": {
-          "name": "locator_sort",
-          "type": "double precision[]",
           "primaryKey": false,
           "notNull": false
         },

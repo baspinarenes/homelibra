@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 
 import { type Db, withLibrary } from '../db/client';
+import type { Mailer } from '../mail/mailer';
 
 export type Context = {
   db: Db;
@@ -8,10 +9,16 @@ export type Context = {
   accountId: string | null;
   /** Whether that Account has accepted the terms of use on its first sign-in. */
   termsAccepted: boolean;
+  /** Whether that Account asked to be deleted and has not cancelled yet. */
+  accountClosed: boolean;
+  mailer: Mailer;
 };
 
 /** The app's first-sign-in screen stands between the scholar and the Library until this goes away. */
 export const TERMS_NOT_ACCEPTED = 'TERMS_NOT_ACCEPTED';
+
+/** A closed Account sees only the "silmeyi iptal et" screen until it cancels or is deleted. */
+export const ACCOUNT_CLOSED = 'ACCOUNT_CLOSED';
 
 const t = initTRPC.context<Context>().create();
 
@@ -35,6 +42,7 @@ export const accountProcedure = t.procedure.use(({ ctx, next }) => {
 export const libraryProcedure = accountProcedure.use(({ ctx, next }) => {
   const { accountId } = ctx;
   if (!ctx.termsAccepted) throw new TRPCError({ code: 'FORBIDDEN', message: TERMS_NOT_ACCEPTED });
+  if (ctx.accountClosed) throw new TRPCError({ code: 'FORBIDDEN', message: ACCOUNT_CLOSED });
   return withLibrary(ctx.db, accountId, async (tx) => {
     const result = await next({ ctx: { tx, accountId, db: undefined } });
     // Roll the transaction back when the procedure failed.

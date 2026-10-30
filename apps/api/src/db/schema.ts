@@ -32,6 +32,8 @@ export const account = pgTable('account', {
   termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
   /** The version of the privacy notice and terms of use the app showed at that moment. */
   termsVersion: text('terms_version'),
+  /** When the scholar confirmed Hesabı sil. The Account is closed from then on and deleted 14 days later, unless cancelled. */
+  deletionRequestedAt: timestamp('deletion_requested_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

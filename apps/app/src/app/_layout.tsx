@@ -40,6 +40,10 @@ function RootLayout() {
   // sign-in screen and lose its step, typed code and ?error= message.
   const loading = (isPending && !isRefetching) || (!fontsLoaded && !fontError);
   const termsAccepted = !!session?.user.termsAcceptedAt;
+  const closed = !!session?.user.deletionRequestedAt;
+  // Where a screen the session no longer opens sends the scholar. Said
+  // outright: Expo Router's own fallback is the shortest route name.
+  const home = !session ? '/sign-in' : closed ? '/account-closed' : !termsAccepted ? '/welcome' : '/';
 
   return (
     <SafeAreaProvider>
@@ -53,7 +57,7 @@ function RootLayout() {
             </View>
           ) : (
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-              <Stack.Protected guard={!!session && termsAccepted}>
+              <Stack.Protected guard={!!session && termsAccepted && !closed} redirectTo={home}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="source/new" options={pushedScreen} />
                 <Stack.Screen name="source/[id]/index" options={pushedScreen} />
@@ -62,10 +66,14 @@ function RootLayout() {
                 <Stack.Screen name="capture" options={pushedScreen} />
               </Stack.Protected>
               {/* İlk giriş onayı: the Library stays closed until the terms of use are accepted. */}
-              <Stack.Protected guard={!!session && !termsAccepted}>
+              <Stack.Protected guard={!!session && !termsAccepted && !closed} redirectTo={home}>
                 <Stack.Screen name="welcome" />
               </Stack.Protected>
-              <Stack.Protected guard={!session}>
+              {/* Hesabı sil was confirmed: only "Silmeyi iptal et" until the Account is deleted. */}
+              <Stack.Protected guard={!!session && closed} redirectTo={home}>
+                <Stack.Screen name="account-closed" />
+              </Stack.Protected>
+              <Stack.Protected guard={!session} redirectTo={home}>
                 <Stack.Screen name="sign-in" />
               </Stack.Protected>
               {/* Hesap ve gizlilik's documents open signed in or not. */}

@@ -6,7 +6,8 @@
     ".": "./src/index.ts",
     "./source": "./src/source.ts",
     "./date": "./src/date.ts",
-    "./note": "./src/note.ts"
+    "./note": "./src/note.ts",
+    "./account": "./src/account.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

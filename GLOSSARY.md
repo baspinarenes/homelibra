@@ -14,6 +14,10 @@ _Avoid_: workspace, account, archive, vault
 The identity a scholar signs in with: an email address and nothing more. An account owns exactly one library.
 _Avoid_: user, profile, member, login
 
+**Closed account** (Kapalı hesap):
+An account whose owner has asked for it to be deleted. Its library stays shut, though nothing in it is gone yet: for 14 days the owner can sign in and cancel the deletion, and the library opens again as it was. After that the account, its library and its invitation are deleted for good.
+_Avoid_: deactivated, suspended, pending deletion, soft-deleted
+
 **Invitation** (Davet):
 Permission for one email address to open an account while Homelibra is in closed beta. Only the operator grants invitations; scholars cannot invite others. An invitation goes away with the account it opened.
 _Avoid_: invite code, referral, waitlist

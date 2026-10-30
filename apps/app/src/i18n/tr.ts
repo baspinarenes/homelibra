@@ -68,6 +68,31 @@ export const tr = {
       invalidCode: 'Kod yanlış ya da süresi dolmuş.',
     },
   },
+  // Hesabı sil (#40, story 19): closes at once, reopens within 14 days, then goes for good.
+  accountDeletion: {
+    title: 'Hesabı sil',
+    lead: 'Hesabını silersen hemen kapanır ve her cihazda oturumun kapanır. 14 gün içinde yeniden giriş yapıp silmeyi iptal edebilirsin; sonra hesabın ve kütüphanenin tamamı kalıcı olarak silinir.',
+    exportHeading: 'Önce kütüphanenin bir kopyasını al',
+    exportPending:
+      'Kütüphaneni dışa aktarma henüz hazır değil; geldiğinde Hesap ve gizlilik bölümünde olacak. O zamana kadar saklamak istediklerini silmeden önce kendin kopyalaman gerekir. Soruların için:',
+    sendCode: 'Silme kodunu gönder',
+    cancel: 'Vazgeç',
+    codeSentTo: '{{email}} adresine bir kod gönderdik. Kodu yazınca hesabın hemen kapanır.',
+    codeLabel: 'Silme kodu',
+    submit: 'Hesabımı sil',
+    resend: 'Kodu yeniden gönder',
+    errors: {
+      sendFailed: 'Kod gönderilemedi. Bağlantını kontrol edip yeniden dene.',
+      invalidCode: 'Kod yanlış ya da süresi dolmuş.',
+    },
+  },
+  // A closed Account that signs in again within its 14 days (#40, story 20).
+  accountClosed: {
+    title: 'Hesabın silinmek üzere kapalı',
+    lead: 'Kütüphanen {{date}} tarihinde kalıcı olarak silinecek. O güne kadar silmeyi iptal edersen her şey olduğu gibi geri gelir.',
+    restore: 'Silmeyi iptal et',
+    failed: 'İptal edilemedi. Bağlantını kontrol edip yeniden dene.',
+  },
   signIn: {
     title: 'Homelibra',
     lead: 'E-posta adresini yaz; sana 6 haneli bir giriş kodu gönderelim.',

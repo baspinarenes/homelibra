@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { CodeInput } from '@/components/code-input';
 import { PrimaryButton } from '@/components/primary-button';
 import { authClient } from '@/lib/auth-client';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -95,20 +96,7 @@ export default function EmailChangeScreen() {
         <>
           <Text style={styles.lead}>{t('emailChange.codeSentTo', { email: step.newEmail })}</Text>
           <Text style={styles.label}>{t('emailChange.codeLabel')}</Text>
-          <TextInput
-            style={[styles.input, styles.code]}
-            placeholderTextColor={styles.placeholder.color}
-            value={code}
-            onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
-            placeholder="000000"
-            keyboardType="number-pad"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            textContentType="oneTimeCode"
-            maxLength={6}
-            autoFocus
-            onSubmitEditing={() => code.length === 6 && submitCode(step.newEmail)}
-          />
+          <CodeInput value={code} onChange={setCode} onSubmit={() => submitCode(step.newEmail)} />
           <View style={styles.action}>
             <PrimaryButton
               label={t('emailChange.submit')}
@@ -151,13 +139,6 @@ const makeStyles = (c: Colors) =>
       fontSize: 16,
       color: c.fg,
       backgroundColor: c.surface,
-    },
-    code: {
-      fontFamily: typeScale.locator.fontFamily,
-      fontSize: 24,
-      lineHeight: 30,
-      letterSpacing: 8,
-      textAlign: 'center',
     },
     hint: { ...typeScale.caption, color: c.muted },
     action: { marginTop: space.md },
