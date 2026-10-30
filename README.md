@@ -9,6 +9,7 @@ pnpm workspaces, no build orchestrator (ADR-0006):
 - `apps/app`: Expo universal app (Android, iOS, web SPA)
 - `apps/api`: Hono + tRPC + Better Auth + Drizzle; schema and migrations in `apps/api/drizzle`
 - `packages/core`: pure TypeScript domain logic shared by app and API
+- `packages/example`: copy-me template for a new package (see [packages/README.md](packages/README.md))
 - `infra/postgres`: our PostgreSQL image (`postgres:17` with `unaccent` and `pg_trgm`)
 
 ## Development
@@ -29,6 +30,7 @@ On the Android emulator the app reaches the API at `http://10.0.2.2:3000` by def
 ```bash
 pnpm typecheck
 pnpm lint
+pnpm lint:boundaries   # packages are imported only through their entry points (packages/README.md)
 pnpm test        # core unit tests and API integration tests (needs `pnpm db:up`)
 ```
 

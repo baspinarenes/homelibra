@@ -17,6 +17,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm lint:boundaries
       - run: pnpm lint
       - name: core tests
         run: pnpm --filter @homelibra/core test

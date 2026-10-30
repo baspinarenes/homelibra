@@ -1,1 +1,1 @@
-export { compareTr } from './turkish';
+export { compareTr } from './lib/turkish';

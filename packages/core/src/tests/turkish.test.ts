@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compareTr } from './index';
+import { compareTr } from '../index';
 
 describe('compareTr', () => {
   it('orders by the Turkish alphabet', () => {
