@@ -3,7 +3,7 @@ import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import type { LibraryTx } from '../db/client';
 import { collectionTag, noteTag, sourceTag, tag } from '../db/schema';
 import { storedRow, type StoredRow } from '../undo/stored-row';
-import { type LinkTable, linkTables } from './tags';
+import { carrierOf, type LinkTable, linkTables } from './tags';
 
 type Carriers = { noteIds?: string[]; sourceIds?: string[]; collectionIds?: string[]; tagIds?: string[] };
 
@@ -85,7 +85,7 @@ export async function reinsertTagLinks(
   rows: StoredRow[],
   tags: StoredRow[],
 ) {
-  const carrier = sql.raw(linkTables.find((link) => link.table === table)!.carrier.name);
+  const carrier = sql.raw(carrierOf(table).name);
   await tx.execute(sql`
     insert into ${table} (${carrier}, tag_id, account_id, created_at)
     select r.${carrier}, t.id, r.account_id, r.created_at

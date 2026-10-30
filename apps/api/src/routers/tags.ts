@@ -13,7 +13,7 @@ import {
   linkTables,
   mergeTag,
   resolveTags,
-  setSourceTags,
+  setTags,
   tagNameInput,
   tagNames,
   tagsOfSource,
@@ -76,7 +76,7 @@ export const tagsRouter = router({
       const [row] = await ctx.tx.select({ id: source.id }).from(source).where(mySource(ctx.accountId, input.sourceId));
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
       const tagIds = await resolveTags(ctx.tx, ctx.accountId, input.names);
-      await setSourceTags(ctx.tx, ctx.accountId, input.sourceId, tagIds);
+      await setTags(ctx.tx, ctx.accountId, sourceTag, input.sourceId, tagIds);
       return tagsOfSource(ctx.tx, ctx.accountId, input.sourceId);
     }),
 

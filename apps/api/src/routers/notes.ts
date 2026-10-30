@@ -5,10 +5,10 @@ import { and, eq, isNull, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
-import { note, source } from '../db/schema';
+import { note, noteTag, source } from '../db/schema';
 import { deleteNotes, mergeSelected, moveNotes, selectionLimit } from '../notes/selection';
 import { mySource } from '../sources/sources';
-import { addNoteTags, resolveTags, setNoteTags, tagNames, tagsOfNotes } from '../tags/tags';
+import { addNoteTags, resolveTags, setTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
@@ -76,7 +76,7 @@ export const notesRouter = router({
         .returning({ id: note.id });
       // Sent again, the Note keeps the Tags it has now, which may have changed since.
       if (created && tags?.length)
-        await setNoteTags(ctx.tx, ctx.accountId, input.id, await resolveTags(ctx.tx, ctx.accountId, tags));
+        await setTags(ctx.tx, ctx.accountId, noteTag, input.id, await resolveTags(ctx.tx, ctx.accountId, tags));
       return { id: input.id };
     }),
 
@@ -225,7 +225,7 @@ export const notesRouter = router({
         .update(note)
         .set({ locator, excerpt, comment, locatorSort: sort, updatedAt: new Date() })
         .where(where);
-      if (tags) await setNoteTags(ctx.tx, ctx.accountId, id, await resolveTags(ctx.tx, ctx.accountId, tags));
+      if (tags) await setTags(ctx.tx, ctx.accountId, noteTag, id, await resolveTags(ctx.tx, ctx.accountId, tags));
       return { id };
     }),
 

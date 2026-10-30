@@ -46,41 +46,6 @@ export async function addNoteTags(tx: LibraryTx, accountId: string, noteId: stri
 }
 
 /**
- * Leaves exactly these Tags on the Note. New links go in before old ones go,
- * so a Tag that stays is never left unused on the way, which would drop it.
- */
-export async function setNoteTags(tx: LibraryTx, accountId: string, noteId: string, tagIds: string[]) {
-  await addNoteTags(tx, accountId, noteId, tagIds);
-  await tx
-    .delete(noteTag)
-    .where(
-      and(
-        eq(noteTag.noteId, noteId),
-        eq(noteTag.accountId, accountId),
-        tagIds.length > 0 ? notInArray(noteTag.tagId, tagIds) : undefined,
-      ),
-    );
-}
-
-/** Leaves exactly these Tags on the Source; its Notes are not touched (ADR-0003). */
-export async function setSourceTags(tx: LibraryTx, accountId: string, sourceId: string, tagIds: string[]) {
-  if (tagIds.length > 0)
-    await tx
-      .insert(sourceTag)
-      .values(tagIds.map((tagId) => ({ sourceId, tagId, accountId })))
-      .onConflictDoNothing();
-  await tx
-    .delete(sourceTag)
-    .where(
-      and(
-        eq(sourceTag.sourceId, sourceId),
-        eq(sourceTag.accountId, accountId),
-        tagIds.length > 0 ? notInArray(sourceTag.tagId, tagIds) : undefined,
-      ),
-    );
-}
-
-/**
  * The tables linking a carrier to a Tag, with the carrier's column: Notes,
  * Sources and Collections. A Tag merge moves every one of them, and a Tag
  * snapshot reads and restores them (tags/snapshot.ts).
@@ -92,6 +57,36 @@ export const linkTables = [
 ] as const;
 
 export type LinkTable = (typeof linkTables)[number]['table'];
+
+/** The carrier's column of a link table. */
+export const carrierOf = (table: LinkTable) => linkTables.find((link) => link.table === table)!.carrier;
+
+/**
+ * Leaves exactly these Tags on a Note, Source or Collection (`carrierId`,
+ * through `table`, its link table). New links go in before old ones go, so
+ * a Tag that stays is never left unused on the way, which would drop it.
+ */
+export async function setTags(tx: LibraryTx, accountId: string, table: LinkTable, carrierId: string, tagIds: string[]) {
+  const carrier = carrierOf(table);
+  if (tagIds.length > 0) {
+    const rows = sql.join(
+      tagIds.map((tagId) => sql`(${carrierId}, ${tagId}, ${accountId})`),
+      sql`, `,
+    );
+    await tx.execute(
+      sql`insert into ${table} (${sql.raw(carrier.name)}, tag_id, account_id) values ${rows} on conflict do nothing`,
+    );
+  }
+  await tx
+    .delete(table)
+    .where(
+      and(
+        eq(carrier, carrierId),
+        eq(table.accountId, accountId),
+        tagIds.length > 0 ? notInArray(table.tagId, tagIds) : undefined,
+      ),
+    );
+}
 
 /**
  * Tag merge (#3): every Note, Source and Collection using `fromId` uses

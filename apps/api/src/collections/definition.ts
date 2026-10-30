@@ -1,32 +1,10 @@
 import { compareTr } from '@homelibra/core';
 import { TRPCError } from '@trpc/server';
-import { and, eq, notInArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import type { LibraryTx } from '../db/client';
 import { collection, collectionTag, tag } from '../db/schema';
 import type { TagRef } from '../tags/tags';
-
-/**
- * Leaves exactly these Tags in the Collection's definition. New ones go in
- * before old ones go, so a Tag that stays is never left unused on the way;
- * one let go that nothing else uses goes (0016_collections).
- */
-export async function setCollectionTags(tx: LibraryTx, accountId: string, collectionId: string, tagIds: string[]) {
-  if (tagIds.length > 0)
-    await tx
-      .insert(collectionTag)
-      .values(tagIds.map((tagId) => ({ collectionId, tagId, accountId })))
-      .onConflictDoNothing();
-  await tx
-    .delete(collectionTag)
-    .where(
-      and(
-        eq(collectionTag.collectionId, collectionId),
-        eq(collectionTag.accountId, accountId),
-        tagIds.length > 0 ? notInArray(collectionTag.tagId, tagIds) : undefined,
-      ),
-    );
-}
 
 /** Every Collection's Tags, A–Z, by Collection; one without any is missing from the map. */
 export async function tagsOfCollections(tx: LibraryTx, accountId: string) {
