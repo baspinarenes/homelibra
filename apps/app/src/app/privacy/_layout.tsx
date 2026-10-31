@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useHeaderOptions } from '@/components/tab-stack';
 
 /**
- * Hesap ve gizlilik's documents, open signed in or not: the web page that
+ * The privacy documents, open signed in or not: Gizlilik, the web page that
  * needs no sign-in (#40, story 15), and the full texts Ayarlar and the
  * first-sign-in screen link to.
  */

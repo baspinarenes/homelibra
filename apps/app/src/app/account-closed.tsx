@@ -63,5 +63,5 @@ const makeStyles = (c: Colors) =>
     action: { marginTop: space.md },
     error: { ...typeScale.label, color: c.warn },
     // The button carries its own padding; pull it back to the gutter.
-    signOut: { alignSelf: 'flex-start', marginLeft: -space.md, marginTop: space.sm },
+    signOut: { alignSelf: 'flex-start', marginLeft: -space.xs, marginTop: space.sm },
   });
