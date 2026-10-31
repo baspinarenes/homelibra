@@ -42,7 +42,7 @@ export function ReadingStatusButton({
   const change = useMutation(
     trpc.sources.setReadingStatus.mutationOptions({
       onSuccess: async ({ untaggedCount }) => {
-        // Ana sayfa's card and Okunuyor, Kaynaklar's tabs and Düzenlenecekler's order all follow it.
+        // Genel bakış's Kaldığın yer and Okunuyor, Kaynaklar's tabs and Düzenlenecekler's order all follow it.
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
           queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() }),

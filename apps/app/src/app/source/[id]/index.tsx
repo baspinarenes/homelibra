@@ -48,9 +48,9 @@ type Pin = { id: string; at: 'box' | 'middle' };
 /**
  * The Source page (#35, #87): the Source's heading and its Notes in Locator
  * order, with the writing box at its foot. Capture happens here; it has no
- * screen of its own. "Devam et" opens the page ready to write (`write`), a
- * search result on the Note it found (`note`), every other way in as for
- * reading: the box closed and the list at the top. "Bu kaynakta ara"
+ * screen of its own. Genel bakış's Kaldığın yer opens the page ready to
+ * write (`write`), a search result on the Note it found (`note`), every
+ * other way in as for reading: the box closed and the list at the top. "Bu kaynakta ara"
  * narrows the list to the Notes that match and hides the writing box.
  */
 export default function SourceScreen() {
@@ -126,7 +126,7 @@ function SourcePage({
   // Düzenle mode is online only, and starts from what the outbox still had to send (#58).
   const onlineFirst = useOnlineFirst(useCallback(() => offerUndo({ message: t('outbox.needsConnection') }), [t]));
   const [expanded, setExpanded] = useState(false);
-  // "Devam et" opens the box with the focus in it.
+  // Kaldığın yer opens the box with the focus in it.
   const [writing, setWriting] = useState(write);
   // The Note saved last on this page.
   const [freshId, setFreshId] = useState<string | null>(null);

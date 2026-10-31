@@ -421,7 +421,7 @@ export const tr = {
   account: {
     signOut: 'Çıkış yap',
   },
-  // Tag: the picker, the chips on Notes and Sources, Etiketler and Ana sayfa's list (#49).
+  // Tag: the picker, the chips on Notes and Sources, Etiketler and Genel bakış's list (#49).
   tags: {
     add: '+ etiket',
     untagged: 'etiketsiz',

@@ -85,7 +85,7 @@ export function NoteComposer({
   carriedSince: number;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
-  /** Opens the box ready to write, as "Devam et" does. */
+  /** Opens the box ready to write, as Genel bakış's Kaldığın yer does. */
   autoFocus?: boolean;
   /** The box is open while its text has the focus. */
   onFocusChange: (focused: boolean) => void;

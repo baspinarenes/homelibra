@@ -263,7 +263,7 @@ describe('A Collection’s definition', () => {
     expect(await api.tags.list({ sort: 'name' })).toEqual([]);
   });
 
-  it('uses a Tag: one put into it counts as last used on Ana sayfa', async () => {
+  it('uses a Tag: one put into it counts as last used on Genel bakış', async () => {
     const api = await scholar();
     const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Kadılık' });
     await capture(api, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });

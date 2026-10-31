@@ -94,7 +94,7 @@ const sourceColumns = {
 };
 
 export const sourcesRouter = router({
-  /** What Ana sayfa needs; while the Library is empty it shows "İlk kaynağını ekle". */
+  /** What Genel bakış needs; while the Library is empty it shows "İlk kaynağını ekle". */
   home: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx.select({ sourceCount: count() }).from(source).where(eq(source.accountId, ctx.accountId));
     return { sourceCount: row?.sourceCount ?? 0 };
@@ -169,9 +169,9 @@ export const sourcesRouter = router({
     }),
 
   /**
-   * Ana sayfa's "Son not aldığın" and "Devam et": the latest Note of a Source
-   * being read, and that Source. With no such Note, the latest Note of all
-   * rather than nothing; null before the first Note.
+   * Genel bakış's Kaldığın yer: the latest Note of a Source being read, and
+   * that Source, opened ready to write. With no such Note, the latest Note
+   * of all rather than nothing; null before the first Note.
    */
   lastNoted: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx
@@ -204,7 +204,7 @@ export const sourcesRouter = router({
   }),
 
   /**
-   * Ana sayfa's Okunuyor: the Sources being read, the last noted first, then
+   * Genel bakış's Okunuyor: the Sources being read, the last noted first, then
    * the ones without a Note yet, the newest first.
    */
   reading: libraryProcedure.query(async ({ ctx }) => {
