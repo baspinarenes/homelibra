@@ -1,25 +1,33 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ListMessage } from '@/components/list-message';
 import { NameInput } from '@/components/name-input';
+import type { CollectionSort } from '@/lib/dizin-sort';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
+/** Every Collection in `sort`'s order; the rows stay on screen while another order loads. */
+export function useCollections(sort: CollectionSort) {
+  const trpc = useTRPC();
+  return useQuery({ ...trpc.collections.list.queryOptions({ sort }), placeholderData: keepPreviousData });
+}
+
 /**
- * Dosyalar (#51, story 106): every Collection A–Z with its Tags and how many
- * Notes it shows now, and "+ Yeni dosya", which asks for a name and opens
- * the new, empty Collection to add Tags to.
+ * Dosyalar in Dizin (#51, #127): every Collection with its Tags and how many
+ * Notes it shows now, in the order chosen under Sırala. A row opens the
+ * Collection.
  */
-export function CollectionList() {
+export function CollectionList({ sort }: { sort: CollectionSort }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const collections = useQuery(trpc.collections.list.queryOptions());
+  const collections = useCollections(sort);
   const [naming, setNaming] = useState(false);
   const create = useMutation(
     trpc.collections.create.mutationOptions({
@@ -55,7 +63,14 @@ export function CollectionList() {
   );
 
   if (collections.isPending) return <ActivityIndicator style={styles.status} color={styles.spinner.color} />;
-  if (collections.isError) return <Text style={[styles.lead, styles.status]}>{t('collection.listFailed')}</Text>;
+  if (collections.isError) {
+    return (
+      <ListMessage
+        lead={t('collection.listFailed')}
+        action={{ label: t('collections.retry'), variant: 'text', onPress: () => void collections.refetch() }}
+      />
+    );
+  }
   return (
     <FlatList
       contentContainerStyle={styles.content}
@@ -63,7 +78,13 @@ export function CollectionList() {
       keyExtractor={(collection) => collection.id}
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={header}
-      ListEmptyComponent={<Text style={[styles.lead, styles.status]}>{t('collection.listEmpty')}</Text>}
+      ListEmptyComponent={
+        <ListMessage
+          title={t('collections.emptyTitle')}
+          lead={t('collections.emptyLead')}
+          action={{ label: t('collections.new'), onPress: () => router.push('/collection/new') }}
+        />
+      }
       renderItem={({ item: collection, index }) => (
         <Pressable
           accessibilityRole="link"
@@ -85,19 +106,18 @@ export function CollectionList() {
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    content: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
+    content: { flexGrow: 1, paddingHorizontal: space.gutter, paddingTop: space.xs, paddingBottom: space.xxl },
     status: { marginTop: space.xl },
     spinner: { color: c.accent },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center', paddingHorizontal: space.lg },
     pressed: { opacity: 0.7 },
     new: { gap: space.sm, paddingTop: space.md, paddingBottom: space.sm },
     newLabel: { ...typeScale.button, fontSize: 15, color: c.accent },
     error: { ...typeScale.caption, color: c.danger },
-    row: { flexDirection: 'row', alignItems: 'baseline', gap: space.md, paddingVertical: space.md },
+    row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    texts: { flex: 1, gap: 3 },
+    texts: { flex: 1, minWidth: 0, gap: 3 },
     name: { ...typeScale.sourceTitleSm, color: c.fg },
     tags: { ...typeScale.caption, color: c.chipInk },
     untagged: { ...typeScale.caption, color: c.muted2 },
-    count: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
+    count: { ...typeScale.locator, fontSize: 12, lineHeight: 16, color: c.muted },
   });

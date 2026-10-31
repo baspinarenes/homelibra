@@ -51,7 +51,7 @@ export function CopyMarkdownButton({ view }: { view: MarkdownCollection }) {
 /**
  * The ⋯ in a Collection's top bar and its menu: "Dosyayı sil", without
  * asking, with Geri al (#36). Notes and Tags stay; Geri al also brings back
- * a Tag only this Collection kept. The scholar goes back to Dosyalar, where
+ * a Tag only this Collection kept. The scholar goes back to Dizin, where
  * the Geri al bar shows.
  */
 export function CollectionMenu({ collection }: { collection: { id: string; name: string } }) {

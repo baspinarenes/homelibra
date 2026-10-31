@@ -16,22 +16,28 @@ export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
  * tab that is already open pops its stack to the root. `children` declares
  * the screens the tab pushes over its root. A Geri al offered as the scholar
  * came back to the tab (a Source deleted from its form) shows at its foot.
+ * With `rootHeader` the root has the package's large tab-root title.
  */
 export function TabStack({
   title,
   headerRight,
+  rootHeader = false,
   children,
 }: {
   title: TabTitleKey;
   headerRight?: () => ReactNode;
+  rootHeader?: boolean;
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
+  const root = rootHeader
+    ? { header: () => <ScreenHeader variant="root" title={t(title)} right={headerRight?.()} /> }
+    : // The tab root keeps the platform header until its screen moves to the package.
+      { headerRight, header: undefined };
   return (
     <View style={styles.tab}>
       <Stack screenOptions={useHeaderOptions()}>
-        {/* The tab root keeps the platform header until its screen moves to the package. */}
-        <Stack.Screen name="index" options={{ title: t(title), headerRight, header: undefined }} />
+        <Stack.Screen name="index" options={{ title: t(title), ...root }} />
         {children}
       </Stack>
       <View pointerEvents="box-none" style={styles.foot}>
