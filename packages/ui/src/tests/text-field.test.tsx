@@ -12,6 +12,12 @@ describe('TextField', () => {
     expect(inputs(page)[0]!.attrs['aria-label']).toBe('Ek bilgi');
   });
 
+  it('can leave its label unshown when the sheet title says it, still named by it', () => {
+    const page = render(<TextField label="Yeni ad" labelHidden value="matbuat" onChangeText={() => {}} />);
+    expect(text(page)).toBe('');
+    expect(inputs(page)[0]!.attrs['aria-label']).toBe('Yeni ad');
+  });
+
   it('shows what is wrong below an invalid field', () => {
     const page = render(<TextField label="ISBN" value="975-08-0035" error="Bu bir ISBN’e benzemiyor." />);
     expect(inputs(page)[0]!.attrs['aria-invalid']).toBe('true');
