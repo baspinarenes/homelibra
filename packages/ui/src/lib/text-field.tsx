@@ -13,6 +13,7 @@ export function TextField({
   label,
   labelHidden = false,
   required = false,
+  labelHidden = false,
   error,
   quote = false,
   multiline = false,
@@ -25,6 +26,8 @@ export function TextField({
   /** A field the sheet's title already names (a search over a list): the label is read, not shown. */
   labelHidden?: boolean;
   required?: boolean;
+  /** Not shown, only read out: where the sheet's title already says what goes in (Yeniden adlandır). */
+  labelHidden?: boolean;
   /** What is wrong with the value; shown below the field in `danger`. */
   error?: string;
   /** An Excerpt, in the quote face (Charis SIL, upright). */
