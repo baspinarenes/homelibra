@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { scrubBreadcrumb, scrubEvent } from '../error-report';
 
-// What a reader writes, searches or tags; none of it may reach an error report.
+// What a scholar writes, searches or tags; none of it may reach an error report.
 const searched = encodeURIComponent(JSON.stringify({ 0: { query: 'ʿulemâ ve kadı' } }));
 
 describe('scrubEvent', () => {

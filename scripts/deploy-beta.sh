@@ -200,7 +200,7 @@ finish() {
 
 run_wizard() {
 
-TOTAL_STAGES=14
+TOTAL_STAGES=16
 
 # The second half of #42, after scripts/setup-beta-infra.sh: the database,
 # backups, API and web on Coolify, deploys from CI, a restore drill and the
@@ -267,8 +267,8 @@ generate() {
 # them after the resource's UUID.
 container() { on_server "docker ps -q --filter name=$1 | head -n1"; }
 
-load DOMAIN SSH_KEY_PATH SERVER_IP SERVER_LOCATION COOLIFY_URL BACKUP_S3_LOCATION \
-  RESEND_API_KEY MAIL_FROM SENTRY_DSN_API BETTER_AUTH_SECRET
+load DOMAIN SSH_KEY_PATH SERVER_IP SERVER_LOCATION COOLIFY_URL BACKUP_S3_LOCATION BACKUP_S3_BUCKET \
+  BACKUP_S3_ENDPOINT BACKUP_S3_ACCESS_KEY BACKUP_S3_SECRET_KEY RESEND_API_KEY MAIL_FROM SENTRY_DSN_API BETTER_AUTH_SECRET
 
 banner "Homelibra beta deploy (#42)"
 
@@ -404,7 +404,7 @@ COVERS_S3_ACCESS_KEY_ID=$COVERS_S3_ACCESS_KEY_ID
 COVERS_S3_SECRET_ACCESS_KEY=$COVERS_S3_SECRET_ACCESS_KEY
 SENTRY_DSN=$SENTRY_DSN_API
 SENTRY_ENVIRONMENT=production" \
-    && note "Copied." || { warn "No clipboard tool; the values are in $ENV_FILE."; }
+    && note "Copied." || note "No clipboard tool: the values are in $ENV_FILE."
   step "Environment Variables → 'Developer view' → paste → Save → 'Deploy'."
   note "The container migrates as homelibra_owner, then serves as homelibra_app."
   step "The resource's URL ends in /application/<uuid>: copy that uuid."
@@ -449,7 +449,7 @@ fi
 pause
 
 # ── 9 ─────────────────────────────────────────────────────────────────────
-stage "Production: smoke test and your Invitation"
+stage "Production: smoke test"
 if [[ "$(curl -fsS "https://$DOMAIN/api/health" 2>/dev/null)" == ok ]]; then
   printf '  %s✓%s https://%s/api/health\n' "$GREEN" "$RESET" "$DOMAIN"
 else
@@ -462,22 +462,27 @@ else
   warn "https://$DOMAIN/ doesn't serve the web app yet."
   SKIPPED+=("web app on https://$DOMAIN")
 fi
+pause
+
+# ── 10 ────────────────────────────────────────────────────────────────────
+stage "Production: your Invitation"
 ask OPERATOR_EMAIL "Your email address, to invite [$(git config user.email)]:"
 OPERATOR_EMAIL="${OPERATOR_EMAIL:-$(git config user.email)}"
 write_env OPERATOR_EMAIL "$OPERATOR_EMAIL"
 api=$(container "$API_UUID")
 if [[ -n "$api" ]]; then
   on_server "docker exec $api tsx src/invite.ts add '$OPERATOR_EMAIL'" | sed 's/^/  /'
-  note "Invite each beta reader the same way: docker exec <api container> tsx src/invite.ts add <email>"
+  note "Invite each beta scholar the same way: docker exec <api container> tsx src/invite.ts add <email>"
 else
   warn "No running API container named after $API_UUID."
   SKIPPED+=("invite $OPERATOR_EMAIL")
 fi
 pause
 
-# ── 10 ────────────────────────────────────────────────────────────────────
+# ── 11 ────────────────────────────────────────────────────────────────────
 stage "Cloudflare: mail to iletisim@$DOMAIN"
 say "The app shows iletisim@$DOMAIN as its contact address; Resend only sends."
+note "The privacy notice names Cloudflare for this (apps/app/src/lib/legal.ts, ADR-0009)."
 say "Done on an earlier run? Press Enter through this stage."
 open_url "https://dash.cloudflare.com/?to=/:account/:zone/email/routing/overview"
 step "Email Routing → 'Get started' / 'Enable'. Let it add its MX and TXT records."
@@ -487,7 +492,7 @@ step "Routing rules → custom address iletisim@$DOMAIN → Send to your inbox �
 step "Send a test mail to iletisim@$DOMAIN from another account."
 pause "It arrived? Press Enter."
 
-# ── 11 ────────────────────────────────────────────────────────────────────
+# ── 12 ────────────────────────────────────────────────────────────────────
 stage "Production: sign in on the web"
 open_url "https://$DOMAIN"
 step "Enter $OPERATOR_EMAIL: a 6-digit code should arrive from $MAIL_FROM."
@@ -495,23 +500,32 @@ step "Sign in with it, then sign out and try 'Google ile devam et' too."
 note "No code? Resend → Emails shows whether it was sent; the API's logs show why not."
 confirm "Both sign-ins worked?" || SKIPPED+=("web sign-in on https://$DOMAIN")
 
-# ── 12 ────────────────────────────────────────────────────────────────────
+# ── 13 ────────────────────────────────────────────────────────────────────
 stage "Backups: one restore drill"
-say "A backup counts once it has been restored (#42). This restores the newest dump"
-say "into a throwaway database beside production, compares every table, then drops it."
+say "A backup counts once it has been restored (#42). This fetches the newest dump from"
+say "the off-site bucket, restores it into a throwaway database beside production,"
+say "compares every table's row count, then drops it."
 open_url "$COOLIFY_URL"
 step "Database → Backups → the schedule → 'Backup Now'."
 step "Wait for the run to show Success, with the S3 upload succeeded too."
-pause "Done? Press Enter to find the dump on the server."
-dump=$(on_server "find /data/coolify/backups -path '*$DB_UUID*' -name 'pg-dump-homelibra-*' | sort | tail -n1")
-if [[ -z "$dump" ]]; then
-  warn "No dump of homelibra under /data/coolify/backups for $DB_UUID."
+pause "Done? Press Enter to look for it in $BACKUP_S3_BUCKET."
+# aws-cli 2.17: later versions send checksum headers that S3-compatible stores
+# such as Hetzner's may reject. Keys go in as environment, not arguments.
+s3="export AWS_ACCESS_KEY_ID='$BACKUP_S3_ACCESS_KEY' AWS_SECRET_ACCESS_KEY='$BACKUP_S3_SECRET_KEY';
+  aws() { docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -v /tmp:/work amazon/aws-cli:2.17.0 --endpoint-url $BACKUP_S3_ENDPOINT --region $BACKUP_S3_LOCATION \"\$@\"; }"
+key=$(on_server "$s3
+  aws s3 ls --recursive s3://$BACKUP_S3_BUCKET/ | grep 'pg-dump-homelibra-' | grep '$DB_UUID' | sort | tail -n1 | awk '{print \$4}'")
+if [[ -z "$key" ]]; then
+  warn "No dump of homelibra for $DB_UUID in $BACKUP_S3_BUCKET."
   SKIPPED+=("restore drill")
-elif confirm "Restore $dump into homelibra_restore_drill?"; then
+elif confirm "Restore s3://$BACKUP_S3_BUCKET/$key into homelibra_restore_drill?"; then
   # One count per table, in the same order in both databases.
   counts="select string_agg(format('select %L as t, count(*) from public.%I', table_name, table_name), ' union all ' order by table_name) from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'"
   on_server "set -e
-    docker cp '$dump' $DB_UUID:/tmp/drill.dmp
+    $s3
+    aws s3 cp 's3://$BACKUP_S3_BUCKET/$key' /work/drill.dmp --only-show-errors
+    docker cp /tmp/drill.dmp $DB_UUID:/tmp/drill.dmp
+    rm /tmp/drill.dmp
     docker exec $DB_UUID psql -U postgres -qc 'drop database if exists homelibra_restore_drill' -c 'create database homelibra_restore_drill owner homelibra_owner'
     docker exec $DB_UUID pg_restore -U postgres --exit-on-error -d homelibra_restore_drill /tmp/drill.dmp
     q=\$(docker exec $DB_UUID psql -U postgres -d homelibra -tAc \"$counts\")
@@ -522,14 +536,14 @@ elif confirm "Restore $dump into homelibra_restore_drill?"; then
     echo \"tables: \$(wc -l < /tmp/drill.txt)\"
     diff /tmp/live.txt /tmp/drill.txt && echo 'every table has the same row count' || echo 'counts differ: writes since the backup, or a broken restore'
     rm /tmp/live.txt /tmp/drill.txt" | sed 's/^/  /' \
-    && write_env RESTORE_DRILL_AT "$(date -u +%Y-%m-%dT%H:%MZ) $(basename "$dump")" \
+    && write_env RESTORE_DRILL_AT "$(date -u +%Y-%m-%dT%H:%MZ) $(basename "$key")" \
     || { warn "The restore failed; see the output above."; SKIPPED+=("restore drill"); }
 else
   SKIPPED+=("restore drill")
 fi
 pause
 
-# ── 13 ────────────────────────────────────────────────────────────────────
+# ── 14 ────────────────────────────────────────────────────────────────────
 stage "EAS: the preview APK"
 say "EAS builds the APK in the cloud (apps/app/eas.json, profile preview, channel preview)."
 note "The first build asks to generate an Android keystore: answer yes; EAS keeps it."
@@ -540,14 +554,19 @@ if confirm "Start the build now (it waits in the queue, often 10–20 minutes)?"
 else
   SKIPPED+=("preview APK: cd apps/app && npx eas-cli@latest build --profile preview --platform android")
 fi
-say "EAS Update channels:"
+pause
+
+# ── 15 ────────────────────────────────────────────────────────────────────
+stage "EAS Update: preview and production channels"
+say "Builds on a profile with a channel get updates published to it (eas update --channel …)."
 (cd apps/app && npx eas-cli@latest channel:list 2>/dev/null) | sed 's/^/  /' || true
+note "The preview build creates preview; production appears with the first production build."
 if confirm "Create the production channel now, if it isn't listed?"; then
   (cd apps/app && npx eas-cli@latest channel:create production) || true
 fi
 pause
 
-# ── 14 ────────────────────────────────────────────────────────────────────
+# ── 16 ────────────────────────────────────────────────────────────────────
 stage "Android: install the APK and sign in"
 open_url "https://expo.dev/accounts/enesbaspinar/projects/homelibra/builds"
 step "Open the finished preview build on the phone (scan its QR code) → Install."

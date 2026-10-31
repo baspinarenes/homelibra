@@ -8,7 +8,7 @@ Sentry.init({
   dsn: 'https://f4157df8af4df9d5f32b3c519cb7dab6@o4512344105025536.ingest.de.sentry.io/4512344129863760',
   environment: __DEV__ ? 'development' : 'production',
   tracesSampleRate: __DEV__ ? 1.0 : 0.1,
-  // A reader's Library stays private (#40): replays mask every text, image
+  // A scholar's Library stays private (#40): replays mask every text, image
   // and vector, stated here rather than trusted to the SDK's defaults.
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: __DEV__ ? 1.0 : 0.05,
