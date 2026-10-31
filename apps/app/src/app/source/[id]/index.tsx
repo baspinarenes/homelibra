@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 
 import { CoverEditor } from '@/components/cover-editor';
-import { NoteComposer } from '@/components/note-composer';
+import { AddCommentButton, NoteComposer, type NoteComposerHandle } from '@/components/note-composer';
 import { type Match, MarkedText, useSearchText, useSourceSearch } from '@/components/note-search';
 import { NewMark, OrganizeEntry, OrganizeMode } from '@/components/organize-mode';
 import { OutboxStatus } from '@/components/outbox-status';
@@ -130,6 +130,9 @@ function SourcePage({
   const [writing, setWriting] = useState(write);
   // The Note saved last on this page.
   const [freshId, setFreshId] = useState<string | null>(null);
+  // The Excerpt that offers "Yorum ekle", as the box says.
+  const [commentable, setCommentable] = useState<string | null>(null);
+  const composer = useRef<NoteComposerHandle>(null);
   const last = useMemo(() => lastCaptured(notes), [notes]);
   const list = useRef<FlatList<ListedNote>>(null);
   const pin = useRef<Pin | null>(
@@ -206,7 +209,7 @@ function SourcePage({
           style={styles.screen}
           contentContainerStyle={styles.content}
           data={listed}
-          extraData={[marked, statuses, searched.matches]}
+          extraData={[marked, statuses, searched.matches, commentable]}
           keyExtractor={(note) => note.id}
           keyboardShouldPersistTaps="handled"
           onLayout={scrollToPin}
@@ -269,6 +272,9 @@ function SourcePage({
               fresh={fresh.has(note.id)}
               status={statuses.get(note.id)}
               onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
+              action={
+                note.id === commentable && <AddCommentButton onPress={() => composer.current?.commentOnLastExcerpt()} />
+              }
               // A Note just come in is placed by estimate until its row is measured: place it again then.
               onLayout={() => {
                 if (pin.current?.id === note.id) setTimeout(scrollToPin, 0);
@@ -278,8 +284,9 @@ function SourcePage({
         />
       )}
       {/* Hidden rather than gone while searching, so a draft in it stays. */}
-      <View style={searching && styles.hidden}>
+      <View style={[expanded && styles.screen, searching && styles.hidden]}>
         <NoteComposer
+          ref={composer}
           sourceId={source.id}
           sourceType={source.type}
           carriedLocator={last?.note.locator ?? ''}
@@ -296,6 +303,7 @@ function SourcePage({
             setFreshId(id);
             pinAboveBox(id);
           }}
+          onCommentableChange={setCommentable}
         />
       </View>
     </KeyboardAvoidingView>
@@ -317,6 +325,7 @@ function NoteRow({
   status,
   onPress,
   onLayout,
+  action,
 }: {
   note: ListedNote;
   divided: boolean;
@@ -328,22 +337,22 @@ function NoteRow({
   status: NoteStatus | undefined;
   onPress: () => void;
   onLayout: () => void;
+  /** Under the Note's texts: "Yorum ekle" on the Excerpt saved last. */
+  action?: ReactNode;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const waiting = status !== undefined && status !== 'synced';
-  return (
+  // A button may not sit inside the row's own: the action goes under it, in the texts' column.
+  const below = Boolean(action);
+  const outer = [divided && styles.divided, marked && styles.marked];
+  const row = (
     <Pressable
       accessibilityRole="button"
       accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
       onLayout={onLayout}
-      style={({ pressed }) => [
-        styles.row,
-        divided && styles.divided,
-        marked && styles.marked,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.row, !below && outer, below && styles.rowAbove, pressed && styles.pressed]}
     >
       <View style={styles.locatorColumn}>
         <Text style={styles.locator}>{note.locator ?? '—'}</Text>
@@ -356,6 +365,13 @@ function NoteRow({
         {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
       </View>
     </Pressable>
+  );
+  if (!below) return row;
+  return (
+    <View style={outer}>
+      {row}
+      <View style={styles.action}>{action}</View>
+    </View>
   );
 }
 
@@ -383,6 +399,9 @@ const makeStyles = (c: Colors) =>
     hidden: { display: 'none' },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     row: { flexDirection: 'row', gap: 10, paddingVertical: space.md },
+    rowAbove: { paddingBottom: 0 },
+    // Under the texts, past the Locator's column and the row's gap.
+    action: { paddingLeft: 68 + 10, paddingTop: 6, paddingBottom: space.sm },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     // An outline, so the row keeps its place while marked.
     marked: {
