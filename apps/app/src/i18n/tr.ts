@@ -15,10 +15,26 @@ export const tr = {
   screenHeader: {
     back: 'Geri',
   },
+  // Dizin, the third tab: Dosyalar | Etiketler (#127).
   collections: {
     viewLabel: 'Görünüm',
     collections: 'Dosyalar',
     tags: 'Etiketler',
+    new: 'Yeni dosya',
+    sort: 'Sırala',
+    sortCurrent: 'Sırala: {{sort}}',
+    sortCollections: 'Dosyaları sırala',
+    sortTags: 'Etiketleri sırala',
+    byRecent: 'Son değişen',
+    byName: 'Ada göre',
+    byNotes: 'Not sayısı',
+    byUsage: 'Çok kullanılan',
+    close: 'Kapat',
+    retry: 'Yeniden dene',
+    emptyTitle: 'Henüz dosyan yok',
+    emptyLead: 'Bir yazının etiketlerini bir araya getirmek için sağ üstteki + ile yeni bir dosya aç.',
+    tagsEmptyTitle: 'Henüz etiketin yok',
+    tagsEmptyLead: 'Bir nota ya da kaynağa “+ etiket” ile takabilirsin.',
   },
   settings: {
     appearance: 'Görünüm',
@@ -384,10 +400,6 @@ export const tr = {
     done: 'Tamam',
     close: 'Kapat',
     counts: '{{notes}} not · {{sources}} kaynak',
-    sortLabel: 'Sıralama',
-    sortName: 'A–Z',
-    sortUsage: 'Çok kullanılan',
-    empty: 'Henüz etiketin yok. Bir nota ya da kaynağa “+ etiket” ile takabilirsin.',
     loadFailed: 'Etiketler yüklenemedi.',
     saveFailed: 'Etiketler kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     recent: 'Son kullanılan etiketler',
@@ -444,7 +456,6 @@ export const tr = {
   },
   // Dosyalar, a Collection's view and a Tag's page (#51).
   collection: {
-    newCollection: '+ Yeni dosya',
     newTitle: 'Yeni dosya',
     nameLabel: 'Dosya adı',
     nameField: 'Ad',
@@ -460,7 +471,6 @@ export const tr = {
     noteCount: '{{count}} not',
     counts: '{{notes}} not · {{sources}} kaynak',
     noTags: 'etiketsiz',
-    listEmpty: 'Henüz dosyan yok. Bir yazının etiketlerini “+ Yeni dosya” ile bir araya getir.',
     listFailed: 'Dosyalar yüklenemedi.',
     loadFailed: 'Dosya yüklenemedi.',
     saveFailed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
