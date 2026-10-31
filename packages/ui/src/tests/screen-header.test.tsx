@@ -49,6 +49,16 @@ describe('ScreenHeader', () => {
     expect(nameOf(save!)).toBe('Kaydet');
     expect(save!.attrs['aria-disabled']).toBe('true');
   });
+
+  it('spins in place of Kaydet while saving, keeps its name and takes no second press', () => {
+    const page = render(<HeaderTextAction label="Kaydet" busy onPress={noop} />);
+    const [save] = byRole(page, 'button');
+    expect(nameOf(save!)).toBe('Kaydet');
+    expect(text(save!)).toBe('');
+    expect(save!.attrs['aria-busy']).toBe('true');
+    expect(save!.attrs['aria-disabled']).toBe('true');
+    expect(byRole(page, 'progressbar')).toHaveLength(1);
+  });
 });
 
 describe('HeaderIconAction', () => {

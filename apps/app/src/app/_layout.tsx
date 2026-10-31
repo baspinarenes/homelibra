@@ -3,7 +3,7 @@ import '@/i18n';
 
 import { CharisSIL_400Regular } from '@expo-google-fonts/charis-sil';
 import { EBGaramond_400Regular, EBGaramond_500Medium } from '@expo-google-fonts/eb-garamond';
-import { RedditMono_500Medium } from '@expo-google-fonts/reddit-mono';
+import { RedditMono_400Regular, RedditMono_500Medium } from '@expo-google-fonts/reddit-mono';
 import { RedditSans_400Regular, RedditSans_500Medium, RedditSans_600SemiBold } from '@expo-google-fonts/reddit-sans';
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
@@ -34,6 +34,7 @@ function RootLayout() {
     RedditSans_400Regular,
     RedditSans_500Medium,
     RedditSans_600SemiBold,
+    RedditMono_400Regular,
     RedditMono_500Medium,
   });
   // Better Auth refetches the session on window focus and, while signed out,

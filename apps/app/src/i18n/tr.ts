@@ -313,6 +313,9 @@ export const tr = {
     author: 'Yazar',
     containerExample: 'dergi, derleme ya da ansiklopedi',
     doiFill: 'DOI ile doldur',
+    doiHint: "Crossref'ten başlık, yazar, dergi ve sayfalar gelir.",
+    doiPlaceholder: '10.…',
+    identifierRetry: 'Yeniden dene',
     doiFilling: "Crossref'e soruluyor…",
     doiFilled: "Crossref'ten dolduruldu. Alanları kontrol et; düzelttiklerin yalnız bu kaynakta kalır.",
     doiNotFound: "Crossref bu DOI'yi bulamadı. Alanları elle doldurabilirsin.",
@@ -660,6 +663,8 @@ export const tr = {
   // ISBN ile öner from Open Library, with its cover (#65).
   isbn: {
     suggest: 'ISBN ile öner',
+    hint: "Open Library'den başlık, yazar, yayınevi ve kapak gelir.",
+    placeholder: '978-…',
     asking: "Open Library'ye soruluyor…",
     notFound: "Open Library bu ISBN'i bulamadı. Alanları elle doldurabilirsin.",
     failed: 'Öneri alınamadı. Bağlantını kontrol edip yeniden dene.',
