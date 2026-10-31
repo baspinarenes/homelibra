@@ -13,7 +13,7 @@ import { contactEmail } from './contact';
  * (docs/research/kvkk-obligations.md). Change `legalVersion` with every
  * change of wording, so an Account records which text it accepted.
  */
-export const legalVersion = '2026-10-30-taslak';
+export const legalVersion = '2026-10-31-taslak';
 
 export type LegalSection = { heading: string; paragraphs: string[] };
 
@@ -61,6 +61,7 @@ export const privacyNotice: LegalSection[] = [
       'Giriş kodların ve hesabınla ilgili e-postalar bir e-posta gönderim hizmetiyle gider; bu hizmet e-posta adresini görür. Firma: Resend (ABD).',
       'Uygulama bir hatayla karşılaşırsa, düzeltebilmemiz için o anki teknik bilgiler bir hata kayıt hizmetine gider. Firma: Sentry (Functional Software, Inc.; kayıtlar Almanya’da tutulur).',
       'Uygulama güncellemeleri bir güncelleme hizmetinden iner; bu hizmet cihazının bilgisini ve IP adresini görür. Firma: Expo (650 Industries, Inc., ABD).',
+      `${contactEmail} adresine yazdığın e-postalar bize bir e-posta yönlendirme hizmetinden geçerek ulaşır; bu hizmet e-postanı görür. Firma: Cloudflare, Inc. (ABD).`,
       'Bu firmaların hepsi Türkiye dışındadır; verilerin Almanya’da ve ABD’de saklanır ve işlenir. ' + placeholder,
     ],
   },
