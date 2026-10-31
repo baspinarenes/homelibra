@@ -284,11 +284,12 @@ export const tr = {
   // The Date field (ADR-0002, #18 §1).
   date: {
     calendars: { gregorian: 'Milâdî', hijri: 'Hicrî', rumi: 'Rumî' },
-    changeCalendar: 'Takvimi değiştir: {{calendar}}',
+    calendar: 'Takvim',
+    pick: 'Tarih seç',
     day: 'Gün',
     month: 'Ay',
     year: 'Yıl',
-    noMonth: 'Ay yok',
+    none: '—',
     monthWithAbbreviation: '{{name}} ({{abbreviation}})',
     today: 'Bugün',
     approximate: '≈ {{range}}',
@@ -296,13 +297,13 @@ export const tr = {
     shownAs: 'Görünecek: {{date}}',
     whyApproximate: 'Neden yaklaşık?',
     close: 'Kapat',
+    undated: 'Tarihsiz',
+    done: 'Tamam',
     hijriDrift:
       "Osmanlı'da ay başları hilalin görülmesiyle belirlendiğinden, hesaplanan Milâdî gün bir iki gün sapabilir. Kesin gün için belgedeki gün adına bakılabilir.",
     earlyRumi: '1256 öncesi Rumî yıl numaraları belgelerle doğrulanmadı; Milâdî karşılık yaklaşıktır.',
     ttkGuide: 'Türk Tarih Kurumu, Tarih Çevirme Kılavuzu ↗',
     tdvTakvim: 'TDV İslâm Ansiklopedisi, “Takvim” maddesi ↗',
-    needsYear: 'Yıl gerekli.',
-    notInCalendar: 'Bu tarih {{calendar}} takvimde yok.',
   },
   sourceForm: {
     newTitle: 'Yeni kaynak',

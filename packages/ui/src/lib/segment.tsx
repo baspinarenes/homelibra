@@ -9,16 +9,19 @@ export function Segment<T extends string>({
   options,
   value,
   onChange,
+  block = false,
 }: {
   /** What screen readers call the choice. */
   label: string;
   options: readonly { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  /** Full width, the options sharing it equally. */
+  block?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   return (
-    <View role="radiogroup" aria-label={label} style={styles.group}>
+    <View role="radiogroup" aria-label={label} style={[styles.group, block && styles.block]}>
       {options.map((option) => {
         const selected = option.value === value;
         return (
@@ -27,7 +30,7 @@ export function Segment<T extends string>({
             role="radio"
             aria-checked={selected}
             onPress={() => onChange(option.value)}
-            style={[styles.option, selected && styles.selected]}
+            style={[styles.option, block && styles.blockOption, selected && styles.selected]}
           >
             <Text style={[styles.text, selected && styles.selectedText]}>{option.label}</Text>
           </Pressable>
@@ -48,7 +51,9 @@ const makeStyles = (c: Colors) =>
       borderColor: c.line,
       borderRadius: radius.control,
     },
+    block: { alignSelf: 'stretch' },
     option: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.chip },
+    blockOption: { flex: 1, alignItems: 'center' },
     selected: { backgroundColor: c.accent },
     text: { ...typeScale.label, color: c.ink2 },
     selectedText: { color: c.accentFg },

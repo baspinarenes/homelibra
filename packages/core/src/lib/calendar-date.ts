@@ -97,6 +97,12 @@ const rumi: CalendarRules = {
 
 const rules: Record<Calendar, CalendarRules> = { gregorian, hijri, rumi };
 
+/** The months a year of a calendar has (none when the year does not exist), and how many days each has. */
+export function calendarYear(calendar: Calendar, year: number) {
+  const { months, monthLength } = rules[calendar];
+  return { months: months(year), days: (month: number) => monthLength(year, month) };
+}
+
 function jdnToGregorian(jdn: number): GregorianDay {
   const a = jdn + 32044;
   const b = Math.floor((4 * a + 3) / 146097);
