@@ -48,6 +48,24 @@ describe('ScreenHeader', () => {
     expect(text(byRole(page, 'heading')[0]!)).toBe('Kaynaklar');
   });
 
+  it("sets an icon right beside a tab root's title, before the actions at the right", () => {
+    const page = render(
+      <ScreenHeader
+        variant="root"
+        title="Ara"
+        titleAccessory={<HeaderIconAction icon={Trash} label="Arama ipuçları" tone="muted" onPress={noop} />}
+        right={<HeaderIconAction icon={Trash} label="Süz" onPress={noop} />}
+      />,
+    );
+    const [heading] = byRole(page, 'heading');
+    const [tips, filter] = byRole(page, 'button');
+    expect(text(heading!)).toBe('Ara');
+    expect(nameOf(tips!)).toBe('Arama ipuçları');
+    expect(nameOf(filter!)).toBe('Süz');
+    const order = all(page);
+    expect(order.indexOf(heading!)).toBeLessThan(order.indexOf(tips!));
+  });
+
   it('shows its actions at the right, a disabled Kaydet among them', () => {
     const page = render(
       <ScreenHeader

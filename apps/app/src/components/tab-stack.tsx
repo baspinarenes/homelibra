@@ -16,22 +16,27 @@ export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
  * tab that is already open pops its stack to the root. `children` declares
  * the screens the tab pushes over its root. A Geri al offered as the scholar
  * came back to the tab (a Source deleted from its form) shows at its foot.
- * With `rootHeader` the root has the package's large tab-root title.
+ * With `rootHeader` the root has the package's large tab-root title, and
+ * `titleAccessory` an icon right beside it (Ara's Arama ipuçları).
  */
 export function TabStack({
   title,
   headerRight,
   rootHeader = false,
+  titleAccessory,
   children,
 }: {
   title: TabTitleKey;
   headerRight?: () => ReactNode;
   rootHeader?: boolean;
+  titleAccessory?: () => ReactNode;
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
   // Without `rootHeader` the tab root keeps the platform header until its screen moves to the package.
-  const header = rootHeader ? (props: NativeStackHeaderProps) => <RootHeader {...props} /> : undefined;
+  const header = rootHeader
+    ? (props: NativeStackHeaderProps) => <RootHeader {...props} titleAccessory={titleAccessory?.()} />
+    : undefined;
   return (
     <View style={styles.tab}>
       <Stack screenOptions={useHeaderOptions()}>
@@ -52,12 +57,13 @@ const styles = StyleSheet.create({
 });
 
 /** A tab root's large title from @homelibra/ui, its icons from the options the tab or its screen sets. */
-function RootHeader({ route, options }: NativeStackHeaderProps) {
+function RootHeader({ route, options, titleAccessory }: NativeStackHeaderProps & { titleAccessory?: ReactNode }) {
   const { colors } = useTheme();
   return (
     <ScreenHeader
       variant="root"
       title={options.title ?? route.name}
+      titleAccessory={titleAccessory}
       right={options.headerRight?.({ canGoBack: false, tintColor: colors.accent })}
     />
   );

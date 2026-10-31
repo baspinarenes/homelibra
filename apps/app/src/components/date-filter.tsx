@@ -1,12 +1,10 @@
 import { type Calendar, calendars, formatDate, type YearRange, yearRange } from '@homelibra/core/date';
 import { Segment } from '@homelibra/ui/segment';
 import { TextField } from '@homelibra/ui/text-field';
-import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { useSettled } from '@/lib/settled';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * The Tarih filter as the scholar types it (#122): one calendar for both
@@ -111,62 +109,6 @@ export function YearRangeFields({
   );
 }
 
-/**
- * The Tarih filter's state for Ara's list (#40, story 164). `range` is what
- * the list asks the server for once typing settles.
- */
-export function useDateFilter() {
-  const [draft, setDraft] = useState(emptyYearRange);
-  const settled = useSettled(draft);
-  const range = useMemo(() => yearRangeOf(settled), [settled]);
-  return { draft, setDraft, range };
-}
-
-/**
- * Ara's "Tarih: tümü ▾", or the years set ("Tarih: 1324 r. – 1330 r."); it
- * opens {@link YearRangeFields} and Temizle. Ara's Süz sheet replaces it (#132).
- */
-export function DateFilter({ draft, onChange }: { draft: YearRangeDraft; onChange: (draft: YearRangeDraft) => void }) {
-  const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
-  const [open, setOpen] = useState(false);
-  const active = hasYear(draft);
-  const range = { from: boundOf(draft.calendar, draft.from), to: boundOf(draft.calendar, draft.to) };
-
-  return (
-    <View style={styles.filter}>
-      <Pressable
-        accessibilityRole="button"
-        aria-expanded={open}
-        onPress={() => setOpen(!open)}
-        style={({ pressed }) => [styles.toggle, active && styles.toggleActive, pressed && styles.pressed]}
-      >
-        <Text style={[styles.toggleText, active && styles.toggleTextActive]}>
-          {t('dateFilter.label', {
-            range: active ? yearRangeLabel(range, t('dateFilter.open')) : t('dateFilter.any'),
-          })}{' '}
-          ▾
-        </Text>
-      </Pressable>
-      {open && (
-        <View style={styles.panel}>
-          <YearRangeFields value={draft} onChange={onChange} />
-          {active && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => onChange({ ...emptyYearRange, calendar: draft.calendar })}
-              hitSlop={8}
-              style={styles.clear}
-            >
-              <Text style={styles.clearText}>{t('dateFilter.clear')}</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
-
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     fields: { gap: 6 },
@@ -177,20 +119,4 @@ const makeStyles = (c: Colors) =>
     dash: { ...typeScale.body, width: 14, paddingBottom: 12, textAlign: 'center', color: c.muted },
     hint: { ...typeScale.caption, color: c.muted },
     problem: { ...typeScale.caption, color: c.danger },
-    filter: { gap: space.sm },
-    pressed: { opacity: 0.7 },
-    toggle: {
-      alignSelf: 'flex-start',
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.button,
-      paddingVertical: 6,
-      paddingHorizontal: space.md,
-    },
-    toggleActive: { borderColor: c.accent },
-    toggleText: { ...typeScale.label, color: c.ink2 },
-    toggleTextActive: { color: c.accent },
-    panel: { gap: space.sm, paddingBottom: space.xs },
-    clear: { alignSelf: 'flex-start' },
-    clearText: { ...typeScale.button, color: c.accent },
   });
