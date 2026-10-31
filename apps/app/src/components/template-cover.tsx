@@ -1,8 +1,7 @@
 import type { SourceType } from '@homelibra/core/source';
+import { coverColors, coverStripe, radius } from '@homelibra/ui/theme';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
-
-import { coverColors, radius } from '@/theme';
 
 /** A cover's box: `small` for list rows (design system, size s), `large` for Kaldığın yer on Genel bakış. */
 export const coverSizes = { small: { width: 40, height: 56 }, large: { width: 56, height: 80 } } as const;
@@ -20,7 +19,7 @@ export function TemplateCover({ type, size = 'small' }: { type: SourceType; size
       <Svg width={width} height={height}>
         <Defs>
           <Pattern id={stripes} patternUnits="userSpaceOnUse" width={12} height={12} patternTransform="rotate(135)">
-            <Rect x={6} width={6} height={12} fill="rgba(255,255,255,0.18)" />
+            <Rect x={6} width={6} height={12} fill={coverStripe} />
           </Pattern>
         </Defs>
         <Rect width={width} height={height} fill={coverColors[type]} />

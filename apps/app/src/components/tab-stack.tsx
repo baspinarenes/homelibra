@@ -1,4 +1,5 @@
 import { ScreenHeader } from '@homelibra/ui/screen-header';
+import { useTheme } from '@homelibra/ui/theme';
 import { type NativeStackHeaderProps, Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +8,6 @@ import { StyleSheet, View } from 'react-native';
 import type { tr } from '@/i18n/tr';
 
 import { SharedUndoBar } from '@/components/undo-bar';
-import { fonts, useTheme } from '@/theme';
 
 export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
 
@@ -92,7 +92,6 @@ export function useHeaderOptions() {
     headerStyle: { backgroundColor: colors.page },
     headerShadowVisible: false,
     headerTintColor: colors.fg,
-    headerTitleStyle: { fontFamily: fonts.serifMedium, fontSize: 21 },
     contentStyle: { backgroundColor: colors.page },
   };
 }

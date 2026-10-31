@@ -1,14 +1,15 @@
 import { EMAIL_TAKEN } from '@homelibra/core/errors';
+import { Button } from '@homelibra/ui/button';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CodeInput } from '@/components/code-input';
-import { PrimaryButton } from '@/components/primary-button';
 import { authClient } from '@/lib/auth-client';
 import { offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Step = { kind: 'address' } | { kind: 'code'; newEmail: string };
 
@@ -74,10 +75,8 @@ export default function EmailChangeScreen() {
         <>
           <Text style={styles.lead}>{t('emailChange.current', { email: currentEmail })}</Text>
           <Text style={styles.lead}>{t('emailChange.lead')}</Text>
-          <Text style={styles.label}>{t('emailChange.newLabel')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholderTextColor={styles.placeholder.color}
+          <TextField
+            label={t('emailChange.newLabel')}
             value={newEmail}
             onChangeText={setNewEmail}
             placeholder={t('signIn.emailPlaceholder')}
@@ -90,7 +89,7 @@ export default function EmailChangeScreen() {
           />
           <Text style={styles.hint}>{t('emailChange.durableAddressHint')}</Text>
           <View style={styles.action}>
-            <PrimaryButton
+            <Button
               label={t('emailChange.sendCode')}
               busy={busy}
               disabled={!newEmail.trim()}
@@ -103,10 +102,14 @@ export default function EmailChangeScreen() {
       {step.kind === 'code' ? (
         <>
           <Text style={styles.lead}>{t('emailChange.codeSentTo', { email: step.newEmail })}</Text>
-          <Text style={styles.label}>{t('emailChange.codeLabel')}</Text>
-          <CodeInput value={code} onChange={setCode} onSubmit={() => submitCode(step.newEmail)} />
+          <CodeInput
+            label={t('emailChange.codeLabel')}
+            value={code}
+            onChange={setCode}
+            onSubmit={() => submitCode(step.newEmail)}
+          />
           <View style={styles.action}>
-            <PrimaryButton
+            <Button
               label={t('emailChange.submit')}
               busy={busy}
               disabled={code.length !== 6}
@@ -134,22 +137,9 @@ const makeStyles = (c: Colors) =>
     screen: { flex: 1, backgroundColor: c.page },
     content: { alignSelf: 'center', width: '100%', maxWidth: 480, padding: space.lg, gap: space.sm },
     lead: { ...typeScale.body, color: c.ink2, marginBottom: space.sm },
-    label: { ...typeScale.micro, textTransform: 'uppercase', color: c.muted },
-    input: {
-      borderColor: c.line,
-      borderWidth: 1,
-      borderRadius: radius.input,
-      paddingHorizontal: space.md,
-      paddingVertical: space.md,
-      ...typeScale.body,
-      fontSize: 16,
-      color: c.fg,
-      backgroundColor: c.surface,
-    },
     hint: { ...typeScale.caption, color: c.muted },
     action: { marginTop: space.md },
     links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
     link: { ...typeScale.label, color: c.accent },
     error: { ...typeScale.label, color: c.warn, marginTop: space.sm },
-    placeholder: { color: c.muted2 },
   });

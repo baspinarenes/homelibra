@@ -1,4 +1,5 @@
 import { HeaderTextAction, ScreenHeader } from '@homelibra/ui/screen-header';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type NativeStackHeaderProps, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -8,7 +9,6 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
 import { narrowView, SearchField, useSearchText, useTagSearch } from '@/components/note-search';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * A Tag's page (#51, story 104): "Etiket: " and its name in the header, and

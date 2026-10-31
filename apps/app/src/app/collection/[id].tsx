@@ -1,5 +1,6 @@
 import type { AppRouter } from '@homelibra/api';
 import { HeaderTextAction, ScreenHeader } from '@homelibra/ui/screen-header';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { type NativeStackHeaderProps, Stack, useLocalSearchParams } from 'expo-router';
@@ -13,7 +14,6 @@ import { DefinitionTags } from '@/components/definition-tags';
 import { narrowView, SearchField, useCollectionSearch, useSearchText } from '@/components/note-search';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
 

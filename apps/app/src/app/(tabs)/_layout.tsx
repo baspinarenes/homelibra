@@ -1,11 +1,11 @@
 import { TabBar, type TabBarIcon } from '@homelibra/ui/tab-bar';
+import { type as typeScale, useTheme, wideMinWidth } from '@homelibra/ui/theme';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Platform, useWindowDimensions } from 'react-native';
 
 import { TabIcon } from '@/components/tab-icon';
 import { useToOrganize } from '@/components/to-organize';
-import { type as typeScale, useTheme, wideMinWidth } from '@/theme';
 
 const tabs = [
   { route: '(home)', key: 'home', icon: 'overview' },

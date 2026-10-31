@@ -1,10 +1,9 @@
 import { SectionHeading } from '@homelibra/ui/section-heading';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { ChevronRight } from 'lucide-react-native';
 import { Children, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** An unboxed block under the shared section heading, ruled off from the one above. */
 export function SettingsSection({

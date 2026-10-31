@@ -1,12 +1,13 @@
 import { withPendingNotes } from '@homelibra/outbox';
 import { Button } from '@homelibra/ui/button';
+import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
 import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
 import { useOffline } from '@/lib/network';
@@ -15,7 +16,6 @@ import { useOutbox } from '@/lib/outbox';
 import { refreshLibrary } from '@/lib/refresh-library';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo } from '@/lib/undo';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** Kaynağı düzenle, opened from the Source page, with Kaynağı sil at its foot. */
 export default function EditSourceScreen() {
@@ -109,15 +109,18 @@ function DeleteSource({ id, title, saving }: { id: string; title: string; saving
         // Until the Notes are counted, it cannot tell whether to ask.
         disabled={noteCount === undefined || offline || saving}
       />
-      <ConfirmDialog
+      <Dialog
         visible={confirming}
         message={
-          <Trans
-            i18nKey="deletion.confirmSource"
-            values={{ title, count: noteCount ?? 0 }}
-            components={{ title: <Text style={styles.title} /> }}
-          />
+          <DialogMessage>
+            <Trans
+              i18nKey="deletion.confirmSource"
+              values={{ title, count: noteCount ?? 0 }}
+              components={{ title: <Text style={styles.title} /> }}
+            />
+          </DialogMessage>
         }
+        destructive
         confirmLabel={t('deletion.confirm')}
         cancelLabel={t('deletion.cancel')}
         busy={remove.isPending}

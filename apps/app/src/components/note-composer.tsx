@@ -1,5 +1,7 @@
 import type { SourceType } from '@homelibra/core/source';
 import { OperationRefused } from '@homelibra/outbox/trpc';
+import { Segment } from '@homelibra/ui/segment';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import CornerDownRight from 'lucide-react-native/icons/corner-down-right';
 import Maximize2 from 'lucide-react-native/icons/maximize-2';
@@ -23,12 +25,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { uuidv7 } from 'uuidv7';
 
 import { LocatorSheet } from '@/components/locator-sheet';
-import { Segment } from '@/components/segment';
 import { TagPicker } from '@/components/tag-picker';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useOutbox } from '@/lib/outbox';
 import { offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type Mode = 'excerpt' | 'comment';
 
@@ -561,5 +561,5 @@ const makeStyles = (c: Colors) =>
     pressed: { opacity: 0.7 },
     error: { ...typeScale.caption, color: c.danger },
     addComment: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
-    addCommentText: { ...typeScale.label, fontFamily: typeScale.button.fontFamily, color: c.accent },
+    addCommentText: { ...typeScale.link, color: c.accent },
   });

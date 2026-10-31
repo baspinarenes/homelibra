@@ -1,10 +1,9 @@
 import { type Calendar, calendars, formatDate, type YearRange, yearRange } from '@homelibra/core/date';
 import { Segment } from '@homelibra/ui/segment';
 import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
-
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * The Tarih filter as the scholar types it (#122): one calendar for both

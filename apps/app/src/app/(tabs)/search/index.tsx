@@ -6,6 +6,7 @@ import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet } from '@homelibra/ui/sheet';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
@@ -28,7 +29,6 @@ import { SourceCover } from '@/components/source-cover';
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/lib/settled';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type Results = inferRouterOutputs<AppRouter>['search']['library'];
 type NoteResult = Results['notes'][number];
@@ -471,7 +471,7 @@ const makeStyles = (c: Colors) =>
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
+      borderRadius: radius.control,
       minHeight: 46,
       paddingVertical: 12,
       paddingLeft: 40,

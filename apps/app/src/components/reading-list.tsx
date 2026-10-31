@@ -1,5 +1,6 @@
 import { formatDate } from '@homelibra/core/date';
 import { SectionHeading } from '@homelibra/ui/section-heading';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +9,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** Ana sayfa shows this many; "Tümü ›" opens Kaynaklar for the rest. */
 const shownCount = 6;

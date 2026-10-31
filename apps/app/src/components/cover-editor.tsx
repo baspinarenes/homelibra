@@ -1,5 +1,6 @@
 import type { SourceType } from '@homelibra/core/source';
 import { Sheet, SheetAction } from '@homelibra/ui/sheet';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import Camera from 'lucide-react-native/icons/camera';
@@ -15,7 +16,6 @@ import { useImageDrop } from '@/lib/image-drop';
 import { useOffline } from '@/lib/network';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * The Cover in the Source page's heading (#40, "Cover"). Tapping it opens a
@@ -176,7 +176,7 @@ const makeStyles = (c: Colors) =>
       borderWidth: 1,
       borderStyle: 'dashed',
       borderColor: c.line,
-      borderRadius: radius.card,
+      borderRadius: radius.control,
     },
     hint: { ...typeScale.caption, color: c.muted },
   });

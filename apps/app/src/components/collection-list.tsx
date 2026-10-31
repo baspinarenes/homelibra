@@ -1,3 +1,4 @@
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +7,6 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { ListMessage } from '@/components/list-message';
 import type { CollectionSort } from '@/lib/dizin-sort';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** Every Collection in `sort`'s order; the rows stay on screen while another order loads. */
 export function useCollections(sort: CollectionSort) {
