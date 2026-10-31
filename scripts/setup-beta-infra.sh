@@ -507,7 +507,7 @@ if ! already_saved SENTRY_AUTH_TOKEN; then
   warn "The token is shown once."
   ask_match ask_secret SENTRY_AUTH_TOKEN "Org token (sntrys_…):" '^sntrys_' "Organization tokens start with sntrys_."
   write_env SENTRY_AUTH_TOKEN "$SENTRY_AUTH_TOKEN"
-  note "CI doesn't upload source maps yet; it becomes a GitHub secret when it does."
+  note "The next stage hands it to EAS: release builds upload source maps with it."
 fi
 
 # ── 17 ────────────────────────────────────────────────────────────────────
@@ -531,6 +531,14 @@ if ! already_saved EAS_PROJECT_ID; then
     SKIPPED+=("eas init")
   fi
   pause
+fi
+# Outside the check above so a re-run can still push it. Without it, release
+# builds fail at the Sentry source map upload.
+if [[ -n "${SENTRY_AUTH_TOKEN:-}" ]] && confirm "Give EAS builds the Sentry token (preview and production)?"; then
+  (cd apps/app && npx eas-cli@latest env:create --name SENTRY_AUTH_TOKEN --value "$SENTRY_AUTH_TOKEN" \
+    --visibility secret --environment preview --environment production --force --non-interactive)
+else
+  SKIPPED+=("SENTRY_AUTH_TOKEN on EAS: preview and production builds will fail")
 fi
 
 # ── 18 ────────────────────────────────────────────────────────────────────
