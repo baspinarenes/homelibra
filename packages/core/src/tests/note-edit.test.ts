@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { capturedNote, editedNote } from '../note';
+import { capturedNote, editedNote, rederivedSort } from '../note';
 
 const irade = { locator: '29 Z 1310, 1234/56', locatorSort: [29, 1310, 1234, 56], excerpt: 'İrade.', comment: null };
 
@@ -58,5 +58,28 @@ describe('editedNote', () => {
 
   it('gives a Note without a Locator no sort value, whatever it had', () => {
     expect(editedNote(irade, { locator: ' ' })).toMatchObject({ locator: null, locatorSort: null });
+  });
+});
+
+describe('rederivedSort', () => {
+  it('reads a stored sort value from the Locator again', () => {
+    // Stored under an older rule, or corrected by hand before #125.
+    expect(rederivedSort({ locator: irade.locator, locatorSort: [1234, 56, 29, 1310] })).toEqual({
+      locatorSort: [29, 1310, 1234, 56],
+    });
+    expect(rederivedSort({ locator: irade.locator, locatorSort: [29, 1310, 1234] })).toEqual({
+      locatorSort: [29, 1310, 1234, 56],
+    });
+  });
+
+  it('takes away a sort value its Locator does not give', () => {
+    expect(rederivedSort({ locator: 'Önsöz', locatorSort: [3] })).toEqual({ locatorSort: null });
+    expect(rederivedSort({ locator: null, locatorSort: [3] })).toEqual({ locatorSort: null });
+    expect(rederivedSort({ locator: 's. 45', locatorSort: null })).toEqual({ locatorSort: [45] });
+  });
+
+  it('leaves a value that is right already', () => {
+    expect(rederivedSort(irade)).toBeNull();
+    expect(rederivedSort({ locator: 'Önsöz', locatorSort: null })).toBeNull();
   });
 });

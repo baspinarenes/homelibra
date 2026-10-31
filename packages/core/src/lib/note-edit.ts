@@ -51,3 +51,20 @@ export function editedNote(current: Omit<NoteFields, 'locatorSort'>, edit: NoteT
     comment: edit.comment === undefined ? current.comment : stored(edit.comment),
   });
 }
+
+/**
+ * A stored Note's sort value read from its Locator again, by today's rule;
+ * null when the stored one is that already. For the one-off work that
+ * corrects sort values stored by an older rule or by hand (#125).
+ */
+export function rederivedSort({
+  locator,
+  locatorSort,
+}: Pick<NoteFields, 'locator' | 'locatorSort'>): Pick<NoteFields, 'locatorSort'> | null {
+  const derived = derivedSort(locator);
+  const same =
+    derived === null || locatorSort === null
+      ? derived === locatorSort
+      : derived.length === locatorSort.length && derived.every((part, index) => part === locatorSort[index]);
+  return same ? null : { locatorSort: derived };
+}

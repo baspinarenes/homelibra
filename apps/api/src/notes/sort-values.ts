@@ -1,4 +1,4 @@
-import { editedNote } from '@homelibra/core/note';
+import { rederivedSort } from '@homelibra/core/note';
 import { eq } from 'drizzle-orm';
 
 import type { LibraryTx } from '../db/client';
@@ -12,19 +12,9 @@ import { note } from '../db/schema';
  * edited it.
  */
 export async function rederiveSortValues(tx: LibraryTx) {
-  const notes = await tx
-    .select({
-      id: note.id,
-      locator: note.locator,
-      locatorSort: note.locatorSort,
-      excerpt: note.excerpt,
-      comment: note.comment,
-    })
-    .from(note);
+  const notes = await tx.select({ id: note.id, locator: note.locator, locatorSort: note.locatorSort }).from(note);
   for (const stored of notes) {
-    // An edit that changes nothing: what editedNote keeps is the derived value.
-    const edited = editedNote(stored, {});
-    if (!edited || JSON.stringify(edited.locatorSort) === JSON.stringify(stored.locatorSort)) continue;
-    await tx.update(note).set({ locatorSort: edited.locatorSort }).where(eq(note.id, stored.id));
+    const rederived = rederivedSort(stored);
+    if (rederived) await tx.update(note).set(rederived).where(eq(note.id, stored.id));
   }
 }
