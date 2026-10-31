@@ -36,6 +36,16 @@ export async function resolveTags(tx: LibraryTx, accountId: string, names: strin
   return [...byIdentity.keys()].map((identity) => ids.get(identity)!);
 }
 
+/** The Tags of the Library these names are, making none: a name it has no Tag of is left out. */
+export async function findTags(tx: LibraryTx, accountId: string, names: string[]): Promise<TagRef[]> {
+  const identities = [...new Set(names.map(tagIdentity))];
+  if (identities.length === 0) return [];
+  return tx
+    .select({ id: tag.id, name: tag.name })
+    .from(tag)
+    .where(and(eq(tag.accountId, accountId), inArray(tag.identity, identities)));
+}
+
 /** Puts these Tags on the Note too; the ones it has stay. */
 export async function addNoteTags(tx: LibraryTx, accountId: string, noteId: string, tagIds: string[]) {
   if (tagIds.length === 0) return;

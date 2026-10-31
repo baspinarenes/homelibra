@@ -1,4 +1,3 @@
-import { editedNote, formatSortValue, locatorSortValue } from '@homelibra/core/note';
 import { type KnownNote, pendingNote } from '@homelibra/outbox';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,12 +16,6 @@ import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { offerReceiptUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
-
-/** The sort value a Locator text gets, as the field shows it; empty when it holds no number. */
-const derivedText = (locator: string) => {
-  const value = locatorSortValue(locator);
-  return value ? formatSortValue(value) : '';
-};
 
 /**
  * Notu düzenle, opened from a Note on the Source page. Its Kaynak field
@@ -88,15 +81,6 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
   const [excerpt, setExcerpt] = useState(note.excerpt ?? '');
   const [comment, setComment] = useState(note.comment ?? '');
   const [tags, setTags] = useState(() => note.tags.map((tag) => tag.name));
-  // The sort value the scholar typed here; until then the field shows the
-  // stored one, and the derived one once the Locator text changes (#2 §5).
-  const [typedSort, setTypedSort] = useState<string | null>(null);
-  // Sent only when typed here: a value without numbers derives it again.
-  const typed = typedSort === null ? undefined : locatorSortValue(typedSort);
-  // As the server will keep it, by the same rule; the Note's texts stay, so it is never null.
-  const sortValue = editedNote(note, { locator, locatorSort: typed })?.locatorSort ?? null;
-  const sortText = typedSort ?? (sortValue ? formatSortValue(sortValue) : '');
-  const corrected = sortValue !== null && sortValue.join() !== locatorSortValue(locator)?.join();
 
   const { colors } = useTheme();
   const [pickingSource, setPickingSource] = useState(false);
@@ -126,7 +110,6 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         excerpt,
         comment,
         tags,
-        ...(typed !== undefined && { locatorSort: typed }),
       });
       const moved = moveTo && (await apply({ type: 'moveNote', id: note.id, sourceId: moveTo.id }));
       leave();
@@ -156,14 +139,6 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
   const hasText = excerpt.trim() !== '' || comment.trim() !== '';
   const canSave = hasText && busy === null;
   const save = () => canSave && void update();
-
-  const sortHint = !locator.trim()
-    ? t('noteEdit.noLocator')
-    : corrected
-      ? t('noteEdit.corrected')
-      : sortText
-        ? t('noteEdit.derived')
-        : t('noteEdit.unsortable');
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -197,33 +172,11 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         <Field
           label={t('noteEdit.locator')}
           value={locator}
-          onChangeText={(text) => {
-            setLocator(text);
-            // A new Locator text derives its sort value again; correct it after.
-            setTypedSort(null);
-          }}
+          onChangeText={setLocator}
           placeholder={t('capture.locatorPlaceholder')}
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <View style={styles.sort}>
-          <Field
-            label={t('noteEdit.locatorSort')}
-            value={sortText}
-            onChangeText={setTypedSort}
-            editable={locator.trim() !== ''}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.hint}>
-            {sortHint}
-            {corrected && (
-              <Text accessibilityRole="button" onPress={() => setTypedSort(derivedText(locator))} style={styles.link}>
-                {` ${t('noteEdit.rederive')}`}
-              </Text>
-            )}
-          </Text>
-        </View>
         <Field label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline quote />
         <Field label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
         <View style={styles.tags}>
@@ -264,10 +217,7 @@ const makeStyles = (c: Colors) =>
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     spinner: { color: c.accent },
     form: { gap: space.lg, width: '100%', maxWidth: 640, alignSelf: 'center' },
-    sort: { gap: 6 },
     tags: { gap: 8 },
-    hint: { ...typeScale.caption, color: c.muted },
-    link: { ...typeScale.caption, color: c.accent },
     error: { ...typeScale.body, color: c.danger },
     warning: { ...typeScale.body, color: c.warn },
     sourceField: { gap: 6 },

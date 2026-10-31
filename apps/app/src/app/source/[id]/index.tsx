@@ -158,7 +158,7 @@ function SourcePage({
   // Outlined: the Note saved last here, else the one captured last while writing, else the one a search opened.
   const marked = freshId ?? (writing ? last?.note.id : found) ?? null;
 
-  // Yazar · Tarih · Künye notu · not sayısı, the Date as it was entered.
+  // Yazar · Tarih · Ek bilgi · not sayısı, the Date as it was entered.
   const byline = [
     source.author,
     source.date && formatDate(source.date),

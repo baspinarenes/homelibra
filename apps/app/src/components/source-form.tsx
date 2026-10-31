@@ -163,7 +163,7 @@ export function draftToInput({ values, dates, date, suggestedCover: _, ...draft 
 
 /**
  * The Source form, Sade variant (#18): Tür → ISBN/DOI → Başlık → Yazar →
- * Tarih → type-specific fields (sparse ones behind a button) → Künye notu.
+ * Tarih → type-specific fields (sparse ones behind a button) → Ek bilgi.
  * Only Tür and Başlık are required. A type change hides fields and never
  * clears them.
  */

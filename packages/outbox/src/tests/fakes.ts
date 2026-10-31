@@ -56,8 +56,8 @@ export function fakeServer() {
         const note = notes.get(operation.id);
         // An edit that reaches a deleted Note is ignored.
         if (!note) return { outcome: 'done' };
-        // An edit leaving the Note without text, by core's rule; the sort value plays no part in it.
-        if (!editedNote({ ...note, locatorSort: null }, operation)) return { outcome: 'refused' };
+        // An edit leaving the Note without text, by core's rule.
+        if (!editedNote(note, operation)) return { outcome: 'refused' };
         const { locator, excerpt, comment } = operation;
         if (locator !== undefined) note.locator = locator;
         if (excerpt !== undefined) note.excerpt = excerpt;

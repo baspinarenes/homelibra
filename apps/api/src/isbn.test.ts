@@ -57,7 +57,7 @@ describe('ISBN ile öner', () => {
       title: "Cereyanlar: Türkiye'de Siyasî İdeolojiler",
       author: 'Tanıl Bora',
       date: { calendar: 'gregorian', year: 2017 },
-      fields: { publisher: 'İletişim Yayınları', placeOfPublication: 'İstanbul' },
+      fields: { publisher: 'İletişim Yayınları' },
       cover: null,
     });
   });

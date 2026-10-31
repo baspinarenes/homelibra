@@ -61,13 +61,10 @@ type EditFields = Partial<Omit<UpdateNote, 'type' | 'id'>>;
 const setBy = ({ type: _, id: __, ...fields }: UpdateNote): EditFields =>
   Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
 
-/** A new Note takes no sort value: the edit, sent after it, corrects that. */
-const noteFields = ({ locatorSort: _, ...fields }: EditFields) => fields;
-
 /** A refused operation with the scholar's edit in place of what it carried. */
 function withEdit(operation: Operation, edit: UpdateNote): Operation {
   if (operation.type === 'updateNote') return { ...operation, ...setBy(edit) };
-  if (operation.type === 'createNote') return { ...operation, note: { ...operation.note, ...noteFields(setBy(edit)) } };
+  if (operation.type === 'createNote') return { ...operation, note: { ...operation.note, ...setBy(edit) } };
   return operation;
 }
 

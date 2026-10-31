@@ -20,7 +20,6 @@ describe('Note deletion', () => {
     const excerpt = 'Kadı, naibini kendisi seçerdi.';
     await api.notes.create({ id: first, sourceId, locator: 's. 112', excerpt });
     await api.notes.create({ id: double, sourceId, locator: 's. 112', excerpt });
-    await api.notes.update({ id: double, locatorSort: [112.5] });
     const before = await api.notes.list({ sourceId });
 
     const { undoToken } = await api.notes.delete({ id: double });
@@ -61,7 +60,6 @@ describe('Note move', () => {
     const { id: kadi } = await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib' });
     const id = uuidv7();
     await api.notes.create({ id, sourceId: vakif, locator: 's. 40', comment: 'Naibin maaşı vakıftan.' });
-    await api.notes.update({ id, locatorSort: [41] });
     const note = await api.notes.get({ id });
     const captured = await enteredSourceAt(id);
 
