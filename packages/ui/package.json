@@ -16,6 +16,7 @@
     "./screen-header": "./src/screen-header.ts",
     "./section-heading": "./src/section-heading.ts",
     "./tab-bar": "./src/tab-bar.ts",
+    "./text-tabs": "./src/text-tabs.ts",
     "./wheels": "./src/wheels.ts"
   },
   "scripts": {
