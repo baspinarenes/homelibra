@@ -29,6 +29,8 @@ const dismissDistance = 80;
  * the dimmed screen close it; there is never a second close button. It stops
  * 48 below the top, and what does not fit scrolls inside it. With the
  * keyboard up it stands on the keyboard, its field and the action in sight.
+ * A sheet that `fill`s is a list to choose from under a field: it stands at
+ * its full height while the list narrows, and the list scrolls itself.
  */
 export function Sheet({
   visible,
@@ -38,6 +40,7 @@ export function Sheet({
   onHidden,
   primary,
   secondary,
+  fill = false,
   children,
 }: {
   visible: boolean;
@@ -52,6 +55,11 @@ export function Sheet({
   primary?: Action & { busy?: boolean; destructive?: boolean };
   /** A second action, narrow at the main one's left (1 : 2). */
   secondary?: Action;
+  /**
+   * Full height, the body laid out in the space left (a field above a
+   * FlatList that takes the rest) instead of in the sheet's own scroll.
+   */
+  fill?: boolean;
   children: ReactNode;
 }) {
   const styles = useThemedStyles(makeStyles);
@@ -76,6 +84,7 @@ export function Sheet({
 
   // Above the keyboard when it is up, above the navigation bar otherwise.
   const bottom = keyboardTop > 0 ? keyboardTop + 14 : Math.max(insets.bottom, 14);
+  const tallest = height - insets.top - 48;
 
   return (
     <Modal
@@ -95,7 +104,8 @@ export function Sheet({
           aria-label={title}
           style={[
             styles.sheet,
-            { maxHeight: height - insets.top - 48, paddingBottom: bottom },
+            fill ? { height: tallest } : { maxHeight: tallest },
+            { paddingBottom: bottom },
             { transform: [{ translateY: drag }] },
           ]}
         >
@@ -110,14 +120,18 @@ export function Sheet({
               </View>
             </View>
           </View>
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.body}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-          >
-            {children}
-          </ScrollView>
+          {fill ? (
+            <View style={[styles.body, styles.filled]}>{children}</View>
+          ) : (
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.body}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {children}
+            </ScrollView>
+          )}
           {(primary || secondary) && (
             <View style={styles.footer}>
               {secondary && (
@@ -204,6 +218,7 @@ const makeStyles = (c: Colors) =>
     close: { marginTop: 2, marginBottom: -2 },
     scroll: { flexGrow: 0, flexShrink: 1 },
     body: { gap: 14 },
+    filled: { flex: 1 },
     footer: { flexDirection: 'row', gap: 8 },
     secondary: { flex: 1 },
     primary: { flex: 2 },

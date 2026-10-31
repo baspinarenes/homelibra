@@ -1,13 +1,14 @@
 import type { SourceType } from '@homelibra/core/source';
+import { Sheet } from '@homelibra/ui/sheet';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SourceTypeIcon } from '@/components/source-type-icon';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 export type PickedSource = { id: string; type: SourceType; title: string };
 
@@ -15,6 +16,7 @@ export type PickedSource = { id: string; type: SourceType; title: string };
  * Note editing's Kaynak field opens this sheet: the Library's Sources by
  * Başlık, found by a part of the Başlık or Yazar, the Note's own Source
  * marked. Choosing one moves the Note there when the edit is saved (#36).
+ * The sheet stands at its full height; the list scrolls under the field.
  */
 export function SourcePicker({
   visible,
@@ -28,29 +30,11 @@ export function SourcePicker({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('deletion.close')}
-          style={styles.dismiss}
-          onPress={onClose}
-        />
-        <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
-          <View style={styles.header}>
-            <Text style={styles.heading}>{t('deletion.chooseSource')}</Text>
-            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.close}>{t('deletion.close')}</Text>
-            </Pressable>
-          </View>
-          {/* Mounted afresh each time, so the filter starts empty. */}
-          {visible && <SourceList currentId={currentId} onPick={onPick} />}
-        </View>
-      </View>
-    </Modal>
+    <Sheet visible={visible} fill title={t('deletion.chooseSource')} closeLabel={t('deletion.close')} onClose={onClose}>
+      {/* Mounted afresh each time, so the filter starts empty. */}
+      {visible && <SourceList currentId={currentId} onPick={onPick} />}
+    </Sheet>
   );
 }
 
@@ -67,15 +51,14 @@ function SourceList({ currentId, onPick }: { currentId: string; onPick: (source:
   );
 
   return (
-    <View style={styles.body}>
-      <TextInput
-        accessibilityLabel={t('deletion.filterSources')}
+    <>
+      <TextField
+        label={t('deletion.filterSources')}
+        labelHidden
         placeholder={t('deletion.filterSources')}
-        placeholderTextColor={colors.muted2}
         value={filter}
         onChangeText={setFilter}
         autoCorrect={false}
-        style={styles.filter}
       />
       {sources.isPending ? (
         <ActivityIndicator color={colors.accent} style={styles.status} />
@@ -83,12 +66,14 @@ function SourceList({ currentId, onPick }: { currentId: string; onPick: (source:
         <Text style={[styles.lead, styles.status]}>{t('deletion.sourcesFailed')}</Text>
       ) : (
         <FlatList
+          style={styles.list}
           data={shown}
           keyExtractor={(source) => source.id}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={<Text style={[styles.lead, styles.status]}>{t('deletion.noSourceMatches')}</Text>}
           renderItem={({ item: source, index }) => {
             const current = source.id === currentId;
+            const byline = [source.author, current && t('deletion.current')].filter(Boolean).join(' · ');
             return (
               <Pressable
                 accessibilityRole="button"
@@ -101,64 +86,31 @@ function SourceList({ currentId, onPick }: { currentId: string; onPick: (source:
                   <Text style={[styles.title, current && styles.currentTitle]} numberOfLines={2}>
                     {source.title}
                   </Text>
-                  {source.author && (
+                  {byline !== '' && (
                     <Text style={styles.byline} numberOfLines={1}>
-                      {source.author}
+                      {byline}
                     </Text>
                   )}
                 </View>
-                {current && <Text style={styles.current}>{t('deletion.current')}</Text>}
               </Pressable>
             );
           }}
         />
       )}
-    </View>
+    </>
   );
 }
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      maxHeight: '80%',
-      alignSelf: 'center',
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: space.lg,
-      paddingTop: space.lg,
-      paddingBottom: space.sm,
-    },
-    heading: { ...typeScale.sourceTitle, color: c.fg },
-    close: { ...typeScale.button, color: c.accent },
-    body: { flexShrink: 1, gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.sm },
-    filter: {
-      ...typeScale.body,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.input,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-    },
+    list: { flex: 1 },
     status: { paddingVertical: space.xl },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     pressed: { opacity: 0.7 },
-    text: { flex: 1, gap: 2 },
+    text: { flex: 1, gap: 3 },
     title: { ...typeScale.sourceTitleSm, color: c.fg },
     currentTitle: { color: c.accent },
     byline: { ...typeScale.caption, color: c.muted },
-    current: { ...typeScale.caption, color: c.accent },
   });
