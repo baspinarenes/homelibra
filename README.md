@@ -42,3 +42,14 @@ pnpm test        # core unit tests and API integration tests (needs `pnpm db:up`
 ## Migrations
 
 `pnpm --filter @homelibra/api db:generate` writes a migration from `src/db/schema.ts`. SQL that Drizzle cannot express (row-level security, extensions, search functions) goes in a hand-written migration: `npx drizzle-kit generate --custom --name=<name>` inside `apps/api`. Every Library table gets account-scoped queries in code and a row-level security policy (see `drizzle/0002_library_isolation.sql`).
+
+## Beta hosting
+
+One Hetzner server running Coolify serves homelibra.com: the web app at the root, the API under `/api`, and Postgres with a daily `pg_dump` kept 14 days in another location. On `main`, CI pushes the API, web and Postgres images to the private GHCR and asks Coolify to redeploy. Android testers install the EAS `preview` APK. The Operator sets this up with two wizards, which keep their values in the gitignored `.env.production`:
+
+```bash
+scripts/setup-beta-infra.sh   # accounts, domain, server, Coolify, buckets, Resend, Sentry, Expo
+scripts/deploy-beta.sh        # database, backups, API and web, deploys from CI, restore drill, first APK
+```
+
+Invite a beta reader from the API container: `docker exec <api container> tsx src/invite.ts add <email>`.
