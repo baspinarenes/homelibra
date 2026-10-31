@@ -16,22 +16,26 @@ export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
  * tab that is already open pops its stack to the root. `children` declares
  * the screens the tab pushes over its root. A Geri al offered as the scholar
  * came back to the tab (a Source deleted from its form) shows at its foot.
+ * With `rootHeader` the root has the package's large tab-root title.
  */
 export function TabStack({
   title,
   headerRight,
+  rootHeader = false,
   children,
 }: {
   title: TabTitleKey;
   headerRight?: () => ReactNode;
+  rootHeader?: boolean;
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
+  // Without `rootHeader` the tab root keeps the platform header until its screen moves to the package.
+  const header = rootHeader ? (props: NativeStackHeaderProps) => <RootHeader {...props} /> : undefined;
   return (
     <View style={styles.tab}>
       <Stack screenOptions={useHeaderOptions()}>
-        {/* The tab root keeps the platform header until its screen moves to the package. */}
-        <Stack.Screen name="index" options={{ title: t(title), headerRight, header: undefined }} />
+        <Stack.Screen name="index" options={{ title: t(title), headerRight, header }} />
         {children}
       </Stack>
       <View pointerEvents="box-none" style={styles.foot}>
@@ -46,6 +50,18 @@ const styles = StyleSheet.create({
   // The bar floats above this zero-height edge.
   foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
+
+/** A tab root's large title from @homelibra/ui, its icons from the options the tab or its screen sets. */
+function RootHeader({ route, options }: NativeStackHeaderProps) {
+  const { colors } = useTheme();
+  return (
+    <ScreenHeader
+      variant="root"
+      title={options.title ?? route.name}
+      right={options.headerRight?.({ canGoBack: false, tintColor: colors.accent })}
+    />
+  );
+}
 
 /** A pushed screen's header from @homelibra/ui, fed by the options the screen sets on its Stack.Screen. */
 function PushedHeader({ navigation, route, options, back }: NativeStackHeaderProps) {

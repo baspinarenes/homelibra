@@ -1,8 +1,8 @@
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { type LegalSection, legalVersion } from '@/lib/legal';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** The full privacy notice or terms of use, with the version an Account accepts. */
 export function LegalDocument({ sections }: { sections: LegalSection[] }) {

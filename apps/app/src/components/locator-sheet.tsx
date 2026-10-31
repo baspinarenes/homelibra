@@ -1,25 +1,23 @@
 import { locatorErase, locatorPad, pressLocatorKey } from '@homelibra/core/note';
 import type { SourceType } from '@homelibra/core/source';
+import { Sheet } from '@homelibra/ui/sheet';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, radius, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import Delete from 'lucide-react-native/icons/delete';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { PrimaryButton } from '@/components/primary-button';
-import { SecondaryButton } from '@/components/secondary-button';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 /**
  * The writing box's Locator editor, a sheet over the Source page. Sources cited by page,
  * folio or time get a pad of the keys their Locators are written with; the
  * rest, and anything the pad cannot write, take free text. Either way the
- * Locator is stored as the text it shows.
+ * Locator is stored as the text it shows, and Konumsuz | Tamam stand at the foot.
  */
 export function LocatorSheet({
   visible,
   sourceType,
-  locator,
+  locator: initial,
   onDone,
   onClose,
   onHidden,
@@ -34,43 +32,6 @@ export function LocatorSheet({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={onHidden}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('capture.locatorClose')}
-          style={styles.dismiss}
-          onPress={onClose}
-        />
-        <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
-          <View style={styles.header}>
-            <Text style={styles.heading}>{t('capture.locator')}</Text>
-            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.close}>{t('capture.locatorClose')}</Text>
-            </Pressable>
-          </View>
-          {/* Mounted afresh each time, so it starts from the Locator in use. */}
-          {visible && <LocatorEditor sourceType={sourceType} initial={locator} onDone={onDone} />}
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function LocatorEditor({
-  sourceType,
-  initial,
-  onDone,
-}: {
-  sourceType: SourceType;
-  initial: string;
-  onDone: (locator: string) => void;
-}) {
-  const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const pad = locatorPad(sourceType);
   const [locator, setLocator] = useState(initial);
@@ -78,6 +39,16 @@ function LocatorEditor({
   // new one, while erasing, a range or a folio side carries it on.
   const [fresh, setFresh] = useState(true);
   const [freeText, setFreeText] = useState(!pad);
+  // Each opening starts from the Locator in use, on the pad if the Source has one.
+  const [open, setOpen] = useState(visible);
+  if (open !== visible) {
+    setOpen(visible);
+    if (visible) {
+      setLocator(initial);
+      setFresh(true);
+      setFreeText(!pad);
+    }
+  }
 
   const press = (key: string) => {
     if (!pad) return;
@@ -91,10 +62,19 @@ function LocatorEditor({
   const typed = freeText || Platform.OS === 'web';
 
   return (
-    <View style={styles.body}>
+    <Sheet
+      visible={visible}
+      title={t('capture.locator')}
+      closeLabel={t('capture.locatorClose')}
+      onClose={onClose}
+      onHidden={onHidden}
+      secondary={{ label: t('capture.noLocator'), onPress: () => onDone('') }}
+      primary={{ label: t('capture.locatorDone'), onPress: () => onDone(locator) }}
+    >
       {typed ? (
-        <TextInput
-          accessibilityLabel={t('capture.locator')}
+        <TextField
+          label={t('capture.locator')}
+          labelHidden
           autoFocus
           selectTextOnFocus
           value={locator}
@@ -104,7 +84,6 @@ function LocatorEditor({
           }}
           onSubmitEditing={() => onDone(locator)}
           placeholder={t('capture.locatorPlaceholder')}
-          placeholderTextColor={colors.muted2}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="done"
@@ -143,57 +122,24 @@ function LocatorEditor({
           <Text style={styles.keyboardLabel}>{t('capture.locatorKeyboard')}</Text>
         </Pressable>
       )}
-      <View style={styles.footer}>
-        <View style={styles.footerButton}>
-          <SecondaryButton label={t('capture.noLocator')} onPress={() => onDone('')} />
-        </View>
-        <View style={styles.footerButtonWide}>
-          <PrimaryButton label={t('capture.locatorDone')} onPress={() => onDone(locator)} />
-        </View>
-      </View>
-    </View>
+    </Sheet>
   );
 }
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
+    display: {
+      ...typeScale.locator,
+      fontSize: 26,
+      lineHeight: 34,
+      color: c.fg,
+      textAlign: 'center',
+      paddingVertical: 6,
     },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: space.lg,
-      paddingTop: space.lg,
-      paddingBottom: space.sm,
-    },
-    heading: { ...typeScale.sourceTitle, color: c.fg },
-    close: { ...typeScale.button, color: c.accent },
-    body: { gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm },
-    display: { ...typeScale.locator, fontSize: 26, lineHeight: 34, color: c.fg, paddingVertical: space.xs },
     displayEmpty: { ...typeScale.label, fontSize: 17, lineHeight: 34, color: c.muted },
     displayFresh: { color: c.muted2 },
-    input: {
-      ...typeScale.locator,
-      fontSize: 18,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.accent,
-      borderRadius: radius.input,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      outlineWidth: 0,
-    },
-    pad: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+    input: { ...typeScale.locator, fontSize: 18, lineHeight: 24 },
+    pad: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     key: {
       // Three to a row: a third of the width less the two gaps.
       width: '31.5%',
@@ -202,14 +148,11 @@ const makeStyles = (c: Colors) =>
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.button,
+      borderRadius: radius.control,
       backgroundColor: c.surface,
     },
     keyPressed: { backgroundColor: c.lineSoft },
     keyLabel: { ...typeScale.locator, fontSize: 21, lineHeight: 26, color: c.fg },
-    keyboard: { alignSelf: 'center', paddingVertical: space.xs, paddingHorizontal: space.sm },
-    keyboardLabel: { ...typeScale.label, color: c.accent },
-    footer: { flexDirection: 'row', gap: space.sm, paddingTop: space.xs },
-    footerButton: { flex: 1 },
-    footerButtonWide: { flex: 2 },
+    keyboard: { alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 8 },
+    keyboardLabel: { ...typeScale.link, color: c.accent },
   });

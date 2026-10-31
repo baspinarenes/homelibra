@@ -20,6 +20,7 @@ export function Button({
   tone = 'accent',
   icon: Icon,
   block = false,
+  onAccent = false,
   busy = false,
   disabled = false,
 }: {
@@ -32,6 +33,8 @@ export function Button({
   icon?: IconComponent;
   /** Full width. */
   block?: boolean;
+  /** On an accent card (the ISBN/DOI card): a `small` button gets the light ground and no frame. */
+  onAccent?: boolean;
   /** Spins in place of the label and takes no presses. */
   busy?: boolean;
   disabled?: boolean;
@@ -58,6 +61,7 @@ export function Button({
         styles.button,
         styles[variant],
         block && styles.block,
+        onAccent && styles.onAccent,
         disabled && styles.off,
         pressed && styles.pressed,
       ]}
@@ -93,6 +97,7 @@ const makeStyles = (c: Colors) =>
     small: { minHeight: 36, paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: c.line },
     text: { paddingVertical: 0, paddingHorizontal: 4 },
     block: { alignSelf: 'stretch' },
+    onAccent: { backgroundColor: c.accentFg, borderColor: 'transparent' },
     off: { opacity: 0.45 },
     pressed: { opacity: 0.8 },
     label: { ...typeScale.action },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Checkbox } from '../checkbox';
-import { byRole, nameOf, render } from './render';
+import { byRole, nameOf, render, text } from './render';
 
 const noop = () => {};
 
@@ -21,5 +21,11 @@ describe('Checkbox', () => {
   it('cannot be changed while disabled', () => {
     const [box] = byRole(render(<Checkbox label="Devre dışı" checked disabled onChange={noop} />), 'checkbox');
     expect(box!.attrs['aria-disabled']).toBe('true');
+  });
+
+  it('can stand alone in a row, its label only for screen readers', () => {
+    const [box] = byRole(render(<Checkbox label="Notu seç" hideLabel checked={false} onChange={noop} />), 'checkbox');
+    expect(nameOf(box!)).toBe('Notu seç');
+    expect(text(box!)).toBe('');
   });
 });

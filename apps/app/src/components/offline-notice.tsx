@@ -1,7 +1,7 @@
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { StyleSheet, Text } from 'react-native';
 
 import { useOffline } from '@/lib/network';
-import { type Colors, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * Says, while the device is offline, that what this screen does needs a

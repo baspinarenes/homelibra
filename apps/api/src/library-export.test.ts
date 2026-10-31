@@ -25,7 +25,7 @@ async function scholar() {
 
 type Device = Awaited<ReturnType<typeof scholar>>['device'];
 
-/** Downloads the Library export as Ayarlar → Hesap ve gizlilik does on the web, and opens the ZIP. */
+/** Downloads the Library export as Ayarlar → Kütüphaneni dışa aktar does on the web, and opens the ZIP. */
 async function download(device: Device) {
   const response = await device.get('/api/export');
   expect(response.status).toBe(200);

@@ -1,3 +1,4 @@
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
@@ -5,7 +6,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { TagChips } from '@/components/tag-chips';
 import { useOffline } from '@/lib/network';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * The Source's own Tags in the Source page's heading, with "+ etiket". They

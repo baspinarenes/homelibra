@@ -18,7 +18,9 @@
     "./tab-bar": "./src/tab-bar.ts",
     "./text-tabs": "./src/text-tabs.ts",
     "./term-table": "./src/term-table.ts",
-    "./strip": "./src/strip.ts"
+    "./strip": "./src/strip.ts",
+    "./logo": "./src/logo.ts",
+    "./wheels": "./src/wheels.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

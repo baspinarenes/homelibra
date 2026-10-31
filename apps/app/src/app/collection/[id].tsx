@@ -1,29 +1,30 @@
 import type { AppRouter } from '@homelibra/api';
+import { HeaderTextAction, ScreenHeader } from '@homelibra/ui/screen-header';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { type NativeStackHeaderProps, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { CollectionMenu, CopyMarkdownButton } from '@/components/collection-actions';
+import { CopyMarkdownAction, DeleteCollectionAction } from '@/components/collection-actions';
 import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
 import { DefinitionTags } from '@/components/definition-tags';
-import { NameInput } from '@/components/name-input';
 import { narrowView, SearchField, useCollectionSearch, useSearchText } from '@/components/note-search';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
 
 /**
- * A Collection (#51): its name, its Tags as chips, the source-notes switch
- * and the count in a fixed bar, its Notes by Source under it. Every change
- * in the bar is kept in the definition, apart from the search box, which
- * only narrows what is shown. Beside the name, the Markdown copy of the
- * Notes shown (only the matches while searching); in the header, the ⋯
- * menu with Dosyayı sil (#52).
+ * A Collection (#51): "Dosya: " and its name in the header, beside it the
+ * Markdown copy of the Notes shown (only the matches while searching) and
+ * Dosyayı sil (#52). Under the header its Tags as chips, the source-notes
+ * switch and the count in a fixed bar, its Notes by Source under that.
+ * Every change in the bar is kept in the definition, apart from the search
+ * box, which only narrows what is shown. Tapping the name turns the header
+ * into its renaming.
  */
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,21 +33,17 @@ export default function CollectionScreen() {
   const trpc = useTRPC();
   const view = useQuery(trpc.collections.view.queryOptions({ id }));
 
-  return (
-    <>
+  return view.data ? (
+    <CollectionPage collection={view.data} />
+  ) : (
+    <View style={styles.center}>
       <Stack.Screen options={{ title: '' }} />
-      {view.data ? (
-        <CollectionPage collection={view.data} />
+      {view.isError ? (
+        <Text style={styles.lead}>{t('collection.loadFailed')}</Text>
       ) : (
-        <View style={styles.center}>
-          {view.isError ? (
-            <Text style={styles.lead}>{t('collection.loadFailed')}</Text>
-          ) : (
-            <ActivityIndicator color={styles.spinner.color} />
-          )}
-        </View>
+        <ActivityIndicator color={styles.spinner.color} />
       )}
-    </>
+    </View>
   );
 }
 
@@ -83,29 +80,33 @@ function CollectionPage({ collection }: { collection: Collection }) {
     ? setSwitch.variables.includeSourceNotes
     : collection.includeSourceNotes;
 
+  const header = ({ navigation, back }: NativeStackHeaderProps) =>
+    renaming ? (
+      <RenameHeader
+        initial={collection.name}
+        busy={rename.isPending}
+        onSave={(name) => rename.mutate({ id: collection.id, name })}
+        onCancel={() => setRenaming(false)}
+      />
+    ) : (
+      <ScreenHeader
+        prefix={t('collection.titlePrefix')}
+        title={collection.name}
+        onTitlePress={() => setRenaming(true)}
+        titleHint={t('collection.rename')}
+        onBack={back ? navigation.goBack : undefined}
+        backLabel={t('screenHeader.back')}
+        right={
+          <>
+            <CopyMarkdownAction view={shown} />
+            <DeleteCollectionAction collection={collection} />
+          </>
+        }
+      />
+    );
+
   const bar = (
     <>
-      {renaming ? (
-        <NameInput
-          initial={collection.name}
-          confirmLabel={t('collection.save')}
-          busy={rename.isPending}
-          onConfirm={(name) => rename.mutate({ id: collection.id, name })}
-          onCancel={() => setRenaming(false)}
-        />
-      ) : (
-        <View style={styles.nameRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityHint={t('collection.rename')}
-            onPress={() => setRenaming(true)}
-            style={({ pressed }) => [styles.nameButton, pressed && styles.pressed]}
-          >
-            <Text style={styles.name}>{collection.name}</Text>
-          </Pressable>
-          <CopyMarkdownButton view={shown} />
-        </View>
-      )}
       <DefinitionTags names={tagNames} onChange={(names) => setTags.mutate({ id: collection.id, names })} />
       <SourceNotesSwitch
         value={includeSourceNotes}
@@ -121,23 +122,65 @@ function CollectionPage({ collection }: { collection: Collection }) {
 
   return (
     <View style={styles.page}>
-      <Stack.Screen options={{ headerRight: () => <CollectionMenu collection={collection} /> }} />
-      <CollectionView
-        view={shown}
-        bar={bar}
-        matches={searched.matches}
-        empty={
-          searched.matches
-            ? t('noteSearch.viewEmpty')
-            : collection.tags.length === 0
-              ? t('collection.emptyNoTags')
-              : t('collection.emptyNoNotes')
-        }
-      />
+      <Stack.Screen options={{ title: collection.name, header }} />
+      {/* While the name is being written, the rest stands back and waits. */}
+      <View style={[styles.page, renaming && styles.renaming]} pointerEvents={renaming ? 'none' : 'auto'}>
+        <CollectionView
+          view={shown}
+          bar={bar}
+          matches={searched.matches}
+          empty={
+            searched.matches
+              ? t('noteSearch.viewEmpty')
+              : collection.tags.length === 0
+                ? t('collection.emptyNoTags')
+                : t('collection.emptyNoNotes')
+          }
+        />
+      </View>
       <View pointerEvents="box-none" style={styles.foot}>
         <SharedUndoBar />
       </View>
     </View>
+  );
+}
+
+/** The header while the name is being written: Vazgeç (an X), the name, Kaydet; Kaydet stays off while it is blank. */
+function RenameHeader({
+  initial,
+  busy,
+  onSave,
+  onCancel,
+}: {
+  initial: string;
+  busy: boolean;
+  onSave: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
+  const [name, setName] = useState(initial);
+  const ready = name.trim().length > 0 && !busy;
+  const save = () => ready && onSave(name.trim());
+  return (
+    <ScreenHeader
+      backIcon="close"
+      onBack={onCancel}
+      backLabel={t('collection.cancel')}
+      title={
+        <TextInput
+          aria-label={t('collection.nameLabel')}
+          autoFocus
+          value={name}
+          onChangeText={setName}
+          onSubmitEditing={save}
+          returnKeyType="done"
+          maxLength={200}
+          style={styles.nameInput}
+        />
+      }
+      right={<HeaderTextAction label={t('collection.save')} onPress={save} disabled={!ready} />}
+    />
   );
 }
 
@@ -146,11 +189,25 @@ const makeStyles = (c: Colors) =>
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     spinner: { color: c.accent },
-    pressed: { opacity: 0.7 },
-    name: { ...typeScale.title, color: c.fg },
-    nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-    nameButton: { flex: 1, minWidth: 0 },
     page: { flex: 1 },
+    renaming: { opacity: 0.45 },
+    // A text field's look, focused, a little lower to sit in the header.
+    nameInput: {
+      ...typeScale.body,
+      color: c.fg,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.accent,
+      borderRadius: radius.control,
+      outlineColor: c.accentSoft,
+      outlineWidth: 3,
+      outlineStyle: 'solid',
+      minHeight: 40,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      includeFontPadding: false,
+      textAlignVertical: 'center',
+    },
     // "Kopyalandı · n not" and failures float above this zero-height edge.
     foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
     error: { ...typeScale.caption, color: c.danger },

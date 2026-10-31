@@ -1,8 +1,9 @@
+import X from 'lucide-react-native/icons/x';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { type Colors, radius, type as typeScale } from './tokens';
-import { useThemedStyles } from './use-theme';
+import { useTheme, useThemedStyles } from './use-theme';
 
 export type ChipTone = 'tag' | 'add' | 'warn' | 'done' | 'outline';
 
@@ -17,6 +18,8 @@ export function Chip({
   selected,
   removable = false,
   onPress,
+  onRemove,
+  removeLabel,
 }: {
   label: string;
   tone?: ChipTone;
@@ -26,11 +29,32 @@ export function Chip({
   removable?: boolean;
   /** Makes the chip a button. Without it the chip only shows. */
   onPress?: () => void;
+  /** An × of its own after the label, that takes the Tag out (a Collection's definition). */
+  onRemove?: () => void;
+  /** What screen readers call the ×. */
+  removeLabel?: string;
 }) {
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const look = [styles.chip, styles[tone], selected && styles.selected];
   const ink = [styles.label, styles[`${tone}Ink`], selected && styles.selectedInk];
   const shown = removable ? `${label} ×` : label;
+  if (onRemove) {
+    return (
+      <View style={[...look, styles.withRemove]}>
+        <Text style={ink}>{label}</Text>
+        <Pressable
+          role="button"
+          aria-label={removeLabel ?? label}
+          onPress={onRemove}
+          hitSlop={6}
+          style={({ pressed }) => [styles.remove, pressed && styles.pressed]}
+        >
+          <X color={colors.chipInk} size={13} strokeWidth={2} />
+        </Pressable>
+      </View>
+    );
+  }
   if (!onPress) {
     return (
       <View style={look}>
@@ -82,4 +106,6 @@ const makeStyles = (c: Colors) =>
     selected: { backgroundColor: c.accent, borderWidth: 0, paddingVertical: 3, paddingHorizontal: 9 },
     selectedInk: { color: c.accentFg },
     pressed: { opacity: 0.8 },
+    withRemove: { gap: 4, paddingRight: 5 },
+    remove: { padding: 2, borderRadius: radius.chip },
   });

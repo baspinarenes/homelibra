@@ -3,21 +3,28 @@ import {
   type CalendarDate,
   calendarMonths,
   calendars,
+  type DateWheels,
+  dateWheels,
   formatDate,
   formatGregorianRange,
   isExactInGregorian,
-  type Month,
   sortValue,
+  turnWheels,
+  wheelChoices,
+  wheelsDate,
 } from '@homelibra/core/date';
+import { Button } from '@homelibra/ui/button';
+import { Segment } from '@homelibra/ui/segment';
+import { Sheet } from '@homelibra/ui/sheet';
+import { Wheels } from '@homelibra/ui/wheels';
 import Info from 'lucide-react-native/icons/info';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Keyboard, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
+import { type Colors, radius, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
-/** A Date as the form holds it while the scholar types: Gün and Yıl as typed, Ay as chosen. */
+/** A Date as the form holds it: Gün and Yıl as text, Ay as a number. */
 export type DateDraft = { calendar: Calendar; day: string; month: number | null; year: string };
 
 export const emptyDateDraft: DateDraft = { calendar: 'gregorian', day: '', month: null, year: '' };
@@ -39,13 +46,22 @@ export function readDateDraft({ calendar, day, month, year }: DateDraft): ReadDa
   return sortValue(date) === null ? { problem: 'notInCalendar' } : { date };
 }
 
+/** A Date with its month written out, as the field shows it: "2 Rebîülevvel 1327". */
+function writeOut({ calendar, year, month, day }: CalendarDate): string {
+  const name = calendarMonths(calendar).find((m) => m.month === month)?.name;
+  return [day, name, year].filter((part) => part !== undefined).join(' ');
+}
+
+const todayDate = (): CalendarDate => {
+  const now = new Date();
+  return { calendar: 'gregorian', year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+};
+
 /**
- * The Date field (#18 §1, Sade): a chip beside the label cycles Milâdî →
- * Hicrî → Rumî, always starting at Milâdî; then Gün · Ay · Yıl. Changing the
- * calendar clears Ay and Gün and keeps Yıl; Gün opens once Ay is chosen.
- * Under the field: the Milâdî days (≈ when approximate, with ⓘ saying why)
- * and the form the Date is shown in.
- * `today` replaces the chip with a Bugün button, for Erişim tarihi (always Milâdî).
+ * The Date field (#112): one input showing the Date, its calendar small at
+ * the right, that opens the date picker sheet. Under it, for a Hicrî or
+ * Rumî Date, the Milâdî days (≈ when approximate, with ⓘ saying why).
+ * `today` is for Erişim tarihi: Milâdî only, with Bugün, never past this year.
  */
 export function DateInput({
   label,
@@ -61,145 +77,173 @@ export function DateInput({
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
-  const [focused, setFocused] = useState<'day' | 'year' | null>(null);
-  const [choosingMonth, setChoosingMonth] = useState(false);
+  const [picking, setPicking] = useState(false);
   const [explaining, setExplaining] = useState(false);
 
-  const { calendar, day, month, year } = value;
-  const months = calendarMonths(calendar);
-  const monthName = (m: Month) =>
-    m.abbreviation ? t('date.monthWithAbbreviation', { name: m.name, abbreviation: m.abbreviation }) : m.name;
-  const chosen = months.find((m) => m.month === month);
-  const calendarName = t(`date.calendars.${calendar}`);
-  const next = calendars[(calendars.indexOf(calendar) + 1) % calendars.length]!;
-
-  const read = readDateDraft(value);
-  const range = read.date && formatGregorianRange(read.date);
-  const exact = read.date ? isExactInGregorian(read.date) : true;
-  const setToday = () => {
-    const now = new Date();
-    onChange({
-      calendar: 'gregorian',
-      day: `${now.getDate()}`,
-      month: now.getMonth() + 1,
-      year: `${now.getFullYear()}`,
-    });
-  };
-  const digits = (text: string) => text.replace(/\D/g, '');
+  const date = readDateDraft(value).date ?? null;
+  const shown = date && writeOut(date);
+  const range = date && formatGregorianRange(date);
+  const exact = date ? isExactInGregorian(date) : true;
 
   return (
     <View style={styles.field}>
-      <View style={styles.head}>
-        <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
-        {!today && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('date.changeCalendar', { calendar: t(`date.calendars.${next}`) })}
-            onPress={() => onChange({ calendar: next, day: '', month: null, year })}
-            hitSlop={6}
-            style={styles.calendarChip}
-          >
-            <Text style={styles.calendarChipText}>{calendarName} ↻</Text>
-          </Pressable>
-        )}
-      </View>
-      <View style={styles.parts}>
-        <TextInput
-          accessibilityLabel={`${label}: ${t('date.day')}`}
-          placeholder={t('date.day')}
-          placeholderTextColor={colors.muted2}
-          value={day}
-          onChangeText={(text) => onChange({ ...value, day: digits(text) })}
-          editable={month !== null}
-          inputMode="numeric"
-          maxLength={2}
-          onFocus={() => setFocused('day')}
-          onBlur={() => setFocused(null)}
-          style={[styles.input, styles.day, month === null && styles.disabled, focused === 'day' && styles.focused]}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${label}: ${t('date.month')}`}
-          onPress={() => setChoosingMonth(true)}
-          style={[styles.input, styles.month]}
-        >
-          <Text style={[styles.inputText, !chosen && styles.placeholder]} numberOfLines={1}>
-            {chosen ? monthName(chosen) : t('date.month')}
-          </Text>
-        </Pressable>
-        <TextInput
-          accessibilityLabel={`${label}: ${t('date.year')}`}
-          placeholder={t('date.year')}
-          placeholderTextColor={colors.muted2}
-          value={year}
-          onChangeText={(text) => onChange({ ...value, year: digits(text) })}
-          inputMode="numeric"
-          maxLength={4}
-          onFocus={() => setFocused('year')}
-          onBlur={() => setFocused(null)}
-          style={[styles.input, styles.year, focused === 'year' && styles.focused]}
-        />
-      </View>
-      {today && (
-        <Pressable accessibilityRole="button" onPress={setToday} style={styles.today}>
-          <Text style={styles.todayText}>{t('date.today')}</Text>
-        </Pressable>
-      )}
-      {read.problem ? (
-        <Text style={styles.problem}>
-          {read.problem === 'needsYear' ? t('date.needsYear') : t('date.notInCalendar', { calendar: calendarName })}
+      <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
+      <Pressable
+        role="button"
+        aria-label={`${label}: ${shown ?? t('date.pick')}`}
+        onPress={() => {
+          // The sheet opens no keyboard, nor stands on one a field left up.
+          Keyboard.dismiss();
+          setPicking(true);
+        }}
+        style={styles.input}
+      >
+        <Text style={[styles.value, !shown && styles.placeholder]} numberOfLines={1}>
+          {shown ?? t('date.pick')}
         </Text>
-      ) : (
-        read.date && (
-          <View>
-            {range && (
-              <View style={styles.rangeLine}>
-                <Text style={styles.hint}>{t(exact ? 'date.exact' : 'date.approximate', { range })}</Text>
-                {!exact && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('date.whyApproximate')}
-                    onPress={() => setExplaining(true)}
-                    hitSlop={8}
-                  >
-                    <Info color={colors.muted} size={14} strokeWidth={1.8} />
-                  </Pressable>
-                )}
-              </View>
-            )}
-            <Text style={styles.hint}>{t('date.shownAs', { date: formatDate(read.date) })}</Text>
-          </View>
-        )
+        {date && !today && <Text style={styles.calendar}>{t(`date.calendars.${date.calendar}`)}</Text>}
+      </Pressable>
+      {range && (
+        <View style={styles.rangeLine}>
+          <Text style={styles.hint}>{t(exact ? 'date.exact' : 'date.approximate', { range })}</Text>
+          {!exact && (
+            <Pressable
+              role="button"
+              aria-label={t('date.whyApproximate')}
+              onPress={() => setExplaining(true)}
+              hitSlop={8}
+            >
+              <Info color={colors.muted} size={14} strokeWidth={1.8} />
+            </Pressable>
+          )}
+        </View>
       )}
 
-      <ApproximationSheet visible={explaining} calendar={calendar} onClose={() => setExplaining(false)} />
-
-      <Modal visible={choosingMonth} transparent animationType="fade" onRequestClose={() => setChoosingMonth(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setChoosingMonth(false)}>
-          <View style={styles.sheet}>
-            <ScrollView>
-              {[null, ...months].map((m) => (
-                <Pressable
-                  key={m?.month ?? 'none'}
-                  accessibilityRole="radio"
-                  aria-checked={(m?.month ?? null) === month}
-                  onPress={() => {
-                    // Gün needs an Ay.
-                    onChange({ ...value, month: m?.month ?? null, day: m ? day : '' });
-                    setChoosingMonth(false);
-                  }}
-                  style={({ pressed }) => [styles.option, pressed && styles.pressed]}
-                >
-                  <Text style={[styles.optionText, (m?.month ?? null) === month && styles.optionSelected]}>
-                    {m ? monthName(m) : t('date.noMonth')}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </Pressable>
-      </Modal>
+      <DatePicker
+        visible={picking}
+        title={label}
+        date={date ?? (today ? todayDate() : null)}
+        today={today}
+        onClose={() => setPicking(false)}
+        onChoose={(chosen) => {
+          onChange(dateToDraft(chosen));
+          setPicking(false);
+        }}
+      />
+      {date && (
+        <ApproximationSheet visible={explaining} calendar={date.calendar} onClose={() => setExplaining(false)} />
+      )}
     </View>
+  );
+}
+
+/**
+ * The date picker sheet: Milâdî | Hicrî | Rumî, then the Gün · Ay · Yıl
+ * wheels and, as they turn, the Milâdî days and the form the Date is shown
+ * in. Tarihsiz empties the field, Tamam takes the wheels' Date, Kapat
+ * leaves the field as it was. No keyboard opens.
+ */
+function DatePicker({
+  visible,
+  title,
+  date,
+  today,
+  onClose,
+  onChoose,
+}: {
+  visible: boolean;
+  title: string;
+  /** Where the wheels start: the field's Date, today for an empty Erişim tarihi. */
+  date: CalendarDate | null;
+  today: boolean;
+  onClose: () => void;
+  onChoose: (date: CalendarDate | null) => void;
+}) {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
+  const [wheels, setWheels] = useState<DateWheels>(() => dateWheels(date));
+  // Each opening starts from the field's Date.
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) setWheels(dateWheels(date));
+  }
+
+  const turn = (change: Parameters<typeof turnWheels>[1]) => setWheels((w) => turnWheels(w, change));
+  const latestYear = today ? new Date().getFullYear() : undefined;
+  const { years, months, days, dayOpen } = wheelChoices(wheels, { latestYear });
+  const none = { value: null, label: t('date.none') };
+
+  const picked = wheelsDate(wheels);
+  const range = formatGregorianRange(picked);
+  const shownAs = t('date.shownAs', { date: formatDate(picked) });
+
+  return (
+    <Sheet
+      visible={visible}
+      title={title}
+      closeLabel={t('date.close')}
+      onClose={onClose}
+      secondary={{ label: t('date.undated'), onPress: () => onChoose(null) }}
+      primary={{ label: t('date.done'), onPress: () => onChoose(picked) }}
+    >
+      {today ? (
+        <View style={styles.todayRow}>
+          <Text style={styles.todayCalendar}>{t('date.calendars.gregorian').toLocaleUpperCase('tr')}</Text>
+          <Button label={t('date.today')} variant="text" onPress={() => setWheels(dateWheels(todayDate()))} />
+        </View>
+      ) : (
+        <Segment
+          label={t('date.calendar')}
+          options={calendars.map((calendar) => ({ value: calendar, label: t(`date.calendars.${calendar}`) }))}
+          value={wheels.calendar}
+          onChange={(calendar) => turn({ calendar })}
+          block
+        />
+      )}
+      <Wheels
+        columns={[
+          {
+            label: t('date.day'),
+            options: [none, ...days.map((d) => ({ value: d, label: `${d}` }))],
+            value: wheels.day,
+            onChange: (day) => turn({ day }),
+            disabled: !dayOpen,
+            width: 56,
+          },
+          {
+            label: t('date.month'),
+            options: [
+              none,
+              ...months.map((m) => ({
+                value: m.month,
+                label: m.abbreviation
+                  ? t('date.monthWithAbbreviation', { name: m.name, abbreviation: m.abbreviation })
+                  : m.name,
+              })),
+            ],
+            value: wheels.month,
+            onChange: (month) => turn({ month }),
+            align: 'start',
+          },
+          {
+            label: t('date.year'),
+            options: years.map((y) => ({ value: y, label: `${y}` })),
+            value: wheels.year,
+            onChange: (year) => year !== null && turn({ year }),
+            width: 84,
+          },
+        ]}
+      />
+      <View style={styles.readout}>
+        {range && (
+          <Text style={styles.readoutMain}>
+            {t(isExactInGregorian(picked) ? 'date.exact' : 'date.approximate', { range })}
+          </Text>
+        )}
+        <Text style={range ? styles.readoutSecond : styles.readoutMain}>{shownAs}</Text>
+      </View>
+    </Sheet>
   );
 }
 
@@ -209,7 +253,7 @@ const approximations = {
   rumi: { reason: 'date.earlyRumi', source: 'date.tdvTakvim', url: 'https://islamansiklopedisi.org.tr/takvim' },
 } as const;
 
-/** A sheet over the form saying why the Milâdî days under a Hicrî or early Rumî Date are approximate. */
+/** "Neden yaklaşık?": why the Milâdî days under a Hicrî or early Rumî Date are approximate. */
 function ApproximationSheet({
   visible,
   calendar,
@@ -221,114 +265,46 @@ function ApproximationSheet({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   if (calendar === 'gregorian') return null;
   const { reason, source, url } = approximations[calendar];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.bottomBackdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('date.close')}
-          style={styles.dismiss}
-          onPress={onClose}
-        />
-        <View accessibilityViewIsModal style={[styles.bottomSheet, { paddingBottom: insets.bottom + space.lg }]}>
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetHeading}>{t('date.whyApproximate')}</Text>
-            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.close}>{t('date.close')}</Text>
-            </Pressable>
-          </View>
-          <Text style={styles.sheetBody}>{t(reason)}</Text>
-          <Text accessibilityRole="link" style={styles.sourceLink} onPress={() => Linking.openURL(url)}>
-            {t(source)}
-          </Text>
-        </View>
-      </View>
-    </Modal>
+    <Sheet visible={visible} title={t('date.whyApproximate')} closeLabel={t('date.close')} onClose={onClose}>
+      <Text style={styles.sheetBody}>{t(reason)}</Text>
+      <Text role="link" style={styles.sourceLink} onPress={() => Linking.openURL(url)}>
+        {t(source)}
+      </Text>
+    </Sheet>
   );
 }
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     field: { gap: 6 },
-    head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    label: { ...typeScale.micro, color: c.muted },
-    calendarChip: {
-      borderWidth: 1,
-      borderColor: c.accent,
-      borderRadius: radius.chip,
-      paddingHorizontal: 8,
-      paddingVertical: 1,
-    },
-    calendarChipText: { ...typeScale.caption, fontFamily: typeScale.button.fontFamily, color: c.accent },
-    parts: { flexDirection: 'row', gap: space.sm },
+    label: { ...typeScale.fieldLabel, color: c.muted },
     input: {
-      ...typeScale.body,
-      color: c.fg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
+      borderRadius: radius.control,
       paddingHorizontal: 14,
       paddingVertical: 12,
       minHeight: 46,
-      justifyContent: 'center',
     },
-    inputText: { ...typeScale.body, color: c.fg },
+    value: { ...typeScale.body, color: c.fg, flexShrink: 1 },
     placeholder: { color: c.muted2 },
-    day: { width: 72 },
-    month: { flex: 1 },
-    year: { width: 92 },
-    disabled: { opacity: 0.5 },
-    // Design system Input: accent border and a 3px accent-soft ring.
-    focused: { borderColor: c.accent, outlineColor: c.accentSoft, outlineWidth: 3, outlineStyle: 'solid' },
-    today: { alignSelf: 'flex-start', paddingVertical: 4 },
-    todayText: { ...typeScale.button, color: c.accent },
+    calendar: { ...typeScale.caption, color: c.muted },
     hint: { ...typeScale.caption, color: c.muted },
     rangeLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    problem: { ...typeScale.caption, color: c.danger },
-    backdrop: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: space.xl,
-      backgroundColor: 'rgba(0,0,0,0.3)',
-    },
-    sheet: {
-      width: '100%',
-      maxWidth: 360,
-      maxHeight: '80%',
-      backgroundColor: c.surface,
-      borderRadius: radius.card,
-      paddingVertical: space.sm,
-    },
-    option: { paddingVertical: 10, paddingHorizontal: space.lg },
-    pressed: { backgroundColor: c.accentSub },
-    optionText: { ...typeScale.body, color: c.fg },
-    optionSelected: { color: c.accent, fontFamily: typeScale.button.fontFamily },
-    bottomBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    bottomSheet: {
-      width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
-      gap: space.md,
-      paddingHorizontal: space.lg,
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
-    },
-    sheetHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingTop: space.lg,
-    },
-    sheetHeading: { ...typeScale.sourceTitle, color: c.fg },
-    close: { ...typeScale.button, color: c.accent },
-    sheetBody: { ...typeScale.body, color: c.ink2 },
-    sourceLink: { ...typeScale.caption, color: c.accent },
+    todayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40 },
+    todayCalendar: { ...typeScale.fieldLabel, color: c.muted },
+    readout: { alignItems: 'center', gap: 2 },
+    readoutMain: { ...typeScale.label, color: c.ink2, textAlign: 'center' },
+    readoutSecond: { ...typeScale.label, color: c.muted, textAlign: 'center' },
+    sheetBody: { ...typeScale.body, color: c.ink3 },
+    sourceLink: { ...typeScale.link, color: c.accent },
   });

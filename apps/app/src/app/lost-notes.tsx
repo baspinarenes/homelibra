@@ -1,12 +1,13 @@
 import { pendingNote } from '@homelibra/outbox';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { Stack, useRouter } from 'expo-router';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { knownNotes } from '@/lib/known-notes';
 import { useOutbox } from '@/lib/outbox';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * Kaynağı silinmiş (#36, #58): the phone's Notes whose Source was deleted
@@ -17,6 +18,7 @@ import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme'
 export default function LostNotesScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { state } = useOutbox();
   const notes = useMemo(() => {
@@ -35,22 +37,28 @@ export default function LostNotesScreen() {
         keyExtractor={(note) => note.id}
         ListHeaderComponent={<Text style={styles.lead}>{t('outbox.lostLead')}</Text>}
         ListEmptyComponent={<Text style={styles.empty}>{t('outbox.lostNone')}</Text>}
-        renderItem={({ item: note, index }) => (
+        renderItem={({ item: note }) => (
           <Pressable
             accessibilityRole="button"
             accessibilityHint={t('sourcePage.editNote')}
             onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
-            style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
           >
             <Text style={styles.locator}>{note.locator ?? '—'}</Text>
             <View style={styles.texts}>
               {note.excerpt && (
-                <Text style={styles.excerpt} numberOfLines={4}>
+                <Text style={styles.excerpt} numberOfLines={3}>
                   {note.excerpt}
                 </Text>
               )}
-              {note.comment && <Text style={styles.comment} numberOfLines={4}>{`↳ ${note.comment}`}</Text>}
+              {note.comment && (
+                <Text style={styles.comment} numberOfLines={3}>
+                  <Text style={styles.arrow}>↳ </Text>
+                  {note.comment}
+                </Text>
+              )}
             </View>
+            <ChevronRight size={18} color={colors.muted2} />
           </Pressable>
         )}
       />
@@ -61,13 +69,20 @@ export default function LostNotesScreen() {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
-    lead: { ...typeScale.body, color: c.ink2, paddingTop: space.sm, paddingBottom: space.lg },
+    content: { paddingHorizontal: space.gutter, paddingBottom: space.xxl },
+    lead: { ...typeScale.body, color: c.ink2, paddingTop: space.xs, paddingBottom: space.md },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
-    row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
+    // Every row ruled off from what is above it, the lead too.
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      paddingVertical: space.md,
+      borderTopWidth: 1,
+      borderTopColor: c.lineSoft,
+    },
     pressed: { opacity: 0.7 },
-    locator: { ...typeScale.locator, color: c.muted, width: 84, paddingTop: 4 },
+    locator: { ...typeScale.locator, color: c.muted, width: 68 },
     texts: { flex: 1, gap: 6 },
     excerpt: {
       ...typeScale.excerpt,
@@ -77,4 +92,5 @@ const makeStyles = (c: Colors) =>
       paddingLeft: 11,
     },
     comment: { ...typeScale.body, fontSize: 14.5, color: c.ink3 },
+    arrow: { color: c.muted2 },
   });

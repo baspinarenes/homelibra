@@ -1,11 +1,12 @@
+import { SectionHeading } from '@homelibra/ui/section-heading';
 import { ChevronRight } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
-/** An unboxed block under a mono heading, ruled off from the one above. */
+/** An unboxed block under the shared section heading, ruled off from the one above. */
 export function SettingsSection({
   title,
   first = false,
@@ -18,17 +19,42 @@ export function SettingsSection({
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.section, !first && styles.divided]}>
-      <Text style={styles.heading}>{title.toLocaleUpperCase('tr')}</Text>
+      <SectionHeading title={title} />
       <View>{children}</View>
+    </View>
+  );
+}
+
+/** Rows one under another, a thin `lineSoft` rule between each two. */
+export function SettingsRows({ children }: { children: ReactNode }) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View>
+      {Children.toArray(children).map((child, index) => (
+        <View key={index} style={index > 0 && styles.divided}>
+          {child}
+        </View>
+      ))}
     </View>
   );
 }
 
 /**
  * One line that opens something: a label, an optional value on the right, a
- * chevron. Without `onPress` it is a place kept for a later ticket ("Yakında").
+ * chevron. `danger` is for the row that leads to what cannot be taken back
+ * (Hesabı sil). Without `onPress` it is a place kept for a later ticket ("Yakında").
  */
-export function SettingsRow({ label, value, onPress }: { label: string; value?: string; onPress?: () => void }) {
+export function SettingsRow({
+  label,
+  value,
+  tone = 'fg',
+  onPress,
+}: {
+  label: string;
+  value?: string;
+  tone?: 'fg' | 'danger';
+  onPress?: () => void;
+}) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const soon = !onPress;
@@ -40,7 +66,7 @@ export function SettingsRow({ label, value, onPress }: { label: string; value?: 
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <Text style={[styles.label, soon && styles.soonLabel]}>{label}</Text>
+      <Text style={[styles.label, tone === 'danger' && styles.danger, soon && styles.soonLabel]}>{label}</Text>
       {value ? (
         <Text style={styles.value} numberOfLines={1}>
           {value}
@@ -63,12 +89,12 @@ export function SettingsText({ children }: { children: ReactNode }) {
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    section: { gap: space.sm, paddingVertical: space.lg },
+    section: { gap: space.sm, paddingVertical: 18 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    heading: { ...typeScale.micro, color: c.muted },
-    row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
+    row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48, paddingVertical: space.sm },
     pressed: { opacity: 0.6 },
     label: { ...typeScale.body, color: c.fg, flexGrow: 1, flexShrink: 0 },
+    danger: { color: c.danger },
     soonLabel: { color: c.muted },
     value: { ...typeScale.caption, color: c.muted, flexShrink: 1 },
     soon: { ...typeScale.caption, color: c.muted2 },

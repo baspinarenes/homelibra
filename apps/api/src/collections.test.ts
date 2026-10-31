@@ -482,7 +482,7 @@ describe('A Tag’s page', () => {
     expect(await api.collections.list()).toEqual([]);
   });
 
-  it('is saved as a Collection with the same name and Tag (Dosya olarak kaydet)', async () => {
+  it('is saved as a Collection with the same name and Tag (Dosya yap)', async () => {
     const api = await scholar();
     const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Kadılık' });
     await capture(api, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });

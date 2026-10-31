@@ -1,16 +1,17 @@
 import type { AppRouter } from '@homelibra/api';
+import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { Strip } from '@homelibra/ui/strip';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { FinishedMark } from '@/components/reading-status';
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type ToOrganize = inferRouterOutputs<AppRouter>['organize']['list'][number];
 
@@ -44,10 +45,14 @@ export function ToOrganizeStrip() {
   );
 }
 
-/** A Düzenlenecekler row: Cover, title, when the last Note came, "bitti" if so, "N etiketsiz"; it opens the Source page. */
+/**
+ * A Düzenlenecekler row: Cover, title, when the last Note came, then "bitti"
+ * if so and "N etiketsiz" as chips; it opens the Source page.
+ */
 export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided: boolean }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   return (
     <Pressable
@@ -61,9 +66,14 @@ export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided
           {source.title}
         </Text>
         <Text style={styles.when}>{elapsed(t, source.lastNoteAt)}</Text>
+        <ChipRow>
+          {source.finished && <Chip label={t('readingStatus.finished')} tone="done" />}
+          <Chip label={t('organize.untagged', { count: source.untaggedCount })} tone="warn" />
+        </ChipRow>
       </View>
-      {source.finished && <FinishedMark />}
-      <Text style={styles.badge}>{t('organize.untagged', { count: source.untaggedCount })}</Text>
+      <View style={styles.chevron}>
+        <ChevronRight size={18} color={colors.muted2} />
+      </View>
     </Pressable>
   );
 }
@@ -71,18 +81,10 @@ export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     pressed: { opacity: 0.7 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
+    row: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    rowText: { flex: 1, gap: 2 },
+    rowText: { flex: 1, gap: 6 },
     title: { ...typeScale.sourceTitleSm, color: c.fg },
-    when: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
-    badge: {
-      ...typeScale.caption,
-      color: c.warn,
-      backgroundColor: c.warnSoft,
-      paddingVertical: 2,
-      paddingHorizontal: space.sm,
-      borderRadius: radius.chip,
-      overflow: 'hidden',
-    },
+    when: { ...typeScale.heading, letterSpacing: 0, color: c.muted },
+    chevron: { alignSelf: 'center' },
   });

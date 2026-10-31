@@ -1,6 +1,7 @@
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import X from 'lucide-react-native/icons/x';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IconComponent } from './icon';
@@ -16,8 +17,11 @@ export function ScreenHeader({
   variant = 'pushed',
   title,
   prefix,
+  onTitlePress,
+  titleHint,
   onBack,
   backLabel,
+  backIcon = 'arrow',
   right,
 }: {
   variant?: 'pushed' | 'root';
@@ -25,10 +29,16 @@ export function ScreenHeader({
   title: ReactNode;
   /** Set before the title in `muted`, as "Dosya: ". */
   prefix?: string;
+  /** Makes a text title a button (a Collection's name opens its renaming). */
+  onTitlePress?: () => void;
+  /** What tapping the title does, for screen readers ("Adı değiştir"). */
+  titleHint?: string;
   /** Shows the back arrow (pushed screens). */
   onBack?: () => void;
   /** What screen readers call the back arrow; needed with `onBack`. */
   backLabel?: string;
+  /** `close` draws an X in the arrow's place, for a header being edited (Vazgeç). */
+  backIcon?: 'arrow' | 'close';
   /** The actions: `HeaderTextAction`s and `HeaderIconAction`s. */
   right?: ReactNode;
 }) {
@@ -36,6 +46,12 @@ export function ScreenHeader({
   const { colors } = useTheme();
   const { top } = useSafeAreaInsets();
   const titled = typeof title === 'string';
+  const heading = (
+    <Text role="heading" style={styles.title} numberOfLines={1}>
+      {prefix && <Text style={styles.prefix}>{prefix}</Text>}
+      {title}
+    </Text>
+  );
 
   if (variant === 'root') {
     return (
@@ -57,16 +73,26 @@ export function ScreenHeader({
       <View style={styles.bar}>
         {onBack ? (
           <Pressable role="button" aria-label={backLabel} onPress={onBack} style={styles.icon}>
-            <ArrowLeft color={colors.fg} size={24} strokeWidth={1.6} />
+            {backIcon === 'close' ? (
+              <X color={colors.fg} size={22} strokeWidth={1.6} />
+            ) : (
+              <ArrowLeft color={colors.fg} size={24} strokeWidth={1.6} />
+            )}
           </Pressable>
         ) : (
           <View style={styles.noBack} />
         )}
-        {titled ? (
-          <Text role="heading" style={styles.title} numberOfLines={1}>
-            {prefix && <Text style={styles.prefix}>{prefix}</Text>}
-            {title}
-          </Text>
+        {titled && onTitlePress ? (
+          <Pressable
+            role="button"
+            accessibilityHint={titleHint}
+            onPress={onTitlePress}
+            style={({ pressed }) => [styles.slot, pressed && styles.pressed]}
+          >
+            {heading}
+          </Pressable>
+        ) : titled ? (
+          heading
         ) : (
           <View style={styles.slot}>{title}</View>
         )}
@@ -79,23 +105,37 @@ export function ScreenHeader({
 /** A word in the header (Kaydet, Düzenle), in `accent`; faded while disabled. */
 export function HeaderTextAction({
   label,
+  accessibilityLabel,
   onPress,
   disabled = false,
+  busy = false,
 }: {
   label: string;
+  /** What screen readers call it, when more than the word ("Bu etiketten dosya yap"). */
+  accessibilityLabel?: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Spins in place of the word (Kaydet while saving) and takes no presses. */
+  busy?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const inactive = disabled || busy;
   return (
     <Pressable
       role="button"
-      aria-disabled={disabled}
-      disabled={disabled}
+      aria-label={accessibilityLabel ?? label}
+      aria-disabled={inactive}
+      aria-busy={busy || undefined}
+      disabled={inactive}
       onPress={onPress}
-      style={[styles.textAction, disabled && styles.off]}
+      style={[styles.textAction, disabled && !busy && styles.off]}
     >
-      <Text style={styles.textActionLabel}>{label}</Text>
+      {busy ? (
+        <ActivityIndicator size={20} color={colors.accent} style={styles.busy} />
+      ) : (
+        <Text style={styles.textActionLabel}>{label}</Text>
+      )}
     </Pressable>
   );
 }
@@ -163,6 +203,8 @@ const makeStyles = (c: Colors) =>
     icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control },
     textAction: { height: 44, paddingHorizontal: 12, justifyContent: 'center' },
     textActionLabel: { ...typeScale.action, color: c.accent },
+    // As wide as Kaydet, so the title does not shift while saving.
+    busy: { width: 32 },
     off: { opacity: 0.45 },
     // A 2px `page` ring parts it from the icon's strokes.
     dot: {
@@ -176,4 +218,5 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.pill,
       backgroundColor: c.accent,
     },
+    pressed: { opacity: 0.7 },
   });
