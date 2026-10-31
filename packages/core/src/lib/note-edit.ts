@@ -8,11 +8,8 @@ export type NoteFields = {
   comment: string | null;
 };
 
-/** A Note's texts as typed, before they are stored. */
+/** A Note's texts as typed, before they are stored; as an edit, a field left out stays. */
 export type NoteText = { locator?: string | null; excerpt?: string | null; comment?: string | null };
-
-/** A change to a stored Note. A field left out stays; a blank or null one is emptied. */
-export type NoteEdit = NoteText;
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
 const stored = (text: string | null | undefined) => text?.trim() || null;
@@ -45,7 +42,7 @@ export function capturedNote({ locator, excerpt, comment }: NoteText): NoteField
  * Null when the edit would leave neither an Excerpt nor a Comment; the Note
  * then stays as it was.
  */
-export function editedNote(current: Omit<NoteFields, 'locatorSort'>, edit: NoteEdit): NoteFields | null {
+export function editedNote(current: Omit<NoteFields, 'locatorSort'>, edit: NoteText): NoteFields | null {
   const locator = edit.locator === undefined ? current.locator : stored(edit.locator);
   return withText({
     locator,
