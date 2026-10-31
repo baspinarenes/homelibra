@@ -3,11 +3,17 @@
 // name or a search reaches the tracker only by accident, through a URL, a
 // body or an error message, so those are cut here, for both SDKs alike.
 
+/** Breadcrumbs and spans: their `data` is where the SDKs record URLs. */
+export interface ReportedData {
+  data?: { [key: string]: unknown };
+}
+
 /** The parts of a Sentry event we cut; the rest passes as it is. */
 export interface ReportedEvent {
   request?: { url?: string; method?: string };
   exception?: { values?: { value?: string }[] };
-  breadcrumbs?: ReportedBreadcrumb[];
+  breadcrumbs?: ReportedData[];
+  spans?: ReportedData[];
 }
 
 /** A URL without its query and fragment: tRPC sends a query's input there. */
@@ -20,6 +26,26 @@ function withoutQueryParams(message: string) {
   return message.replace(/\nparams: .*$/s, '');
 }
 
+/**
+ * Where URLs are kept: fetch, xhr and http breadcrumbs under `url`, web
+ * navigations under `from` and `to`, fetch spans under `url`, `http.url` and
+ * `url.full`. A fetch span's `http.query` is the query alone.
+ */
+const URL_KEYS = ['url', 'from', 'to', 'http.url', 'url.full'];
+const QUERY_KEYS = ['http.query'];
+
+function scrubData<D extends ReportedData>(item: D): D {
+  if (!item.data) return item;
+  const data = { ...item.data };
+  for (const key of URL_KEYS) {
+    const value = data[key];
+    if (typeof value === 'string') data[key] = withoutQuery(value);
+  }
+  for (const key of QUERY_KEYS) delete data[key];
+  return { ...item, data };
+}
+
+/** For `beforeSend` and `beforeSendTransaction`: the event without Library content. */
 export function scrubEvent<E extends ReportedEvent>(event: E): E {
   const scrubbed = { ...event };
   if (event.request) {
@@ -39,23 +65,12 @@ export function scrubEvent<E extends ReportedEvent>(event: E): E {
       ),
     };
   }
-  if (event.breadcrumbs) scrubbed.breadcrumbs = event.breadcrumbs.map(scrubBreadcrumb);
+  if (event.breadcrumbs) scrubbed.breadcrumbs = event.breadcrumbs.map(scrubData);
+  if (event.spans) scrubbed.spans = event.spans.map(scrubData);
   return scrubbed;
 }
 
-export interface ReportedBreadcrumb {
-  data?: { [key: string]: unknown };
-}
-
-/** Where breadcrumbs keep URLs: fetch, xhr and http under `url`, web navigations under `from` and `to`. */
-const URL_KEYS = ['url', 'from', 'to'];
-
-export function scrubBreadcrumb<B extends ReportedBreadcrumb>(breadcrumb: B): B {
-  if (!breadcrumb.data) return breadcrumb;
-  const data = { ...breadcrumb.data };
-  for (const key of URL_KEYS) {
-    const value = data[key];
-    if (typeof value === 'string') data[key] = withoutQuery(value);
-  }
-  return { ...breadcrumb, data };
+/** For `beforeBreadcrumb`: the breadcrumb without the queries of its URLs. */
+export function scrubBreadcrumb<B extends ReportedData>(breadcrumb: B): B {
+  return scrubData(breadcrumb);
 }

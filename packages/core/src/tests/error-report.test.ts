@@ -63,6 +63,32 @@ describe('scrubEvent', () => {
       { category: 'http', data: { url: 'https://homelibra.com/api/trpc/search.library' } },
     ]);
   });
+
+  it('drops the query from the URLs a transaction’s fetch spans record', () => {
+    const url = `https://homelibra.com/api/trpc/search.library?batch=1&input=${searched}`;
+    const event = scrubEvent({
+      spans: [
+        {
+          description: 'GET https://homelibra.com/api/trpc/search.library',
+          data: {
+            url,
+            'http.url': url,
+            'url.full': url,
+            'http.query': `?batch=1&input=${searched}`,
+            'http.method': 'GET',
+          },
+        },
+      ],
+    });
+
+    const path = 'https://homelibra.com/api/trpc/search.library';
+    expect(event.spans).toEqual([
+      {
+        description: 'GET https://homelibra.com/api/trpc/search.library',
+        data: { url: path, 'http.url': path, 'url.full': path, 'http.method': 'GET' },
+      },
+    ]);
+  });
 });
 
 describe('scrubBreadcrumb', () => {

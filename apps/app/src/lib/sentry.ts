@@ -14,7 +14,7 @@ Sentry.init({
   replaysSessionSampleRate: __DEV__ ? 1.0 : 0.05,
   integrations: [Sentry.mobileReplayIntegration({ maskAllText: true, maskAllImages: true, maskAllVectors: true })],
   // tRPC puts a query's input, such as a search, in the URL that fetch
-  // breadcrumbs and events record.
+  // breadcrumbs and spans record; this SDK has no dataCollection to stop it.
   beforeSend: (event) => scrubEvent(event),
   beforeSendTransaction: (event) => scrubEvent(event),
   beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
