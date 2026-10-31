@@ -1,4 +1,5 @@
-import { Stack } from 'expo-router';
+import { ScreenHeader } from '@homelibra/ui/screen-header';
+import { type NativeStackHeaderProps, Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -29,7 +30,8 @@ export function TabStack({
   return (
     <View style={styles.tab}>
       <Stack screenOptions={useHeaderOptions()}>
-        <Stack.Screen name="index" options={{ title: t(title), headerRight }} />
+        {/* The tab root keeps the platform header until its screen moves to the package. */}
+        <Stack.Screen name="index" options={{ title: t(title), headerRight, header: undefined }} />
         {children}
       </Stack>
       <View pointerEvents="box-none" style={styles.foot}>
@@ -45,10 +47,30 @@ const styles = StyleSheet.create({
   foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
 
+/** A pushed screen's header from @homelibra/ui, fed by the options the screen sets on its Stack.Screen. */
+function PushedHeader({ navigation, route, options, back }: NativeStackHeaderProps) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const text = options.title ?? route.name;
+  const title =
+    typeof options.headerTitle === 'function'
+      ? options.headerTitle({ children: text, tintColor: colors.fg })
+      : (options.headerTitle ?? text);
+  return (
+    <ScreenHeader
+      title={title}
+      onBack={back ? navigation.goBack : undefined}
+      backLabel={t('screenHeader.back')}
+      right={options.headerRight?.({ canGoBack: !!back, tintColor: colors.accent })}
+    />
+  );
+}
+
 /** The paper header every stack screen uses, in a tab or pushed over the tabs. */
 export function useHeaderOptions() {
   const { colors } = useTheme();
   return {
+    header: (props: NativeStackHeaderProps) => <PushedHeader {...props} />,
     headerStyle: { backgroundColor: colors.page },
     headerShadowVisible: false,
     headerTintColor: colors.fg,
