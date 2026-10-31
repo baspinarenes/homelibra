@@ -27,6 +27,7 @@ export const tr = {
     themeLight: 'Açık',
     themeDark: 'Koyu',
     account: 'Hesap',
+    appVersion: 'Homelibra {{version}}',
   },
   // İlk giriş onayı: the first layer of the privacy notice and the terms of use (#60).
   welcome: {
@@ -39,16 +40,15 @@ export const tr = {
     failed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
   },
   privacy: {
-    title: 'Hesap ve gizlilik',
+    title: 'Gizlilik',
     privacySection: 'Gizlilik',
     notice: 'Aydınlatma metni',
     terms: 'Kullanım koşulları',
-    accountSection: 'Hesap',
     email: 'E-posta adresi',
     export: 'Kütüphaneni dışa aktar',
     deleteAccount: 'Hesabı sil',
     deleteSection: 'Hesabını silmek',
-    deleteInApp: 'Uygulamada Ayarlar → Hesap ve gizlilik → Hesabı sil yolunu izle.',
+    deleteInApp: 'Uygulamada Ayarlar → Hesabı sil yolunu izle.',
     deleteByEmail:
       'Giriş yapamıyorsan hesabının e-posta adresinden aşağıdaki adrese yaz; talebini en geç 30 gün içinde sonuçlandırırız.',
     contactSection: 'İletişim',
@@ -400,8 +400,7 @@ export const tr = {
     noteNotFound: 'Bu not bu telefonda yok; bağlantı gelince açılır.',
     addSourceNeedsConnection: 'Kaynak eklemek için bağlantı gerekiyor.',
     editSourceNeedsConnection: 'Kaynağı kaydetmek ya da silmek için bağlantı gerekiyor.',
-    signOutWarning:
-      '{{count}} not henüz gönderilmedi. Çıkış yaparsan, bu hesapla yeniden girene kadar bu telefonda bekler.',
+    signOutWarning: '{{count}} not henüz gönderilmedi; çıkarsan bu telefonda bekler.',
     sendFirst: 'Önce gönder',
     signOutAnyway: 'Yine de çık',
     cancel: 'Vazgeç',
@@ -628,8 +627,7 @@ export const tr = {
     download: 'Kütüphaneni indir',
     preparing: 'Dosya hazırlanıyor; kütüphane büyükse biraz sürebilir.',
     failed: 'İndirilemedi. Bağlantını kontrol edip yeniden dene.',
-    onWeb:
-      'Dışa aktarma web’den indirilir: tarayıcıda Homelibra’ya giriş yap, Ayarlar → Hesap ve gizlilik → Kütüphaneni dışa aktar.',
+    onWeb: 'Dışa aktarma web’den indirilir: tarayıcıda Homelibra’ya giriş yap, Ayarlar → Kütüphaneni dışa aktar.',
     openWeb: 'Web’de aç',
     contentsHeading: 'ZIP’te neler var',
     json: 'kutuphane.json: kaynakların ve künyelerinin tüm alanları, takvimli tarihler, notlar, etiketler ve dosya tanımları; başka bir araca taşımak için. Şeması yanında, kutuphane.schema.json’da.',

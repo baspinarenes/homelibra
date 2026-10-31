@@ -80,7 +80,7 @@ function RootLayout() {
                 <Stack.Protected guard={!session} redirectTo={home}>
                   <Stack.Screen name="sign-in" />
                 </Stack.Protected>
-                {/* Hesap ve gizlilik's documents open signed in or not. */}
+                {/* The privacy documents and Gizlilik open signed in or not. */}
                 <Stack.Screen name="privacy" />
               </Stack>
             )}

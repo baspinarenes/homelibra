@@ -13,7 +13,7 @@ import { contactEmail } from './contact';
  * (docs/research/kvkk-obligations.md). Change `legalVersion` with every
  * change of wording, so an Account records which text it accepted.
  */
-export const legalVersion = '2026-10-31-taslak';
+export const legalVersion = '2026-10-31-taslak-2';
 
 export type LegalSection = { heading: string; paragraphs: string[] };
 
@@ -113,7 +113,7 @@ export const termsOfUse: LegalSection[] = [
   },
   {
     heading: 'Hesabı silme',
-    paragraphs: ['Hesabını istediğin an Ayarlar → Hesap ve gizlilik bölümünden silebilirsin.'],
+    paragraphs: ['Hesabını istediğin an Ayarlar → Hesabı sil bölümünden silebilirsin.'],
   },
   {
     heading: 'İletişim',

@@ -23,6 +23,24 @@ describe('Dialog', () => {
     expect(byRole(dialog!, 'button').map(nameOf)).toEqual(['Vazgeç', 'Sil']);
   });
 
+  it('offers a third answer between the two, held back while the main one runs', () => {
+    const page = render(
+      <Dialog
+        visible
+        message="2 not henüz gönderilmedi; çıkarsan bu telefonda bekler."
+        cancelLabel="Vazgeç"
+        alternative={{ label: 'Yine de çık', onPress: noop }}
+        confirmLabel="Önce gönder"
+        busy
+        onConfirm={noop}
+        onCancel={noop}
+      />,
+    );
+    const buttons = byRole(page, 'button');
+    expect(buttons.map(nameOf)).toEqual(['Vazgeç', 'Yine de çık', 'Önce gönder']);
+    expect(buttons.map((button) => button.attrs['aria-disabled'])).toEqual(['true', 'true', 'true']);
+  });
+
   it('is not there until asked', () => {
     const page = render(
       <Dialog visible={false} message="…" cancelLabel="Vazgeç" confirmLabel="Sil" onConfirm={noop} onCancel={noop} />,
