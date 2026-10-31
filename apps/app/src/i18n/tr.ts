@@ -452,6 +452,9 @@ export const tr = {
     cancel: 'Vazgeç',
     rename: 'Adı değiştir',
     save: 'Kaydet',
+    // Before the name in a Collection's and a Tag's header (#129).
+    titlePrefix: 'Dosya: ',
+    tagTitlePrefix: 'Etiket: ',
     noteCount: '{{count}} not',
     counts: '{{notes}} not · {{sources}} kaynak',
     noTags: 'etiketsiz',
@@ -468,7 +471,8 @@ export const tr = {
     emptyNoTags: 'Yukarıdan bir etiket ekle; o etiketi taşıyan notlar burada toplanır.',
     emptyNoNotes: 'Bu etiketleri taşıyan bir not yok.',
     emptyTagNoNotes: 'Bu etiketi taşıyan bir not yok.',
-    saveAsCollection: 'Dosya olarak kaydet',
+    saveAsCollection: 'Dosya yap',
+    saveAsCollectionLabel: 'Bu etiketten dosya yap',
     tagMissing: 'Bu etiket artık yok.',
     openNote: 'Notu kaynağında aç',
     openSource: 'Kaynağı aç',
@@ -592,13 +596,11 @@ export const tr = {
     notes: '{{count}} not',
     noNotes: 'notsuz',
   },
-  // A Collection's Markdown copy and its top bar menu (#52).
+  // A Collection's Markdown copy and Dosyayı sil, icons in its header (#52, #129).
   collectionActions: {
     copy: 'Markdown olarak kopyala',
     copied: 'Kopyalandı · {{count}} not',
     copyFailed: 'Kopyalanamadı.',
-    menu: 'Dosya seçenekleri',
-    close: 'Kapat',
     delete: 'Dosyayı sil',
     deleted: '“{{name}}” silindi',
     deleteFailed: 'Silinemedi. Bağlantını kontrol edip yeniden dene.',
