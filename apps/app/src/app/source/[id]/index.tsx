@@ -285,7 +285,7 @@ function SourcePage({
         />
       )}
       {/* Hidden rather than gone while searching, so a draft in it stays. */}
-      <View style={searching && styles.hidden}>
+      <View style={[expanded && styles.screen, searching && styles.hidden]}>
         <NoteComposer
           ref={composer}
           sourceId={source.id}
@@ -344,18 +344,16 @@ function NoteRow({
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const waiting = status !== undefined && status !== 'synced';
-  return (
+  // A button may not sit inside the row's own: the action goes under it, in the texts' column.
+  const below = Boolean(action);
+  const outer = [divided && styles.divided, marked && styles.marked];
+  const row = (
     <Pressable
       accessibilityRole="button"
       accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
       onLayout={onLayout}
-      style={({ pressed }) => [
-        styles.row,
-        divided && styles.divided,
-        marked && styles.marked,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.row, !below && outer, below && styles.rowAbove, pressed && styles.pressed]}
     >
       <Text style={styles.locator}>{note.locator ?? '—'}</Text>
       <View style={styles.texts}>
@@ -366,9 +364,15 @@ function NoteRow({
           {fresh && <NewMark />}
         </View>
         {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
-        {action}
       </View>
     </Pressable>
+  );
+  if (!below) return row;
+  return (
+    <View style={outer}>
+      {row}
+      <View style={styles.action}>{action}</View>
+    </View>
   );
 }
 
@@ -399,6 +403,9 @@ const makeStyles = (c: Colors) =>
     hidden: { display: 'none' },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
+    rowAbove: { paddingBottom: 0 },
+    // Under the texts, past the Locator's column.
+    action: { paddingLeft: 84 + space.md, paddingTop: 6, paddingBottom: space.sm },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     // An outline, so the row keeps its place while marked.
     marked: {
