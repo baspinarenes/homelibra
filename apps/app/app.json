@@ -7,6 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "homelibra",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7ab313dd-a467-437e-9b1c-f46f423851d6"
+    },
     "android": {
       "package": "app.homelibra",
       "adaptiveIcon": {
