@@ -1,23 +1,16 @@
 import { deletionCutoff } from '@homelibra/core/account';
 import { constantTimeEqual, generateRandomString } from 'better-auth/crypto';
-import { and, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, eq, isNull, lte } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 
+import { CODE_ATTEMPTS, CODE_LIFETIME_SECONDS } from '../auth';
 import type { Db } from '../db/client';
 import { account, invitation, session, verification } from '../db/schema';
 import type { Mailer } from '../mail/mailer';
 
-/** As long as a sign-in code lives (src/auth.ts). */
-const CODE_LIFETIME_MS = 10 * 60 * 1000;
-/** Wrong codes allowed before the code stops working, as for Better Auth's own codes. */
-const ALLOWED_ATTEMPTS = 3;
-
 function codeIdentifier(accountId: string) {
   return `account-deletion-${accountId}`;
 }
-
-/** Better Auth's email-OTP code types; each keeps its codes under `${type}-otp-${email}`. */
-const otpTypes = ['sign-in', 'email-verification', 'forget-password', 'change-email'];
 
 // Web Crypto rather than node:crypto: the app typechecks this file through AppRouter.
 async function digest(code: string) {
@@ -47,7 +40,7 @@ export function accountDeletion(db: Db) {
           id: uuidv7(),
           identifier,
           value: `${await digest(code)}:0`,
-          expiresAt: new Date(Date.now() + CODE_LIFETIME_MS),
+          expiresAt: new Date(Date.now() + CODE_LIFETIME_SECONDS * 1000),
         });
       });
       await mailer.sendAccountDeletionCode(owner.email, code);
@@ -66,7 +59,7 @@ export function accountDeletion(db: Db) {
         if (!row) return false;
         const [stored = '', attempts = '0'] = row.value.split(':');
         const matches = constantTimeEqual(stored, given);
-        if (row.expiresAt <= new Date() || (!matches && Number(attempts) + 1 >= ALLOWED_ATTEMPTS)) {
+        if (row.expiresAt <= new Date() || (!matches && Number(attempts) + 1 >= CODE_ATTEMPTS)) {
           await tx.delete(verification).where(eq(verification.identifier, identifier));
           return false;
         }
@@ -97,11 +90,17 @@ export function accountDeletion(db: Db) {
 /**
  * The scheduled job: every Account closed 14 days ago or more goes for good,
  * and with it its whole Library (every Library row cascades from the
- * Account), its sign-in methods and sessions, its Invitation and any code
- * still waiting for its address. Daily backups keep a copy 14 days longer,
- * so a deletion is complete within KVKK's 30 days (m.13). Cover files are
- * left to their own daily clean-up (ADR-0011). Each Account goes in its own
- * transaction, so one failure holds up no other. Returns how many went.
+ * Account), its sign-in methods and sessions, and its Invitation. Daily
+ * backups keep a copy 14 days longer, so a deletion is complete within
+ * KVKK's 30 days (m.13). Cover files are left to their own daily clean-up
+ * (ADR-0011). Each Account goes in its own transaction, so one failure
+ * holds up no other. Returns how many went.
+ *
+ * A code still waiting for the Account is left to expire: it opens nothing
+ * meanwhile, since the address has no Invitation any more (NOT_INVITED), and
+ * the hourly deleteExpiredCodes (src/auth.ts) takes it within the hour after.
+ * Better Auth's names for its codes are left alone on purpose: copied here,
+ * they would silently match nothing once Better Auth changed them.
  */
 export async function deleteClosedAccounts(db: Db, now: Date) {
   const due = lte(account.deletionRequestedAt, deletionCutoff(now));
@@ -116,18 +115,6 @@ export async function deleteClosedAccounts(db: Db, now: Date) {
         .returning({ id: account.id });
       if (!gone) return;
       await tx.delete(invitation).where(eq(invitation.email, email));
-      // Only identifiers that are exactly this Account's, never another
-      // address that merely contains this one.
-      const identifiers = [codeIdentifier(id), ...otpTypes.map((type) => `${type}-otp-${email}`)];
-      const changingFrom = `change-email-otp-${email}-`;
-      await tx
-        .delete(verification)
-        .where(
-          or(
-            inArray(verification.identifier, identifiers),
-            sql`left(${verification.identifier}, ${changingFrom.length}) = ${changingFrom}`,
-          ),
-        );
       deleted++;
     });
   }

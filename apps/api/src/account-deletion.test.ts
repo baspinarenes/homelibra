@@ -127,17 +127,39 @@ describe('the 14th day', () => {
     expect((await t.requestCode(email)).status).toBe(403);
   });
 
-  it('leaves a code waiting for an address that only contains the deleted one', async () => {
+  it('leaves the codes waiting for its address to open nothing until the hourly clean-up takes them', async () => {
     const { email, device } = await scholarWithLibrary();
-    const neighbour = `x${email}`;
-    await t.invite(neighbour);
+    expect((await device.requestEmailChange(scholarEmail('yeni'))).ok).toBe(true);
     await deleteAccount(device, email);
-    expect((await t.requestCode(neighbour)).ok).toBe(true);
+    expect((await t.requestCode(email)).ok).toBe(true);
+    const code = t.mail.lastCodeFor(email);
 
     await t.api.jobs.deleteClosedAccounts(new Date(Date.now() + 15 * DAY_MS));
+    expect(await rowsLeft(device.accountId, email)).toEqual({ verification: 2 });
+
+    // The sign-in code still works for its ten minutes, but there is no
+    // Invitation left to open an Account with. Trying it uses it up.
+    const signedIn = await t.api.auth.api.signInEmailOTP({ body: { email, otp: code }, asResponse: true });
+    expect(signedIn.status).toBe(403);
+    expect(await signedIn.json()).toMatchObject({ code: 'NOT_INVITED' });
+
+    // The email-change code is still there; once it expires the clean-up takes it.
+    await t.owner.execute(
+      sql`update verification set expires_at = now() - interval '1 second' where strpos(identifier, ${email}) > 0`,
+    );
+    await t.api.jobs.deleteExpiredCodes();
+    expect(await rowsLeft(device.accountId, email)).toEqual({});
+  });
+
+  it('leaves a code that has not expired working', async () => {
+    const email = scholarEmail();
+    await t.invite(email);
+    expect((await t.requestCode(email)).ok).toBe(true);
+
+    await t.api.jobs.deleteExpiredCodes();
 
     const signedIn = await t.api.auth.api.signInEmailOTP({
-      body: { email: neighbour, otp: t.mail.lastCodeFor(neighbour) },
+      body: { email, otp: t.mail.lastCodeFor(email) },
       asResponse: true,
     });
     expect(signedIn.ok).toBe(true);

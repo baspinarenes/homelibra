@@ -55,6 +55,9 @@ function schedule(intervalMs: number, job: (now: Date) => Promise<unknown>) {
 
 // Hourly, so a closed Account goes within the hour its 14 days end.
 schedule(HOUR_MS, api.jobs.deleteClosedAccounts);
+// Hourly: a code goes within the hour after its ten minutes, a deleted
+// Account's too.
+schedule(HOUR_MS, api.jobs.deleteExpiredCodes);
 // Every few minutes, so a Geri al's snapshot goes soon after its five minutes.
 schedule(5 * MINUTE_MS, api.jobs.deleteExpiredUndoRecords);
 // Daily: a Cover's file outlives its last Source by a day at least (ADR-0011).

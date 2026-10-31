@@ -1,3 +1,4 @@
+import { EMAIL_TAKEN } from '@homelibra/core/errors';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -9,8 +10,6 @@ import { type Colors, radius, space, type as typeScale, useThemedStyles } from '
 
 type Step = { kind: 'address' } | { kind: 'code'; newEmail: string } | { kind: 'done'; newEmail: string };
 
-/** The API's error code for an address another Account already has (apps/api/src/auth.ts). */
-const EMAIL_TAKEN = 'EMAIL_TAKEN';
 /** Better Auth's error code for text that is not an email address. */
 const INVALID_EMAIL = 'INVALID_EMAIL';
 
