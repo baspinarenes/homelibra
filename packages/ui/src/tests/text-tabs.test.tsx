@@ -7,43 +7,41 @@ import { byRole, nameOf, render, text } from './render';
 const noop = () => {};
 
 describe('TextTabs', () => {
-  it('names each view with its count, the open one selected', () => {
+  it('offers its views as tabs, each with its count, the open one selected', () => {
+    const page = render(
+      <TextTabs
+        label="Okuma durumu"
+        options={[
+          { value: 'reading', label: 'Okunuyor', count: 4 },
+          { value: 'finished', label: 'Bitti', count: 0 },
+        ]}
+        value="reading"
+        onChange={noop}
+      />,
+    );
+    const [list] = byRole(page, 'tablist');
+    expect(nameOf(list!)).toBe('Okuma durumu');
+    const tabs = byRole(page, 'tab');
+    expect(tabs.map(nameOf)).toEqual(['Okunuyor 4', 'Bitti 0']);
+    expect(tabs.map((tab) => tab.attrs['aria-selected'])).toEqual(['true', 'false']);
+  });
+
+  it('leaves out a count it is not given', () => {
     const page = render(
       <TextTabs
         label="Dizin"
         options={[
           { value: 'collections', label: 'Dosyalar', count: 5 },
-          { value: 'tags', label: 'Etiketler', count: 48 },
+          { value: 'tags', label: 'Etiketler' },
         ]}
         value="tags"
         onChange={noop}
       />,
     );
-    const [list] = byRole(page, 'tablist');
-    expect(nameOf(list!)).toBe('Dizin');
-    const tabs = byRole(page, 'tab');
-    expect(tabs.map(nameOf)).toEqual(['Dosyalar 5', 'Etiketler 48']);
-    expect(tabs.map((tab) => tab.attrs['aria-selected'])).toEqual(['false', 'true']);
+    expect(byRole(page, 'tab').map(nameOf)).toEqual(['Dosyalar 5', 'Etiketler']);
   });
 
-  it('leaves out a count it was not given', () => {
-    const page = render(
-      <TextTabs
-        label="Dizin"
-        options={[
-          { value: 'collections', label: 'Dosyalar' },
-          { value: 'tags', label: 'Etiketler', count: 48 },
-        ]}
-        value="collections"
-        onChange={noop}
-      />,
-    );
-    const [first] = byRole(page, 'tab');
-    expect(text(first!)).toBe('Dosyalar');
-    expect(nameOf(first!)).toBe('Dosyalar');
-  });
-
-  it('keeps what stands at the far end outside the tabs', () => {
+  it('keeps what the screen puts at the row’s right outside the tabs', () => {
     const page = render(
       <TextTabs
         label="Dizin"
@@ -53,8 +51,7 @@ describe('TextTabs', () => {
         right={<Text>Sırala</Text>}
       />,
     );
-    const [list] = byRole(page, 'tablist');
-    expect(text(page)).toContain('Sırala');
-    expect(text(list!)).not.toContain('Sırala');
+    expect(text(byRole(page, 'tablist')[0]!)).toBe('Dosyalar');
+    expect(text(page)).toBe('DosyalarSırala');
   });
 });

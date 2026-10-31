@@ -200,6 +200,12 @@ export const tr = {
     emptyTitle: 'Henüz kaynak yok',
     emptyLead: 'Okuduğun bir kitabı, makaleyi ya da arşiv fonunu ekle.',
     loadFailed: 'Kaynaklar yüklenemedi.',
+    // The header's Süz icon and the Okunuyor | Bitti tabs (#121).
+    filter: 'Süz ve sırala',
+    filterActive: 'Süz ve sırala, süzgeç etkin',
+    statusTabs: 'Okuma durumu',
+    readingEmpty: 'Şu an okuduğun kaynak yok. Bitirdiklerin Bitti sekmesinde.',
+    finishedEmpty: 'Henüz bitirdiğin kaynak yok.',
   },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
@@ -586,7 +592,6 @@ export const tr = {
   // Kaynaklar's "Son not" order and the counts on its rows (#56, story 165).
   sourceList: {
     byLast: 'Son not',
-    count: '{{count}} kaynak',
     notes: '{{count}} not',
     noNotes: 'notsuz',
   },
@@ -646,10 +651,18 @@ export const tr = {
       'Dışa aktarma web’den indirilir: tarayıcıda Homelibra’ya giriş yap, Ayarlar → Hesap ve gizlilik → Kütüphaneni dışa aktar.',
     openWeb: 'Web’de aç',
     contentsHeading: 'ZIP’te neler var',
-    json: 'kutuphane.json: kaynakların ve künyelerinin tüm alanları, takvimli tarihler, notlar, etiketler ve dosya tanımları; başka bir araca taşımak için. Şeması yanında, kutuphane.schema.json’da.',
-    markdown:
-      'kaynaklar/: her kaynak için bir Markdown dosyası, notlar Konum sırasıyla; hiçbir araç olmadan okumak için.',
-    covers: 'kapaklar/: kaynakların kapakları.',
+    files: [
+      {
+        name: 'kutuphane.json',
+        description:
+          'Kaynaklar, künyeler, takvimli tarihler, notlar, etiketler ve dosyalar; başka bir araca taşımak için. Şeması kutuphane.schema.json’da.',
+      },
+      {
+        name: 'kaynaklar/',
+        description: 'Her kaynak için bir Markdown dosyası, notlar Konum sırasıyla; hiçbir araç olmadan okumak için.',
+      },
+      { name: 'kapaklar/', description: 'Kaynakların kapakları.' },
+    ],
   },
   // ISBN ile öner from Open Library, with its cover (#65).
   isbn: {

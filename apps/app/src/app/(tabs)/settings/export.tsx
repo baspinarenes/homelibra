@@ -1,3 +1,4 @@
+import { TermTable } from '@homelibra/ui/term-table';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -7,7 +8,8 @@ import { type Colors, space, useThemedStyles } from '@/theme';
 
 /**
  * Kütüphaneni dışa aktar (#40, stories 16-18; ADR-0004): what the ZIP
- * holds, and its download. Free and at any time; Hesabı sil links here.
+ * holds, file by file in a table (#115), and its download. Free and at any
+ * time; Hesabı sil links here.
  */
 export default function LibraryExportScreen() {
   const { t } = useTranslation();
@@ -19,9 +21,12 @@ export default function LibraryExportScreen() {
         <LibraryExportDownload />
       </View>
       <SettingsSection title={t('libraryExport.contentsHeading')}>
-        <SettingsText>{t('libraryExport.json')}</SettingsText>
-        <SettingsText>{t('libraryExport.markdown')}</SettingsText>
-        <SettingsText>{t('libraryExport.covers')}</SettingsText>
+        <TermTable
+          rows={t('libraryExport.files', { returnObjects: true }).map((file) => ({
+            term: file.name,
+            description: file.description,
+          }))}
+        />
       </SettingsSection>
     </ScrollView>
   );

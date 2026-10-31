@@ -30,14 +30,12 @@ export function TabStack({
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const root = rootHeader
-    ? { header: () => <ScreenHeader variant="root" title={t(title)} right={headerRight?.()} /> }
-    : // The tab root keeps the platform header until its screen moves to the package.
-      { headerRight, header: undefined };
+  // Without `rootHeader` the tab root keeps the platform header until its screen moves to the package.
+  const header = rootHeader ? (props: NativeStackHeaderProps) => <RootHeader {...props} /> : undefined;
   return (
     <View style={styles.tab}>
       <Stack screenOptions={useHeaderOptions()}>
-        <Stack.Screen name="index" options={{ title: t(title), ...root }} />
+        <Stack.Screen name="index" options={{ title: t(title), headerRight, header }} />
         {children}
       </Stack>
       <View pointerEvents="box-none" style={styles.foot}>
@@ -52,6 +50,18 @@ const styles = StyleSheet.create({
   // The bar floats above this zero-height edge.
   foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
+
+/** A tab root's large title from @homelibra/ui, its icons from the options the tab or its screen sets. */
+function RootHeader({ route, options }: NativeStackHeaderProps) {
+  const { colors } = useTheme();
+  return (
+    <ScreenHeader
+      variant="root"
+      title={options.title ?? route.name}
+      right={options.headerRight?.({ canGoBack: false, tintColor: colors.accent })}
+    />
+  );
+}
 
 /** A pushed screen's header from @homelibra/ui, fed by the options the screen sets on its Stack.Screen. */
 function PushedHeader({ navigation, route, options, back }: NativeStackHeaderProps) {
