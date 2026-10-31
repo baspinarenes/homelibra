@@ -184,6 +184,12 @@ export const tr = {
     emptyTitle: 'Henüz kaynak yok',
     emptyLead: 'Okuduğun bir kitabı, makaleyi ya da arşiv fonunu ekle.',
     loadFailed: 'Kaynaklar yüklenemedi.',
+    // The header's Süz icon and the Okunuyor | Bitti tabs (#121).
+    filter: 'Süz ve sırala',
+    filterActive: 'Süz ve sırala, süzgeç etkin',
+    statusTabs: 'Okuma durumu',
+    readingEmpty: 'Şu an okuduğun kaynak yok. Bitirdiklerin Bitti sekmesinde.',
+    finishedEmpty: 'Henüz bitirdiğin kaynak yok.',
   },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
@@ -576,7 +582,6 @@ export const tr = {
   // Kaynaklar's "Son not" order and the counts on its rows (#56, story 165).
   sourceList: {
     byLast: 'Son not',
-    count: '{{count}} kaynak',
     notes: '{{count}} not',
     noNotes: 'notsuz',
   },
