@@ -1,6 +1,5 @@
 import { type CalendarDate, inYearRange } from '@homelibra/core/date';
 import { type SourceType, sourceTypes } from '@homelibra/core/source';
-import { Button } from '@homelibra/ui/button';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Segment } from '@homelibra/ui/segment';
@@ -23,6 +22,7 @@ import {
   yearRangeLabel,
   yearRangeOf,
 } from '@/components/date-filter';
+import { ListMessage } from '@/components/list-message';
 import type { ReadingStatus } from '@/components/reading-status';
 import { SourceListRow } from '@/components/source-list-row';
 import { useTRPC } from '@/lib/trpc';
@@ -85,20 +85,19 @@ export default function SourcesScreen() {
 
   if (all.isPending || all.isError || all.data.length === 0) {
     return (
-      <View style={styles.center}>
+      <View style={styles.screen}>
         <Stack.Screen options={{ headerRight: () => <HeaderActions onAdd={addSource} /> }} />
         {all.isPending ? (
-          <ActivityIndicator color={styles.spinner.color} />
+          <ActivityIndicator style={styles.pending} color={styles.spinner.color} />
         ) : all.isError ? (
-          <Text style={styles.lead}>{t('sources.loadFailed')}</Text>
+          <ListMessage lead={t('sources.loadFailed')} />
         ) : (
-          <>
-            <Text style={styles.title}>{t('sources.emptyTitle')}</Text>
-            <Text style={styles.lead}>{t('sources.emptyLead')}</Text>
-            <View style={styles.action}>
-              <Button label={t('sources.add')} onPress={addSource} />
-            </View>
-          </>
+          <ListMessage
+            title={t('sources.emptyTitle')}
+            large
+            lead={t('sources.emptyLead')}
+            action={{ label: t('sources.add'), onPress: addSource }}
+          />
         )}
       </View>
     );
@@ -113,24 +112,22 @@ export default function SourcesScreen() {
   const clearFilters = () => setChoices(unfiltered(choices));
 
   const empty = () => {
-    if (sources.isPending) return <ActivityIndicator color={styles.spinner.color} />;
-    if (sources.isError) return <Text style={styles.empty}>{t('sources.loadFailed')}</Text>;
+    if (sources.isPending) return <ActivityIndicator style={styles.pending} color={styles.spinner.color} />;
+    if (sources.isError) return <ListMessage lead={t('sources.loadFailed')} />;
     if (filterOn) {
       return (
-        <View style={styles.tabEmpty}>
-          <Text style={styles.lead}>{t('sources.filterEmpty')}</Text>
-          <Button variant="text" label={t('sources.clearFilter')} onPress={clearFilters} />
-        </View>
+        <ListMessage
+          lead={t('sources.filterEmpty')}
+          action={{ label: t('sources.clearFilter'), variant: 'text', onPress: clearFilters }}
+        />
       );
     }
-    if (tab === 'finished') return <Text style={styles.empty}>{t('sources.finishedEmpty')}</Text>;
+    if (tab === 'finished') return <ListMessage lead={t('sources.finishedEmpty')} />;
     return (
-      <View style={styles.tabEmpty}>
-        <Text style={styles.lead}>{t('sources.readingEmpty')}</Text>
-        <View style={styles.tabEmptyAction}>
-          <Button variant="secondary" label={t('sources.add')} onPress={addSource} />
-        </View>
-      </View>
+      <ListMessage
+        lead={t('sources.readingEmpty')}
+        action={{ label: t('sources.add'), variant: 'secondary', onPress: addSource }}
+      />
     );
   };
 
@@ -315,29 +312,10 @@ const makeStyles = (c: Colors) =>
     list: { flex: 1 },
     // Grows so an empty tab's message can sit in the middle.
     content: { flexGrow: 1, paddingHorizontal: space.lg, paddingBottom: space.xxl },
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: space.xl,
-      gap: space.sm,
-      backgroundColor: c.page,
-    },
-    title: { ...typeScale.title, color: c.fg, textAlign: 'center' },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    action: { marginTop: space.lg },
+    pending: { flex: 1 },
     spinner: { color: c.accent },
     headerActions: { flexDirection: 'row', alignItems: 'center' },
     filters: { gap: space.sm, paddingTop: space.md },
     hint: { ...typeScale.caption, color: c.muted },
-    tabEmpty: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: space.md,
-      paddingHorizontal: space.lg,
-    },
-    tabEmptyAction: { marginTop: space.xs },
-    empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     sheet: { gap: 18 },
   });
