@@ -12,6 +12,7 @@ import { useTheme, useThemedStyles } from './use-theme';
 export function TextField({
   label,
   required = false,
+  labelHidden = false,
   error,
   quote = false,
   code = false,
@@ -24,6 +25,8 @@ export function TextField({
 }: {
   label: string;
   required?: boolean;
+  /** Not shown, only read out: where the sheet's title already says what goes in (Yeniden adlandır). */
+  labelHidden?: boolean;
   /** What is wrong with the value; shown below the field in `danger`. */
   error?: string;
   /** An Excerpt, in the quote face (Charis SIL, upright). */
@@ -37,10 +40,12 @@ export function TextField({
   const invalid = error !== undefined && error !== '';
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>
-        {label.toLocaleUpperCase('tr')}
-        {required && <Text style={styles.required}> *</Text>}
-      </Text>
+      {!labelHidden && (
+        <Text style={styles.label}>
+          {label.toLocaleUpperCase('tr')}
+          {required && <Text style={styles.required}> *</Text>}
+        </Text>
+      )}
       <TextInput
         aria-label={label}
         aria-invalid={invalid || undefined}

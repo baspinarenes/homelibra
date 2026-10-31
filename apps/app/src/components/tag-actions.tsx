@@ -1,15 +1,18 @@
 import { tagName, tagSuggestKey } from '@homelibra/core/tag';
+import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
+import { Sheet, SheetAction } from '@homelibra/ui/sheet';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, fonts, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
+import Merge from 'lucide-react-native/icons/merge';
+import PenLine from 'lucide-react-native/icons/pen-line';
+import Trash from 'lucide-react-native/icons/trash';
+import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ConfirmDialog } from '@/components/confirm-dialog';
-import { PrimaryButton } from '@/components/primary-button';
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 export type TagRef = { id: string; name: string };
 
@@ -63,55 +66,20 @@ function useRefreshAll() {
   return () => queryClient.invalidateQueries();
 }
 
-function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
-  return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('tagActions.close')}
-          style={styles.dismiss}
-          onPress={onClose}
-        />
-        <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
-          <View style={styles.header}>
-            <Text style={styles.heading} numberOfLines={2}>
-              {title}
-            </Text>
-            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.close}>{t('tagActions.close')}</Text>
-            </Pressable>
-          </View>
-          <View style={styles.body}>{children}</View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 function Menu({ tag, onChoose, onClose }: { tag: TagRef; onChoose: (step: Step) => void; onClose: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
-  const items: { label: string; step: Step; danger?: boolean }[] = [
-    { label: t('tagActions.rename'), step: { kind: 'rename' } },
-    { label: t('tagActions.merge'), step: { kind: 'pick' } },
-    { label: t('tagActions.delete'), step: { kind: 'delete' }, danger: true },
-  ];
   return (
-    <Sheet title={tag.name} onClose={onClose}>
-      {items.map((item, index) => (
-        <Pressable
-          key={item.step.kind}
-          accessibilityRole="button"
-          onPress={() => onChoose(item.step)}
-          style={({ pressed }) => [styles.item, index > 0 && styles.divided, pressed && styles.pressed]}
-        >
-          <Text style={[styles.itemText, item.danger && styles.danger]}>{item.label}</Text>
-        </Pressable>
-      ))}
+    <Sheet visible title={tag.name} closeLabel={t('tagActions.close')} onClose={onClose}>
+      <View>
+        <SheetAction icon={PenLine} label={t('tagActions.rename')} onPress={() => onChoose({ kind: 'rename' })} />
+        <SheetAction icon={Merge} label={t('tagActions.merge')} onPress={() => onChoose({ kind: 'pick' })} />
+        <SheetAction
+          icon={Trash}
+          label={t('tagActions.delete')}
+          destructive
+          onPress={() => onChoose({ kind: 'delete' })}
+        />
+      </View>
     </Sheet>
   );
 }
@@ -119,7 +87,6 @@ function Menu({ tag, onChoose, onClose }: { tag: TagRef; onChoose: (step: Step) 
 function Rename({ tag, onMerge, onClose }: { tag: TagRef; onMerge: (into: TagRef) => void; onClose: () => void }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
   const trpc = useTRPC();
   const refreshAll = useRefreshAll();
   const [value, setValue] = useState(tag.name);
@@ -139,9 +106,16 @@ function Rename({ tag, onMerge, onClose }: { tag: TagRef; onMerge: (into: TagRef
   };
 
   return (
-    <Sheet title={t('tagActions.renameTitle')} onClose={onClose}>
-      <TextInput
-        accessibilityLabel={t('tagActions.newName')}
+    <Sheet
+      visible
+      title={t('tagActions.renameTitle')}
+      closeLabel={t('tagActions.close')}
+      onClose={onClose}
+      primary={{ label: t('tagActions.save'), onPress: save, busy: rename.isPending, disabled: !name }}
+    >
+      <TextField
+        label={t('tagActions.newName')}
+        labelHidden
         autoFocus
         selectTextOnFocus
         value={value}
@@ -152,12 +126,9 @@ function Rename({ tag, onMerge, onClose }: { tag: TagRef; onMerge: (into: TagRef
         autoCorrect={false}
         returnKeyType="done"
         placeholder={t('tagActions.newName')}
-        placeholderTextColor={colors.muted2}
-        style={styles.input}
       />
       <Text style={styles.hint}>{t('tagActions.renameHint')}</Text>
       {rename.isError && <Text style={styles.error}>{t('tagActions.failed')}</Text>}
-      <PrimaryButton label={t('tagActions.save')} onPress={save} busy={rename.isPending} disabled={!name} />
     </Sheet>
   );
 }
@@ -174,41 +145,44 @@ function PickTarget({ tag, onPick, onClose }: { tag: TagRef; onPick: (into: TagR
   const shown = (tags.data ?? []).filter((other) => other.id !== tag.id && tagSuggestKey(other.name).includes(key));
 
   return (
-    <Sheet title={t('tagActions.mergeTitle', { name: tag.name })} onClose={onClose}>
-      <TextInput
-        accessibilityLabel={t('tagActions.filter')}
+    <Sheet
+      visible
+      title={t('tagActions.mergeTitle', { name: tag.name })}
+      closeLabel={t('tagActions.close')}
+      onClose={onClose}
+    >
+      <TextField
+        label={t('tagActions.filter')}
+        labelHidden
         placeholder={t('tagActions.filter')}
-        placeholderTextColor={colors.muted2}
         value={filter}
         onChangeText={setFilter}
         autoCapitalize="none"
         autoCorrect={false}
-        style={styles.input}
       />
       {tags.isPending ? (
         <ActivityIndicator color={colors.accent} style={styles.status} />
       ) : tags.isError ? (
         <Text style={[styles.lead, styles.status]}>{t('tags.loadFailed')}</Text>
+      ) : shown.length === 0 ? (
+        <Text style={[styles.lead, styles.status]}>{t('tagActions.noMatches')}</Text>
       ) : (
-        <FlatList
-          style={styles.list}
-          data={shown}
-          keyExtractor={(other) => other.id}
-          keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={<Text style={[styles.lead, styles.status]}>{t('tagActions.noMatches')}</Text>}
-          renderItem={({ item: other, index }) => (
+        // The sheet scrolls; a list inside it would be a scroller in a scroller.
+        <View>
+          {shown.map((other, index) => (
             <Pressable
-              accessibilityRole="button"
+              key={other.id}
+              role="button"
               onPress={() => onPick({ id: other.id, name: other.name })}
               style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
             >
-              <Text style={styles.itemText}>{other.name}</Text>
+              <Text style={styles.name}>{other.name}</Text>
               <Text style={styles.counts}>
                 {t('tags.counts', { notes: other.noteCount, sources: other.sourceCount })}
               </Text>
             </Pressable>
-          )}
-        />
+          ))}
+        </View>
       )}
     </Sheet>
   );
@@ -230,19 +204,20 @@ function ConfirmMerge({ tag, into, onClose }: { tag: TagRef; into: TagRef; onClo
     }),
   );
   return (
-    <ConfirmDialog
+    <Dialog
       visible
       message={
-        <>
+        <DialogMessage>
           <Trans
             i18nKey="tagActions.confirmMerge"
             values={{ name: tag.name, into: into.name }}
             components={{ tag: <Text style={styles.strong} /> }}
           />
           {merge.isError && <Text style={styles.error}>{`\n${t('tagActions.failed')}`}</Text>}
-        </>
+        </DialogMessage>
       }
       confirmLabel={t('tagActions.confirmMergeAction')}
+      destructive
       cancelLabel={t('tagActions.cancel')}
       busy={merge.isPending}
       onConfirm={() => merge.mutate({ id: tag.id, intoId: into.id })}
@@ -291,15 +266,16 @@ function ConfirmDelete({ tag, onClose }: { tag: TagRef; onClose: () => void }) {
   );
 
   return (
-    <ConfirmDialog
+    <Dialog
       visible
       message={
-        <>
+        <DialogMessage>
           {message}
           {remove.isError && <Text style={styles.error}>{`\n${t('tagActions.failed')}`}</Text>}
-        </>
+        </DialogMessage>
       }
       confirmLabel={t('tagActions.confirmDeleteAction')}
+      destructive
       cancelLabel={t('tagActions.cancel')}
       busy={remove.isPending || !impact.isSuccess}
       onConfirm={() => remove.mutate({ id: tag.id })}
@@ -318,56 +294,14 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     more: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
     moreText: { ...typeScale.button, fontSize: 18, color: c.muted },
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      maxHeight: '80%',
-      alignSelf: 'center',
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: space.md,
-      paddingHorizontal: space.lg,
-      paddingTop: space.lg,
-      paddingBottom: space.sm,
-    },
-    heading: { ...typeScale.sourceTitle, flexShrink: 1, color: c.fg },
-    close: { ...typeScale.button, color: c.accent },
-    body: { flexShrink: 1, gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm },
-    item: { minHeight: 44, justifyContent: 'center', paddingVertical: space.sm },
-    itemText: { ...typeScale.body, flexShrink: 1, color: c.fg },
-    danger: { color: c.danger },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     pressed: { opacity: 0.7 },
-    input: {
-      ...typeScale.body,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.input,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-    },
     hint: { ...typeScale.caption, color: c.muted },
     error: { ...typeScale.body, color: c.danger },
-    list: { flexGrow: 0 },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      justifyContent: 'space-between',
-      gap: space.md,
-      paddingVertical: space.md,
-    },
-    counts: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
+    row: { gap: 3, paddingVertical: 12 },
+    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
+    name: { ...typeScale.body, color: c.fg },
+    counts: { ...typeScale.locator, fontSize: 11.5, letterSpacing: 0, color: c.muted },
     status: { paddingVertical: space.xl },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    strong: { fontFamily: typeScale.button.fontFamily },
+    strong: { fontFamily: fonts.sansSemiBold },
   });
