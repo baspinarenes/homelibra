@@ -31,6 +31,13 @@ describe('Chip', () => {
     expect(text(chip!)).toBe('sansür ×');
     expect(nameOf(chip!)).toBe('sansür');
   });
+
+  it('takes a Tag out with its own × button', () => {
+    const page = render(<Chip label="sansür" onRemove={noop} removeLabel="“sansür” etiketini çıkar" />);
+    const buttons = byRole(page, 'button');
+    expect(buttons.map(nameOf)).toEqual(['“sansür” etiketini çıkar']);
+    expect(text(page)).toBe('sansür');
+  });
 });
 
 describe('Segment', () => {

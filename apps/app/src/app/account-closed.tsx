@@ -1,14 +1,14 @@
 import { deletionDueAt } from '@homelibra/core/account';
+import { Button } from '@homelibra/ui/button';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PrimaryButton } from '@/components/primary-button';
 import { SignOutButton } from '@/components/sign-out-button';
 import { authClient } from '@/lib/auth-client';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * A closed Account signed in again within its 14 days (#40, story 20): the
@@ -37,7 +37,7 @@ export default function AccountClosedScreen() {
         <Text style={styles.title}>{t('accountClosed.title')}</Text>
         <Text style={styles.lead}>{t('accountClosed.lead', { date })}</Text>
         <View style={styles.action}>
-          <PrimaryButton label={t('accountClosed.restore')} busy={restore.isPending} onPress={() => restore.mutate()} />
+          <Button label={t('accountClosed.restore')} block busy={restore.isPending} onPress={() => restore.mutate()} />
         </View>
         {restore.isError ? <Text style={styles.error}>{t('accountClosed.failed')}</Text> : null}
         <View style={styles.signOut}>
@@ -55,13 +55,15 @@ const makeStyles = (c: Colors) =>
       alignSelf: 'center',
       width: '100%',
       maxWidth: 520,
-      padding: space.xl,
-      gap: space.md,
+      paddingTop: 40,
+      paddingHorizontal: space.gutter,
+      paddingBottom: space.xl,
+      gap: space.lg,
     },
     title: { ...typeScale.display, color: c.fg },
     lead: { ...typeScale.body, color: c.ink2 },
-    action: { marginTop: space.md },
+    action: { marginTop: space.sm },
     error: { ...typeScale.label, color: c.warn },
     // The button carries its own padding; pull it back to the gutter.
-    signOut: { alignSelf: 'flex-start', marginLeft: -space.md, marginTop: space.sm },
+    signOut: { alignSelf: 'flex-start', marginLeft: -space.md },
   });

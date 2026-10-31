@@ -2,6 +2,8 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { lastCaptured } from '@homelibra/core/note';
 import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
+import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -33,7 +35,6 @@ import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 
@@ -56,6 +57,7 @@ export default function SourceScreen() {
   const { id, write, note } = useLocalSearchParams<{ id: string; write?: string; note?: string }>();
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
@@ -79,7 +81,7 @@ export default function SourceScreen() {
         ) : waitingForNetwork ? (
           <Text style={styles.lead}>{t('outbox.needsConnection')}</Text>
         ) : (
-          <ActivityIndicator color={styles.spinner.color} />
+          <ActivityIndicator color={colors.accent} />
         )}
       </View>
     );
@@ -191,13 +193,10 @@ function SourcePage({
           title: '',
           headerTitle: () => <OutboxStatus />,
           headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
+            <HeaderTextAction
+              label={t('sourcePage.edit')}
               onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
-              hitSlop={8}
-            >
-              <Text style={styles.headerAction}>{t('sourcePage.edit')}</Text>
-            </Pressable>
+            />
           ),
         }}
       />
@@ -235,9 +234,9 @@ function SourcePage({
                     />
                   </View>
                   <Text style={styles.title}>{source.title}</Text>
+                  <Text style={styles.byline}>{byline}</Text>
                 </View>
               </View>
-              <Text style={styles.byline}>{byline}</Text>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
               <View style={styles.actions}>
                 <OrganizeEntry
@@ -346,14 +345,14 @@ function NoteRow({
         pressed && styles.pressed,
       ]}
     >
-      <Text style={styles.locator}>{note.locator ?? '—'}</Text>
+      <View style={styles.locatorColumn}>
+        <Text style={styles.locator}>{note.locator ?? '—'}</Text>
+        {fresh && <NewMark />}
+      </View>
       <View style={styles.texts}>
         {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} style={styles.excerpt} />}
         {note.comment && <MarkedText text={note.comment} marks={match?.comment} style={styles.comment} prefix="↳ " />}
-        <View style={styles.marks}>
-          <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
-          {fresh && <NewMark />}
-        </View>
+        <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
         {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
       </View>
     </Pressable>
@@ -363,30 +362,27 @@ function NoteRow({
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+    content: { paddingHorizontal: space.gutter, paddingBottom: space.lg },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
-    headerAction: { ...typeScale.button, fontSize: 15, color: c.accent, paddingHorizontal: space.sm },
     heading: {
-      gap: space.md,
-      paddingTop: space.sm,
-      paddingBottom: 18,
-      marginBottom: space.xs,
+      gap: 10,
+      paddingTop: 2,
+      paddingBottom: 14,
       borderBottomWidth: 1,
       borderBottomColor: c.line,
     },
-    identity: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-    identityText: { flex: 1, gap: 2 },
-    typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: 2 },
+    identity: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+    identityText: { flex: 1, gap: space.xs },
+    typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     type: { ...typeScale.micro, color: c.accent },
     title: { ...typeScale.sourceTitle, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
     hidden: { display: 'none' },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
-    row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
+    row: { flexDirection: 'row', gap: 10, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     // An outline, so the row keeps its place while marked.
     marked: {
@@ -396,9 +392,9 @@ const makeStyles = (c: Colors) =>
       outlineOffset: 3,
       borderRadius: radius.cover,
     },
-    locator: { ...typeScale.locator, color: c.muted, width: 84, paddingTop: 4 },
+    locatorColumn: { width: 68, gap: space.xs, paddingTop: 4 },
+    locator: { ...typeScale.locator, color: c.muted },
     texts: { flex: 1, gap: 6 },
-    marks: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
     excerpt: {
       ...typeScale.excerpt,
       color: c.quoteInk,

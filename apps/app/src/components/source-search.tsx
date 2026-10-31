@@ -1,22 +1,14 @@
+import { Button } from '@homelibra/ui/button';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { type Matches, SearchField } from '@/components/note-search';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** "Bu kaynakta ara", beside "Düzenle · N etiketsiz" in the Source page's heading. */
 export function SourceSearchButton({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-    >
-      <Text style={styles.buttonLabel}>{t('noteSearch.inSource')}</Text>
-    </Pressable>
-  );
+  return <Button label={t('noteSearch.inSource')} variant="small" onPress={onPress} />;
 }
 
 /**
@@ -61,17 +53,7 @@ export function SourceSearchBar({
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    pressed: { opacity: 0.7 },
-    button: {
-      alignSelf: 'flex-start',
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.button,
-      paddingVertical: space.sm,
-      paddingHorizontal: space.md,
-    },
-    buttonLabel: { ...typeScale.button, color: c.accent },
     bar: { gap: space.sm },
-    count: { ...typeScale.caption, color: c.muted },
+    count: { ...typeScale.heading, letterSpacing: 0, color: c.muted },
     failed: { ...typeScale.caption, color: c.danger },
   });
