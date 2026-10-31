@@ -15,7 +15,8 @@
     "./toast": "./src/toast.ts",
     "./screen-header": "./src/screen-header.ts",
     "./section-heading": "./src/section-heading.ts",
-    "./tab-bar": "./src/tab-bar.ts"
+    "./tab-bar": "./src/tab-bar.ts",
+    "./text-tabs": "./src/text-tabs.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
