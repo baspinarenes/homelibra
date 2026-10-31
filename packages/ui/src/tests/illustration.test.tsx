@@ -22,9 +22,13 @@ describe('BookIllustration', () => {
   });
 
   it('and in the dark one, with none of the light colours left', () => {
+    const light = ['#FFFEFB', '#A65A40', '#EFE7D7'];
+    setThemePreference('light');
+    const before = colours(render(<BookIllustration />));
+    for (const colour of light) expect(before).toContain(colour);
     setThemePreference('dark');
     const used = colours(render(<BookIllustration />));
     for (const colour of ['#262019', '#D08A6E', '#33291B', '#D8BC8E', '#4D4234']) expect(used).toContain(colour);
-    for (const colour of ['#FFFEFB', '#A65A40', '#EFE7D7']) expect(used).not.toContain(colour);
+    for (const colour of light) expect(used).not.toContain(colour);
   });
 });

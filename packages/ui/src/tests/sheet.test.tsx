@@ -53,12 +53,14 @@ describe('Sheet', () => {
   });
 
   it('is not there until opened', () => {
-    const page = render(
-      <Sheet visible={false} title="Konum" closeLabel="Kapat" onClose={noop}>
-        <Text>s. 12</Text>
-      </Sheet>,
-    );
-    expect(byRole(page, 'dialog')).toEqual([]);
+    const draw = (visible: boolean) =>
+      render(
+        <Sheet visible={visible} title="Konum" closeLabel="Kapat" onClose={noop}>
+          <Text>s. 12</Text>
+        </Sheet>,
+      );
+    expect(byRole(draw(true), 'dialog')).toHaveLength(1);
+    expect(byRole(draw(false), 'dialog')).toEqual([]);
   });
 });
 

@@ -42,9 +42,18 @@ describe('Dialog', () => {
   });
 
   it('is not there until asked', () => {
-    const page = render(
-      <Dialog visible={false} message="…" cancelLabel="Vazgeç" confirmLabel="Sil" onConfirm={noop} onCancel={noop} />,
-    );
-    expect(byRole(page, 'alertdialog')).toEqual([]);
+    const draw = (visible: boolean) =>
+      render(
+        <Dialog
+          visible={visible}
+          message="…"
+          cancelLabel="Vazgeç"
+          confirmLabel="Sil"
+          onConfirm={noop}
+          onCancel={noop}
+        />,
+      );
+    expect(byRole(draw(true), 'alertdialog')).toHaveLength(1);
+    expect(byRole(draw(false), 'alertdialog')).toEqual([]);
   });
 });
