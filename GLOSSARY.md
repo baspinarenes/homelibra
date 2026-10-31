@@ -108,6 +108,10 @@ _Avoid_: note, thought, annotation, remark
 Where in a source a note comes from, written as the scholar would cite it: a page, a page range, a timestamp, a folio, a document reference, an issue and page. Free-form; the notes of a source are listed in its order, and a note with no locator speaks of the source as a whole.
 _Avoid_: page, position, reference, citation
 
+**Sort value** (Sıralama değeri):
+The numbers a Note's Locator is ordered by, read from the Locator text unless the scholar corrects them; a correction lasts until the Locator text changes.
+_Avoid_: sort key, index, position
+
 **Note merge** (Not birleştirme):
 Combining two or more notes of the same source into one, for an excerpt cut in two by a page turn or a comment saved apart from its excerpt: the excerpts and comments are joined in locator order, the tags pooled, and the other notes are gone. Not to be confused with a tag merge.
 _Avoid_: join, combine, tag merge

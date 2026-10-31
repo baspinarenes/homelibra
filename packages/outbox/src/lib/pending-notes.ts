@@ -1,5 +1,5 @@
 import { compareTr } from '@homelibra/core';
-import { compareNotes, locatorSortValue } from '@homelibra/core/note';
+import { capturedNote, compareNotes, editedNote } from '@homelibra/core/note';
 import { tagIdentity, tagName } from '@homelibra/core/tag';
 
 import type { Operation } from './types';
@@ -18,12 +18,6 @@ export type ListedNote = {
 /** A Note the phone knows of, with the Source it is in. */
 export type KnownNote = ListedNote & { sourceId: string };
 
-/** As the server keeps text: trimmed, and null when blank. */
-const stored = (value: string | null | undefined) => value?.trim() || null;
-
-/** The sort value a Locator gets until the scholar corrects it. */
-const derivedSort = (locator: string | null) => (locator === null ? null : locatorSortValue(locator));
-
 /**
  * The Tags with these names added, as the server will keep them: without a
  * leading #, once per identity, A–Z. A name the Library already spells
@@ -39,9 +33,11 @@ function withTags(tags: readonly { name: string }[], names: readonly string[] = 
 
 /**
  * The Notes the phone knows with its waiting operations played over them.
- * Each operation does here what the server will do with it, and doing it
- * again changes nothing, so a Note already sent but not yet refetched shows
- * once.
+ * Each operation does here what the server will do with it, by the same
+ * rule (core's capturedNote and editedNote), and doing it again changes
+ * nothing, so a Note already sent but not yet refetched shows once. What the
+ * server will refuse, a Note or an edit left without text, is skipped: the
+ * Note shows as the server keeps it.
  */
 function replay(known: Iterable<KnownNote>, pending: readonly Operation[]) {
   const byId = new Map<string, KnownNote>();
@@ -49,28 +45,16 @@ function replay(known: Iterable<KnownNote>, pending: readonly Operation[]) {
   for (const operation of pending) {
     switch (operation.type) {
       case 'createNote': {
-        const { id, sourceId, locator, excerpt, comment } = operation.note;
-        if (byId.has(id)) break;
-        const kept = stored(locator);
-        byId.set(id, {
-          id,
-          sourceId,
-          locator: kept,
-          locatorSort: derivedSort(kept),
-          excerpt: stored(excerpt),
-          comment: stored(comment),
-          tags: withTags([], operation.note.tags),
-        });
+        const { id, sourceId, tags } = operation.note;
+        const fields = capturedNote(operation.note);
+        if (byId.has(id) || !fields) break;
+        byId.set(id, { id, sourceId, ...fields, tags: withTags([], tags) });
         break;
       }
       case 'attachComment': {
         const note = byId.get(operation.id);
-        if (note)
-          byId.set(note.id, {
-            ...note,
-            comment: stored(operation.comment),
-            tags: withTags(note.tags, operation.tags),
-          });
+        const fields = note && editedNote(note, { comment: operation.comment });
+        if (note && fields) byId.set(note.id, { ...note, ...fields, tags: withTags(note.tags, operation.tags) });
         break;
       }
       case 'detachComment': {
@@ -83,22 +67,9 @@ function replay(known: Iterable<KnownNote>, pending: readonly Operation[]) {
       }
       case 'updateNote': {
         const note = byId.get(operation.id);
-        if (!note) break;
-        const locator = operation.locator === undefined ? note.locator : stored(operation.locator);
-        const locatorSort =
-          operation.locatorSort !== undefined
-            ? (operation.locatorSort ?? derivedSort(locator))
-            : locator !== note.locator
-              ? derivedSort(locator)
-              : note.locatorSort;
-        byId.set(note.id, {
-          ...note,
-          locator,
-          locatorSort,
-          excerpt: operation.excerpt === undefined ? note.excerpt : stored(operation.excerpt),
-          comment: operation.comment === undefined ? note.comment : stored(operation.comment),
-          tags: operation.tags ? withTags([], operation.tags) : note.tags,
-        });
+        const fields = note && editedNote(note, operation);
+        if (note && fields)
+          byId.set(note.id, { ...note, ...fields, tags: operation.tags ? withTags([], operation.tags) : note.tags });
         break;
       }
       case 'moveNote': {

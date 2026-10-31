@@ -1,4 +1,4 @@
-import { formatSortValue, locatorSortValue } from '@homelibra/core/note';
+import { editedNote, formatSortValue, locatorSortValue } from '@homelibra/core/note';
 import { type KnownNote, pendingNote } from '@homelibra/outbox';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -91,13 +91,12 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
   // The sort value the scholar typed here; until then the field shows the
   // stored one, and the derived one once the Locator text changes (#2 §5).
   const [typedSort, setTypedSort] = useState<string | null>(null);
-  const stored = note.locatorSort ? formatSortValue(note.locatorSort) : '';
-  const locatorChanged = locator.trim() !== (note.locator ?? '');
-  const sortText = typedSort ?? (locatorChanged ? derivedText(locator) : stored);
-  // A value without numbers is derived again on save, so it is no correction.
-  const sortValue = locatorSortValue(sortText);
-  const corrected =
-    locator.trim() !== '' && sortValue !== null && sortValue.join() !== locatorSortValue(locator)?.join();
+  // Sent only when typed here: a value without numbers derives it again.
+  const typed = typedSort === null ? undefined : locatorSortValue(typedSort);
+  // As the server will keep it, by the same rule; the Note's texts stay, so it is never null.
+  const sortValue = editedNote(note, { locator, locatorSort: typed })?.locatorSort ?? null;
+  const sortText = typedSort ?? (sortValue ? formatSortValue(sortValue) : '');
+  const corrected = sortValue !== null && sortValue.join() !== locatorSortValue(locator)?.join();
 
   const { colors } = useTheme();
   const [pickingSource, setPickingSource] = useState(false);
@@ -127,8 +126,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         excerpt,
         comment,
         tags,
-        // Sent only when typed here: a value without numbers derives it again.
-        ...(typedSort !== null && { locatorSort: locatorSortValue(typedSort) }),
+        ...(typed !== undefined && { locatorSort: typed }),
       });
       const moved = moveTo && (await apply({ type: 'moveNote', id: note.id, sourceId: moveTo.id }));
       leave();

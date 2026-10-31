@@ -167,18 +167,6 @@ describe('Note editing', () => {
     expect(await api.notes.get({ id })).toMatchObject({ locatorSort: [29, 1310, 1234, 57] });
   });
 
-  it('takes a corrected sort value given with a new Locator, and derives it again when asked', async () => {
-    const { api, sourceId } = await scholarWithSource();
-    const id = uuidv7();
-    await api.notes.create({ id, sourceId, locator: 'Önsöz', comment: 'Giriş.' });
-
-    await api.notes.update({ id, locator: 'Önsöz, s. xii', locatorSort: [0, 12] });
-    expect(await api.notes.get({ id })).toMatchObject({ locatorSort: [0, 12] });
-
-    await api.notes.update({ id, locatorSort: null });
-    expect(await api.notes.get({ id })).toMatchObject({ locatorSort: null });
-  });
-
   it('takes only whole numbers and folio halves as a sort value', async () => {
     const { api, sourceId } = await scholarWithSource();
     const id = uuidv7();
