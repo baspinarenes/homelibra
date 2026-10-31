@@ -66,7 +66,7 @@ export const tr = {
     submit: 'Adresi değiştir',
     otherAddress: 'Başka bir adres yaz',
     resend: 'Kodu yeniden gönder',
-    done: 'E-posta adresin artık {{email}}.',
+    changed: 'E-posta adresin değişti.',
     errors: {
       taken: 'Bu adres başka bir hesapta kullanılıyor.',
       invalid: 'Bu bir e-posta adresine benzemiyor.',
