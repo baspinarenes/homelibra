@@ -47,8 +47,9 @@ export async function addNoteTags(tx: LibraryTx, accountId: string, noteId: stri
 
 /**
  * The tables linking a carrier to a Tag, with the carrier's column: Notes,
- * Sources and Collections. A Tag merge moves every one of them, and a Tag
- * snapshot reads and restores them (tags/snapshot.ts).
+ * Sources and Collections. A Tag merge moves every one of them, a delete
+ * reads them for its Geri al (undo/delete.ts), and Geri al puts them back
+ * (tags/snapshot.ts).
  */
 export const linkTables = [
   { table: noteTag, carrier: noteTag.noteId },

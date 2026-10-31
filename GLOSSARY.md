@@ -143,3 +143,7 @@ _Avoid_: entry, input, logging
 **Organizing pass** (Düzenleme turu):
 Going through one source's untagged notes, after capture and usually at the desk, to tag them and tidy them up: fixing locators and wording, merging notes. It can be done for any source at any time; finishing a source invites one but is not needed for it. Notes may be left untagged; ending the pass sets the source aside until new untagged notes are captured.
 _Avoid_: review, triage, cleanup, round
+
+**Geri al** (Undo):
+Taking back an operation just done (a deletion, a move, a merge, a tagging) within a few minutes, as if it had never happened. Offered right after the operation; nothing is kept for later.
+_Avoid_: restore, trash, recycle bin, history

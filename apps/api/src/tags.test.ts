@@ -184,6 +184,21 @@ describe('Geri al', () => {
     expect(await api.tags.list({ sort: 'name' })).toEqual(before);
   });
 
+  it('after Notu sil puts the link back on a Tag its Source kept all along', async () => {
+    const { api, sourceId } = await scholarWithSource();
+    const id = uuidv7();
+    await api.notes.create({ id, sourceId, comment: 'Bir.', tags: ['kadı'] });
+    await api.tags.setOnSource({ sourceId, names: ['kadı'] });
+    const before = await api.tags.list({ sort: 'name' });
+    const { undoToken } = await api.notes.delete({ id });
+    expect(await api.tags.list({ sort: 'name' })).toMatchObject([{ id: before[0]!.id, noteCount: 0, sourceCount: 1 }]);
+
+    await api.undo({ token: undoToken! });
+
+    expect((await api.notes.get({ id })).tags).toEqual([{ id: before[0]!.id, name: 'kadı' }]);
+    expect(await api.tags.list({ sort: 'name' })).toEqual(before);
+  });
+
   it("after Kaynağı sil brings back the Source's Tags and its Notes' own", async () => {
     const { api, sourceId } = await scholarWithSource();
     const id = uuidv7();
