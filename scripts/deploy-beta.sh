@@ -384,7 +384,7 @@ if ! already_saved API_UUID; then
   open_url "$COOLIFY_URL/projects"
   step "Homelibra → production → '+ New' → Docker Image: $IMAGES/homelibra-api:main"
   step "Domains: https://$DOMAIN/api   Ports Exposes: 3000"
-  step "Advanced: turn 'Strip Prefixes' off. The API's routes start with /api themselves."
+  step "Path prefixes: 'Keep paths as-is'. The API's routes start with /api themselves."
   step "Healthcheck: enabled, path /api/health, port 3000."
   pause "Press Enter to put the environment variables on your clipboard."
   to_clipboard "NODE_ENV=production
