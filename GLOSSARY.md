@@ -42,9 +42,9 @@ _Avoid_: category, format, medium, genre
 When a source was published, written or issued, recorded in the calendar the source itself uses (Milâdî, Hicrî or Rumî) and to the precision the scholar knows: the year, the month or the day. For a printed work it is the date of the edition in hand, the one its locators refer to; a first edition is recorded separately.
 _Avoid_: year, timestamp, publication year
 
-**Bibliographic note** (Künye notu):
+**Bibliographic note** (Ek bilgi):
 Free-form bibliographic detail about a source that fits none of its fields: a place of publication, a translator, a series, a fond's full name. Never the scholar's thoughts; those belong in a comment.
-_Avoid_: description, notes, remarks, summary
+_Avoid_: description, notes, remarks, summary, künye notu, ekstra not
 
 **Reading status** (Okuma durumu):
 Whether a source is still being read or finished. Finished means the scholar is done with it for now, whether or not they read it through; there is no separate state for a source set aside. A new source starts as being read, and a finished one can be read again. Nothing more: no dates, ratings or progress.
@@ -109,7 +109,7 @@ Where in a source a note comes from, written as the scholar would cite it: a pag
 _Avoid_: page, position, reference, citation
 
 **Sort value** (Sıralama değeri):
-The numbers a Note's Locator is ordered by, read from the Locator text unless the scholar corrects them; a correction lasts until the Locator text changes.
+The numbers a Note's Locator is ordered by, always read from the Locator text; the scholar never sees or edits them, and fixes the order by fixing the Locator.
 _Avoid_: sort key, index, position
 
 **Note merge** (Not birleştirme):
