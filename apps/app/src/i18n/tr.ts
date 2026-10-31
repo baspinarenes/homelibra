@@ -430,9 +430,12 @@ export const tr = {
   // Dosyalar, a Collection's view and a Tag's page (#51).
   collection: {
     newCollection: '+ Yeni dosya',
+    newTitle: 'Yeni dosya',
     nameLabel: 'Dosya adı',
+    nameField: 'Ad',
     namePlaceholder: 'Örneğin İttihat ve Terakki makalesi',
-    create: 'Oluştur',
+    tagsHint: 'Bu etiketleri taşıyan notlar dosyada toplanır.',
+    inCollection: 'Dosyada',
     cancel: 'Vazgeç',
     rename: 'Adı değiştir',
     save: 'Kaydet',
