@@ -20,7 +20,8 @@
     "./term-table": "./src/term-table.ts",
     "./strip": "./src/strip.ts",
     "./logo": "./src/logo.ts",
-    "./wheels": "./src/wheels.ts"
+    "./wheels": "./src/wheels.ts",
+    "./illustration": "./src/illustration.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

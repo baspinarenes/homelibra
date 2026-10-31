@@ -45,14 +45,17 @@ export const tr = {
     account: 'Hesap',
     appVersion: 'Homelibra {{version}}',
   },
-  // İlk giriş onayı: the first layer of the privacy notice and the terms of use (#60).
+  // Hoş geldin: Homelibra in a few lines, once per Account; Başla records the terms accepted at sign-in (#118).
   welcome: {
     title: 'Hoş geldin',
-    lead: 'Başlamadan önce verilerinin nerede ve kimde durduğunu bilmeni isteriz.',
-    fullNotice: 'Aydınlatma metninin tamamı',
-    acceptTerms: 'Kullanım koşullarını kabul ediyorum',
-    readTerms: 'Kullanım koşullarını oku',
-    continue: 'Devam et',
+    lead: 'Homelibra, okurken aldığın notların defteri.',
+    features: {
+      sources: 'Kitap, makale, arşiv belgesi: kaynaklarını künyesiyle ekle.',
+      notes: 'Alıntını ve yorumunu sayfasıyla birlikte not al.',
+      tags: 'Notlarını etiketle, dosyalarda topla, aradığını bul.',
+      export: 'Kütüphanen senindir; her zaman ücretsiz dışa aktarırsın.',
+    },
+    start: 'Başla',
     failed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
   },
   privacy: {
