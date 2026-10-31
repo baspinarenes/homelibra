@@ -7,7 +7,7 @@ import { TabStack } from '@/components/tab-stack';
 
 /** Dizin: its large title, and "+" at the top right for a Yeni dosya. */
 export default function CollectionsStack() {
-  return <TabStack title="tabs.collections" rootHeader headerRight={() => <NewCollectionButton />} />;
+  return <TabStack title="tabs.collections" headerRight={() => <NewCollectionButton />} />;
 }
 
 function NewCollectionButton() {
