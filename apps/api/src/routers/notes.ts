@@ -1,5 +1,5 @@
 import { SOURCE_NOT_FOUND } from '@homelibra/core/errors';
-import { compareNotes, locatorSortValue } from '@homelibra/core/note';
+import { capturedNote, compareNotes, editedNote } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { z } from 'zod';
@@ -11,11 +11,8 @@ import { mySource } from '../sources/sources';
 import { addNoteTags, resolveTags, setTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
 
-// Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
-const optionalText = z
-  .string()
-  .nullish()
-  .transform((value) => value?.trim() || null);
+// A Note's text as typed: core's capturedNote and editedNote keep it as stored.
+const noteText = z.string().nullish();
 const requiredText = z
   .string()
   .transform((value) => value.trim())
@@ -29,8 +26,8 @@ const noteColumns = {
   comment: note.comment,
 };
 
-/** The sort value a Locator gets until the scholar corrects it. */
-const derivedSort = (locator: string | null) => (locator === null ? null : locatorSortValue(locator));
+/** What capturedNote and editedNote mean by null: the Note would be left without text. */
+const needsText = () => new TRPCError({ code: 'BAD_REQUEST', message: 'An Excerpt or a Comment is needed' });
 
 /** Fails with NOT_FOUND ({@link SOURCE_NOT_FOUND}) unless the Source is in this Library. */
 async function assertSource(tx: LibraryTx, accountId: string, sourceId: string) {
@@ -49,26 +46,27 @@ export const notesRouter = router({
    */
   create: libraryProcedure
     .input(
-      z
-        .object({
-          id: z.uuidv7(),
-          sourceId: z.uuid(),
-          locator: optionalText,
-          excerpt: optionalText,
-          comment: optionalText,
-          /** Tag names from the "+ etiket" picker; untagged is the default. */
-          tags: tagNames.optional(),
-        })
-        .refine((input) => input.excerpt || input.comment, { message: 'An Excerpt or a Comment is needed' }),
+      z.object({
+        id: z.uuidv7(),
+        sourceId: z.uuid(),
+        locator: noteText,
+        excerpt: noteText,
+        comment: noteText,
+        /** Tag names from the "+ etiket" picker; untagged is the default. */
+        tags: tagNames.optional(),
+      }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { tags, ...values } = input;
-      await assertSource(ctx.tx, ctx.accountId, input.sourceId);
+      const { id, sourceId, tags } = input;
+      const fields = capturedNote(input);
+      if (!fields) throw needsText();
+      await assertSource(ctx.tx, ctx.accountId, sourceId);
       const [created] = await ctx.tx
         .insert(note)
         .values({
-          ...values,
-          locatorSort: derivedSort(input.locator),
+          id,
+          sourceId,
+          ...fields,
           enteredSourceAt: ctx.now(),
           accountId: ctx.accountId,
         })
@@ -76,8 +74,8 @@ export const notesRouter = router({
         .returning({ id: note.id });
       // Sent again, the Note keeps the Tags it has now, which may have changed since.
       if (created && tags?.length)
-        await setTags(ctx.tx, ctx.accountId, noteTag, input.id, await resolveTags(ctx.tx, ctx.accountId, tags));
-      return { id: input.id };
+        await setTags(ctx.tx, ctx.accountId, noteTag, id, await resolveTags(ctx.tx, ctx.accountId, tags));
+      return { id };
     }),
 
   /**
@@ -188,7 +186,7 @@ export const notesRouter = router({
     .input(
       z.object({
         id: z.uuid(),
-        locator: optionalText.optional(),
+        locator: noteText,
         // Whole numbers and a folio's half: what the field shows and reads back.
         locatorSort: z
           .array(
@@ -199,31 +197,22 @@ export const notesRouter = router({
           )
           .min(1)
           .nullish(),
-        excerpt: optionalText.optional(),
-        comment: optionalText.optional(),
+        excerpt: noteText,
+        comment: noteText,
         /** All the Note's Tags, by name: what the picker leaves on it. */
         tags: tagNames.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, locatorSort, tags, ...changes } = input;
+      const { id, tags, ...edit } = input;
       const where = and(eq(note.id, id), eq(note.accountId, ctx.accountId));
       const [current] = await ctx.tx.select(noteColumns).from(note).where(where);
       if (!current) return { id };
-      const locator = changes.locator === undefined ? current.locator : changes.locator;
-      const excerpt = changes.excerpt === undefined ? current.excerpt : changes.excerpt;
-      const comment = changes.comment === undefined ? current.comment : changes.comment;
-      if (!excerpt && !comment)
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'An Excerpt or a Comment is needed' });
-      const sort =
-        locatorSort !== undefined
-          ? (locatorSort ?? derivedSort(locator))
-          : locator !== current.locator
-            ? derivedSort(locator)
-            : current.locatorSort;
+      const edited = editedNote(current, edit);
+      if (!edited) throw needsText();
       await ctx.tx
         .update(note)
-        .set({ locator, excerpt, comment, locatorSort: sort, updatedAt: new Date() })
+        .set({ ...edited, updatedAt: new Date() })
         .where(where);
       if (tags) await setTags(ctx.tx, ctx.accountId, noteTag, id, await resolveTags(ctx.tx, ctx.accountId, tags));
       return { id };
@@ -262,9 +251,9 @@ export const notesRouter = router({
           .min(2)
           .max(selectionLimit)
           .refine((ids) => new Set(ids).size === ids.length, 'Each Note once'),
-        locator: optionalText.optional(),
-        excerpt: optionalText.optional(),
-        comment: optionalText.optional(),
+        locator: noteText,
+        excerpt: noteText,
+        comment: noteText,
       }),
     )
     .mutation(({ ctx, input }) => {

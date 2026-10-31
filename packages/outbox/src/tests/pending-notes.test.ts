@@ -109,10 +109,14 @@ describe('withPendingNotes', () => {
     });
   });
 
-  it('keeps a corrected sort value from a waiting edit', () => {
-    const [note] = withPendingNotes(SOURCE, [saved], [{ type: 'updateNote', id: SAVED, locatorSort: [3] }]);
+  it('skips a waiting edit that would leave a Note without text, as the server will refuse it', () => {
+    const [note] = withPendingNotes(
+      SOURCE,
+      [saved],
+      [{ type: 'updateNote', id: SAVED, locator: 's. 21', excerpt: ' ', comment: null }],
+    );
 
-    expect(note).toMatchObject({ locator: 's. 20', locatorSort: [3] });
+    expect(note).toEqual(saved);
   });
 
   it('takes a waiting deletion off the list at once', () => {

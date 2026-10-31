@@ -1,4 +1,4 @@
-import { locatorSortValue, mergeNotes } from '@homelibra/core/note';
+import { editedNote, mergeNotes, type NoteText } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
 import { and, eq, getTableName, inArray, ne } from 'drizzle-orm';
 
@@ -53,7 +53,7 @@ export async function moveNotes(tx: LibraryTx, accountId: string, now: Date, ids
 }
 
 /** What the merge preview corrected; left out, it stays as the merge made it. */
-export type MergeEdits = { locator?: string | null; excerpt?: string | null; comment?: string | null };
+export type MergeEdits = NoteText;
 
 /**
  * Note merge (#13): the Notes, two or more of one Source, become their first
@@ -81,13 +81,10 @@ export async function mergeSelected(tx: LibraryTx, accountId: string, now: Date,
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'A Note merge takes Notes of one Source' });
   const tags = await tagsOfNotes(tx, accountId, ids);
   const merged = mergeNotes(notes.map((n) => ({ ...n, tags: (tags.get(n.id) ?? []).map((tag) => tag.name) })));
-  const locator = edits.locator === undefined ? merged.locator : edits.locator;
-  const excerpt = edits.excerpt === undefined ? merged.excerpt : edits.excerpt;
-  const comment = edits.comment === undefined ? merged.comment : edits.comment;
-  if (!excerpt && !comment) throw new TRPCError({ code: 'BAD_REQUEST', message: 'An Excerpt or a Comment is needed' });
-  // A corrected sort value stays with the Locator it was corrected for.
-  const locatorSort =
-    locator === merged.locator ? merged.locatorSort : locator === null ? null : locatorSortValue(locator);
+  // The preview's corrections are an edit of the merged Note, with no sort value of its own: a
+  // corrected one stays with the Locator it was corrected for.
+  const edited = editedNote(merged, edits);
+  if (!edited) throw new TRPCError({ code: 'BAD_REQUEST', message: 'An Excerpt or a Comment is needed' });
   const others = ids.filter((id) => id !== merged.id);
 
   const [before] = await tx
@@ -110,7 +107,7 @@ export async function mergeSelected(tx: LibraryTx, accountId: string, now: Date,
     .returning({ row: storedRow(note) });
   await tx
     .update(note)
-    .set({ locator, locatorSort: locatorSort && [...locatorSort], excerpt, comment, updatedAt: now })
+    .set({ ...edited, updatedAt: now })
     .where(myNotes(accountId, [merged.id]));
   const undoToken = await recordUndo(tx, accountId, now, {
     remove: { [getTableName(noteTag)]: added.map(({ noteId, tagId }) => ({ note_id: noteId, tag_id: tagId })) },

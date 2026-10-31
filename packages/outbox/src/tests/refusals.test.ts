@@ -14,20 +14,22 @@ const capture = (id: string, excerpt: string): Operation => ({
   note: { id, sourceId: SOURCE, locator: null, excerpt },
 });
 
+// What the server refuses: a Note left without an Excerpt or a Comment.
+const blank = '  ';
+
 // Spec #40: "hiçbir not sessizce kaybolmaz".
 describe('a Note the server refuses', () => {
   it('stays with its text as "gönderilemedi", while the Notes after it are sent', async () => {
     const server = fakeServer();
     const storage = memoryStorage();
     const outbox = await openOutbox({ storage, transport: server.transport });
-    server.refuseText('reddedilen');
 
-    await outbox.apply(capture(N1, 'reddedilen'));
+    await outbox.apply(capture(N1, blank));
     await outbox.apply(capture(N2, 'iki'));
     await outbox.drain();
 
     expect(outbox.state().status.get(N1)).toBe('refused');
-    expect(outbox.state().pending).toEqual([capture(N1, 'reddedilen')]);
+    expect(outbox.state().pending).toEqual([capture(N1, blank)]);
     expect(storage.rows).toHaveLength(1);
     expect(server.notes.get(N2)?.excerpt).toBe('iki');
     expect(outbox.state().waiting).toBe(1);
@@ -36,8 +38,7 @@ describe('a Note the server refuses', () => {
   it('is sent again once the scholar edits it', async () => {
     const server = fakeServer();
     const outbox = await openOutbox({ storage: memoryStorage(), transport: server.transport });
-    server.refuseText('reddedilen');
-    await outbox.apply(capture(N1, 'reddedilen'));
+    await outbox.apply(capture(N1, blank));
     await outbox.drain();
 
     await outbox.apply({
@@ -58,8 +59,7 @@ describe('a Note the server refuses', () => {
   it('is let go when the scholar deletes it, never reaching the server', async () => {
     const server = fakeServer();
     const outbox = await openOutbox({ storage: memoryStorage(), transport: server.transport });
-    server.refuseText('reddedilen');
-    await outbox.apply(capture(N1, 'reddedilen'));
+    await outbox.apply(capture(N1, blank));
     await outbox.drain();
 
     await outbox.apply({ type: 'deleteNote', id: N1 });
@@ -76,10 +76,9 @@ describe('a Note the server refuses', () => {
     await outbox.apply(capture(N1, 'bir'));
     await outbox.apply(capture(N2, 'iki'));
     await outbox.drain();
-    server.refuseText('reddedilen');
     server.goOffline();
 
-    await outbox.apply({ type: 'updateNote', id: N1, excerpt: 'reddedilen', comment: 'yorum' });
+    await outbox.apply({ type: 'updateNote', id: N1, excerpt: blank });
     await outbox.apply({ type: 'updateNote', id: N1, locator: 's. 9' });
     await outbox.apply({ type: 'updateNote', id: N2, excerpt: 'iki, düzeltilmiş' });
     server.goOnline();
@@ -89,7 +88,7 @@ describe('a Note the server refuses', () => {
     expect(server.notes.get(N1)).toMatchObject({ locator: null, excerpt: 'bir', comment: null });
     expect(server.notes.get(N2)?.excerpt).toBe('iki, düzeltilmiş');
 
-    await outbox.apply({ type: 'updateNote', id: N1, locator: 's. 10', excerpt: 'bir, yeniden' });
+    await outbox.apply({ type: 'updateNote', id: N1, locator: 's. 10', excerpt: 'bir, yeniden', comment: 'yorum' });
     await outbox.drain();
 
     expect(server.notes.get(N1)).toMatchObject({ locator: 's. 10', excerpt: 'bir, yeniden', comment: 'yorum' });
@@ -103,9 +102,8 @@ describe('a Note the server refuses', () => {
     await outbox.apply(capture(N1, 'bir'));
     await outbox.apply(capture(N2, 'iki'));
     await outbox.drain();
-    server.refuseText('reddedilen');
-    await outbox.apply({ type: 'updateNote', id: N1, excerpt: 'reddedilen' });
-    await outbox.apply({ type: 'updateNote', id: N2, excerpt: 'reddedilen' });
+    await outbox.apply({ type: 'updateNote', id: N1, excerpt: blank });
+    await outbox.apply({ type: 'updateNote', id: N2, excerpt: blank });
     await outbox.drain();
 
     // The move waits with the Note until the edit is fixed.
@@ -122,9 +120,8 @@ describe('a Note the server refuses', () => {
   it('stays waiting across launches', async () => {
     const server = fakeServer();
     const storage = memoryStorage();
-    server.refuseText('reddedilen');
     const before = await openOutbox({ storage, transport: server.transport });
-    await before.apply(capture(N1, 'reddedilen'));
+    await before.apply(capture(N1, blank));
     await before.drain();
 
     const after = await openOutbox({ storage, transport: server.transport });
