@@ -15,6 +15,11 @@ RUN pnpm --config.node-linker=isolated --config.inject-workspace-packages=true -
 
 FROM node:24-slim
 
+# Coolify's healthcheck runs curl (or wget) inside the container.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 ENV PATH=/api/node_modules/.bin:$PATH
 COPY --from=deploy /api /api
@@ -26,5 +31,5 @@ USER node
 WORKDIR /api
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
-  CMD node -e "fetch('http://localhost:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+  CMD curl -fsS -o /dev/null http://localhost:3000/api/health
 CMD ["./start.sh"]
