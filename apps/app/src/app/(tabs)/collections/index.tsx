@@ -9,14 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CollectionList, useCollections } from '@/components/collection-list';
 import { TagList, useTags } from '@/components/tag-list';
-import {
-  type CollectionSort,
-  loadCollectionSort,
-  loadTagSort,
-  saveCollectionSort,
-  saveTagSort,
-  type TagSort,
-} from '@/lib/dizin-sort';
+import { type CollectionSort, type TagSort, useCollectionSort, useTagSort } from '@/lib/dizin-sort';
 
 type DizinView = 'collections' | 'tags';
 
@@ -31,8 +24,8 @@ export default function DizinScreen() {
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ view?: string }>();
   const view: DizinView = params.view === 'tags' ? 'tags' : 'collections';
-  const [collectionSort, setCollectionSort] = useState<CollectionSort>(loadCollectionSort);
-  const [tagSort, setTagSort] = useState<TagSort>(loadTagSort);
+  const [collectionSort, keepCollectionSort] = useCollectionSort();
+  const [tagSort, keepTagSort] = useTagSort();
   const [sorting, setSorting] = useState(false);
   const collections = useCollections(collectionSort);
   const tags = useTags(tagSort);
@@ -56,16 +49,12 @@ export default function DizinScreen() {
   const sortable = !shown.isError && (shown.data?.length ?? 0) > 0;
 
   // A press is the whole answer: the order applies, is kept, and the sheet closes.
-  const chooseTagSort = (next: TagSort) => {
-    setSorting(false);
-    setTagSort(next);
-    saveTagSort(next);
-  };
-  const chooseCollectionSort = (next: CollectionSort) => {
-    setSorting(false);
-    setCollectionSort(next);
-    saveCollectionSort(next);
-  };
+  const closingWith =
+    <T,>(keep: (next: T) => void) =>
+    (next: T) => {
+      setSorting(false);
+      keep(next);
+    };
 
   return (
     <View style={styles.screen}>
@@ -96,13 +85,18 @@ export default function DizinScreen() {
         onClose={() => setSorting(false)}
       >
         {view === 'tags' ? (
-          <SheetChoices label={t('collections.sortTags')} options={tagSorts} value={tagSort} onChange={chooseTagSort} />
+          <SheetChoices
+            label={t('collections.sortTags')}
+            options={tagSorts}
+            value={tagSort}
+            onChange={closingWith(keepTagSort)}
+          />
         ) : (
           <SheetChoices
             label={t('collections.sortCollections')}
             options={collectionSorts}
             value={collectionSort}
-            onChange={chooseCollectionSort}
+            onChange={closingWith(keepCollectionSort)}
           />
         )}
       </Sheet>
