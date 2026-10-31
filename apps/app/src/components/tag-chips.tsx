@@ -1,9 +1,10 @@
+import { Chip, ChipRow } from '@homelibra/ui/chip';
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
 import { TagPicker } from '@/components/tag-picker';
-import { type Colors, radius, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * A Note's or a Source's Tags as chips, then "+ etiket", which opens the Tag
@@ -20,28 +21,13 @@ export function TagChips({
   onChange: (names: string[]) => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const [picking, setPicking] = useState(false);
   return (
-    <View style={styles.row}>
+    <ChipRow>
       {names.map((name) => (
-        <Pressable
-          key={name}
-          accessibilityRole="button"
-          onPress={() => setPicking(true)}
-          style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-        >
-          <Text style={styles.chipText}>{name}</Text>
-        </Pressable>
+        <Chip key={name} label={name} onPress={() => setPicking(true)} />
       ))}
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => setPicking(true)}
-        hitSlop={6}
-        style={({ pressed }) => [styles.add, pressed && styles.pressed]}
-      >
-        <Text style={styles.addText}>{t('tags.add')}</Text>
-      </Pressable>
+      <Chip label={t('tags.add')} tone="add" onPress={() => setPicking(true)} />
       <TagPicker
         visible={picking}
         title={pickerTitle}
@@ -52,7 +38,7 @@ export function TagChips({
         }}
         onClose={() => setPicking(false)}
       />
-    </View>
+    </ChipRow>
   );
 }
 
@@ -69,19 +55,6 @@ export function NoteTagsLine({ names }: { names: string[] }) {
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
-    chip: { paddingVertical: 3, paddingHorizontal: 9, borderRadius: radius.chip, backgroundColor: c.chipBg },
-    chipText: { ...typeScale.label, fontSize: 13, color: c.chipInk },
-    add: {
-      paddingVertical: 2,
-      paddingHorizontal: 8,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderStyle: 'dashed',
-      borderRadius: radius.chip,
-    },
-    addText: { ...typeScale.label, fontSize: 13, color: c.accent },
     line: { ...typeScale.caption, color: c.chipInk },
     untagged: { ...typeScale.caption, color: c.muted2 },
-    pressed: { opacity: 0.7 },
   });

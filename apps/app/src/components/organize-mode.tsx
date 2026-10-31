@@ -1,16 +1,21 @@
 import type { AppRouter } from '@homelibra/api';
 import { tagIdentity } from '@homelibra/core/tag';
 import type { ListedNote, NoteStatus } from '@homelibra/outbox';
+import { Button } from '@homelibra/ui/button';
+import { Checkbox } from '@homelibra/ui/checkbox';
+import { Chip, ChipRow } from '@homelibra/ui/chip';
+import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { SectionHeading } from '@homelibra/ui/section-heading';
+import { Segment } from '@homelibra/ui/segment';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
-import { Check } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, type GestureResponderEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Segment } from '@/components/segment';
 import { SelectionActionsRow, useSelectionActions } from '@/components/selection-actions';
 import { SourceTags } from '@/components/source-tags';
 import { TagChips } from '@/components/tag-chips';
@@ -20,7 +25,6 @@ import { useOrganizeKeys } from '@/lib/organize-keys';
 import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 type Filter = 'untagged' | 'all';
@@ -46,15 +50,12 @@ function withShift(event: GestureResponderEvent) {
  */
 export function OrganizeEntry({ count, onPress }: { count: number; onPress: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Button
+      label={count > 0 ? t('organize.enterCount', { count }) : t('organize.enter')}
+      variant="small"
       onPress={onPress}
-      style={({ pressed }) => [styles.entry, pressed && styles.pressed]}
-    >
-      <Text style={styles.entryLabel}>{count > 0 ? t('organize.enterCount', { count }) : t('organize.enter')}</Text>
-    </Pressable>
+    />
   );
 }
 
@@ -202,14 +203,11 @@ export function OrganizeMode({
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
+            <HeaderTextAction
+              label={t('organize.finish')}
               disabled={finish.isPending}
               onPress={() => finish.mutate({ sourceId: source.id })}
-              hitSlop={8}
-            >
-              <Text style={styles.headerAction}>{t('organize.finish')}</Text>
-            </Pressable>
+            />
           ),
         }}
       />
@@ -225,12 +223,7 @@ export function OrganizeMode({
         keyExtractor={(note) => note.id}
         ListHeaderComponent={
           <View style={styles.heading}>
-            <View style={styles.modeLine}>
-              <Text style={styles.mode}>{t('organize.mode').toLocaleUpperCase('tr')}</Text>
-              <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-                <Text style={styles.close}>{t('organize.close')}</Text>
-              </Pressable>
-            </View>
+            <SectionHeading title={t('organize.mode')} link={{ label: t('organize.close'), onPress: onClose }} />
             <Text style={styles.title}>{source.title}</Text>
             {Platform.OS === 'web' && <Text style={styles.keys}>{t('selection.keys')}</Text>}
             <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
@@ -245,20 +238,12 @@ export function OrganizeMode({
             />
             {recent.length > 0 && (
               <View style={styles.recent}>
-                <Text style={styles.recentLabel}>{t('organize.recentTags').toLocaleUpperCase('tr')}</Text>
-                <View style={styles.chips}>
+                <SectionHeading title={t('organize.recentTags')} />
+                <ChipRow>
                   {recent.map((name) => (
-                    <Pressable
-                      key={name}
-                      accessibilityRole="button"
-                      disabled={bulkTag.isPending}
-                      onPress={() => tagChosen([name])}
-                      style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-                    >
-                      <Text style={styles.chipText}>{name}</Text>
-                    </Pressable>
+                    <Chip key={name} label={name} onPress={() => !bulkTag.isPending && tagChosen([name])} />
                   ))}
-                </View>
+                </ChipRow>
               </View>
             )}
           </View>
@@ -292,27 +277,19 @@ export function OrganizeMode({
         {failed && <Text style={styles.error}>{failed}</Text>}
         <View style={styles.barRow}>
           <Text style={styles.count}>{t('organize.selected', { count: chosen.length })}</Text>
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={allChosen ? t('organize.clearSelection') : t('organize.selectAll')}
+            variant="text"
             disabled={shown.length === 0}
             onPress={() => setSelected(allChosen ? new Set() : new Set(shown.map((n) => n.id)))}
-            hitSlop={6}
-            style={({ pressed }) => pressed && styles.pressed}
-          >
-            <Text style={styles.barAction}>{allChosen ? t('organize.clearSelection') : t('organize.selectAll')}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            disabled={chosen.length === 0 || bulkTag.isPending}
-            onPress={() => setPicking(true)}
-            style={({ pressed }) => [
-              styles.tagButton,
-              chosen.length === 0 && styles.inactive,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.tagButtonLabel}>{t('organize.tagSelected')}</Text>
-          </Pressable>
+          />
+          <View style={styles.tagButton}>
+            <Button
+              label={t('organize.tagSelected')}
+              disabled={chosen.length === 0 || bulkTag.isPending}
+              onPress={() => setPicking(true)}
+            />
+          </View>
         </View>
         <SelectionActionsRow actions={actions} />
       </View>
@@ -366,16 +343,14 @@ function OrganizeRow({
   const tapSelects = selecting && Platform.OS !== 'web';
   return (
     <View style={[styles.row, divided && styles.divided, selected && styles.selectedRow, current && styles.current]}>
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityLabel={t('organize.select')}
-        aria-checked={selected}
-        onPress={(event) => onToggle(withShift(event))}
-        hitSlop={8}
-        style={[styles.box, selected && styles.boxChecked]}
-      >
-        {selected ? <Check size={14} strokeWidth={3} color={styles.mark.color} /> : null}
-      </Pressable>
+      <View style={styles.box}>
+        <Checkbox
+          label={t('organize.select')}
+          hideLabel
+          checked={selected}
+          onChange={(_, event) => onToggle(withShift(event))}
+        />
+      </View>
       <View style={[styles.rowBody, done && styles.done]}>
         <Pressable
           accessibilityRole="button"
@@ -390,7 +365,12 @@ function OrganizeRow({
           </View>
           <View style={styles.texts}>
             {note.excerpt && <Text style={styles.excerpt}>{note.excerpt}</Text>}
-            {note.comment && <Text style={styles.comment}>{`↳ ${note.comment}`}</Text>}
+            {note.comment && (
+              <Text style={styles.comment}>
+                <Text style={styles.arrow}>↳ </Text>
+                {note.comment}
+              </Text>
+            )}
           </View>
         </Pressable>
         <View style={styles.tags}>
@@ -401,46 +381,29 @@ function OrganizeRow({
   );
 }
 
-const locatorWidth = 84;
+const locatorWidth = 56;
+const rowGap = 10;
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+    content: { paddingHorizontal: space.gutter, paddingBottom: space.lg },
     pressed: { opacity: 0.7 },
-    inactive: { opacity: 0.45 },
-    entry: {
-      alignSelf: 'flex-start',
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.button,
-      paddingVertical: space.sm,
-      paddingHorizontal: space.md,
-    },
-    entryLabel: { ...typeScale.button, color: c.accent },
     newMark: { ...typeScale.micro, color: c.warn },
-    headerAction: { ...typeScale.button, fontSize: 15, color: c.accent, paddingHorizontal: space.sm },
     heading: {
-      gap: space.md,
-      paddingTop: space.sm,
-      paddingBottom: space.lg,
-      marginBottom: space.xs,
+      gap: 10,
+      paddingTop: 2,
+      paddingBottom: space.md,
       borderBottomWidth: 1,
       borderBottomColor: c.line,
     },
-    modeLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-    mode: { ...typeScale.micro, color: c.accent },
-    close: { ...typeScale.button, color: c.accent },
     title: { ...typeScale.sourceTitle, color: c.fg },
-    recent: { gap: 6 },
-    recentLabel: { ...typeScale.micro, color: c.muted },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    chip: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: radius.chip, backgroundColor: c.chipBg },
-    chipText: { ...typeScale.label, color: c.chipInk },
+    recent: { gap: 10, paddingTop: space.xs },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
-    row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
+    row: { flexDirection: 'row', gap: rowGap, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    selectedRow: { backgroundColor: c.accentSoft },
+    // The tint reaches 8 past the text on each side.
+    selectedRow: { backgroundColor: c.accentSoft, paddingHorizontal: space.sm, marginHorizontal: -space.sm },
     // An outline, so the row keeps its place under the cursor.
     current: {
       outlineWidth: 2,
@@ -450,24 +413,13 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.cover,
     },
     keys: { ...typeScale.caption, color: c.muted },
-    box: {
-      width: 20,
-      height: 20,
-      marginTop: 4,
-      borderRadius: radius.cover,
-      borderWidth: 1.5,
-      borderColor: c.lineStrong,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    boxChecked: { backgroundColor: c.accent, borderColor: c.accent },
-    mark: { color: c.accentFg },
-    rowBody: { flex: 1, gap: 6 },
+    box: { paddingTop: 2 },
+    rowBody: { flex: 1, gap: space.sm },
     done: { opacity: 0.5 },
-    noteText: { flexDirection: 'row', gap: space.md },
-    locatorColumn: { width: locatorWidth, gap: 2, paddingTop: 4 },
+    noteText: { flexDirection: 'row', gap: rowGap },
+    locatorColumn: { width: locatorWidth, gap: space.xs, paddingTop: 4 },
     locator: { ...typeScale.locator, color: c.muted },
-    texts: { flex: 1, gap: 6 },
+    texts: { flex: 1, gap: space.sm },
     excerpt: {
       ...typeScale.excerpt,
       color: c.quoteInk,
@@ -476,24 +428,19 @@ const makeStyles = (c: Colors) =>
       paddingLeft: 11,
     },
     comment: { ...typeScale.body, fontSize: 14.5, color: c.ink3 },
-    tags: { paddingLeft: locatorWidth + space.md },
+    arrow: { color: c.muted2 },
+    tags: { paddingLeft: locatorWidth + rowGap },
     bar: {
-      gap: space.xs,
-      paddingTop: space.sm,
-      paddingHorizontal: space.lg,
+      gap: 6,
+      paddingTop: 10,
+      paddingHorizontal: space.gutter,
       borderTopWidth: 1,
       borderTopColor: c.line,
       backgroundColor: c.page,
     },
-    barRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
-    count: { ...typeScale.label, flex: 1, color: c.ink2 },
-    barAction: { ...typeScale.button, color: c.accent },
-    tagButton: {
-      borderRadius: radius.button,
-      backgroundColor: c.accent,
-      paddingVertical: space.sm,
-      paddingHorizontal: space.lg,
-    },
-    tagButtonLabel: { ...typeScale.button, color: c.accentFg },
+    barRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+    count: { ...typeScale.label, color: c.ink2 },
+    // Etiketle at the row's right end.
+    tagButton: { marginLeft: 'auto' },
     error: { ...typeScale.caption, color: c.danger },
   });

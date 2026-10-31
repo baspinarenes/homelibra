@@ -1,9 +1,9 @@
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useOutbox } from '@/lib/outbox';
-import { type Colors, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * "Çevrimdışı · N not bekliyor" in the top bar while the phone is offline,

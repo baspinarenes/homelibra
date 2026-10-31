@@ -1,8 +1,11 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { Button } from '@homelibra/ui/button';
+import { StyleSheet, View } from 'react-native';
 
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
-
-/** The red action at the very foot of a form that deletes what the form edits ("Notu sil", "Kaynağı sil"). */
+/**
+ * The red action at the very foot of a form that deletes what the form
+ * edits ("Notu sil", "Kaynağı sil"): a `text` Button in `danger`, its word
+ * on the form's left edge.
+ */
 export function DangerAction({
   label,
   onPress,
@@ -14,25 +17,12 @@ export function DangerAction({
   busy?: boolean;
   disabled?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
-  const inactive = busy || disabled;
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      disabled={inactive}
-      style={({ pressed }) => [styles.action, disabled && styles.inactive, pressed && styles.pressed]}
-    >
-      {busy ? <ActivityIndicator color={styles.label.color} /> : <Text style={styles.label}>{label}</Text>}
-    </Pressable>
+    <View style={styles.place}>
+      <Button label={label} variant="text" tone="danger" busy={busy} disabled={disabled} onPress={onPress} />
+    </View>
   );
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    // At least 44pt to touch, as the design system asks.
-    action: { minHeight: 44, alignSelf: 'center', justifyContent: 'center', paddingHorizontal: space.lg },
-    label: { ...typeScale.button, fontSize: 15, color: c.danger },
-    inactive: { opacity: 0.45 },
-    pressed: { opacity: 0.7 },
-  });
+// The Button keeps 4 on each side of its word; this puts the word on the edge.
+const styles = StyleSheet.create({ place: { marginLeft: -4 } });
