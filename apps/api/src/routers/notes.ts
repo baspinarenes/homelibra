@@ -141,7 +141,7 @@ export const notesRouter = router({
         accountId: ctx.accountId,
         sourceId: excerptNote.sourceId,
         locator: excerptNote.locator,
-        // Corrected or derived, so the two Notes stay side by side in Locator order.
+        // The Excerpt's, so the two Notes stay side by side in Locator order.
         locatorSort: excerptNote.locatorSort,
         comment: excerptNote.comment,
       });
@@ -177,27 +177,16 @@ export const notesRouter = router({
   }),
 
   /**
-   * Changes only what the call names; blank means empty. A sort value given
-   * is kept as corrected; null derives it from the Locator again, and so
-   * does a new Locator text that comes without one (#2 §5). An edit that
-   * reaches a Note already deleted is ignored: the outbox sends a device's
-   * edits in order and must not stall on one (#36).
+   * Changes only what the call names; blank means empty. The sort value is
+   * never given: core's editedNote reads it from the Locator on every edit
+   * (#125). An edit that reaches a Note already deleted is ignored: the
+   * outbox sends a device's edits in order and must not stall on one (#36).
    */
   update: libraryProcedure
     .input(
       z.object({
         id: z.uuid(),
         locator: noteText,
-        // Whole numbers and a folio's half: what the field shows and reads back.
-        locatorSort: z
-          .array(
-            z
-              .number()
-              .nonnegative()
-              .refine((n) => Number.isInteger(n * 2), 'A whole number or a half'),
-          )
-          .min(1)
-          .nullish(),
         excerpt: noteText,
         comment: noteText,
         /** All the Note's Tags, by name: what the picker leaves on it. */

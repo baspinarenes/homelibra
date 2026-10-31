@@ -48,32 +48,15 @@ describe('editedNote', () => {
     expect(editedNote({ ...irade, comment: 'Naip.' }, { excerpt: null, comment: ' ' })).toBeNull();
   });
 
-  it('keeps a corrected sort value until the Locator text changes, then derives it again', () => {
-    const corrected = editedNote(irade, { locatorSort: [1234, 56, 29, 1310] })!;
-    expect(corrected.locatorSort).toEqual([1234, 56, 29, 1310]);
+  it('derives the sort value from the Locator on every edit, one that leaves the Locator as it was too', () => {
+    // Stored before the Sort value was only ever derived, or under an older rule.
+    const stale = { ...irade, locatorSort: [1234, 56, 29, 1310] };
 
-    expect(editedNote(corrected, { comment: 'Tarih önce yazılmış.' })?.locatorSort).toEqual([1234, 56, 29, 1310]);
-    // The same text, retyped with spaces around it, is no new Locator.
-    expect(editedNote(corrected, { locator: ' 29 Z 1310, 1234/56 ' })?.locatorSort).toEqual([1234, 56, 29, 1310]);
-    expect(editedNote(corrected, { locator: '29 Z 1310, 1234/57' })?.locatorSort).toEqual([29, 1310, 1234, 57]);
+    expect(editedNote(stale, { comment: 'Tarih önce yazılmış.' })?.locatorSort).toEqual([29, 1310, 1234, 56]);
+    expect(editedNote(stale, { locator: ' 29 Z 1310, 1234/56 ' })?.locatorSort).toEqual([29, 1310, 1234, 56]);
   });
 
-  it('drops the correction for null, deriving the sort value again', () => {
-    const corrected = { ...irade, locatorSort: [1234, 56, 29, 1310] };
-
-    expect(editedNote(corrected, { locatorSort: null })?.locatorSort).toEqual([29, 1310, 1234, 56]);
-  });
-
-  it('takes a corrected sort value given with a new Locator, and derives it again when asked', () => {
-    const onsoz = { locator: 'Önsöz', locatorSort: null, excerpt: null, comment: 'Giriş.' };
-
-    const corrected = editedNote(onsoz, { locator: 'Önsöz, s. xii', locatorSort: [0, 12] })!;
-    expect(corrected).toMatchObject({ locator: 'Önsöz, s. xii', locatorSort: [0, 12] });
-
-    expect(editedNote(corrected, { locatorSort: null })?.locatorSort).toBeNull();
-  });
-
-  it('gives a Note without a Locator no sort value, corrected or not', () => {
-    expect(editedNote(irade, { locator: ' ', locatorSort: [3] })).toMatchObject({ locator: null, locatorSort: null });
+  it('gives a Note without a Locator no sort value, whatever it had', () => {
+    expect(editedNote(irade, { locator: ' ' })).toMatchObject({ locator: null, locatorSort: null });
   });
 });

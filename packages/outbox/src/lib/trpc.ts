@@ -38,8 +38,8 @@ async function call(client: NotesClient, operation: Operation): Promise<string |
       await client.notes.detachComment.mutate({ id: operation.id, commentNoteId: operation.commentNoteId });
       return null;
     case 'updateNote': {
-      const { id, locator, locatorSort, excerpt, comment, tags } = operation;
-      await client.notes.update.mutate({ id, locator, locatorSort, excerpt, comment, tags });
+      const { id, locator, excerpt, comment, tags } = operation;
+      await client.notes.update.mutate({ id, locator, excerpt, comment, tags });
       return null;
     }
     case 'moveNote':

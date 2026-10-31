@@ -62,8 +62,7 @@ export async function mergeSelected(tx: LibraryTx, accountId: string, now: Date,
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'A Note merge takes Notes of one Source' });
   const tags = await tagsOfNotes(tx, accountId, ids);
   const merged = mergeNotes(notes.map((n) => ({ ...n, tags: (tags.get(n.id) ?? []).map((tag) => tag.name) })));
-  // The preview's corrections are an edit of the merged Note, with no sort value of its own: a
-  // corrected one stays with the Locator it was corrected for.
+  // The preview's corrections are an edit of the merged Note; its sort value is read from the Locator.
   const edited = editedNote(merged, edits);
   if (!edited) throw new TRPCError({ code: 'BAD_REQUEST', message: 'An Excerpt or a Comment is needed' });
   const others = ids.filter((id) => id !== merged.id);
