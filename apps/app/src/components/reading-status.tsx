@@ -1,13 +1,11 @@
 import type { AppRouter } from '@homelibra/api';
+import { Sheet } from '@homelibra/ui/sheet';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { PrimaryButton } from '@/components/primary-button';
-import { SecondaryButton } from '@/components/secondary-button';
 import { useOffline } from '@/lib/network';
 import { useTRPC } from '@/lib/trpc';
 import { offerUndo } from '@/lib/undo';
@@ -18,8 +16,8 @@ export type ReadingStatus = inferRouterOutputs<AppRouter>['sources']['get']['rea
 /**
  * The Reading status button in the Source page's heading (#13): "okunuyor"
  * or "✓ bitti", one tap turns it to the other. Finishing a Source with
- * untagged Notes since its last "Bitir" offers "Şimdi düzenle / Sonra"
- * once, there and then; nothing reminds later. Online only.
+ * untagged Notes since its last "Bitir" offers "Şimdi düzenle" once,
+ * there and then; nothing reminds later. Online only.
  */
 export function ReadingStatusButton({
   sourceId,
@@ -92,7 +90,10 @@ export function ReadingStatusButton({
   );
 }
 
-/** "N etiketsiz not var. Şimdi düzenle / Sonra": the sheet a finished Source may bring up. */
+/**
+ * "Kaynak bitti · N etiketsiz not var. Şimdi düzenle": the sheet a finished
+ * Source may bring up. Closing it leaves the Notes for later.
+ */
 function FinishSuggestion({
   visible,
   count,
@@ -106,25 +107,16 @@ function FinishSuggestion({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onLater}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('readingStatus.later')}
-          style={styles.dismiss}
-          onPress={onLater}
-        />
-        <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
-          <Text style={styles.message}>{t('readingStatus.untagged', { count })}</Text>
-          <View style={styles.actions}>
-            <SecondaryButton label={t('readingStatus.later')} onPress={onLater} />
-            <PrimaryButton label={t('readingStatus.organizeNow')} onPress={onOrganize} />
-          </View>
-        </View>
-      </View>
-    </Modal>
+    <Sheet
+      visible={visible}
+      title={t('readingStatus.finishedTitle')}
+      closeLabel={t('readingStatus.close')}
+      onClose={onLater}
+      primary={{ label: t('readingStatus.organizeNow'), onPress: onOrganize }}
+    >
+      <Text style={styles.message}>{t('readingStatus.untagged', { count })}</Text>
+    </Sheet>
   );
 }
 
@@ -179,21 +171,7 @@ const makeStyles = (c: Colors) =>
     finished: { borderColor: c.accent, backgroundColor: c.accentSoft },
     buttonLabel: { ...typeScale.caption, color: c.ink2 },
     finishedLabel: { color: c.accent },
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
-      gap: space.xl,
-      paddingHorizontal: space.lg,
-      paddingTop: space.xl,
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
-    },
     message: { ...typeScale.body, color: c.fg },
-    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.md },
     mark: {
       ...typeScale.caption,
       color: c.accent,
