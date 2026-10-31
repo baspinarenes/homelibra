@@ -1,12 +1,13 @@
-import Folder from 'lucide-react-native/icons/folder';
+import BookA from 'lucide-react-native/icons/book-a';
 import House from 'lucide-react-native/icons/house';
 import Library from 'lucide-react-native/icons/library';
 import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
 import type { ColorValue } from 'react-native';
 
-// Lucide line icons, as in the design system's TabBar. One import per icon keeps the bundle small.
-const icons = { home: House, sources: Library, collections: Folder, search: Search, settings: Settings } as const;
+// Lucide line icons, as in @homelibra/ui's TabBar, for the left rail on desktop web.
+// One import per icon keeps the bundle small.
+const icons = { home: House, sources: Library, collections: BookA, search: Search, settings: Settings } as const;
 
 export type TabIconName = keyof typeof icons;
 

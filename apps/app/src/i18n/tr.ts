@@ -2,11 +2,18 @@
 // keys are typed through i18next.d.ts, so a missing key fails typechecking.
 export const tr = {
   tabs: {
-    home: 'Ana sayfa',
+    home: 'Genel bakış',
     sources: 'Kaynaklar',
-    collections: 'Dosyalar',
+    collections: 'Dizin',
     search: 'Ara',
     settings: 'Ayarlar',
+  },
+  tabBar: {
+    // Read for Genel bakış while its dot shows.
+    homeToOrganize: 'Genel bakış, düzenlenecek kaynak var',
+  },
+  screenHeader: {
+    back: 'Geri',
   },
   collections: {
     viewLabel: 'Görünüm',
