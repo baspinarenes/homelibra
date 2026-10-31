@@ -1,8 +1,7 @@
 import { Button, type IconComponent } from '@homelibra/ui/button';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 /**
  * The Source form's identifier card: the ISBN (Kitap) or the DOI (Makale) on
@@ -88,7 +87,7 @@ const makeStyles = (c: Colors) =>
     // The button keeps its own height, centred on the input's.
     action: { justifyContent: 'center' },
     hint: { ...typeScale.caption, color: c.accentFg },
-    alert: { fontFamily: typeScale.button.fontFamily },
+    alert: typeScale.strong,
     // On-accent at 30%, set inline from the theme.
     foot: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: 10, borderTopWidth: 1 },
   });

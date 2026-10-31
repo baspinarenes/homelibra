@@ -2,6 +2,7 @@ import { HeaderTextAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Switch } from '@homelibra/ui/switch';
 import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -10,7 +11,6 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DefinitionTags } from '@/components/definition-tags';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * Yeni dosya (#128): the name, the Tags and the source-notes switch, and

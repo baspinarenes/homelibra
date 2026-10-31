@@ -1,7 +1,6 @@
 import { Button } from '@homelibra/ui/button';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { StyleSheet, Text, View } from 'react-native';
-
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * What stands in the middle of an empty or failed list: a title, a line on

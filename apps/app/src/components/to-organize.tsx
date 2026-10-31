@@ -1,6 +1,7 @@
 import type { AppRouter } from '@homelibra/api';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { Strip } from '@homelibra/ui/strip';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
@@ -11,7 +12,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type ToOrganize = inferRouterOutputs<AppRouter>['organize']['list'][number];
 

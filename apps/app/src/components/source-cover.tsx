@@ -1,4 +1,5 @@
 import type { SourceType } from '@homelibra/core/source';
+import { radius, useTheme } from '@homelibra/ui/theme';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
@@ -6,7 +7,6 @@ import { Image, StyleSheet, View } from 'react-native';
 import { type CoverSize, coverSizes, TemplateCover } from '@/components/template-cover';
 import { type Cover, useCoverImage } from '@/lib/cover';
 import { useTRPC } from '@/lib/trpc';
-import { radius, useTheme } from '@/theme';
 
 /**
  * A Source as lists and headings show it: its Cover, or its type's template

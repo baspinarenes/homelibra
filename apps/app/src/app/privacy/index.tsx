@@ -1,9 +1,9 @@
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { ContactLink, ContactSection, PrivacyDocumentsSection } from '@/components/privacy-sections';
 import { SettingsSection, SettingsText } from '@/components/settings-list';
-import { type Colors, space, useThemedStyles } from '@/theme';
 
 /**
  * Gizlilik without signing in, so a scholar who cannot get into the app

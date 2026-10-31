@@ -1,3 +1,4 @@
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -8,7 +9,6 @@ import { ListMessage } from '@/components/list-message';
 import { TagActions, TagMenuButton, type TagRef } from '@/components/tag-actions';
 import type { TagSort } from '@/lib/dizin-sort';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /** Every Tag in `sort`'s order; the rows stay on screen while another order loads. */
 export function useTags(sort: TagSort) {

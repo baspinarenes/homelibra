@@ -1,11 +1,11 @@
 import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useOutbox } from '@/lib/outbox';
-import { type Colors, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * Asked on sign-out while Notes still wait in the phone's outbox (#58, spec

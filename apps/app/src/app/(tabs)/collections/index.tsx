@@ -1,5 +1,6 @@
 import { Sheet, SheetChoices } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import { useState } from 'react';
@@ -16,7 +17,6 @@ import {
   saveTagSort,
   type TagSort,
 } from '@/lib/dizin-sort';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type DizinView = 'collections' | 'tags';
 

@@ -1,6 +1,8 @@
 // The design system's tokens and the hook that picks the light or dark set.
 export {
   type Colors,
+  coverColors,
+  coverStripe,
   fonts,
   palette,
   radius,

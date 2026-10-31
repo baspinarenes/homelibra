@@ -1,13 +1,14 @@
 import { type KnownNote, pendingNote } from '@homelibra/outbox';
+import { Button } from '@homelibra/ui/button';
+import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { DangerAction } from '@/components/danger-action';
-import { Field } from '@/components/field';
-import { PrimaryButton } from '@/components/primary-button';
 import { TagChips } from '@/components/tag-chips';
 import { type PickedSource, SourcePicker } from '@/components/source-picker';
 import { SourceTypeIcon } from '@/components/source-type-icon';
@@ -15,7 +16,6 @@ import { knownNotes } from '@/lib/known-notes';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { offerReceiptUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 /**
  * Notu düzenle, opened from a Note on the Source page. Its Kaynak field
@@ -146,9 +146,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         options={{
           title: t('noteEdit.title'),
           headerRight: () => (
-            <Pressable accessibilityRole="button" onPress={save} disabled={!canSave} hitSlop={8}>
-              <Text style={[styles.headerSave, !canSave && styles.inactive]}>{t('noteEdit.save')}</Text>
-            </Pressable>
+            <HeaderTextAction label={t('noteEdit.save')} onPress={save} disabled={!canSave} busy={busy === 'save'} />
           ),
         }}
       />
@@ -169,7 +167,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
             </Text>
           </Pressable>
         </View>
-        <Field
+        <TextField
           label={t('noteEdit.locator')}
           value={locator}
           onChangeText={setLocator}
@@ -177,23 +175,27 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <Field label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline quote />
-        <Field label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
+        <TextField label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline quote />
+        <TextField label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
         <View style={styles.tags}>
           <Text style={styles.label}>{t('tags.field').toLocaleUpperCase('tr')}</Text>
           <TagChips names={tags} pickerTitle={t('tags.noteTitle')} onChange={setTags} />
         </View>
         {!hasText && <Text style={styles.error}>{t('noteEdit.needsText')}</Text>}
         {failed === 'save' && <Text style={styles.error}>{t('noteEdit.saveFailed')}</Text>}
-        <PrimaryButton label={t('noteEdit.save')} onPress={save} busy={busy === 'save'} disabled={!canSave} />
         <View style={styles.foot}>
           {failed === 'delete' && <Text style={styles.error}>{t('deletion.deleteFailed')}</Text>}
-          <DangerAction
-            label={t('deletion.deleteNote')}
-            onPress={() => void remove()}
-            busy={busy === 'delete'}
-            disabled={busy === 'save'}
-          />
+          {/* The Button keeps 4 on each side of its word; this puts the word on the form's edge. */}
+          <View style={styles.deletePlace}>
+            <Button
+              label={t('deletion.deleteNote')}
+              variant="text"
+              tone="danger"
+              onPress={() => void remove()}
+              busy={busy === 'delete'}
+              disabled={busy === 'save'}
+            />
+          </View>
         </View>
       </View>
       <SourcePicker
@@ -221,7 +223,7 @@ const makeStyles = (c: Colors) =>
     error: { ...typeScale.body, color: c.danger },
     warning: { ...typeScale.body, color: c.warn },
     sourceField: { gap: 6 },
-    label: { ...typeScale.micro, color: c.muted },
+    label: { ...typeScale.fieldLabel, color: c.muted },
     source: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -231,13 +233,12 @@ const makeStyles = (c: Colors) =>
       paddingVertical: 10,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
+      borderRadius: radius.control,
       backgroundColor: c.surface,
     },
     sourceTitle: { ...typeScale.sourceTitleSm, flex: 1, color: c.fg },
     sourceGone: { ...typeScale.label, flex: 1, color: c.warn },
     pressed: { opacity: 0.7 },
     foot: { gap: space.sm, marginTop: space.lg },
-    headerSave: { ...typeScale.button, fontSize: 15, color: c.accent, paddingHorizontal: space.sm },
-    inactive: { opacity: 0.45 },
+    deletePlace: { alignSelf: 'flex-start', marginLeft: -4 },
   });

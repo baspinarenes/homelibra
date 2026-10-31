@@ -2,13 +2,13 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Button } from '@homelibra/ui/button';
 import { SectionHeading } from '@homelibra/ui/section-heading';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { PrimaryButton } from '@/components/primary-button';
 import { LostNotesNotice, useLostNoteCount } from '@/components/lost-notes-notice';
 import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
@@ -16,7 +16,6 @@ import { SourceCover } from '@/components/source-cover';
 import { ToOrganizeStrip, useToOrganize } from '@/components/to-organize';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type LastNoted = NonNullable<inferRouterOutputs<AppRouter>['sources']['lastNoted']>;
 
@@ -81,7 +80,7 @@ export default function HomeScreen() {
       <View style={styles.center}>
         <Text style={styles.lead}>{t('home.takeNoteLead')}</Text>
         <View style={styles.action}>
-          <PrimaryButton label={t('home.takeNote')} onPress={() => router.navigate('/sources')} />
+          <Button label={t('home.takeNote')} onPress={() => router.navigate('/sources')} />
         </View>
       </View>
     );
@@ -92,7 +91,7 @@ export default function HomeScreen() {
       <Text style={styles.title}>{t('home.emptyTitle')}</Text>
       <Text style={styles.lead}>{t('home.emptyLead')}</Text>
       <View style={styles.action}>
-        <PrimaryButton label={t('home.addFirstSource')} onPress={() => router.push('/source/new')} />
+        <Button label={t('home.addFirstSource')} onPress={() => router.push('/source/new')} />
       </View>
     </View>
   );

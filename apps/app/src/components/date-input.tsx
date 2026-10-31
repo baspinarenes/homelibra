@@ -16,13 +16,12 @@ import {
 import { Button } from '@homelibra/ui/button';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet } from '@homelibra/ui/sheet';
+import { type Colors, radius, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { Wheels } from '@homelibra/ui/wheels';
 import Info from 'lucide-react-native/icons/info';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Keyboard, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { type Colors, radius, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 /** A Date as the form holds it: Gün and Yıl as text, Ay as a number. */
 export type DateDraft = { calendar: Calendar; day: string; month: number | null; year: string };

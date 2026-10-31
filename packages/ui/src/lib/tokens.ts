@@ -104,6 +104,9 @@ export const type = {
   excerpt: { fontFamily: fonts.quote, fontSize: 16, lineHeight: 25 }, // + 2px quoteBar left rule
   excerptSm: { fontFamily: fonts.quote, fontSize: 15, lineHeight: 23 },
   body: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
+  // Heavier Reddit Sans at the size of the line it sits in: a link or a name inside running text;
+  // with `body` it is the design system's t-strong.
+  strong: { fontFamily: fonts.sansSemiBold },
   button: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 18 },
   action: { fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 18 }, // Button, a header's Kaydet
   label: { fontFamily: fonts.sansMedium, fontSize: 13.5, lineHeight: 18 },
@@ -116,3 +119,18 @@ export const type = {
   locator: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: 17 },
   identifier: { fontFamily: fonts.monoRegular, fontSize: 15, lineHeight: 22 }, // an ISBN or a DOI, typed and placeholder
 } as const;
+
+// A template cover's ground, one per Source type, the same in both themes; light stripes run over it.
+export const coverColors = {
+  book: '#A0634A',
+  article: '#5E7A9A',
+  thesis: '#8A6B8A',
+  archive: '#7A6B4A',
+  manuscript: '#8C6A3C',
+  periodical: '#6B8A6B',
+  recording: '#9A6B7A',
+  webPage: '#4F7F86',
+  other: '#6B6B6B',
+} as const;
+
+export const coverStripe = 'rgba(255,255,255,0.18)';

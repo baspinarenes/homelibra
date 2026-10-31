@@ -6,6 +6,7 @@ import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
@@ -22,11 +23,9 @@ import {
   yearRangeLabel,
   yearRangeOf,
 } from '@/components/date-filter';
-import { PrimaryButton } from '@/components/primary-button';
 import type { ReadingStatus } from '@/components/reading-status';
 import { SourceListRow } from '@/components/source-list-row';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Sort = 'last' | 'title' | 'author' | 'date';
 
@@ -97,7 +96,7 @@ export default function SourcesScreen() {
             <Text style={styles.title}>{t('sources.emptyTitle')}</Text>
             <Text style={styles.lead}>{t('sources.emptyLead')}</Text>
             <View style={styles.action}>
-              <PrimaryButton label={t('sources.add')} onPress={addSource} />
+              <Button label={t('sources.add')} onPress={addSource} />
             </View>
           </>
         )}

@@ -1,6 +1,7 @@
 import { NOT_INVITED } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
 import { AppLogo, GoogleLogo } from '@homelibra/ui/logo';
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -10,7 +11,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { InviteNotice } from '@/components/invite-notice';
 import { authClient } from '@/lib/auth-client';
-import { type Colors, fonts, type as typeScale, useThemedStyles } from '@/theme';
 
 type Message = { kind: 'notInvited' } | { kind: 'error'; text: string } | null;
 
@@ -113,5 +113,5 @@ const makeStyles = (c: Colors) =>
     actions: { gap: 12, paddingTop: 40 },
     error: { ...typeScale.label, color: c.danger, textAlign: 'center' },
     legal: { ...typeScale.caption, color: c.muted, textAlign: 'center', paddingTop: 8 },
-    link: { fontFamily: fonts.sansSemiBold, color: c.accent },
+    link: { ...typeScale.strong, color: c.accent },
   });

@@ -1,11 +1,10 @@
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Sheet } from '@homelibra/ui/sheet';
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import Info from 'lucide-react-native/icons/info';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
-
-import { type Colors, fonts, type as typeScale, useThemedStyles } from '@/theme';
 
 type Row = { term: string; description: string };
 
@@ -64,7 +63,7 @@ const makeStyles = (c: Colors) =>
     label: { ...typeScale.fieldLabel, color: c.muted },
     row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingTop: 2, paddingBottom: 10 },
     ruled: { borderTopWidth: 1, borderTopColor: c.lineSoft, paddingTop: 10 },
-    term: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: c.fg, width: 96 },
-    code: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 20, color: c.ink3, width: 96 },
-    description: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 20, color: c.ink2, flex: 1 },
+    term: { ...typeScale.body, ...typeScale.strong, fontSize: 14, lineHeight: 20, color: c.fg, width: 96 },
+    code: { ...typeScale.locator, fontSize: 13, lineHeight: 20, color: c.ink3, width: 96 },
+    description: { ...typeScale.body, fontSize: 14, lineHeight: 20, color: c.ink2, flex: 1 },
   });

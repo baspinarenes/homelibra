@@ -1,7 +1,9 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { normalizeIsbn } from '@homelibra/core/source';
+import { Checkbox } from '@homelibra/ui/checkbox';
 import { Sheet } from '@homelibra/ui/sheet';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import ScanBarcode from 'lucide-react-native/icons/scan-barcode';
@@ -9,13 +11,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Checkbox } from '@/components/checkbox';
 import { IdentifierCard } from '@/components/identifier-card';
 import { CoverImage } from '@/components/source-cover';
 import type { Cover } from '@/lib/cover';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 export type IsbnSuggestion = NonNullable<inferRouterOutputs<AppRouter>['lookups']['isbn']>;
 

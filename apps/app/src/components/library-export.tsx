@@ -1,13 +1,13 @@
+import { Button } from '@homelibra/ui/button';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { PrimaryButton } from '@/components/primary-button';
 import { SettingsText } from '@/components/settings-list';
 import { apiUrl } from '@/lib/api-url';
 import { downloadLibraryExport } from '@/lib/library-export';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * "Kütüphaneni indir" (#40, stories 16-18): the whole Library as one ZIP,
@@ -32,7 +32,7 @@ export function LibraryExportDownload() {
 
   return (
     <View style={styles.block}>
-      <PrimaryButton label={t('libraryExport.download')} busy={download.isPending} onPress={() => download.mutate()} />
+      <Button label={t('libraryExport.download')} busy={download.isPending} onPress={() => download.mutate()} />
       {download.isPending ? <Text style={styles.note}>{t('libraryExport.preparing')}</Text> : null}
       {download.isError ? <Text style={styles.error}>{t('libraryExport.failed')}</Text> : null}
     </View>

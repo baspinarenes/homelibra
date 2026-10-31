@@ -2,7 +2,7 @@ import { tagName, tagSuggestKey } from '@homelibra/core/tag';
 import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
 import { Sheet, SheetAction } from '@homelibra/ui/sheet';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, fonts, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Merge from 'lucide-react-native/icons/merge';
 import PenLine from 'lucide-react-native/icons/pen-line';
@@ -303,5 +303,5 @@ const makeStyles = (c: Colors) =>
     counts: { ...typeScale.locator, fontSize: 11.5, letterSpacing: 0, color: c.muted },
     status: { paddingVertical: space.xl },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    strong: { fontFamily: fonts.sansSemiBold },
+    strong: typeScale.strong,
   });

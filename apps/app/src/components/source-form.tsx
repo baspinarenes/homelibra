@@ -18,6 +18,15 @@ import {
 } from '@homelibra/core/source';
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
 import { TextField } from '@homelibra/ui/text-field';
+import {
+  type Colors,
+  radius,
+  space,
+  type as typeScale,
+  useTheme,
+  useThemedStyles,
+  wideMinWidth,
+} from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
@@ -33,7 +42,6 @@ import { SourceTypeIcon } from '@/components/source-type-icon';
 import { useOffline } from '@/lib/network';
 import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles, wideMinWidth } from '@/theme';
 
 type TextValues = Partial<Record<SourceIdentifier | SourceTextField, string>>;
 
@@ -443,7 +451,7 @@ const makeStyles = (c: Colors) =>
       paddingHorizontal: 9,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
+      borderRadius: radius.control,
       backgroundColor: c.surface,
     },
     typeChipSelected: { borderColor: c.accent, backgroundColor: c.accentSub },

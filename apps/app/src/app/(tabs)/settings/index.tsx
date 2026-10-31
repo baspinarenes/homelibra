@@ -1,4 +1,13 @@
 import { Segment } from '@homelibra/ui/segment';
+import {
+  type Colors,
+  setThemePreference,
+  space,
+  type ThemePreference,
+  type as typeScale,
+  useThemedStyles,
+  useThemePreference,
+} from '@homelibra/ui/theme';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -8,15 +17,6 @@ import { ContactSection, PrivacyDocumentsSection } from '@/components/privacy-se
 import { SettingsRow, SettingsRows, SettingsSection } from '@/components/settings-list';
 import { SignOutButton } from '@/components/sign-out-button';
 import { authClient } from '@/lib/auth-client';
-import {
-  type Colors,
-  setThemePreference,
-  space,
-  type ThemePreference,
-  type as typeScale,
-  useThemedStyles,
-  useThemePreference,
-} from '@/theme';
 
 /**
  * Ayarlar, on one page (#113): the theme, the Account's own pages (address,

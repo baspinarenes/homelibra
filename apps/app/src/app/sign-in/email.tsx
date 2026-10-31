@@ -1,6 +1,7 @@
 import { NOT_INVITED } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
 import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +9,6 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 're
 
 import { InviteNotice } from '@/components/invite-notice';
 import { authClient } from '@/lib/auth-client';
-import { type Colors, type as typeScale, useThemedStyles } from '@/theme';
 
 type Message = { kind: 'notInvited' } | { kind: 'sendFailed' } | { kind: 'invalidCode' } | null;
 

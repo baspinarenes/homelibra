@@ -1,5 +1,6 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -7,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, SectionList, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { MarkedText, type Match, type Matches } from '@/components/note-search';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 /** What a Collection's view and a Tag's page have in common. */
 export type ViewData = Pick<
