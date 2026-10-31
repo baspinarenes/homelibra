@@ -4,14 +4,14 @@ import { Button } from '@homelibra/ui/button';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Segment } from '@homelibra/ui/segment';
-import { Sheet } from '@homelibra/ui/sheet';
+import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -250,7 +250,7 @@ function FilterSheet({
       primary={{ label: t('sources.show', { count }), onPress: onApply, disabled: yearMissing }}
     >
       <View style={styles.sheet}>
-        <Field label={t('sources.sort')}>
+        <SheetField label={t('sources.sort')}>
           <Segment
             label={t('sources.sort')}
             options={[
@@ -263,8 +263,8 @@ function FilterSheet({
             onChange={(sort) => onChange({ ...shown, sort })}
             block
           />
-        </Field>
-        <Field label={t('sources.types')}>
+        </SheetField>
+        <SheetField label={t('sources.types')}>
           <ChipRow>
             {sourceTypes.map((type) => (
               <Chip
@@ -276,22 +276,12 @@ function FilterSheet({
               />
             ))}
           </ChipRow>
-        </Field>
-        <Field label={t('sources.dates')}>
+        </SheetField>
+        <SheetField label={t('sources.dates')}>
           <YearRangeFields value={shown.dates} onChange={(dates) => onChange({ ...shown, dates })} />
-        </Field>
+        </SheetField>
       </View>
     </Sheet>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label.toLocaleUpperCase('tr')}</Text>
-      {children}
-    </View>
   );
 }
 
@@ -350,6 +340,4 @@ const makeStyles = (c: Colors) =>
     tabEmptyAction: { marginTop: space.xs },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     sheet: { gap: 18 },
-    field: { gap: 6 },
-    fieldLabel: { ...typeScale.fieldLabel, color: c.muted },
   });
