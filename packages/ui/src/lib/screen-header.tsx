@@ -22,6 +22,7 @@ export function ScreenHeader({
   onBack,
   backLabel,
   backIcon = 'arrow',
+  titleAccessory,
   right,
 }: {
   variant?: 'pushed' | 'root';
@@ -39,6 +40,8 @@ export function ScreenHeader({
   backLabel?: string;
   /** `close` draws an X in the arrow's place, for a header being edited (Vazgeç). */
   backIcon?: 'arrow' | 'close';
+  /** A tab root's: an icon right beside the title (Ara's Arama ipuçları), the actions still at the right. */
+  titleAccessory?: ReactNode;
   /** The actions: `HeaderTextAction`s and `HeaderIconAction`s. */
   right?: ReactNode;
 }) {
@@ -56,13 +59,16 @@ export function ScreenHeader({
   if (variant === 'root') {
     return (
       <View style={[styles.root, { paddingTop: top + 14 }]}>
-        {titled ? (
-          <Text role="heading" style={styles.rootTitle} numberOfLines={1}>
-            {title}
-          </Text>
-        ) : (
-          <View style={styles.slot}>{title}</View>
-        )}
+        <View style={[styles.rootHead, !titled && styles.slot]}>
+          {titled ? (
+            <Text role="heading" style={styles.rootTitle} numberOfLines={1}>
+              {title}
+            </Text>
+          ) : (
+            <View style={styles.slot}>{title}</View>
+          )}
+          {titleAccessory}
+        </View>
         {right && <View style={styles.actions}>{right}</View>}
       </View>
     );
@@ -158,7 +164,8 @@ export function HeaderIconAction({
   /** What screen readers call it. */
   label: string;
   onPress: () => void;
-  tone?: 'accent' | 'danger';
+  /** `muted` for an icon that only explains (Arama ipuçları). */
+  tone?: 'accent' | 'danger' | 'muted';
   size?: 20 | 24;
   disabled?: boolean;
   dot?: boolean;
@@ -191,6 +198,7 @@ const makeStyles = (c: Colors) =>
       paddingRight: 12,
       backgroundColor: c.page,
     },
+    rootHead: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1, minWidth: 0 },
     rootTitle: { ...typeScale.display, color: c.fg, flexShrink: 1 },
     pushed: { backgroundColor: c.page },
     bar: { height: 56, flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 6 },
