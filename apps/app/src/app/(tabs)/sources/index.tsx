@@ -1,49 +1,87 @@
+import { type CalendarDate, inYearRange } from '@homelibra/core/date';
+import { type SourceType, sourceTypes } from '@homelibra/core/source';
 import { Button } from '@homelibra/ui/button';
+import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
+import { Segment } from '@homelibra/ui/segment';
+import { Sheet } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import { DateFilter, useDateFilter } from '@/components/date-filter';
+import {
+  emptyYearRange,
+  hasYear,
+  type YearRangeDraft,
+  YearRangeFields,
+  yearRangeLabel,
+  yearRangeOf,
+} from '@/components/date-filter';
 import { PrimaryButton } from '@/components/primary-button';
 import type { ReadingStatus } from '@/components/reading-status';
-import { Segment } from '@/components/segment';
 import { SourceListRow } from '@/components/source-list-row';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Sort = 'last' | 'title' | 'author' | 'date';
 
+/** What Süz ve sırala sets: the order, and the Tür and Tarih filters; a filter with nothing chosen keeps all. */
+type Choices = { sort: Sort; types: SourceType[]; dates: YearRangeDraft };
+
+const initial: Choices = { sort: 'last', types: [], dates: emptyYearRange };
+
+/** Whether the Tür or the Tarih filter narrows the list. */
+const filtering = ({ types, dates }: Choices) => types.length > 0 || yearRangeOf(dates) !== null;
+
+/** Every filter off, the order and the calendar kept. */
+const unfiltered = (choices: Choices): Choices => ({
+  ...choices,
+  types: [],
+  dates: { ...emptyYearRange, calendar: choices.dates.calendar },
+});
+
+/** Whether the filters keep a Source, by the rule `sources.list` follows: for the sheet's live count. */
+function keeps({ types, dates }: Choices) {
+  const range = yearRangeOf(dates);
+  return (source: { type: SourceType; date: CalendarDate | null }) =>
+    (types.length === 0 || types.includes(source.type)) && (!range || inYearRange(source.date, range));
+}
+
 /**
  * Kaynaklar: every Source, by Son not (the default), Başlık, Yazar or Tarih,
  * under two tabs by Reading status, Okunuyor (open first) and Bitti, each
- * with its count. The header's Süz icon opens the order and the Tarih filter,
- * and shows a dot while the filter narrows the list; the filter hides the
- * undated and says how many. A row opens the Source page, where its Notes
- * are captured.
+ * with its count. The header's Süz icon opens Süz ve sırala (#122): the
+ * order, the Tür filter and the Tarih filter, applied by "N kaynağı göster".
+ * While a filter is on the icon has a dot, the tabs count what it keeps,
+ * and a chip under them names it, × taking it off; the Tarih filter hides
+ * the undated and says how many. A row opens the Source page, where its
+ * Notes are captured.
  */
 export default function SourcesScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
-  const [sort, setSort] = useState<Sort>('last');
   const [tab, setTab] = useState<ReadingStatus>('reading');
-  const [controlsOpen, setControlsOpen] = useState(false);
-  const dates = useDateFilter();
+  const [choices, setChoices] = useState(initial);
+  // The sheet's choices while it is open; "Kapat" drops them.
+  const [draft, setDraft] = useState<Choices | null>(null);
+  const { sort, types } = choices;
+  const dates = yearRangeOf(choices.dates);
+  const filterOn = filtering(choices);
   // Keep the rows on screen while the other order loads.
   const all = useQuery({ ...trpc.sources.list.queryOptions({ sort }), placeholderData: keepPreviousData });
   const filtered = useQuery({
-    ...trpc.sources.list.queryOptions({ sort, dates: dates.range }),
-    enabled: dates.range !== null,
+    ...trpc.sources.list.queryOptions({ sort, dates, types: types.length > 0 ? types : null }),
+    enabled: filterOn,
     placeholderData: keepPreviousData,
   });
-  const sources = dates.range ? filtered : all;
+  const sources = filterOn ? filtered : all;
   const addSource = () => router.push('/source/new');
 
   if (all.isPending || all.isError || all.data.length === 0) {
@@ -68,15 +106,23 @@ export default function SourcesScreen() {
   }
 
   const rows = sources.data ?? [];
-  const undated = dates.range ? all.data.filter((source) => !source.date).length : 0;
+  // The Sources of the chosen types that the Tarih filter hides for having no Date.
+  const ofTypes = keeps({ ...choices, dates: emptyYearRange });
+  const undated = dates ? all.data.filter((source) => !source.date && ofTypes(source)).length : 0;
   const reading = rows.filter((source) => source.readingStatus === 'reading');
   const finished = rows.filter((source) => source.readingStatus === 'finished');
-  const filterOn = dates.range !== null;
+  const clearFilters = () => setChoices(unfiltered(choices));
 
   const empty = () => {
     if (sources.isPending) return <ActivityIndicator color={styles.spinner.color} />;
-    if (sources.isError || filterOn) {
-      return <Text style={styles.empty}>{t(sources.isError ? 'sources.loadFailed' : 'dateFilter.noSources')}</Text>;
+    if (sources.isError) return <Text style={styles.empty}>{t('sources.loadFailed')}</Text>;
+    if (filterOn) {
+      return (
+        <View style={styles.tabEmpty}>
+          <Text style={styles.lead}>{t('sources.filterEmpty')}</Text>
+          <Button variant="text" label={t('sources.clearFilter')} onPress={clearFilters} />
+        </View>
+      );
     }
     if (tab === 'finished') return <Text style={styles.empty}>{t('sources.finishedEmpty')}</Text>;
     return (
@@ -94,10 +140,7 @@ export default function SourcesScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <HeaderActions
-              filter={{ on: filterOn, onPress: () => setControlsOpen((open) => !open) }}
-              onAdd={addSource}
-            />
+            <HeaderActions filter={{ on: filterOn, onPress: () => setDraft(choices) }} onAdd={addSource} />
           ),
         }}
       />
@@ -117,26 +160,30 @@ export default function SourcesScreen() {
         contentContainerStyle={styles.content}
         data={tab === 'reading' ? reading : finished}
         keyExtractor={(source) => source.id}
-        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
-          controlsOpen || undated > 0 ? (
-            <View style={styles.controls}>
-              {controlsOpen && (
-                <>
-                  <Segment
-                    label={t('sources.sortLabel')}
-                    options={[
-                      { value: 'last', label: t('sourceList.byLast') },
-                      { value: 'date', label: t('sources.byDate') },
-                      { value: 'author', label: t('sources.byAuthor') },
-                      { value: 'title', label: t('sources.byTitle') },
-                    ]}
-                    value={sort}
-                    onChange={setSort}
+          filterOn ? (
+            <View style={styles.filters}>
+              <ChipRow>
+                {dates && (
+                  <Chip
+                    label={yearRangeLabel(dates, t('dateFilter.open'))}
+                    selected
+                    removable
+                    onPress={() => setChoices({ ...choices, dates: unfiltered(choices).dates })}
                   />
-                  <DateFilter draft={dates.draft} onChange={dates.setDraft} />
-                </>
-              )}
+                )}
+                {types.length > 0 && (
+                  <Chip
+                    label={sourceTypes
+                      .filter((type) => types.includes(type))
+                      .map((type) => t(`sourceTypes.${type}.label`))
+                      .join(', ')}
+                    selected
+                    removable
+                    onPress={() => setChoices({ ...choices, types: [] })}
+                  />
+                )}
+              </ChipRow>
               {undated > 0 && <Text style={styles.hint}>{t('dateFilter.hiddenSources', { count: undated })}</Text>}
             </View>
           ) : undefined
@@ -144,13 +191,114 @@ export default function SourcesScreen() {
         ListEmptyComponent={empty()}
         renderItem={({ item: source, index }) => <SourceListRow source={source} divided={index > 0} />}
       />
+      <FilterSheet
+        draft={draft}
+        onChange={setDraft}
+        count={draft ? all.data.filter(keeps(draft)).length : 0}
+        onApply={() => {
+          if (draft) setChoices(draft);
+          setDraft(null);
+        }}
+        onClose={() => setDraft(null)}
+      />
+    </View>
+  );
+}
+
+/**
+ * Süz ve sırala: Sırala (Son not, Başlık, Yazar, Tarih; no direction),
+ * Tür (the nine types, any number chosen) and Tarih (one calendar, two
+ * years); Temizle and "N kaynağı göster", N following the choices.
+ */
+function FilterSheet({
+  draft,
+  onChange,
+  count,
+  onApply,
+  onClose,
+}: {
+  /** Null while the sheet is closed. */
+  draft: Choices | null;
+  onChange: (draft: Choices) => void;
+  count: number;
+  onApply: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
+  // The last choices stay on screen while the sheet slides away.
+  const [shown, setShown] = useState(draft ?? initial);
+  if (draft && draft !== shown) setShown(draft);
+  const toggle = (type: SourceType) =>
+    onChange({
+      ...shown,
+      types: shown.types.includes(type) ? shown.types.filter((other) => other !== type) : [...shown.types, type],
+    });
+  // A year its calendar does not have (1400 r.) cannot be applied.
+  const yearMissing = hasYear(shown.dates) && yearRangeOf(shown.dates) === null;
+
+  return (
+    <Sheet
+      visible={draft !== null}
+      title={t('sources.filter')}
+      closeLabel={t('sources.close')}
+      onClose={onClose}
+      secondary={{
+        label: t('sources.clear'),
+        onPress: () => onChange(unfiltered(shown)),
+        disabled: shown.types.length === 0 && !hasYear(shown.dates),
+      }}
+      primary={{ label: t('sources.show', { count }), onPress: onApply, disabled: yearMissing }}
+    >
+      <View style={styles.sheet}>
+        <Field label={t('sources.sort')}>
+          <Segment
+            label={t('sources.sort')}
+            options={[
+              { value: 'last', label: t('sourceList.byLast') },
+              { value: 'title', label: t('sources.byTitle') },
+              { value: 'author', label: t('sources.byAuthor') },
+              { value: 'date', label: t('sources.byDate') },
+            ]}
+            value={shown.sort}
+            onChange={(sort) => onChange({ ...shown, sort })}
+            block
+          />
+        </Field>
+        <Field label={t('sources.types')}>
+          <ChipRow>
+            {sourceTypes.map((type) => (
+              <Chip
+                key={type}
+                label={t(`sourceTypes.${type}.label`)}
+                tone="outline"
+                selected={shown.types.includes(type)}
+                onPress={() => toggle(type)}
+              />
+            ))}
+          </ChipRow>
+        </Field>
+        <Field label={t('sources.dates')}>
+          <YearRangeFields value={shown.dates} onChange={(dates) => onChange({ ...shown, dates })} />
+        </Field>
+      </View>
+    </Sheet>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label.toLocaleUpperCase('tr')}</Text>
+      {children}
     </View>
   );
 }
 
 /**
  * The header's icons: Süz ve sırala, once there are Sources to narrow, with
- * a dot while the filter is on; then Kaynak ekle.
+ * a dot while a filter is on; then Kaynak ekle.
  */
 function HeaderActions({ filter, onAdd }: { filter?: { on: boolean; onPress: () => void }; onAdd: () => void }) {
   const { t } = useTranslation();
@@ -191,7 +339,7 @@ const makeStyles = (c: Colors) =>
     action: { marginTop: space.lg },
     spinner: { color: c.accent },
     headerActions: { flexDirection: 'row', alignItems: 'center' },
-    controls: { gap: space.md, paddingTop: space.md },
+    filters: { gap: space.sm, paddingTop: space.md },
     hint: { ...typeScale.caption, color: c.muted },
     tabEmpty: {
       flex: 1,
@@ -202,4 +350,7 @@ const makeStyles = (c: Colors) =>
     },
     tabEmptyAction: { marginTop: space.xs },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
+    sheet: { gap: 18 },
+    field: { gap: 6 },
+    fieldLabel: { ...typeScale.fieldLabel, color: c.muted },
   });

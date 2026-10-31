@@ -65,3 +65,40 @@ describe('Kaynaklar by Son not', () => {
     expect(row?.noteCount).toBe(1);
   });
 });
+
+// Kaynaklar's Süz ve sırala (#122): the Tür filter keeps the Sources of the
+// chosen types; with none chosen, every type.
+describe('Tür filter in Kaynaklar', () => {
+  it('keeps only the Sources of the chosen types, with the Tarih filter on top', async () => {
+    const api = await scholar();
+    await api.sources.create({ type: 'periodical', title: 'Tanin', date: { calendar: 'rumi', year: 1326 } });
+    await api.sources.create({ type: 'archive', title: 'DH.MKT 1234/56', date: { calendar: 'hijri', year: 1327 } });
+    await api.sources.create({ type: 'archive', title: 'A.MKT' });
+    await api.sources.create({
+      type: 'book',
+      title: 'Taşrada Kadı ve Naib',
+      date: { calendar: 'gregorian', year: 1993 },
+    });
+
+    const titles = async (input: Omit<Parameters<Api['sources']['list']>[0], 'sort'>) =>
+      (await api.sources.list({ sort: 'title', ...input })).map((row) => row.title);
+
+    expect(await titles({ types: ['archive', 'periodical'] })).toEqual(['A.MKT', 'DH.MKT 1234/56', 'Tanin']);
+    expect(
+      await titles({
+        types: ['archive', 'periodical'],
+        dates: { from: { calendar: 'rumi', year: 1324 }, to: { calendar: 'rumi', year: 1330 } },
+      }),
+    ).toEqual(['DH.MKT 1234/56', 'Tanin']);
+  });
+
+  it('keeps every type when none is chosen', async () => {
+    const api = await scholar();
+    await api.sources.create({ type: 'periodical', title: 'Tanin' });
+    await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib' });
+
+    for (const types of [[], null, undefined]) {
+      expect(await api.sources.list({ sort: 'title', types })).toHaveLength(2);
+    }
+  });
+});
