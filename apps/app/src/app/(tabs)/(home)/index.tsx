@@ -1,5 +1,7 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
+import { Button } from '@homelibra/ui/button';
+import { SectionHeading } from '@homelibra/ui/section-heading';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
@@ -7,11 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/primary-button';
-import { LostNotesNotice } from '@/components/lost-notes-notice';
+import { LostNotesNotice, useLostNoteCount } from '@/components/lost-notes-notice';
 import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
 import { SourceCover } from '@/components/source-cover';
-import { ToOrganizeStrip } from '@/components/to-organize';
+import { ToOrganizeStrip, useToOrganize } from '@/components/to-organize';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -25,6 +27,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const home = useQuery(trpc.sources.home.queryOptions());
   const lastNoted = useQuery(trpc.sources.lastNoted.queryOptions());
+  const lostNotes = useLostNoteCount();
+  const toOrganize = useToOrganize();
 
   if (home.isPending || lastNoted.isPending) {
     return (
@@ -37,17 +41,34 @@ export default function HomeScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.lead}>{t('home.loadFailed')}</Text>
+        {/* The button keeps to its start edge; this box centres it. */}
+        <View>
+          <Button
+            variant="text"
+            label={t('home.retry')}
+            busy={home.isFetching || lastNoted.isFetching}
+            onPress={() => {
+              void home.refetch();
+              void lastNoted.refetch();
+            }}
+          />
+        </View>
       </View>
     );
   }
 
-  // The last noted Source heads Ana sayfa; the sections under it come with their tickets.
+  // What waits on the scholar heads Genel bakış in yellow strips; then where they left off.
   if (lastNoted.data) {
+    const alerts = lostNotes > 0 || !!toOrganize.data?.length;
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        <LostNotesNotice />
-        <LastNotedSection lastNoted={lastNoted.data} />
-        <ToOrganizeStrip />
+        {alerts && (
+          <View style={styles.alerts}>
+            <LostNotesNotice />
+            <ToOrganizeStrip />
+          </View>
+        )}
+        <LastNotedSection lastNoted={lastNoted.data} afterAlerts={alerts} />
         <ReadingList exceptId={lastNoted.data.source.id} />
         <RecentTags />
       </ScrollView>
@@ -78,30 +99,32 @@ export default function HomeScreen() {
 }
 
 /**
- * Son not aldığın (#68, 3rd round): an unboxed section, all of it opening the
- * Source page as for reading; the small "Devam et" opens it ready to write,
- * the box open with the last Locator carried over (#87).
+ * Kaldığın yer (#131): the last noted Source and that Note, unboxed. All of
+ * it is one press that opens the Source ready to write, the box open with
+ * the last Locator carried over (#87).
  */
-function LastNotedSection({ lastNoted: { source, note } }: { lastNoted: LastNoted }) {
+function LastNotedSection({
+  lastNoted: { source, note },
+  afterAlerts,
+}: {
+  lastNoted: LastNoted;
+  afterAlerts: boolean;
+}) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
+  const byline = [source.author, source.date && formatDate(source.date), note.locator].filter(Boolean).join(' · ');
   const text = note.excerpt ?? note.comment;
   return (
-    // Two buttons one under the other: a button may not hold another on web.
-    <View style={styles.lastNoted}>
+    <View style={[styles.lastNoted, afterAlerts && styles.lastNotedAfterAlerts]}>
+      <SectionHeading title={t('home.lastNoted')} count={elapsed(t, note.capturedAt)} />
       <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
+        role="button"
+        onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id, write: '1' } })}
         style={({ pressed }) => [styles.lastNotedBody, pressed && styles.pressed]}
       >
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionLabel}>{t('home.lastNoted').toLocaleUpperCase('tr')}</Text>
-          <Text style={styles.when}>{elapsed(t, note.capturedAt)}</Text>
-        </View>
         <View style={styles.identity}>
-          <SourceCover type={source.type} cover={source.cover} />
+          <SourceCover type={source.type} cover={source.cover} size="large" />
           <View style={styles.identityText}>
             <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
             <Text style={styles.sourceTitle} numberOfLines={2}>
@@ -112,7 +135,6 @@ function LastNotedSection({ lastNoted: { source, note } }: { lastNoted: LastNote
                 {byline}
               </Text>
             )}
-            {note.locator && <Text style={styles.locator}>{note.locator}</Text>}
           </View>
         </View>
         {text && (
@@ -120,14 +142,6 @@ function LastNotedSection({ lastNoted: { source, note } }: { lastNoted: LastNote
             {text}
           </Text>
         )}
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id, write: '1' } })}
-        hitSlop={8}
-        style={({ pressed }) => [styles.continue, pressed && styles.pressed]}
-      >
-        <Text style={styles.continueLabel}>{t('home.continue')}</Text>
       </Pressable>
     </View>
   );
@@ -140,7 +154,7 @@ const makeStyles = (c: Colors) =>
       alignItems: 'center',
       justifyContent: 'center',
       padding: space.xl,
-      gap: space.sm,
+      gap: space.md,
       backgroundColor: c.page,
     },
     title: { ...typeScale.title, color: c.fg, textAlign: 'center' },
@@ -148,19 +162,17 @@ const makeStyles = (c: Colors) =>
     action: { marginTop: space.lg },
     spinner: { color: c.accent },
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.xxl },
+    content: { paddingHorizontal: space.gutter, paddingBottom: space.xxl },
     pressed: { opacity: 0.7 },
-    lastNoted: { gap: space.sm, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: c.lineSoft },
-    lastNotedBody: { gap: space.md },
-    sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-    sectionLabel: { ...typeScale.micro, color: c.accent },
-    when: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
-    identity: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-    identityText: { flex: 1, gap: 2 },
-    type: { ...typeScale.micro, color: c.muted },
+    alerts: { gap: space.sm, paddingTop: space.xs, paddingBottom: 6 },
+    lastNoted: { gap: space.md, paddingTop: space.sm, paddingBottom: 18 },
+    lastNotedAfterAlerts: { paddingTop: 14 },
+    lastNotedBody: { gap: 14 },
+    identity: { flexDirection: 'row', gap: 14 },
+    identityText: { flex: 1, minWidth: 0, gap: space.xs },
+    type: { ...typeScale.micro, letterSpacing: 1.05, color: c.muted },
     sourceTitle: { ...typeScale.sourceTitleSm, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
-    locator: { ...typeScale.locator, color: c.ink2 },
     excerpt: {
       ...typeScale.excerptSm,
       color: c.quoteInk,
@@ -168,7 +180,5 @@ const makeStyles = (c: Colors) =>
       borderLeftColor: c.quoteBar,
       paddingLeft: 11,
     },
-    comment: { ...typeScale.body, fontSize: 14.5, color: c.ink3 },
-    continue: { alignSelf: 'flex-end', paddingVertical: space.xs, paddingHorizontal: space.sm },
-    continueLabel: { ...typeScale.button, color: c.accent },
+    comment: { ...typeScale.body, color: c.ink2 },
   });

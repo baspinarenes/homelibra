@@ -1,4 +1,5 @@
 import { EMAIL_TAKEN } from '@homelibra/core/errors';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -6,9 +7,10 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { CodeInput } from '@/components/code-input';
 import { PrimaryButton } from '@/components/primary-button';
 import { authClient } from '@/lib/auth-client';
+import { offerUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
-type Step = { kind: 'address' } | { kind: 'code'; newEmail: string } | { kind: 'done'; newEmail: string };
+type Step = { kind: 'address' } | { kind: 'code'; newEmail: string };
 
 /** Better Auth's error code for text that is not an email address. */
 const INVALID_EMAIL = 'INVALID_EMAIL';
@@ -16,11 +18,13 @@ const INVALID_EMAIL = 'INVALID_EMAIL';
 /**
  * E-posta değiştirme: a code goes to the new address and the old one is told
  * afterwards, so a scholar keeps their Library when their institution's
- * address closes (#40, story 10).
+ * address closes (#40, story 10). Once the code is right the screen closes
+ * back to Ayarlar, which shows the new address and says it changed (#114).
  */
 export default function EmailChangeScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const router = useRouter();
   const { data: session, refetch } = authClient.useSession();
   const currentEmail = session?.user.email ?? '';
   const [step, setStep] = useState<Step>({ kind: 'address' });
@@ -52,11 +56,16 @@ export default function EmailChangeScreen() {
     setBusy(true);
     setError(null);
     const { error: failed } = await authClient.emailOtp.changeEmail({ newEmail: address, otp: code });
-    setBusy(false);
-    if (failed) return setError(t('emailChange.errors.invalidCode'));
-    setStep({ kind: 'done', newEmail: address });
-    // Better Auth's client does not refetch the session after this call by itself.
+    if (failed) {
+      setBusy(false);
+      return setError(t('emailChange.errors.invalidCode'));
+    }
+    // Better Auth's client does not refetch the session after this call by
+    // itself; Ayarlar's E-posta adresi row reads the new address from it.
     await refetch();
+    router.dismissTo('/settings');
+    // Ayarlar's tab shows the app's one notice at its foot.
+    offerUndo({ message: t('emailChange.changed') });
   }
 
   return (
@@ -114,8 +123,6 @@ export default function EmailChangeScreen() {
           </View>
         </>
       ) : null}
-
-      {step.kind === 'done' ? <Text style={styles.lead}>{t('emailChange.done', { email: step.newEmail })}</Text> : null}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </ScrollView>

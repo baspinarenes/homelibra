@@ -82,7 +82,7 @@ export const tr = {
     submit: 'Adresi değiştir',
     otherAddress: 'Başka bir adres yaz',
     resend: 'Kodu yeniden gönder',
-    done: 'E-posta adresin artık {{email}}.',
+    changed: 'E-posta adresin değişti.',
     errors: {
       taken: 'Bu adres başka bir hesapta kullanılıyor.',
       invalid: 'Bu bir e-posta adresine benzemiyor.',
@@ -144,10 +144,11 @@ export const tr = {
     emptyLead: 'Okuduğun ilk kaynağı ekleyerek başla.',
     addFirstSource: 'İlk kaynağını ekle',
     loadFailed: 'Kütüphane yüklenemedi.',
+    retry: 'Yeniden dene',
     takeNoteLead: 'Okuduğun kaynağa not düş.',
     takeNote: 'Not al',
-    lastNoted: 'Son not aldığın',
-    continue: 'Devam et',
+    lastNoted: 'Kaldığın yer',
+    toOrganize: 'Düzenlenecekler · {{count}} kaynak',
   },
   // How long ago a Note was captured.
   elapsed: {

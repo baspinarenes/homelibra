@@ -1,37 +1,24 @@
+import { Strip } from '@homelibra/ui/strip';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { useOutbox } from '@/lib/outbox';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
+
+/** How many Notes on the phone wait for a new Source, theirs deleted elsewhere (#58). None on the web, which has no outbox. */
+export function useLostNoteCount() {
+  const { status } = useOutbox().state;
+  return [...status.values()].filter((s) => s === 'sourceGone').length;
+}
 
 /**
- * "N notun kaynağı silinmiş ›" on Ana sayfa, while the phone holds Notes
- * whose Source was deleted elsewhere (#58): they wait for a new Source and
- * are never dropped unseen. Opens their list. Nothing otherwise, and never
- * on the web, which has no outbox.
+ * The "N notun kaynağı silinmiş" strip on Genel bakış, while the phone holds
+ * Notes whose Source was deleted elsewhere: they wait for a new Source and
+ * are never dropped unseen. Opens their list. Nothing otherwise.
  */
 export function LostNotesNotice() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { status } = useOutbox().state;
-  const count = [...status.values()].filter((s) => s === 'sourceGone').length;
+  const count = useLostNoteCount();
   if (count === 0) return null;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => router.push('/lost-notes')}
-      style={({ pressed }) => [styles.notice, pressed && styles.pressed]}
-    >
-      <Text style={styles.text}>{`${t('outbox.lostNotes', { count })} ›`}</Text>
-    </Pressable>
-  );
+  return <Strip title={t('outbox.lostNotes', { count })} onPress={() => router.push('/lost-notes')} />;
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    notice: { paddingVertical: space.md, borderBottomWidth: 1, borderBottomColor: c.lineSoft },
-    text: { ...typeScale.label, color: c.warn },
-    pressed: { opacity: 0.7 },
-  });
