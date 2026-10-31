@@ -5,8 +5,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
- * A Collection's name being written: "+ Yeni dosya" and Adı değiştir. The
- * confirm button stays off while the name is blank.
+ * A Collection's name being written again: Adı değiştir. The confirm
+ * button stays off while the name is blank.
  */
 export function NameInput({
   initial = '',
