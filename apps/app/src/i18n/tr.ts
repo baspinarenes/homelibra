@@ -184,6 +184,12 @@ export const tr = {
     emptyTitle: 'Henüz kaynak yok',
     emptyLead: 'Okuduğun bir kitabı, makaleyi ya da arşiv fonunu ekle.',
     loadFailed: 'Kaynaklar yüklenemedi.',
+    // The header's Süz icon and the Okunuyor | Bitti tabs (#121).
+    filter: 'Süz ve sırala',
+    filterActive: 'Süz ve sırala, süzgeç etkin',
+    statusTabs: 'Okuma durumu',
+    readingEmpty: 'Şu an okuduğun kaynak yok. Bitirdiklerin Bitti sekmesinde.',
+    finishedEmpty: 'Henüz bitirdiğin kaynak yok.',
   },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
@@ -432,9 +438,12 @@ export const tr = {
   // Dosyalar, a Collection's view and a Tag's page (#51).
   collection: {
     newCollection: '+ Yeni dosya',
+    newTitle: 'Yeni dosya',
     nameLabel: 'Dosya adı',
+    nameField: 'Ad',
     namePlaceholder: 'Örneğin İttihat ve Terakki makalesi',
-    create: 'Oluştur',
+    tagsHint: 'Bu etiketleri taşıyan notlar dosyada toplanır.',
+    inCollection: 'Dosyada',
     cancel: 'Vazgeç',
     rename: 'Adı değiştir',
     save: 'Kaydet',
@@ -575,7 +584,6 @@ export const tr = {
   // Kaynaklar's "Son not" order and the counts on its rows (#56, story 165).
   sourceList: {
     byLast: 'Son not',
-    count: '{{count}} kaynak',
     notes: '{{count}} not',
     noNotes: 'notsuz',
   },
@@ -600,8 +608,9 @@ export const tr = {
     failed: 'Okuma durumu değiştirilemedi. Bağlantını kontrol edip yeniden dene.',
     needsConnection: 'Okuma durumunu değiştirmek için bağlantı gerekiyor',
     untagged: '{{count}} etiketsiz not var.',
+    finishedTitle: 'Kaynak bitti',
     organizeNow: 'Şimdi düzenle',
-    later: 'Sonra',
+    close: 'Kapat',
     readingSection: 'Okunuyor',
     finishedSection: 'Bitti',
     all: 'Tümü ›',
@@ -620,7 +629,7 @@ export const tr = {
     keys: 'j/k gezin · x seç · t etiket · Delete sil',
     previewTitle: 'Birleştirme önizlemesi',
     previewLead: '{{count}} not, ilkinin yerinde tek not olacak. Konumu ve metni burada düzeltebilirsin.',
-    close: 'Vazgeç',
+    close: 'Kapat',
     mergeFailed: 'Birleştirilemedi. Bağlantını kontrol edip yeniden dene.',
   },
   // Library export (#66): the whole Library as one ZIP, from the web.
@@ -634,10 +643,18 @@ export const tr = {
       'Dışa aktarma web’den indirilir: tarayıcıda Homelibra’ya giriş yap, Ayarlar → Hesap ve gizlilik → Kütüphaneni dışa aktar.',
     openWeb: 'Web’de aç',
     contentsHeading: 'ZIP’te neler var',
-    json: 'kutuphane.json: kaynakların ve künyelerinin tüm alanları, takvimli tarihler, notlar, etiketler ve dosya tanımları; başka bir araca taşımak için. Şeması yanında, kutuphane.schema.json’da.',
-    markdown:
-      'kaynaklar/: her kaynak için bir Markdown dosyası, notlar Konum sırasıyla; hiçbir araç olmadan okumak için.',
-    covers: 'kapaklar/: kaynakların kapakları.',
+    files: [
+      {
+        name: 'kutuphane.json',
+        description:
+          'Kaynaklar, künyeler, takvimli tarihler, notlar, etiketler ve dosyalar; başka bir araca taşımak için. Şeması kutuphane.schema.json’da.',
+      },
+      {
+        name: 'kaynaklar/',
+        description: 'Her kaynak için bir Markdown dosyası, notlar Konum sırasıyla; hiçbir araç olmadan okumak için.',
+      },
+      { name: 'kapaklar/', description: 'Kaynakların kapakları.' },
+    ],
   },
   // ISBN ile öner from Open Library, with its cover (#65).
   isbn: {
@@ -653,7 +670,6 @@ export const tr = {
     coverCredit: 'Kapak: Open Library',
     useCover: 'Kapağı da kullan',
     accept: 'Forma aktar',
-    dismiss: 'Vazgeç',
     close: 'Kapat',
     coverOnSave: 'Kapak: Open Library · kaydedince eklenecek',
     dropCover: 'Kapağı alma',
