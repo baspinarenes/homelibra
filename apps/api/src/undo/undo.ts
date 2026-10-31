@@ -52,7 +52,7 @@ const restorable: Restorable[] = [
  *
  * - `reinsert`: rows the operation deleted, whole, put back with their own
  *   ids. Rows a delete takes with it by cascade (a Source's Notes, their
- *   Tag links and every Tag they point at: tags/snapshot.ts) must be read before the
+ *   Tag links and every Tag they point at: undo/delete.ts) must be read before the
  *   delete and listed here too.
  * - `revert`: rows the operation changed, as their `id` and the columns'
  *   earlier values (a move: the Note's Source and when it entered it).

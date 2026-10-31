@@ -5,11 +5,11 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
 import { collectionDefinition, tagsOfCollection, tagsOfCollections } from '../collections/definition';
-import { deleteCollection } from '../collections/delete';
 import { collectionView, memberCount } from '../collections/view';
 import { account, collection, collectionTag, tag } from '../db/schema';
 import { resolveTags, setTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
+import { deleteWithUndo } from '../undo/delete';
 
 const collectionName = z.string().trim().min(1).max(200);
 
@@ -85,9 +85,10 @@ export const collectionsRouter = router({
    * Dosyayı sil, from the Collection's top bar: no confirmation, a Geri al
    * token instead. Notes and Tags stay, but for a Tag only it kept.
    */
-  delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => ({
-    undoToken: await deleteCollection(ctx.tx, ctx.accountId, input.id, ctx.now()),
-  })),
+  delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
+    const { undoToken } = await deleteWithUndo(ctx.tx, ctx.accountId, ctx.now(), { collections: [input.id] });
+    return { undoToken };
+  }),
 
   /**
    * "Markdown olarak kopyala" happened: the app builds the copy itself and

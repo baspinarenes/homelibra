@@ -4,8 +4,8 @@ import { and, eq, getTableName, inArray, ne } from 'drizzle-orm';
 
 import type { LibraryTx } from '../db/client';
 import { note, noteTag } from '../db/schema';
-import { tagParts } from '../tags/snapshot';
 import { tagsOfNotes } from '../tags/tags';
+import { deleteWithUndo } from '../undo/delete';
 import { recordUndo, storedRow } from '../undo/undo';
 
 /** How many Notes one call takes: far more than a Source's Düzenle mode shows. */
@@ -13,25 +13,6 @@ export const selectionLimit = 1000;
 
 /** These Notes, those of them in this Library. */
 const myNotes = (accountId: string, ids: string[]) => and(inArray(note.id, ids), eq(note.accountId, accountId));
-
-/**
- * Deletes the Notes still there, with their Tag links and a Tag only they
- * carried; one token takes them all back. With none deleted there is no
- * Geri al (null).
- */
-export async function deleteNotes(tx: LibraryTx, accountId: string, now: Date, ids: string[]) {
-  // Read first: the Notes' Tag links go with them, and a Tag only they carried too.
-  const tags = await tagParts(tx, accountId, { noteIds: ids });
-  const deleted = await tx
-    .delete(note)
-    .where(myNotes(accountId, ids))
-    .returning({ row: storedRow(note) });
-  if (!deleted.length) return { count: 0, undoToken: null };
-  const undoToken = await recordUndo(tx, accountId, now, {
-    reinsert: { note: deleted.map(({ row }) => row), ...tags },
-  });
-  return { count: deleted.length, undoToken };
-}
 
 /**
  * Moves the Notes still there and not in `sourceId` already to that Source
@@ -100,19 +81,20 @@ export async function mergeSelected(tx: LibraryTx, accountId: string, now: Date,
         .onConflictDoNothing()
         .returning({ noteId: noteTag.noteId, tagId: noteTag.tagId })
     : [];
-  const otherTags = await tagParts(tx, accountId, { noteIds: others });
-  const deleted = await tx
-    .delete(note)
-    .where(myNotes(accountId, others))
-    .returning({ row: storedRow(note) });
+  // The others are locked above, so they are there to delete and the record is kept.
+  const { undoToken } = await deleteWithUndo(
+    tx,
+    accountId,
+    now,
+    { notes: others },
+    {
+      remove: { [getTableName(noteTag)]: added.map(({ noteId, tagId }) => ({ note_id: noteId, tag_id: tagId })) },
+      revert: { note: [before!.row] },
+    },
+  );
   await tx
     .update(note)
     .set({ ...edited, updatedAt: now })
     .where(myNotes(accountId, [merged.id]));
-  const undoToken = await recordUndo(tx, accountId, now, {
-    remove: { [getTableName(noteTag)]: added.map(({ noteId, tagId }) => ({ note_id: noteId, tag_id: tagId })) },
-    reinsert: { note: deleted.map(({ row }) => row), ...otherTags },
-    revert: { note: [before!.row] },
-  });
-  return { id: merged.id, undoToken };
+  return { id: merged.id, undoToken: undoToken! };
 }

@@ -6,10 +6,11 @@ import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
 import { note, noteTag, source } from '../db/schema';
-import { deleteNotes, mergeSelected, moveNotes, selectionLimit } from '../notes/selection';
+import { mergeSelected, moveNotes, selectionLimit } from '../notes/selection';
 import { mySource } from '../sources/sources';
 import { addNoteTags, resolveTags, setTags, tagNames, tagsOfNotes } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
+import { deleteWithUndo } from '../undo/delete';
 
 // A Note's text as typed: core's capturedNote and editedNote keep it as stored.
 const noteText = z.string().nullish();
@@ -224,7 +225,7 @@ export const notesRouter = router({
    * changes nothing and offers no Geri al.
    */
   delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
-    const { undoToken } = await deleteNotes(ctx.tx, ctx.accountId, ctx.now(), [input.id]);
+    const { undoToken } = await deleteWithUndo(ctx.tx, ctx.accountId, ctx.now(), { notes: [input.id] });
     return { undoToken };
   }),
 
@@ -235,7 +236,7 @@ export const notesRouter = router({
    */
   deleteMany: libraryProcedure
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(selectionLimit) }))
-    .mutation(({ ctx, input }) => deleteNotes(ctx.tx, ctx.accountId, ctx.now(), input.ids)),
+    .mutation(({ ctx, input }) => deleteWithUndo(ctx.tx, ctx.accountId, ctx.now(), { notes: input.ids })),
 
   /**
    * Birleştir, from Düzenle mode's selection (#13): two or more Notes of one

@@ -7,7 +7,6 @@ import { z } from 'zod';
 import type { LibraryTx } from '../db/client';
 import { collectionTag, noteTag, source, sourceTag, tag } from '../db/schema';
 import { mySource } from '../sources/sources';
-import { tagParts } from '../tags/snapshot';
 import {
   type LinkTable,
   linkTables,
@@ -19,7 +18,7 @@ import {
   tagsOfSource,
 } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
-import { recordUndo } from '../undo/undo';
+import { deleteWithUndo } from '../undo/delete';
 
 /** `what` (an aggregate) over one link table's links to the Tag of the outer query, in this Library. */
 const ofLinks = (what: SQL, table: LinkTable, accountId: string) =>
@@ -147,16 +146,7 @@ export const tagsRouter = router({
    * al). A Tag already gone changes nothing and offers no Geri al.
    */
   delete: libraryProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
-    const [row] = await ctx.tx
-      .select({ id: tag.id })
-      .from(tag)
-      .where(and(eq(tag.id, input.id), eq(tag.accountId, ctx.accountId)))
-      .for('update');
-    if (!row) return { undoToken: null };
-    // Read first: the links go with the Tag.
-    const parts = await tagParts(ctx.tx, ctx.accountId, { tagIds: [input.id] });
-    await ctx.tx.delete(tag).where(and(eq(tag.id, input.id), eq(tag.accountId, ctx.accountId)));
-    const undoToken = await recordUndo(ctx.tx, ctx.accountId, ctx.now(), { reinsert: parts });
+    const { undoToken } = await deleteWithUndo(ctx.tx, ctx.accountId, ctx.now(), { tags: [input.id] });
     return { undoToken };
   }),
 });
