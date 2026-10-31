@@ -3,22 +3,27 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text } from 'react-native';
 
-import { SettingsRow, SettingsSection, SettingsText } from '@/components/settings-list';
+import { SettingsRow, SettingsRows, SettingsSection, SettingsText } from '@/components/settings-list';
 import { contactEmail } from '@/lib/contact';
-import { type Colors, type as typeScale, useThemedStyles } from '@/theme';
+import { legalVersion } from '@/lib/legal';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
- * The parts of Hesap ve gizlilik that read the same signed in or not: in
- * Ayarlar and on the web page that needs no sign-in (#40, stories 14-15).
- * The documents come first on both pages.
+ * The sections that read the same signed in or not: in Ayarlar and on the
+ * Gizlilik web page that needs no sign-in (#40, stories 14-15). The
+ * documents, with the version of their text under them.
  */
-export function PrivacyDocumentsSection() {
+export function PrivacyDocumentsSection({ first = false }: { first?: boolean }) {
   const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   return (
-    <SettingsSection title={t('privacy.privacySection')} first>
-      <SettingsRow label={t('privacy.notice')} onPress={() => router.push('/privacy/notice')} />
-      <SettingsRow label={t('privacy.terms')} onPress={() => router.push('/privacy/terms')} />
+    <SettingsSection title={t('privacy.privacySection')} first={first}>
+      <SettingsRows>
+        <SettingsRow label={t('privacy.notice')} onPress={() => router.push('/privacy/notice')} />
+        <SettingsRow label={t('privacy.terms')} onPress={() => router.push('/privacy/terms')} />
+      </SettingsRows>
+      <Text style={styles.version}>{t('privacy.version', { version: legalVersion })}</Text>
     </SettingsSection>
   );
 }
@@ -44,5 +49,6 @@ export function ContactLink() {
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
+    version: { ...typeScale.caption, color: c.muted, marginTop: space.xs },
     link: { ...typeScale.label, color: c.accent },
   });
