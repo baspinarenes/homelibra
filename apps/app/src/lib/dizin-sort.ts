@@ -1,13 +1,17 @@
+import type { AppRouter } from '@homelibra/api';
+import type { inferRouterInputs } from '@trpc/server';
 import { useState } from 'react';
 
 import { loadDeviceChoice, saveDeviceChoice } from '@/lib/device-choice';
 
-/** Dosyalar's order in Dizin: Son değişen, Ada göre, Not sayısı. */
-export const collectionSorts = ['recent', 'name', 'notes'] as const;
-export type CollectionSort = (typeof collectionSorts)[number];
+type Inputs = inferRouterInputs<AppRouter>;
 
-/** Etiketler's order in Dizin: Çok kullanılan, Ada göre. */
-export const tagSorts = ['usage', 'name'] as const;
+/** Dosyalar's order in Dizin: Son değişen, Ada göre, Not sayısı; every order `collections.list` takes. */
+export type CollectionSort = Exclude<Inputs['collections']['list'], void | undefined>['sort'];
+const collectionSorts = ['recent', 'name', 'notes'] as const satisfies readonly CollectionSort[];
+
+/** Etiketler's order in Dizin: Çok kullanılan, Ada göre; of the orders `tags.list` takes. */
+const tagSorts = ['usage', 'name'] as const satisfies readonly Inputs['tags']['list']['sort'][];
 export type TagSort = (typeof tagSorts)[number];
 
 /**

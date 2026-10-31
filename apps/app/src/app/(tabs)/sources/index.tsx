@@ -1,3 +1,4 @@
+import type { AppRouter } from '@homelibra/api';
 import { type CalendarDate, inYearRange } from '@homelibra/core/date';
 import { type SourceType, sourceTypes } from '@homelibra/core/source';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
@@ -7,6 +8,7 @@ import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import type { inferRouterInputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
@@ -27,7 +29,7 @@ import type { ReadingStatus } from '@/components/reading-status';
 import { SourceListRow } from '@/components/source-list-row';
 import { useTRPC } from '@/lib/trpc';
 
-type Sort = 'last' | 'title' | 'author' | 'date';
+type Sort = inferRouterInputs<AppRouter>['sources']['list']['sort'];
 
 /** What Süz ve sırala sets: the order, and the Tür and Tarih filters; a filter with nothing chosen keeps all. */
 type Choices = { sort: Sort; types: SourceType[]; dates: YearRangeDraft };
