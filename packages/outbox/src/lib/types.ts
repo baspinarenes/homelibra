@@ -34,8 +34,6 @@ export type Operation =
       type: 'updateNote';
       id: string;
       locator?: string | null;
-      /** A corrected sort value; null derives it from the Locator again. */
-      locatorSort?: number[] | null;
       excerpt?: string | null;
       comment?: string | null;
       /** All the Note's Tags, by name. */

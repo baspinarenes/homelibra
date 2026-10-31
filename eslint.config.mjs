@@ -51,6 +51,25 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  // A Note's Sort value is only ever derived (#125): outside core, nothing
+  // reads it from a Locator on its own, so it cannot drift from the rule.
+  {
+    files: ['apps/**', 'packages/outbox/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@homelibra/core/note',
+              importNames: ['locatorSortValue'],
+              message: "A Note's stored fields come from capturedNote / editedNote; the Sort value rule lives in core.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ['**/*.cjs', '**/metro.config.js', '**/babel.config.js'],
     rules: { '@typescript-eslint/no-require-imports': 'off' },

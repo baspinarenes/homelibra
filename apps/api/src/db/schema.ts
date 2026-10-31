@@ -223,8 +223,8 @@ export const note = pgTable(
     /** Free-form, as the scholar would cite it; null speaks of the Source as a whole. */
     locator: text('locator'),
     /**
-     * What the Locator sorts by (core's compareNotes): derived from it, or
-     * corrected by hand until the Locator text changes. Null when it holds no number.
+     * What the Locator sorts by (core's compareNotes), always derived from it
+     * by core's capturedNote / editedNote. Null when it holds no number.
      */
     locatorSort: doublePrecision('locator_sort').array(),
     excerpt: text('excerpt'),
