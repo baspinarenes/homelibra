@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
 import { deleteClosedAccounts } from './account-deletion/account-deletion';
-import { type AuthOptions, createAuth } from './auth';
+import { type AuthOptions, createAuth, deleteExpiredCodes } from './auth';
 import { deleteUnusedCovers, readCover } from './covers/covers';
 import { libraryExport } from './export/library-export';
 import type { Crossref } from './lookups/crossref';
@@ -99,9 +99,13 @@ export function createApi(options: ApiOptions) {
     }),
   );
 
-  /** The scheduled jobs (src/server.ts runs them), each told what time it is. */
+  /**
+   * The scheduled jobs (src/server.ts runs them), each told what time it is
+   * but deleteExpiredCodes, which asks Postgres.
+   */
   const jobs = {
     deleteClosedAccounts: (now: Date) => deleteClosedAccounts(options.db, now),
+    deleteExpiredCodes: () => deleteExpiredCodes(options.db),
     deleteExpiredUndoRecords: (now: Date) => deleteExpiredUndoRecords(options.db, now),
     deleteUnusedCovers: (now: Date) => deleteUnusedCovers(options.db, options.covers, now),
   };

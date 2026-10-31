@@ -1,1 +1,1 @@
-export { SOURCE_NOT_FOUND, UNDO_CONFLICT, UNDO_EXPIRED } from './lib/api-errors';
+export { EMAIL_TAKEN, NOT_INVITED, SOURCE_NOT_FOUND, UNDO_CONFLICT, UNDO_EXPIRED } from './lib/api-errors';

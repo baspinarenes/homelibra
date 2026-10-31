@@ -1,3 +1,4 @@
+import { NOT_INVITED } from '@homelibra/core/errors';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -13,9 +14,6 @@ import { type Colors, radius, space, type as typeScale, useThemedStyles } from '
 
 type Step = { kind: 'email' } | { kind: 'code'; email: string };
 type Message = { kind: 'notInvited' } | { kind: 'error'; text: string } | null;
-
-/** The API's error code for an address off the closed-beta list (apps/api/src/auth.ts). */
-const NOT_INVITED = 'NOT_INVITED';
 
 export default function SignInScreen() {
   const { t } = useTranslation();

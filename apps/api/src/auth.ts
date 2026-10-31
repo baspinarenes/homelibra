@@ -1,9 +1,11 @@
 import { expo } from '@better-auth/expo';
+import { EMAIL_TAKEN, NOT_INVITED } from '@homelibra/core/errors';
 import * as Sentry from '@sentry/node';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
 import { emailOTP } from 'better-auth/plugins';
+import { lt, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 
 import type { Db } from './db/client';
@@ -13,15 +15,27 @@ import type { Mailer } from './mail/mailer';
 
 const DAY_SECONDS = 60 * 60 * 24;
 
-/** The app's sign-in screen shows "Homelibra şu an davetle açık" for this code. */
-const NOT_INVITED = 'NOT_INVITED';
+/** How long an emailed code works: sign-in, email change and Hesabı sil alike. */
+export const CODE_LIFETIME_SECONDS = 10 * 60;
+/** Wrong codes allowed before a code stops working, for every emailed code. */
+export const CODE_ATTEMPTS = 3;
+
+/**
+ * The scheduled clean-up: every code past its time goes, whoever it was for
+ * and whatever Better Auth calls it. Postgres says what time it is, not the
+ * API's clock, which tests move. Returns how many went.
+ */
+export async function deleteExpiredCodes(db: Db) {
+  const gone = await db
+    .delete(schema.verification)
+    .where(lt(schema.verification.expiresAt, sql`now()`))
+    .returning({ id: schema.verification.id });
+  return gone.length;
+}
 
 function notInvited() {
   return new APIError('FORBIDDEN', { code: NOT_INVITED, message: 'Homelibra is invitation-only for now.' });
 }
-
-/** The app's email-change screen says the address belongs to another Account. */
-const EMAIL_TAKEN = 'EMAIL_TAKEN';
 
 export type AuthOptions = {
   db: Db;
@@ -123,7 +137,8 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google
     plugins: [
       emailOTP({
         otpLength: 6,
-        expiresIn: 10 * 60,
+        expiresIn: CODE_LIFETIME_SECONDS,
+        allowedAttempts: CODE_ATTEMPTS,
         async sendVerificationOTP({ email, otp, type }) {
           if (type === 'change-email') await mailer.sendEmailChangeCode(email, otp);
           else await mailer.sendSignInCode(email, otp);
