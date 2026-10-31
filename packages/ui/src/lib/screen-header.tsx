@@ -111,7 +111,11 @@ export function HeaderTextAction({
   );
 }
 
-/** An icon in the header with a 44 × 44 touch area: 20px on a pushed screen, 24 on a tab root. */
+/**
+ * An icon in the header with a 44 × 44 touch area: 20px on a pushed screen,
+ * 24 on a tab root. `dot` lights a 7px `accent` dot over it (a filter is on);
+ * say so in `label` too.
+ */
 export function HeaderIconAction({
   icon: Icon,
   label,
@@ -119,6 +123,7 @@ export function HeaderIconAction({
   tone = 'accent',
   size = 20,
   disabled = false,
+  dot = false,
 }: {
   icon: IconComponent;
   /** What screen readers call it. */
@@ -127,6 +132,7 @@ export function HeaderIconAction({
   tone?: 'accent' | 'danger';
   size?: 20 | 24;
   disabled?: boolean;
+  dot?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
@@ -140,6 +146,7 @@ export function HeaderIconAction({
       style={[styles.icon, disabled && styles.off]}
     >
       <Icon color={colors[tone]} size={size} strokeWidth={1.6} />
+      {dot && <View style={styles.dot} />}
     </Pressable>
   );
 }
@@ -170,4 +177,16 @@ const makeStyles = (c: Colors) =>
     // As wide as Kaydet, so the title does not shift while saving.
     busy: { width: 32 },
     off: { opacity: 0.45 },
+    // A 2px `page` ring parts it from the icon's strokes.
+    dot: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 11,
+      height: 11,
+      borderWidth: 2,
+      borderColor: c.page,
+      borderRadius: radius.pill,
+      backgroundColor: c.accent,
+    },
   });

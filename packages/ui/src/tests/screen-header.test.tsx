@@ -60,3 +60,11 @@ describe('ScreenHeader', () => {
     expect(byRole(page, 'progressbar')).toHaveLength(1);
   });
 });
+
+describe('HeaderIconAction', () => {
+  it('lights a dot over its icon while what it opens is in effect (a filter is on)', () => {
+    const [plain] = byRole(render(<HeaderIconAction icon={Trash} label="Süz ve sırala" onPress={noop} />), 'button');
+    const [lit] = byRole(render(<HeaderIconAction icon={Trash} label="Süz ve sırala" dot onPress={noop} />), 'button');
+    expect(all(lit!).length).toBe(all(plain!).length + 1);
+  });
+});
