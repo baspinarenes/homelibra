@@ -1,4 +1,3 @@
-import { SOURCE_NOT_FOUND } from '@homelibra/core/errors';
 import {
   type Operation,
   openOutbox,
@@ -6,12 +5,8 @@ import {
   type OutboxState,
   type OutboxStorage,
   type Receipt,
-  type Reply,
   type StoredOperation,
-  type Transport,
 } from '@homelibra/outbox';
-import { TRPCClientError } from '@trpc/client';
-import type { TRPC_ERROR_CODE_KEY } from '@trpc/server';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 import {
   createContext,
@@ -26,8 +21,8 @@ import {
 import { AppState } from 'react-native';
 
 import { authClient } from './auth-client';
+import { libraryTransport } from './library-transport';
 import { useOffline } from './network';
-import { sendOperation, undoOperation } from './send-operation';
 
 // The phone's outbox (ADR-0008): operations wait in a small expo-sqlite
 // table and are sent in order when the app comes to the foreground or the
@@ -85,29 +80,6 @@ function sqliteStorage(accountId: string): OutboxStorage {
   };
 }
 
-/** Answers the server will give an operation every time it is sent: waiting would not change them. */
-const refusals = new Set<TRPC_ERROR_CODE_KEY | undefined>(['BAD_REQUEST', 'NOT_FOUND', 'CONFLICT']);
-
-/**
- * The outbox's way to the API. A lost connection, a server error or an
- * expired session reject, and the operation waits to be sent again; a
- * refusal the server would repeat is answered, so the queue can go on.
- */
-const transport: Transport = {
-  async send(operation): Promise<Reply> {
-    try {
-      const { undoToken } = await sendOperation(operation);
-      return { outcome: 'done', undoToken };
-    } catch (error) {
-      if (!(error instanceof TRPCClientError)) throw error;
-      if (error.message === SOURCE_NOT_FOUND) return { outcome: 'sourceGone' };
-      if (refusals.has(error.data?.code)) return { outcome: 'refused' };
-      throw error;
-    }
-  },
-  undo: undoOperation,
-};
-
 type OutboxValue = { apply: ApplyOperation; state: OutboxState; drain: () => Promise<number> };
 const OutboxContext = createContext<OutboxValue | null>(null);
 
@@ -115,7 +87,7 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
   const { data: session } = authClient.useSession();
   const accountId = session?.user.id ?? null;
   const opening = useMemo(
-    () => (accountId ? openOutbox({ storage: sqliteStorage(accountId), transport }) : null),
+    () => (accountId ? openOutbox({ storage: sqliteStorage(accountId), transport: libraryTransport }) : null),
     [accountId],
   );
   const [outbox, setOutbox] = useState<Outbox | null>(null);

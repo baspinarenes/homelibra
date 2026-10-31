@@ -87,6 +87,12 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@homelibra/outbox':
+        specifier: workspace:*
+        version: link:../../packages/outbox
+      '@trpc/client':
+        specifier: ^11.19.0
+        version: 11.19.0(@trpc/server@11.19.0(typescript@6.0.3))(typescript@6.0.3)
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6

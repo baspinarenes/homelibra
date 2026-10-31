@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { normalizeDoi } from '@homelibra/core/source';
+import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import { afterAll, afterEach, vi } from 'vitest';
 
 import { createApi } from '../app';
@@ -9,7 +10,7 @@ import { invitations } from '../invitations/invitations';
 import type { Crossref } from '../lookups/crossref';
 import type { OpenLibrary } from '../lookups/openlibrary';
 import type { Mailer } from '../mail/mailer';
-import { appRouter } from '../router';
+import { type AppRouter, appRouter } from '../router';
 import type { ObjectStorage } from '../storage/object-storage';
 import { testDatabaseUrl, testMigrationDatabaseUrl } from './db';
 
@@ -196,6 +197,9 @@ export function scholarEmail(name = 'akademisyen') {
   return `${name}-${randomUUID().slice(0, 8)}@example.org`;
 }
 
+/** Where the API runs. */
+const API = 'http://localhost:3000';
+
 /** Where the web app runs; Google's redirects end up here. */
 const WEB_APP = 'http://localhost:8081';
 
@@ -228,7 +232,7 @@ export function testApi() {
   const api = createApi({
     db,
     mailer: mail.mailer,
-    baseURL: 'http://localhost:3000',
+    baseURL: API,
     secret: 'test-secret-that-is-at-least-32-characters-long',
     trustedOrigins: [WEB_APP],
     google: { clientId: 'test-client-id', clientSecret: 'test-client-secret' },
@@ -333,6 +337,21 @@ export function testApi() {
       get: (path: string) => api.http.request(path, { headers }),
       /** A tRPC caller for one request from this device. */
       call: async () => appRouter.createCaller(await api.createContext(headers)),
+      /**
+       * The tRPC client the app has, as this device: its requests go over
+       * HTTP to the API's handler, in-process, and come back as the app sees
+       * them, errors included.
+       */
+      client: () =>
+        createTRPCClient<AppRouter>({
+          links: [
+            httpBatchLink({
+              url: `${API}/api/trpc`,
+              fetch: async (url, options) => api.http.request(String(url), options as RequestInit),
+              headers: () => Object.fromEntries(headers),
+            }),
+          ],
+        }),
       /** Asks for a code at the new address, as Ayarlar does over HTTP. */
       requestEmailChange: (newEmail: string) => postAuth('/email-otp/request-email-change', headers, { newEmail }),
       /** Moves the Account to the new address with the code sent there. */

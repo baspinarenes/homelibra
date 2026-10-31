@@ -1,5 +1,5 @@
 import type { SourceType } from '@homelibra/core/source';
-import { TRPCClientError } from '@trpc/client';
+import { OperationRefused } from '@homelibra/outbox/trpc';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import Maximize2 from 'lucide-react-native/icons/maximize-2';
 import Minimize2 from 'lucide-react-native/icons/minimize-2';
@@ -39,9 +39,6 @@ const maxInputHeight = 220;
  * until use on Android says otherwise (#11).
  */
 const locatorCheckAfter = 5 * 60_000;
-
-/** The Excerpt's Note took another Comment or went away elsewhere. */
-const attachRefused = (code: string | undefined) => code === 'CONFLICT' || code === 'NOT_FOUND';
 
 /** As the server keeps it: trimmed, and null when blank. */
 const storedLocator = (locator: string) => locator.trim() || null;
@@ -182,7 +179,7 @@ export function NoteComposer({
     } catch (error) {
       // The Note took another Comment or went away elsewhere: the text stays
       // in the box, to be saved as a Note of its own.
-      const refused = attachTo && attachRefused(error instanceof TRPCClientError ? error.data?.code : undefined);
+      const refused = attachTo && error instanceof OperationRefused;
       if (refused) setLastExcerpt(null);
       setFailure(refused ? 'attach' : 'save');
     } finally {
