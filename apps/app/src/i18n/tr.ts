@@ -177,7 +177,6 @@ export const tr = {
     failed: 'Arama yapılamadı. Bağlantını kontrol edip yeniden dene.',
   },
   sources: {
-    sortLabel: 'Sıralama',
     byTitle: 'Başlık',
     byAuthor: 'Yazar',
     byDate: 'Tarih',
@@ -191,6 +190,17 @@ export const tr = {
     statusTabs: 'Okuma durumu',
     readingEmpty: 'Şu an okuduğun kaynak yok. Bitirdiklerin Bitti sekmesinde.',
     finishedEmpty: 'Henüz bitirdiğin kaynak yok.',
+    // The Süz ve sırala sheet and the filter chips under the tabs (#122).
+    close: 'Kapat',
+    sort: 'Sırala',
+    types: 'Tür',
+    dates: 'Tarih',
+    clear: 'Temizle',
+    show: '{{count}} kaynağı göster',
+    removeDates: 'Tarih süzgecini kaldır',
+    removeTypes: 'Tür süzgecini kaldır',
+    filterEmpty: 'Bu süzgeçle kaynak yok.',
+    clearFilter: 'Süzgeci temizle',
   },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
@@ -563,7 +573,7 @@ export const tr = {
     notes: 'Notlar',
     sources: 'Kaynaklar',
   },
-  // The Tarih filter of Kaynaklar and Ara (#56, story 164).
+  // The Tarih filter of Kaynaklar and Ara (#56, story 164): one calendar for both years (#122).
   dateFilter: {
     label: 'Tarih: {{range}}',
     any: 'tümü',
@@ -572,13 +582,12 @@ export const tr = {
     year: 'yıl',
     open: '…',
     clear: 'Temizle',
-    changeCalendar: '{{side}} yılının takvimini değiştir: {{calendar}}',
-    lead: 'Kaynak Tarih’ine göre süz. Takvim çipine dokun: Milâdî → Hicrî → Rumî.',
-    hint: '≈ {{from}}–{{to}} Milâdî. Kaynaklar Tarih’lerinin yaklaşık Milâdî değeriyle süzülür; tarihsiz kaynaklar gizlenir.',
+    calendar: 'Takvim',
+    lead: 'Tarihe göre süzünce tarihsiz kaynaklar gizlenir.',
+    hint: '≈ {{from}}–{{to}} Milâdî · tarihsiz kaynaklar gizlenir.',
     notInCalendar: '{{year}} yılı {{calendar}} takviminde yok.',
     hiddenSources: '{{count}} tarihsiz kaynak gizli',
     hiddenResults: 'Tarihsiz kaynaklardan {{sources}} kaynak ve {{notes}} not gizli',
-    noSources: 'Bu tarih aralığında kaynak yok.',
   },
   // Kaynaklar's "Son not" order and the counts on its rows (#56, story 165).
   sourceList: {
