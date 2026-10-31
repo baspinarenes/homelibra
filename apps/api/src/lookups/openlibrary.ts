@@ -53,7 +53,6 @@ type OpenLibraryEdition = {
   subtitle?: string;
   authors?: { name?: string }[];
   publishers?: { name?: string }[];
-  publish_places?: { name?: string }[];
   publish_date?: string;
 };
 
@@ -63,7 +62,7 @@ export type IsbnFields = {
   title?: string;
   author?: string;
   date?: CalendarDate;
-  fields: Partial<Record<Extract<SourceTextField, 'publisher' | 'placeOfPublication'>, string>>;
+  fields: Partial<Record<Extract<SourceTextField, 'publisher'>, string>>;
 };
 
 const authors = new Intl.ListFormat('tr', { type: 'conjunction' });
@@ -92,7 +91,5 @@ export function fieldsFromOpenLibrary(isbn: string, raw: unknown): IsbnFields {
   if (year) suggestion.date = { calendar: 'gregorian', year: Number(year) };
   const publisher = clean(edition.publishers?.[0]?.name);
   if (publisher) suggestion.fields.publisher = publisher;
-  const place = clean(edition.publish_places?.[0]?.name);
-  if (place) suggestion.fields.placeOfPublication = place;
   return suggestion;
 }

@@ -158,7 +158,7 @@ describe('Library search', () => {
     expect((await api.search.library({ query: 'divan' })).notes.map((n) => n.id)).toEqual([id]);
   });
 
-  it('searches Başlık, Yazar, Künye notu and the type-specific fields of a Source, not its identifiers', async () => {
+  it('searches Başlık, Yazar, Ek bilgi and the type-specific fields of a Source, not its identifiers', async () => {
     const api = await (await t.signIn(scholarEmail())).call();
     const { id } = await api.sources.create({
       type: 'book',
@@ -166,13 +166,13 @@ describe('Library search', () => {
       author: 'Ömer Lütfi Barkan',
       isbn: '9789751600000',
       bibliographicNote: 'Çeviren: Nurettin Arı',
-      fields: { publisher: 'Türk Tarih Kurumu', placeOfPublication: 'Ankara' },
+      fields: { publisher: 'Türk Tarih Kurumu', edition: 'Üçüncü baskı' },
     });
 
     const found = async (query: string) => (await api.search.library({ query })).sources.map((s) => s.id);
     expect(await found('barkan')).toEqual([id]);
     expect(await found('nurettin')).toEqual([id]);
-    expect(await found('kurumu ankara')).toEqual([id]);
+    expect(await found('kurumu üçüncü')).toEqual([id]);
     expect(await found('9789751600000')).toEqual([]);
   });
 
