@@ -7,8 +7,10 @@ import { createApi } from '../app';
 import { createDb } from '../db/client';
 import { invitations } from '../invitations/invitations';
 import type { Crossref } from '../lookups/crossref';
+import type { OpenLibrary } from '../lookups/openlibrary';
 import type { Mailer } from '../mail/mailer';
 import { appRouter } from '../router';
+import type { ObjectStorage } from '../storage/object-storage';
 import { testDatabaseUrl, testMigrationDatabaseUrl } from './db';
 
 /** Captures codes and notices instead of sending them. */
@@ -69,6 +71,76 @@ export function fakeCrossref() {
       works.set(normalizeDoi(work.DOI) ?? work.DOI, work);
     },
     askedFor: (doi: string) => asked.filter((d) => d === doi).length,
+  };
+}
+
+/**
+ * Stands in for Open Library behind its adapter: the editions and cover
+ * pictures a test publishes under their ISBN-13, and how often it was asked
+ * for each. `fail` makes it answer with an error, as when it is down.
+ */
+export function fakeOpenLibrary() {
+  const books = new Map<string, unknown>();
+  const covers = new Map<string, Uint8Array>();
+  const asked: string[] = [];
+  const askedCover: string[] = [];
+  let down = false;
+  const openLibrary: OpenLibrary = {
+    async book(isbn) {
+      asked.push(isbn);
+      if (down) throw new Error('Open Library: 503');
+      return books.get(isbn) ?? null;
+    },
+    async cover(isbn) {
+      askedCover.push(isbn);
+      if (down) throw new Error('Open Library covers: 503');
+      return covers.get(isbn) ?? null;
+    },
+  };
+  return {
+    openLibrary,
+    /** Open Library catalogues an edition, as its Books API gives it (jscmd=data). */
+    publish(isbn: string, edition: unknown) {
+      books.set(isbn, edition);
+    },
+    /** Someone uploads a cover picture for the edition. */
+    publishCover(isbn: string, picture: Uint8Array) {
+      covers.set(isbn, picture);
+    },
+    fail(failing = true) {
+      down = failing;
+    },
+    askedFor: (isbn: string) => asked.filter((i) => i === isbn).length,
+    coverAskedFor: (isbn: string) => askedCover.filter((i) => i === isbn).length,
+  };
+}
+
+/**
+ * Stands in for an S3 bucket behind its adapter: files in memory, each
+ * stamped with the API's clock when it was written, so a test can let them
+ * age. `lose` takes a file away behind the API's back, as a storage fault would.
+ */
+export function fakeObjectStorage(now: () => Date) {
+  const files = new Map<string, { bytes: Uint8Array<ArrayBuffer>; contentType: string; storedAt: Date }>();
+  const storage: ObjectStorage = {
+    async put(key, bytes, contentType) {
+      files.set(key, { bytes: new Uint8Array(bytes), contentType, storedAt: now() });
+    },
+    async get(key) {
+      return files.get(key)?.bytes ?? null;
+    },
+    async *list() {
+      for (const [key, { storedAt }] of files) yield { key, storedAt };
+    },
+    async delete(keys) {
+      for (const key of keys) files.delete(key);
+    },
+  };
+  return {
+    storage,
+    has: (key: string) => files.has(key),
+    put: (key: string, bytes: Uint8Array) => storage.put(key, bytes, 'image/jpeg'),
+    lose: (key: string) => files.delete(key),
   };
 }
 
@@ -143,12 +215,16 @@ export function testApi() {
   const mail = fakeMailer();
   const google = fakeGoogle();
   const crossref = fakeCrossref();
+  const openLibrary = fakeOpenLibrary();
   // Only the API's own clock moves: Better Auth shares the database with
   // other test files and would take their sign-in codes for expired ones.
   let passedMs = 0;
   afterEach(() => {
     passedMs = 0;
+    openLibrary.fail(false);
   });
+  const now = () => new Date(Date.now() + passedMs);
+  const covers = fakeObjectStorage(now);
   const api = createApi({
     db,
     mailer: mail.mailer,
@@ -157,7 +233,9 @@ export function testApi() {
     trustedOrigins: [WEB_APP],
     google: { clientId: 'test-client-id', clientSecret: 'test-client-secret' },
     crossref: crossref.crossref,
-    now: () => new Date(Date.now() + passedMs),
+    openLibrary: openLibrary.openLibrary,
+    covers: covers.storage,
+    now,
   });
 
   afterAll(async () => {
@@ -251,6 +329,8 @@ export function testApi() {
         if (!now) throw new Error('the session has ended');
         return now.user;
       },
+      /** A plain HTTP GET from this device, such as an image the app shows. */
+      get: (path: string) => api.http.request(path, { headers }),
       /** A tRPC caller for one request from this device. */
       call: async () => appRouter.createCaller(await api.createContext(headers)),
       /** Asks for a code at the new address, as Ayarlar does over HTTP. */
@@ -283,6 +363,8 @@ export function testApi() {
     owner,
     mail,
     crossref,
+    openLibrary,
+    covers,
     passTime,
     invite,
     uninvite,

@@ -1,9 +1,9 @@
 import type { SourceType } from '@homelibra/core/source';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { TRPCClientError } from '@trpc/client';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import Maximize2 from 'lucide-react-native/icons/maximize-2';
 import Minimize2 from 'lucide-react-native/icons/minimize-2';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -21,8 +21,10 @@ import { uuidv7 } from 'uuidv7';
 
 import { LocatorSheet } from '@/components/locator-sheet';
 import { Segment } from '@/components/segment';
-import { UndoBar, type UndoOffer } from '@/components/undo-bar';
-import { useTRPC } from '@/lib/trpc';
+import { TagPicker } from '@/components/tag-picker';
+import { SharedUndoBar } from '@/components/undo-bar';
+import { useOutbox } from '@/lib/outbox';
+import { offerUndo } from '@/lib/undo';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type Mode = 'excerpt' | 'comment';
@@ -81,18 +83,21 @@ export function NoteComposer({
   const styles = useThemedStyles(makeStyles);
   const { colors, shadow } = useTheme();
   const insets = useSafeAreaInsets();
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
+  const { apply } = useOutbox();
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<'save' | 'attach' | 'undo' | null>(null);
   const [mode, setMode] = useState<Mode>('excerpt');
   const [text, setText] = useState('');
   const [locator, setLocator] = useState(carriedLocator);
   const [locatorSince, setLocatorSince] = useState(carriedSince);
   const [now, setNow] = useState(Date.now);
   const [editingLocator, setEditingLocator] = useState(false);
+  // The Tags for the Note being written; untagged is the default, and each save starts untagged again.
+  const [tags, setTags] = useState<string[]>([]);
+  const [pickingTags, setPickingTags] = useState(false);
   const [focused, setFocused] = useState(false);
   // The Excerpt saved last on this screen, which the next Comment joins.
   const [lastExcerpt, setLastExcerpt] = useState<{ id: string; locator: string | null } | null>(null);
-  const [undo, setUndo] = useState<UndoOffer | null>(null);
   const inputRef = useRef<TextInputInstance>(null);
   // The id a failed save used, kept while nothing changes, so sending the
   // same Note again cannot make a second one.
@@ -112,83 +117,77 @@ export function NoteComposer({
   }, []);
   const stale = locator.trim() !== '' && now - locatorSince > locatorCheckAfter;
 
-  const refreshNotes = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: trpc.notes.list.queryKey({ sourceId }) }),
-      queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
-    ]);
-
   const saved = (id: string) => {
     onSaved(id);
     setText('');
+    setTags([]);
     onExpandedChange(false);
   };
 
-  const create = useMutation(
-    trpc.notes.create.mutationOptions({
-      onSuccess: async ({ id }, note) => {
-        attempt.current = null;
-        saved(id);
-        if (note.excerpt) {
-          setLastExcerpt({ id, locator: storedLocator(note.locator ?? '') });
-          setMode('comment');
-        } else {
-          setLastExcerpt(null);
-        }
-        await refreshNotes();
-      },
-    }),
-  );
-
   // Geri al after attaching: the Comment becomes a Note of its own, never lost.
-  const detach = useMutation(
-    trpc.notes.detachComment.mutationOptions({
-      onSuccess: async (_, { commentNoteId }) => {
-        onSaved(commentNoteId);
-        await refreshNotes();
-      },
-    }),
-  );
-
-  const attach = useMutation(
-    trpc.notes.attachComment.mutationOptions({
-      onSuccess: async (_, { id }) => {
-        saved(id);
-        setLastExcerpt(null);
-        // Made now, so the Comment's own Note would sort where it was written.
-        const commentNoteId = uuidv7();
-        setUndo({
-          message: t('capture.commentAttached'),
-          undo: () => {
-            detach.mutate({ id, commentNoteId });
-            inputRef.current?.focus();
-          },
-        });
-        await refreshNotes();
-      },
-      // The Note took another Comment or went away elsewhere: the text stays
-      // in the box, to be saved as a Note of its own.
-      onError: (error) => {
-        if (attachRefused(error.data?.code)) setLastExcerpt(null);
-      },
-    }),
-  );
+  const detach = async (id: string, commentNoteId: string) => {
+    setFailure(null);
+    try {
+      await apply({ type: 'detachComment', id, commentNoteId });
+      onSaved(commentNoteId);
+    } catch {
+      setFailure('undo');
+    }
+  };
 
   const attachTo =
     mode === 'comment' && lastExcerpt && lastExcerpt.locator === storedLocator(locator) ? lastExcerpt : null;
 
-  const busy = create.isPending || attach.isPending;
   const canSave = text.trim() !== '' && !busy;
-  const save = () => {
+  // Through the outbox, which sends now or once the connection returns; the
+  // box does not know which. A failure comes back only where there is no
+  // outbox (the web).
+  const save = async () => {
     if (!canSave) return;
-    if (attachTo) {
-      attach.mutate({ id: attachTo.id, comment: text });
-      return;
+    setBusy(true);
+    setFailure(null);
+    try {
+      if (attachTo) {
+        const { id } = attachTo;
+        // Made now, so the Comment's own Note would sort where it was written.
+        // Geri al splits it off with this id; so does the outbox, should the
+        // Excerpt's Note no longer take the Comment once it is sent (#58).
+        const commentNoteId = uuidv7();
+        const ownNote = { id: commentNoteId, sourceId, locator: storedLocator(locator) };
+        await apply({ type: 'attachComment', id, comment: text, tags, ownNote });
+        saved(id);
+        setLastExcerpt(null);
+        offerUndo({
+          message: t('capture.commentAttached'),
+          undo: () => {
+            void detach(id, commentNoteId);
+            inputRef.current?.focus();
+          },
+        });
+        return;
+      }
+      const note = { sourceId, locator, tags, ...(mode === 'excerpt' ? { excerpt: text } : { comment: text }) };
+      const key = JSON.stringify(note);
+      if (attempt.current?.key !== key) attempt.current = { id: uuidv7(), key };
+      const { id } = attempt.current;
+      await apply({ type: 'createNote', note: { id, ...note } });
+      attempt.current = null;
+      saved(id);
+      if (mode === 'excerpt') {
+        setLastExcerpt({ id, locator: storedLocator(locator) });
+        setMode('comment');
+      } else {
+        setLastExcerpt(null);
+      }
+    } catch (error) {
+      // The Note took another Comment or went away elsewhere: the text stays
+      // in the box, to be saved as a Note of its own.
+      const refused = attachTo && attachRefused(error instanceof TRPCClientError ? error.data?.code : undefined);
+      if (refused) setLastExcerpt(null);
+      setFailure(refused ? 'attach' : 'save');
+    } finally {
+      setBusy(false);
     }
-    const note = { sourceId, locator, ...(mode === 'excerpt' ? { excerpt: text } : { comment: text }) };
-    const key = JSON.stringify(note);
-    if (attempt.current?.key !== key) attempt.current = { id: uuidv7(), key };
-    create.mutate({ id: attempt.current.id, ...note });
   };
 
   // Looking at the Locator, changed or not, starts its age again.
@@ -207,8 +206,6 @@ export function NoteComposer({
     inputRef.current?.focus();
   };
 
-  const dismissUndo = useCallback(() => setUndo(null), []);
-
   // Native multiline inputs grow with their text; a web textarea needs telling.
   useLayoutEffect(() => {
     const node = inputRef.current as unknown as { style: { height: string }; scrollHeight: number } | null;
@@ -221,7 +218,7 @@ export function NoteComposer({
 
   return (
     <View style={[styles.composer, { paddingBottom: insets.bottom + space.md }, expanded && styles.composerExpanded]}>
-      <UndoBar offer={undo} onDismiss={dismissUndo} />
+      <SharedUndoBar />
       {attachTo && (
         <View style={styles.attach}>
           <Text style={styles.attachText} numberOfLines={1}>
@@ -267,6 +264,17 @@ export function NoteComposer({
             </Pressable>
           )}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={tags.length > 0 ? `${t('tags.field')}: ${tags.join(', ')}` : t('tags.add')}
+          onPress={() => setPickingTags(true)}
+          hitSlop={6}
+          style={({ pressed }) => [styles.tags, tags.length > 0 && styles.tagsChosen, pressed && styles.pressed]}
+        >
+          <Text style={tags.length > 0 ? styles.tagsChosenText : styles.tagsText} numberOfLines={1}>
+            {tags.length > 0 ? tags.join(', ') : t('tags.add')}
+          </Text>
+        </Pressable>
         <View style={styles.mode}>
           <Segment
             compact
@@ -312,7 +320,7 @@ export function NoteComposer({
             };
             if (Platform.OS !== 'web' || key.key !== 'Enter' || !(key.ctrlKey || key.metaKey)) return;
             key.preventDefault();
-            save();
+            void save();
           }}
           placeholder={t(mode === 'excerpt' ? 'capture.excerptPlaceholder' : 'capture.commentPlaceholder')}
           placeholderTextColor={colors.muted2}
@@ -329,7 +337,7 @@ export function NoteComposer({
             accessibilityLabel={t(expanded ? 'capture.collapse' : 'capture.expand')}
             onPress={() => {
               // Full screen covers where the bar would sit.
-              if (!expanded) setUndo(null);
+              if (!expanded) offerUndo(null);
               onExpandedChange(!expanded);
             }}
             hitSlop={6}
@@ -361,12 +369,17 @@ export function NoteComposer({
           </Pressable>
         </View>
       </View>
-      {(create.isError || attach.isError) && (
+      {failure && (
         <Text style={styles.error}>
-          {t(attachRefused(attach.error?.data?.code) ? 'capture.attachFailed' : 'capture.saveFailed')}
+          {t(
+            failure === 'attach'
+              ? 'capture.attachFailed'
+              : failure === 'undo'
+                ? 'capture.undoFailed'
+                : 'capture.saveFailed',
+          )}
         </Text>
       )}
-      {detach.isError && <Text style={styles.error}>{t('capture.undoFailed')}</Text>}
       <LocatorSheet
         visible={editingLocator}
         sourceType={sourceType}
@@ -375,6 +388,17 @@ export function NoteComposer({
         onClose={() => setEditingLocator(false)}
         // On the web the closing sheet would take the focus with it.
         onHidden={() => inputRef.current?.focus()}
+      />
+      <TagPicker
+        visible={pickingTags}
+        title={t('tags.noteTitle')}
+        value={tags}
+        onDone={(next) => {
+          setPickingTags(false);
+          setTags(next);
+          inputRef.current?.focus();
+        }}
+        onClose={() => setPickingTags(false)}
       />
     </View>
   );
@@ -416,6 +440,19 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
     },
     confirmText: { ...typeScale.label, color: c.warn },
+    // "+ etiket" beside the Locator; once Tags are chosen, their names.
+    tags: {
+      flexShrink: 1,
+      paddingVertical: 3,
+      paddingHorizontal: 9,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderStyle: 'dashed',
+      borderRadius: radius.chip,
+    },
+    tagsChosen: { borderStyle: 'solid', borderColor: c.chipBg, backgroundColor: c.chipBg },
+    tagsText: { ...typeScale.label, fontSize: 13, color: c.accent },
+    tagsChosenText: { ...typeScale.label, fontSize: 13, color: c.chipInk },
     mode: { marginLeft: 'auto' },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
     inputRowExpanded: { flex: 1, alignItems: 'stretch' },

@@ -17,7 +17,14 @@ async function scholarWithLibrary() {
   const device = await t.signIn(email);
   const api = await device.call();
   const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib' });
-  await api.notes.create({ id: uuidv7(), sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
+  await api.notes.create({
+    id: uuidv7(),
+    sourceId,
+    locator: 's. 45',
+    excerpt: 'Kadı, naibini kendisi seçerdi.',
+    tags: ['kadı'],
+  });
+  await api.tags.setOnSource({ sourceId, names: ['kadı', 'Çorum'] });
   return { email, device, sourceId };
 }
 

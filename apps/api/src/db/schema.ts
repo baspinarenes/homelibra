@@ -36,6 +36,8 @@ export const account = pgTable('account', {
   termsVersion: text('terms_version'),
   /** When the scholar confirmed Hesabı sil. The Account is closed from then on and deleted 14 days later, unless cancelled. */
   deletionRequestedAt: timestamp('deletion_requested_at', { withTimezone: true }),
+  /** How many times the scholar used "Markdown olarak kopyala", for the Operator's usage command. */
+  markdownCopies: integer('markdown_copies').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -109,17 +111,20 @@ export const invitation = pgTable('invitation', {
  * The shared lookup cache (ADR-0006): what a provider returned for a
  * normalised DOI or ISBN-13, exactly as it came, for every Library. Not
  * Library data, so no account_id and no row-level security; a scholar's
- * corrections stay in their own Source and never come here.
+ * corrections stay in their own Source and never come here. An
+ * `isbn_cover` row is Open Library's cover of an ISBN-13: the keys of its
+ * resized files under `isbn/` in the covers bucket (ADR-0011), or null when
+ * it has none. A scholar's own Cover never comes here either.
  */
-export const lookupKind = pgEnum('lookup_kind', ['doi', 'isbn']);
+export const lookupKind = pgEnum('lookup_kind', ['doi', 'isbn', 'isbn_cover']);
 
 export const lookupCache = pgTable(
   'lookup_cache',
   {
     kind: lookupKind('kind').notNull(),
     identifier: text('identifier').notNull(),
-    provider: text('provider').$type<'crossref'>().notNull(),
-    /** The provider's answer as it came; null when it knew nothing ("bulunamadı"). */
+    provider: text('provider').$type<'crossref' | 'openlibrary'>().notNull(),
+    /** The provider's answer as it came (for a cover, where its files are kept); null when it knew nothing ("bulunamadı"). */
     response: jsonb('response'),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
   },
@@ -133,6 +138,9 @@ const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
 // security policy in a hand-written migration (ADR-0006).
 
 export const sourceType = pgEnum('source_type', sourceTypes);
+
+/** Reading status (GLOSSARY.md): being read, or finished for now. */
+export const readingStatus = pgEnum('reading_status', ['reading', 'finished']);
 
 export const source = pgTable(
   'source',
@@ -153,6 +161,24 @@ export const source = pgTable(
     dateSort: integer('date_sort'),
     /** Type-specific fields by key. A type change only hides the ones the new type lacks. */
     fields: jsonb('fields').$type<SourceFieldValues>().notNull().default({}),
+    /**
+     * The Cover's two files in the covers bucket, both or neither (ADR-0011):
+     * the large one for the Source page, the small one for lists. A replaced
+     * Cover gets new keys, so a file never changes under its key.
+     */
+    coverKeyLarge: text('cover_key_large'),
+    coverKeySmall: text('cover_key_small'),
+    /**
+     * The last "Bitir" of an Organizing pass on this Source; null before the
+     * first. Düzenlenecekler counts only the untagged Notes that entered the
+     * Source after it, and the Source page marks them "yeni".
+     */
+    lastFinishedAt: timestamp('last_finished_at', { withTimezone: true }),
+    /**
+     * Reading status: a new Source is being read; only the scholar finishes
+     * it or reads it again, never a Note. No history, date or count.
+     */
+    readingStatus: readingStatus('reading_status').notNull().default('reading'),
     /**
      * What search matches by word: Başlık, Yazar, Künye notu and the
      * type-specific text fields, through the search functions of 0011_search.
@@ -177,6 +203,7 @@ export const source = pgTable(
     unique('source_id_account_id_unique').on(t.id, t.accountId),
     index('source_search_vector_idx').using('gin', t.searchVector),
     index('source_search_text_idx').using('gin', sql`${t.searchText} gin_trgm_ops`),
+    check('source_cover_keys_together', sql`(${t.coverKeyLarge} is null) = (${t.coverKeySmall} is null)`),
   ],
 );
 
@@ -202,6 +229,12 @@ export const note = pgTable(
     locatorSort: doublePrecision('locator_sort').array(),
     excerpt: text('excerpt'),
     comment: text('comment'),
+    /**
+     * When the Note came into its Source: captured, or moved there from
+     * another. Organizing pass counts a Note "yeni" by it; capture time stays
+     * the id's and a move never changes it (#36).
+     */
+    enteredSourceAt: timestamp('entered_source_at', { withTimezone: true }).notNull().defaultNow(),
     /** What search matches: the Excerpt's and the Comment's words (ADR-0010). Locator is not searched. */
     searchVector: tsvector('search_vector')
       .notNull()
@@ -212,6 +245,8 @@ export const note = pgTable(
   (t) => [
     index('note_source_id_idx').on(t.sourceId, t.id),
     index('note_search_vector_idx').using('gin', t.searchVector),
+    // What note_tag_note_fk points at, so a Note's Tags are always in its own Library.
+    unique('note_id_account_id_unique').on(t.id, t.accountId),
     // Through account_id too: a Note can never sit on another Library's Source.
     foreignKey({
       name: 'note_source_fk',
@@ -223,5 +258,164 @@ export const note = pgTable(
       'note_has_text',
       sql`coalesce(${t.excerpt} ~ '[^[:space:]]', false) or coalesce(${t.comment} ~ '[^[:space:]]', false)`,
     ),
+  ],
+);
+
+/**
+ * What Geri al needs to take one operation back (#40, "Silme ve Geri al"):
+ * the rows it deleted and the values it changed, as a snapshot whose shape
+ * lives in src/undo/undo.ts. Its id is the token the operation returned. A
+ * record outlives the app's Geri al bar by minutes and the clean-up job then
+ * deletes it; nothing else reads it.
+ */
+export const undoRecord = pgTable(
+  'undo_record',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    snapshot: jsonb('snapshot').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    /** When Geri al was applied; asked again, it changes nothing. */
+    undoneAt: timestamp('undone_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('undo_record_account_id_idx').on(t.accountId), index('undo_record_expires_at_idx').on(t.expiresAt)],
+);
+
+/**
+ * A Tag (GLOSSARY.md): shown as first entered, one per identity in a Library
+ * (core's tagIdentity). It lives while a Note or a Source carries it or a
+ * Collection refers to it; the database drops it with its last link, in the
+ * same transaction (0013_tags, 0016_collections).
+ */
+export const tag = pgTable(
+  'tag',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    /** The spelling it was first entered with, without a leading #. */
+    name: text('name').notNull(),
+    /** What makes two names one Tag: core's tagIdentity of the name. */
+    identity: text('identity').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('tag_account_id_identity_unique').on(t.accountId, t.identity),
+    // What the link tables point at, so a link never crosses Libraries.
+    unique('tag_id_account_id_unique').on(t.id, t.accountId),
+  ],
+);
+
+/** A Tag on a Note: only the ones put on the Note itself, never its Source's (ADR-0003). */
+export const noteTag = pgTable(
+  'note_tag',
+  {
+    noteId: uuid('note_id').notNull(),
+    tagId: uuid('tag_id').notNull(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    /** When the Tag was put on: what "son kullanılan" orders by. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.noteId, t.tagId] }),
+    index('note_tag_tag_id_idx').on(t.tagId),
+    foreignKey({
+      name: 'note_tag_note_fk',
+      columns: [t.noteId, t.accountId],
+      foreignColumns: [note.id, note.accountId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'note_tag_tag_fk',
+      columns: [t.tagId, t.accountId],
+      foreignColumns: [tag.id, tag.accountId],
+    }).onDelete('cascade'),
+  ],
+);
+
+/** A Tag on a Source. It reaches the Source's Notes only inside a Collection (ADR-0003). */
+export const sourceTag = pgTable(
+  'source_tag',
+  {
+    sourceId: uuid('source_id').notNull(),
+    tagId: uuid('tag_id').notNull(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    /** When the Tag was put on: what "son kullanılan" orders by. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sourceId, t.tagId] }),
+    index('source_tag_tag_id_idx').on(t.tagId),
+    foreignKey({
+      name: 'source_tag_source_fk',
+      columns: [t.sourceId, t.accountId],
+      foreignColumns: [source.id, source.accountId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'source_tag_tag_fk',
+      columns: [t.tagId, t.accountId],
+      foreignColumns: [tag.id, tag.accountId],
+    }).onDelete('cascade'),
+  ],
+);
+
+/**
+ * A Collection (GLOSSARY.md, Dosya): a named view of the Notes carrying any
+ * of its Tags and, with `include_source_notes`, every Note of a Source
+ * carrying one (ADR-0003). Membership is worked out when the view is asked
+ * for, never stored (#3).
+ */
+export const collection = pgTable(
+  'collection',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** "Etiketli kaynakların tüm notları": on unless the scholar turns it off. */
+    includeSourceNotes: boolean('include_source_notes').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('collection_account_id_idx').on(t.accountId),
+    // What collection_tag_collection_fk points at, so a definition never crosses Libraries.
+    unique('collection_id_account_id_unique').on(t.id, t.accountId),
+  ],
+);
+
+/** A Tag in a Collection's definition. It keeps the Tag alive as a Note or a Source carrying it would (#3). */
+export const collectionTag = pgTable(
+  'collection_tag',
+  {
+    collectionId: uuid('collection_id').notNull(),
+    tagId: uuid('tag_id').notNull(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'cascade' }),
+    /** When the Tag was added to the definition. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.collectionId, t.tagId] }),
+    index('collection_tag_tag_id_idx').on(t.tagId),
+    foreignKey({
+      name: 'collection_tag_collection_fk',
+      columns: [t.collectionId, t.accountId],
+      foreignColumns: [collection.id, collection.accountId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'collection_tag_tag_fk',
+      columns: [t.tagId, t.accountId],
+      foreignColumns: [tag.id, tag.accountId],
+    }).onDelete('cascade'),
   ],
 );

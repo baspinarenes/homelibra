@@ -99,8 +99,8 @@ export function accountDeletion(db: Db) {
  * and with it its whole Library (every Library row cascades from the
  * Account), its sign-in methods and sessions, its Invitation and any code
  * still waiting for its address. Daily backups keep a copy 14 days longer,
- * so a deletion is complete within KVKK's 30 days (m.13). Covers, once they
- * exist, are left to their own clean-up job (ADR-0011). Each Account goes in its own
+ * so a deletion is complete within KVKK's 30 days (m.13). Cover files are
+ * left to their own daily clean-up (ADR-0011). Each Account goes in its own
  * transaction, so one failure holds up no other. Returns how many went.
  */
 export async function deleteClosedAccounts(db: Db, now: Date) {

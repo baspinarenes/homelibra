@@ -6,7 +6,6 @@ import { EBGaramond_400Regular, EBGaramond_500Medium } from '@expo-google-fonts/
 import { RedditMono_500Medium } from '@expo-google-fonts/reddit-mono';
 import { RedditSans_400Regular, RedditSans_500Medium, RedditSans_600SemiBold } from '@expo-google-fonts/reddit-sans';
 import * as Sentry from '@sentry/react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +14,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useHeaderOptions } from '@/components/tab-stack';
 import { authClient } from '@/lib/auth-client';
+import { OutboxProvider } from '@/lib/outbox';
+import { QueryProvider } from '@/lib/query-provider';
 import { queryClient, TRPCProvider, trpcClient } from '@/lib/trpc';
 import { useTheme } from '@/theme';
 
@@ -47,40 +48,45 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
+      <QueryProvider>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          {/* Follows the app's theme, which Ayarlar can pin away from the system's. */}
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-          {loading ? (
-            <View style={[styles.splash, { backgroundColor: colors.page }]}>
-              <ActivityIndicator color={colors.accent} />
-            </View>
-          ) : (
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-              <Stack.Protected guard={!!session && termsAccepted && !closed} redirectTo={home}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="source/new" options={pushedScreen} />
-                <Stack.Screen name="source/[id]/index" options={pushedScreen} />
-                <Stack.Screen name="source/[id]/edit" options={pushedScreen} />
-                <Stack.Screen name="note/[id]" options={pushedScreen} />
-              </Stack.Protected>
-              {/* İlk giriş onayı: the Library stays closed until the terms of use are accepted. */}
-              <Stack.Protected guard={!!session && !termsAccepted && !closed} redirectTo={home}>
-                <Stack.Screen name="welcome" />
-              </Stack.Protected>
-              {/* Hesabı sil was confirmed: only "Silmeyi iptal et" until the Account is deleted. */}
-              <Stack.Protected guard={!!session && closed} redirectTo={home}>
-                <Stack.Screen name="account-closed" />
-              </Stack.Protected>
-              <Stack.Protected guard={!session} redirectTo={home}>
-                <Stack.Screen name="sign-in" />
-              </Stack.Protected>
-              {/* Hesap ve gizlilik's documents open signed in or not. */}
-              <Stack.Screen name="privacy" />
-            </Stack>
-          )}
+          <OutboxProvider>
+            {/* Follows the app's theme, which Ayarlar can pin away from the system's. */}
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            {loading ? (
+              <View style={[styles.splash, { backgroundColor: colors.page }]}>
+                <ActivityIndicator color={colors.accent} />
+              </View>
+            ) : (
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
+                <Stack.Protected guard={!!session && termsAccepted && !closed} redirectTo={home}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="source/new" options={pushedScreen} />
+                  <Stack.Screen name="source/[id]/index" options={pushedScreen} />
+                  <Stack.Screen name="source/[id]/edit" options={pushedScreen} />
+                  <Stack.Screen name="note/[id]" options={pushedScreen} />
+                  <Stack.Screen name="lost-notes" options={pushedScreen} />
+                  <Stack.Screen name="collection/[id]" options={pushedScreen} />
+                  <Stack.Screen name="tag/[id]" options={pushedScreen} />
+                </Stack.Protected>
+                {/* İlk giriş onayı: the Library stays closed until the terms of use are accepted. */}
+                <Stack.Protected guard={!!session && !termsAccepted && !closed} redirectTo={home}>
+                  <Stack.Screen name="welcome" />
+                </Stack.Protected>
+                {/* Hesabı sil was confirmed: only "Silmeyi iptal et" until the Account is deleted. */}
+                <Stack.Protected guard={!!session && closed} redirectTo={home}>
+                  <Stack.Screen name="account-closed" />
+                </Stack.Protected>
+                <Stack.Protected guard={!session} redirectTo={home}>
+                  <Stack.Screen name="sign-in" />
+                </Stack.Protected>
+                {/* Hesap ve gizlilik's documents open signed in or not. */}
+                <Stack.Screen name="privacy" />
+              </Stack>
+            )}
+          </OutboxProvider>
         </TRPCProvider>
-      </QueryClientProvider>
+      </QueryProvider>
     </SafeAreaProvider>
   );
 }

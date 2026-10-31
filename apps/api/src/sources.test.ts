@@ -26,6 +26,9 @@ describe('Source', () => {
       bibliographicNote: 'Çev. yok; 2. baskıdan.',
       date: null,
       fields: { publisher: 'İletişim', placeOfPublication: 'İstanbul' },
+      readingStatus: 'reading',
+      cover: null,
+      tags: [],
     });
   });
 

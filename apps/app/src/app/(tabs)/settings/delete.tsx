@@ -6,11 +6,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CodeInput } from '@/components/code-input';
 import { PrimaryButton } from '@/components/primary-button';
-import { ContactLink } from '@/components/privacy-sections';
 import { SecondaryButton } from '@/components/secondary-button';
-import { SettingsSection, SettingsText } from '@/components/settings-list';
+import { SettingsRow, SettingsSection, SettingsText } from '@/components/settings-list';
 import { authClient } from '@/lib/auth-client';
-import { queryClient, useTRPC } from '@/lib/trpc';
+import { forgetQueries } from '@/lib/query-provider';
+import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
@@ -41,7 +41,7 @@ export default function AccountDeletionScreen() {
       // The API has already ended every session; this forgets this device's.
       onSuccess: async () => {
         await authClient.signOut().catch(() => {});
-        queryClient.clear();
+        await forgetQueries();
         await refetch();
       },
     }),
@@ -51,10 +51,9 @@ export default function AccountDeletionScreen() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Text style={styles.lead}>{t('accountDeletion.lead')}</Text>
-        {/* Library export (#66) replaces this with its download once it exists. */}
         <SettingsSection title={t('accountDeletion.exportHeading')}>
-          <SettingsText>{t('accountDeletion.exportPending')}</SettingsText>
-          <ContactLink />
+          <SettingsText>{t('accountDeletion.exportLead')}</SettingsText>
+          <SettingsRow label={t('libraryExport.title')} onPress={() => router.push('/settings/export')} />
         </SettingsSection>
         <View style={styles.actions}>
           <PrimaryButton

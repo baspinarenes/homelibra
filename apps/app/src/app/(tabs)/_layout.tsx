@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, useWindowDimensions } from 'react-native';
 
 import { TabIcon, type TabIconName } from '@/components/tab-icon';
+import { useToOrganize } from '@/components/to-organize';
 import { type as typeScale, useTheme, wideMinWidth } from '@/theme';
 
 const tabs: { route: string; icon: TabIconName }[] = [
@@ -22,6 +23,8 @@ export default function TabsLayout() {
   const { width } = useWindowDimensions();
   const rail = Platform.OS === 'web' && width >= wideMinWidth; // below it, a bottom bar (library-nav prototype)
   const { colors } = useTheme();
+  // Ana sayfa's badge: how many Sources Düzenlenecekler holds.
+  const toOrganize = useToOrganize().data?.length ?? 0;
 
   return (
     <Tabs
@@ -34,6 +37,7 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: typeScale.tab,
         tabBarStyle: { backgroundColor: colors.tabBg, borderColor: colors.line },
+        tabBarBadgeStyle: { backgroundColor: colors.accent, color: colors.accentFg },
       }}
     >
       {tabs.map(({ route, icon }) => (
@@ -43,6 +47,7 @@ export default function TabsLayout() {
           options={{
             title: t(`tabs.${icon}`),
             tabBarIcon: ({ color }) => <TabIcon name={icon} color={color} />,
+            tabBarBadge: route === '(home)' && toOrganize > 0 ? toOrganize : undefined,
           }}
         />
       ))}

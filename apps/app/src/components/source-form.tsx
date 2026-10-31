@@ -5,6 +5,7 @@ import {
   isSourceDateField,
   keptHidden,
   normalizeDoi,
+  normalizeIsbn,
   type SourceDateField,
   sourceDateFields,
   type SourceField,
@@ -18,7 +19,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Platform,
@@ -33,8 +34,10 @@ import {
 
 import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/components/date-input';
 import { Field } from '@/components/field';
+import { AcceptedCover, type IsbnSuggestion, IsbnLookup, type SuggestedCover } from '@/components/isbn-suggestion';
 import { PrimaryButton } from '@/components/primary-button';
 import { SourceTypeIcon } from '@/components/source-type-icon';
+import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles, wideMinWidth } from '@/theme';
 
@@ -50,6 +53,8 @@ export type SourceDraft = {
   values: TextValues;
   /** The type-specific Date fields, hidden ones included. */
   dates: Record<SourceDateField, DateDraft>;
+  /** Open Library's cover accepted from ISBN ile öner; the Source gets a copy of it on save. */
+  suggestedCover?: SuggestedCover | null;
 };
 
 const draftDates = (stored: Partial<Record<SourceDateField, CalendarDate>>) =>
@@ -96,6 +101,25 @@ function withDoiFill(draft: SourceDraft, { doi, title, author, date, fields }: D
   };
 }
 
+/**
+ * ISBN ile öner, accepted: what Open Library gave replaces what the form
+ * held, the rest stays, as with DOI ile doldur. The ISBN stays as typed.
+ */
+function withIsbnSuggestion(
+  draft: SourceDraft,
+  { title, author, date, fields }: IsbnSuggestion,
+  suggestedCover: SuggestedCover | null,
+): SourceDraft {
+  return {
+    ...draft,
+    title: title ?? draft.title,
+    author: author ?? draft.author,
+    date: date ? dateToDraft(date) : draft.date,
+    values: { ...draft.values, ...fields },
+    suggestedCover: suggestedCover ?? draft.suggestedCover,
+  };
+}
+
 /** The Dates a draft's Date fields hold; a field still being typed holds none. */
 function filledDates(dates: SourceDraft['dates']): Partial<Record<SourceDateField, CalendarDate>> {
   return Object.fromEntries(
@@ -106,13 +130,11 @@ function filledDates(dates: SourceDraft['dates']): Partial<Record<SourceDateFiel
   );
 }
 
-/** After a save: refresh every Source query and go back to where the form was opened. */
+/** After a save: refresh wherever the Source shows and go back to where the form was opened. */
 export function useLeaveAfterSave() {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const router = useRouter();
   return async () => {
-    await queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() });
+    await refreshLibrary();
     if (router.canGoBack()) router.back();
     else router.replace('/sources');
   };
@@ -122,7 +144,7 @@ export function useLeaveAfterSave() {
  * Every value the form holds, hidden ones included; a blank one empties its
  * field. A hidden Date field still being typed is left as it is stored.
  */
-export function draftToInput({ values, dates, date, ...draft }: SourceDraft) {
+export function draftToInput({ values, dates, date, suggestedCover: _, ...draft }: SourceDraft) {
   const read = readDateDraft(date);
   return {
     ...draft,
@@ -151,12 +173,15 @@ export function SourceForm({
   saving,
   failed,
   onSave,
+  footer,
 }: {
   screenTitle: string;
   initial: SourceDraft;
   saving: boolean;
   failed: boolean;
   onSave: (draft: SourceDraft) => void;
+  /** Under the save button, at the form's very foot: Kaynağı sil when editing. */
+  footer?: ReactNode;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
@@ -188,7 +213,14 @@ export function SourceForm({
   const setValue = (key: SourceIdentifier | SourceTextField, value: string) => {
     // What was said about the DOI before no longer holds.
     if (key === 'doi') doiFill.reset();
-    setDraft((d) => ({ ...d, values: { ...d.values, [key]: value } }));
+    setDraft((d) => ({
+      ...d,
+      values: { ...d.values, [key]: value },
+      // A cover accepted for another ISBN is not this book's.
+      ...(key === 'isbn' &&
+        d.suggestedCover &&
+        normalizeIsbn(value) !== d.suggestedCover.isbn && { suggestedCover: null }),
+    }));
   };
   const setDate = (key: SourceDateField, value: DateDraft) =>
     setDraft((d) => ({ ...d, dates: { ...d.dates, [key]: value } }));
@@ -248,6 +280,18 @@ export function SourceForm({
         </View>
 
         {layout.identifier && fieldInput(layout.identifier, { autoCapitalize: 'none', autoCorrect: false })}
+        {layout.identifier === 'isbn' && (
+          <IsbnLookup
+            isbn={draft.values.isbn ?? ''}
+            onAccept={(suggestion, cover) => setDraft((d) => withIsbnSuggestion(d, suggestion, cover))}
+          />
+        )}
+        {layout.identifier === 'isbn' && draft.suggestedCover && (
+          <AcceptedCover
+            suggested={draft.suggestedCover}
+            onDrop={() => setDraft((d) => ({ ...d, suggestedCover: null }))}
+          />
+        )}
         {layout.identifier === 'doi' && (
           <View style={styles.lookup}>
             <Pressable
@@ -340,6 +384,7 @@ export function SourceForm({
         <View style={wide && styles.saveWide}>
           <PrimaryButton label={t('sourceForm.save')} onPress={save} busy={saving} disabled={!canSave} />
         </View>
+        {footer}
       </View>
     </ScrollView>
   );
