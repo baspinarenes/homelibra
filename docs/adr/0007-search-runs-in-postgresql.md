@@ -16,5 +16,5 @@ Search (ADR-0005) runs inside the same PostgreSQL that holds the library, using 
 ## Consequences
 
 - There is no offline search; search needs the server on every platform.
-- The database runs our own image derived from `postgres:17` with a libc `en_US.UTF-8` locale, `unaccent` and `pg_trgm`, plus the SQL functions that implement the search contract (ADR-0010); no extra dictionary files or extensions. Upgrading PostgreSQL means re-running that contract's scenario table, because lowercasing and locale behaviour change between major versions.
+- The database runs our own image derived from `postgres:18` with a libc `en_US.UTF-8` locale, `unaccent` and `pg_trgm`, plus the SQL functions that implement the search contract (ADR-0010); no extra dictionary files or extensions. Upgrading PostgreSQL means re-running that contract's scenario table, because lowercasing and locale behaviour change between major versions.
 - Typo tolerance is not offered. If scholars ask for search-as-you-type with typo tolerance, Typesense is the first candidate to add beside PostgreSQL, not to replace it.

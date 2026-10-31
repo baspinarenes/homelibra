@@ -10,7 +10,9 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # PostgreSQL 18 keeps its data under /var/lib/postgresql/18; a major
+      # upgrade needs a fresh volume and a dump, so the name carries it.
+      - pgdata-18:/var/lib/postgresql
 
 volumes:
-  pgdata:
+  pgdata-18:
