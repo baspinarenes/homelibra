@@ -42,7 +42,7 @@ export function ReadingStatusButton({
   const change = useMutation(
     trpc.sources.setReadingStatus.mutationOptions({
       onSuccess: async ({ untaggedCount }) => {
-        // Ana sayfa's card and Okunuyor, Kaynaklar's sections and Düzenlenecekler's order all follow it.
+        // Ana sayfa's card and Okunuyor, Kaynaklar's tabs and Düzenlenecekler's order all follow it.
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
           queryClient.invalidateQueries({ queryKey: trpc.organize.pathKey() }),
@@ -127,36 +127,6 @@ export function FinishedMark() {
   return <Text style={styles.mark}>{t('readingStatus.finished')}</Text>;
 }
 
-/**
- * A list section's head, "OKUNUYOR · 4"; with `onToggle`, a fold that opens
- * and closes the section ("▸ BİTTİ · 12").
- */
-export function StatusSectionHeader({
-  label,
-  count,
-  open,
-  onToggle,
-}: {
-  label: string;
-  count: number;
-  open?: boolean;
-  onToggle?: () => void;
-}) {
-  const styles = useThemedStyles(makeStyles);
-  const text = `${onToggle ? `${open ? '▾' : '▸'} ` : ''}${label} · ${count}`.toLocaleUpperCase('tr');
-  if (!onToggle) return <Text style={styles.section}>{text}</Text>;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ expanded: open }}
-      onPress={onToggle}
-      style={({ pressed }) => pressed && styles.pressed}
-    >
-      <Text style={styles.section}>{text}</Text>
-    </Pressable>
-  );
-}
-
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     pressed: { opacity: 0.7 },
@@ -181,5 +151,4 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
       overflow: 'hidden',
     },
-    section: { ...typeScale.micro, color: c.muted, paddingTop: space.lg, paddingBottom: space.xs },
   });
