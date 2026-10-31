@@ -13,7 +13,7 @@ describe('Source', () => {
       title: 'Taşrada Kadı ve Naib',
       isbn: '978-975-05-0000-0',
       bibliographicNote: 'Çev. yok; 2. baskıdan.',
-      fields: { publisher: 'İletişim', placeOfPublication: 'İstanbul' },
+      fields: { publisher: 'İletişim', edition: '2. baskı' },
     });
 
     expect(await api.sources.get({ id })).toEqual({
@@ -25,11 +25,22 @@ describe('Source', () => {
       doi: null,
       bibliographicNote: 'Çev. yok; 2. baskıdan.',
       date: null,
-      fields: { publisher: 'İletişim', placeOfPublication: 'İstanbul' },
+      fields: { publisher: 'İletişim', edition: '2. baskı' },
       readingStatus: 'reading',
       cover: null,
       tags: [],
     });
+  });
+
+  it('has no Yayın yeri', async () => {
+    const api = await (await t.signIn(scholarEmail())).call();
+    const book = { type: 'book', title: 'Kanunnâmeler' } as const;
+
+    await expect(api.sources.create({ ...book, fields: { publisher: 'Türk Tarih Kurumu' } })).resolves.toBeDefined();
+    await expect(
+      // @ts-expect-error Yayın yeri is not a field of any Source type.
+      api.sources.create({ ...book, fields: { publisher: 'Türk Tarih Kurumu', placeOfPublication: 'Ankara' } }),
+    ).rejects.toThrow();
   });
 
   it('keeps its Dates in the calendar and precision they were entered in', async () => {
