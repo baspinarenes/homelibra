@@ -621,7 +621,7 @@ export const tr = {
     keys: 'j/k gezin · x seç · t etiket · Delete sil',
     previewTitle: 'Birleştirme önizlemesi',
     previewLead: '{{count}} not, ilkinin yerinde tek not olacak. Konumu ve metni burada düzeltebilirsin.',
-    close: 'Vazgeç',
+    close: 'Kapat',
     mergeFailed: 'Birleştirilemedi. Bağlantını kontrol edip yeniden dene.',
   },
   // Library export (#66): the whole Library as one ZIP, from the web.
