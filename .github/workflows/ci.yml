@@ -124,4 +124,4 @@ jobs:
             echo "::notice::Coolify is not configured; deploy ${{ matrix.image }} from the panel."
             exit 0
           fi
-          curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$UUID"
+          curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$UUID"

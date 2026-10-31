@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { scrubBreadcrumb, scrubEvent } from '../error-report';
+import { scrubBreadcrumb, scrubEvent, scrubSpan } from '../error-report';
 
 // What a scholar writes, searches or tags; none of it may reach an error report.
 const searched = encodeURIComponent(JSON.stringify({ 0: { query: 'ʿulemâ ve kadı' } }));
@@ -112,5 +112,33 @@ describe('scrubBreadcrumb', () => {
     expect(
       scrubBreadcrumb({ category: 'navigation', data: { from: '/ara?q=kad%C4%B1', to: '/notes/0199#excerpt' } }),
     ).toEqual({ category: 'navigation', data: { from: '/ara', to: '/notes/0199' } });
+  });
+});
+
+describe('scrubSpan', () => {
+  it('drops the query from the URLs a streamed span records, on the request served and on lookups sent', () => {
+    const url = `https://homelibra.com/api/trpc/search.library?batch=1&input=${searched}`;
+    const span = scrubSpan({
+      name: 'GET /api/trpc/search.library',
+      attributes: {
+        'http.url': url,
+        'url.full': url,
+        'http.target': `/api/trpc/search.library?batch=1&input=${searched}`,
+        'url.query': `batch=1&input=${searched}`,
+        'http.query': `?batch=1&input=${searched}`,
+        'http.request.method': 'GET',
+      },
+    });
+
+    const path = 'https://homelibra.com/api/trpc/search.library';
+    expect(span).toEqual({
+      name: 'GET /api/trpc/search.library',
+      attributes: {
+        'http.url': path,
+        'url.full': path,
+        'http.target': '/api/trpc/search.library',
+        'http.request.method': 'GET',
+      },
+    });
   });
 });

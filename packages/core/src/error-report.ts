@@ -1,1 +1,1 @@
-export { scrubBreadcrumb, scrubEvent } from './lib/error-report';
+export { scrubBreadcrumb, scrubEvent, scrubSpan } from './lib/error-report';
