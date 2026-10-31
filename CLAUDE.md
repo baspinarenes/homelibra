@@ -2,6 +2,8 @@
 
 Packages are deep modules: see [packages/README.md](./packages/README.md) before adding or importing one.
 
+Dependencies are hoisted: a library's source is in the root `node_modules/<name>`, with no `.pnpm` store and no per-app `node_modules` (`nodeLinker` in `pnpm-workspace.yaml`).
+
 ## Agent skills
 
 ### Issue tracker
