@@ -128,10 +128,11 @@ export const tr = {
     emptyLead: 'Okuduğun ilk kaynağı ekleyerek başla.',
     addFirstSource: 'İlk kaynağını ekle',
     loadFailed: 'Kütüphane yüklenemedi.',
+    retry: 'Yeniden dene',
     takeNoteLead: 'Okuduğun kaynağa not düş.',
     takeNote: 'Not al',
-    lastNoted: 'Son not aldığın',
-    continue: 'Devam et',
+    lastNoted: 'Kaldığın yer',
+    toOrganize: 'Düzenlenecekler · {{count}} kaynak',
   },
   // How long ago a Note was captured.
   elapsed: {

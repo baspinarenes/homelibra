@@ -1,4 +1,5 @@
 import type { AppRouter } from '@homelibra/api';
+import { Strip } from '@homelibra/ui/strip';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
@@ -13,7 +14,7 @@ import { type Colors, radius, space, type as typeScale, useThemedStyles } from '
 
 type ToOrganize = inferRouterOutputs<AppRouter>['organize']['list'][number];
 
-/** Titles the Ana sayfa strip names before "…". */
+/** Titles the Genel bakış strip names; its count tells the rest. */
 const stripTitles = 3;
 
 /** Düzenlenecekler (#13): the Sources with untagged Notes since their last "Bitir". Shared by Ana sayfa, its tab badge and the list. */
@@ -23,31 +24,23 @@ export function useToOrganize() {
 }
 
 /**
- * Ana sayfa's Düzenlenecekler strip: how many Sources and the first few
- * titles; it opens the list. Nothing while no Source waits.
+ * Genel bakış's Düzenlenecekler strip: how many Sources, and the first few
+ * titles on one line; it opens the list. Nothing while no Source waits.
  */
 export function ToOrganizeStrip() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const sources = useToOrganize();
   if (!sources.data?.length) return null;
-  const titles = sources.data.slice(0, stripTitles).map((source) => source.title);
-  if (sources.data.length > stripTitles) titles.push('…');
   return (
-    <Pressable
-      accessibilityRole="link"
+    <Strip
+      title={t('home.toOrganize', { count: sources.data.length })}
+      detail={sources.data
+        .slice(0, stripTitles)
+        .map((source) => source.title)
+        .join(' · ')}
       onPress={() => router.push('/organize')}
-      style={({ pressed }) => [styles.strip, pressed && styles.pressed]}
-    >
-      <View style={styles.head}>
-        <Text style={styles.label}>{t('organize.title').toLocaleUpperCase('tr')}</Text>
-        <Text style={styles.count}>{t('organize.sources', { count: sources.data.length })} ›</Text>
-      </View>
-      <Text style={styles.titles} numberOfLines={2}>
-        {titles.join(' · ')}
-      </Text>
-    </Pressable>
+    />
   );
 }
 
@@ -78,11 +71,6 @@ export function ToOrganizeRow({ source, divided }: { source: ToOrganize; divided
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     pressed: { opacity: 0.7 },
-    strip: { gap: space.xs, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.lineSoft },
-    head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-    label: { ...typeScale.micro, color: c.warn },
-    count: { ...typeScale.button, color: c.accent },
-    titles: { ...typeScale.body, color: c.ink2 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     rowText: { flex: 1, gap: 2 },
