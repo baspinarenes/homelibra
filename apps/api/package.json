@@ -16,6 +16,8 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@homelibra/outbox": "workspace:*",
+    "@trpc/client": "^11.19.0",
     "@types/node": "^26.6.6",
     "drizzle-kit": "^0.31.11",
     "typescript": "~6.0.3",

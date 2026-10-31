@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { type Operation, openOutbox } from '../index';
-import { fakeServer, memoryStorage } from './fakes';
+import { memoryStorage } from '../memory';
+import { fakeServer } from './fakes';
 
 const SOURCE = '01900000-0000-7000-8000-00000000000a';
 // UUIDv7s in capture order.

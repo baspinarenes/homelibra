@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./memory": "./src/memory.ts",
+    "./trpc": "./src/trpc.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
