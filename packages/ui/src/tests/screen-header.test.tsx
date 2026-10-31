@@ -24,6 +24,24 @@ describe('ScreenHeader', () => {
     expect(text(byRole(page, 'heading')[0]!)).toBe('Dosya: İttihat ve Terakki makalesi');
   });
 
+  it('makes the title a button when it can be tapped, the prefix kept', () => {
+    const page = render(
+      <ScreenHeader prefix="Dosya: " title="Matbuat ve sansür" onTitlePress={noop} onBack={noop} backLabel="Geri" />,
+    );
+    const [, title] = byRole(page, 'button');
+    expect(text(title!)).toBe('Dosya: Matbuat ve sansür');
+    expect(byRole(title!, 'heading')).toHaveLength(1);
+  });
+
+  it('lets a word in the header tell screen readers more than it shows', () => {
+    const page = render(
+      <HeaderTextAction label="Dosya yap" accessibilityLabel="Bu etiketten dosya yap" onPress={noop} />,
+    );
+    const [action] = byRole(page, 'button');
+    expect(text(action!)).toBe('Dosya yap');
+    expect(nameOf(action!)).toBe('Bu etiketten dosya yap');
+  });
+
   it('gives a tab root its large title and no back arrow', () => {
     const page = render(<ScreenHeader variant="root" title="Kaynaklar" />);
     expect(byRole(page, 'button')).toEqual([]);

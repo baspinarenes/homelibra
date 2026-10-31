@@ -18,7 +18,7 @@ const myCollection = (accountId: string, id: string) => and(eq(collection.id, id
 
 export const collectionsRouter = router({
   /**
-   * "+ Yeni dosya", and "Dosya olarak kaydet" on a Tag's page (the same name
+   * "+ Yeni dosya", and "Dosya yap" on a Tag's page (the same name
    * and Tag). "Etiketli kaynakların tüm notları" is on unless said otherwise.
    */
   create: libraryProcedure
@@ -146,7 +146,7 @@ export const collectionsRouter = router({
 
   /**
    * A Tag's page: the same view of that one Tag, saved nowhere. Its switch
-   * lives on the page; "Dosya olarak kaydet" is `create` with the Tag's name.
+   * lives on the page; "Dosya yap" is `create` with the Tag's name.
    */
   tagView: libraryProcedure
     .input(z.object({ tagId: z.uuid(), includeSourceNotes: z.boolean() }))
