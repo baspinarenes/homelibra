@@ -5,7 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import Check from 'lucide-react-native/icons/check';
 import Copy from 'lucide-react-native/icons/copy';
-import Trash2 from 'lucide-react-native/icons/trash-2';
+import Trash from 'lucide-react-native/icons/trash';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -86,7 +86,7 @@ export function DeleteCollectionAction({ collection }: { collection: { id: strin
 
   return (
     <HeaderIconAction
-      icon={Trash2}
+      icon={Trash}
       tone="danger"
       label={t('collectionActions.delete')}
       onPress={() => remove.mutate({ id: collection.id })}
