@@ -1,0 +1,13 @@
+# Images build from the repo root (apps/api/Dockerfile, apps/app/Dockerfile).
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.claude
+.agents
+apps/api/.covers
+apps/app/android
+apps/app/ios
+apps/app/dist
+apps/app/.expo
