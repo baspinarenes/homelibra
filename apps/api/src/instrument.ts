@@ -1,6 +1,6 @@
 // Loaded with `--import` before any other module, so Sentry can instrument
 // http, Hono and postgres. Without SENTRY_DSN the SDK stays disabled.
-import { scrubBreadcrumb, scrubEvent } from '@homelibra/core/error-report';
+import { scrubBreadcrumb, scrubEvent, scrubSpan } from '@homelibra/core/error-report';
 import * as Sentry from '@sentry/node';
 
 const production = process.env.NODE_ENV === 'production';
@@ -29,7 +29,9 @@ Sentry.init({
   // What the SDK collects regardless: Drizzle's error messages carry the
   // query's values, and outgoing lookups (Crossref, Open Library) a Source's
   // ISBN or DOI in their URL.
+  // SDK 11 streams spans one by one, so they pass `beforeSendSpan`, not
+  // `beforeSendTransaction`.
   beforeSend: (event) => scrubEvent(event),
-  beforeSendTransaction: (event) => scrubEvent(event),
+  beforeSendSpan: (span) => scrubSpan(span),
   beforeBreadcrumb: (breadcrumb) => scrubBreadcrumb(breadcrumb),
 });

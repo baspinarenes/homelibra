@@ -442,7 +442,7 @@ set_var COOLIFY_URL "$COOLIFY_URL"
 set_var COOLIFY_API_UUID "$API_UUID"
 set_var COOLIFY_WEB_UUID "$WEB_UUID"
 if confirm "Trigger a web deploy through the API now, as CI will?"; then
-  curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$WEB_UUID" \
+  curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_URL/api/v1/deploy?uuid=$WEB_UUID" \
     && printf '\n  %s✓%s Coolify accepted the deploy\n' "$GREEN" "$RESET" \
     || warn "Coolify refused it: check the token's permission and API Access."
 fi
