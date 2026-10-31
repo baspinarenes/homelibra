@@ -1,12 +1,13 @@
 import { contactEmail } from './contact';
 
 /**
- * The privacy notice (aydınlatma metni), its short first layer and the terms
- * of use, as documents rather than UI strings (so not in i18n/tr.ts):
- * Turkish only, written by the Operator, and accepted as one versioned pair
- * on the first sign-in (account.acceptTerms). Written for scholars, not
- * engineers: the short layer names no providers, the full text names them
- * because KVKK asks for every recipient.
+ * The privacy notice (aydınlatma metni) and the terms of use, as documents
+ * rather than UI strings (so not in i18n/tr.ts): Turkish only, written by the
+ * Operator, and accepted as one versioned pair on the first sign-in
+ * (account.acceptTerms). Written for scholars, not engineers. The notice's
+ * short first layer is the note under Giriş's buttons (signIn.legalNote); it
+ * names no providers, the full text names them because KVKK asks for every
+ * recipient.
  *
  * PLACEHOLDERS. The Operator replaces the text before the beta opens; the
  * sections stay, since KVKK m.10 and the Tebliğ ask for each of them
@@ -16,13 +17,6 @@ import { contactEmail } from './contact';
 export const legalVersion = '2026-10-31-taslak-2';
 
 export type LegalSection = { heading: string; paragraphs: string[] };
-
-/** The first layer of the notice, on the first-sign-in screen; the full text is one tap away. */
-export const shortNotice = [
-  'Homelibra, hesabını açmak ve sana hizmet vermek için e-posta adresini ve kütüphanene yazdıklarını işler. Bunun için rızan gerekmez; dayanağı aramızdaki sözleşmedir.',
-  'Verilerin Türkiye dışında, Almanya’daki sunucularda durur. Giriş e-postalarını göndermek ve uygulamayı çalışır tutmak için yurt dışındaki birkaç hizmet sağlayıcıyla çalışırız; hangileri olduğu tam metinde yazılı.',
-  'Kütüphanene yalnızca sen destek istediğinde bakarız. İçeriğini analiz etmeyiz, yapay zekâ eğitiminde ya da pazarlamada kullanmayız. Kütüphaneni her zaman ücretsiz dışa aktarabilir, hesabını silebilirsin.',
-];
 
 const placeholder = '[Yer tutucu: asıl metni İşletici yazacak.]';
 
