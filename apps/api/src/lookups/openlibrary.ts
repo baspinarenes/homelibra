@@ -16,7 +16,7 @@ export interface OpenLibrary {
 }
 
 /** Open Library asks for a User-Agent that names the app and a contact, and allows it more requests. */
-const headers = { 'user-agent': `Homelibra (https://homelibra.app; ${contactEmail})` };
+const headers = { 'user-agent': `Homelibra (https://homelibra.com; ${contactEmail})` };
 
 /**
  * Open Library's Books and Covers APIs: no key (docs/research/turkish-metadata-lookup.md).

@@ -10,7 +10,8 @@
     "./account": "./src/account.ts",
     "./tag": "./src/tag.ts",
     "./markdown": "./src/markdown.ts",
-    "./errors": "./src/errors.ts"
+    "./errors": "./src/errors.ts",
+    "./error-report": "./src/error-report.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

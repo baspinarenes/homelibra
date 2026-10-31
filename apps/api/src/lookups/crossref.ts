@@ -23,7 +23,7 @@ export function crossrefClient(): Crossref {
       const url = new URL(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
       url.searchParams.set('mailto', contactEmail);
       const response = await fetch(url, {
-        headers: { 'user-agent': `Homelibra (https://homelibra.app; mailto:${contactEmail})` },
+        headers: { 'user-agent': `Homelibra (https://homelibra.com; mailto:${contactEmail})` },
         signal: AbortSignal.timeout(10_000),
       });
       if (response.status === 404) return null;

@@ -6,6 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "dev": "scripts/dev.sh",
     "typecheck": "pnpm -r --parallel typecheck",
     "lint": "eslint .",
     "lint:boundaries": "depcruise apps packages",

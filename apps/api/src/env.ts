@@ -19,7 +19,7 @@ export const env = z
     BETTER_AUTH_SECRET: z.string().min(32),
     /** Without a key, sign-in codes are printed to the console. */
     RESEND_API_KEY: z.string().optional(),
-    MAIL_FROM: z.string().default('Homelibra <giris@homelibra.app>'),
+    MAIL_FROM: z.string().default('Homelibra <giris@homelibra.com>'),
     /** Google sign-in's OAuth web client. Without it only email codes work. */
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
