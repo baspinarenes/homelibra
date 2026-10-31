@@ -92,6 +92,7 @@ export const fonts = {
   sansMedium: 'RedditSans_500Medium',
   sansSemiBold: 'RedditSans_600SemiBold',
   mono: 'RedditMono_500Medium',
+  monoRegular: 'RedditMono_400Regular',
 } as const;
 
 export const type = {
@@ -113,4 +114,5 @@ export const type = {
   fieldLabel: { fontFamily: fonts.mono, fontSize: 11, lineHeight: 14, letterSpacing: 1.1 }, // TextField's label, upper case
   micro: { fontFamily: fonts.mono, fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }, // upper-case with toLocaleUpperCase('tr')
   locator: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: 17 },
+  identifier: { fontFamily: fonts.monoRegular, fontSize: 15, lineHeight: 22 }, // an ISBN or a DOI, typed and placeholder
 } as const;

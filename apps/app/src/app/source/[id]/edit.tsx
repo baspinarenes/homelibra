@@ -1,4 +1,5 @@
 import { withPendingNotes } from '@homelibra/outbox';
+import { Button } from '@homelibra/ui/button';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -6,9 +7,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { DangerAction } from '@/components/danger-action';
 import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
-import { OfflineNotice } from '@/components/offline-notice';
 import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
 import { useOffline } from '@/lib/network';
 import { useOnlineFirst } from '@/lib/online-first';
@@ -25,8 +24,6 @@ export default function EditSourceScreen() {
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
-  // Saving and deleting a Source are online only: the outbox carries Notes (#58).
-  const offline = useOffline();
   const giveCover = useGiveSuggestedCover();
   const update = useMutation({
     mutationFn: async (draft: SourceDraft) => {
@@ -54,9 +51,10 @@ export default function EditSourceScreen() {
       screenTitle={t('sourceForm.editTitle')}
       initial={sourceToDraft(source.data)}
       saving={update.isPending}
-      failed={update.isError && !offline}
-      onSave={(draft) => !offline && update.mutate(draft)}
-      footer={<DeleteSource id={id} title={source.data.title} />}
+      failed={update.isError}
+      offlineNotice={t('outbox.editSourceNeedsConnection')}
+      onSave={(draft) => update.mutate(draft)}
+      footer={<DeleteSource id={id} title={source.data.title} saving={update.isPending} />}
     />
   );
 }
@@ -66,9 +64,10 @@ export default function EditSourceScreen() {
  * asks first, since they go with it. Either way Geri al brings it all back,
  * offered where the scholar lands: the Source page goes too. Online only:
  * the outbox sends what it still has first, so the count asked about is
- * every Note the Source has (#58).
+ * every Note the Source has (#58). Offline, and while the form saves, it
+ * waits; the strip under the header says why offline.
  */
-function DeleteSource({ id, title }: { id: string; title: string }) {
+function DeleteSource({ id, title, saving }: { id: string; title: string; saving: boolean }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
@@ -76,7 +75,7 @@ function DeleteSource({ id, title }: { id: string; title: string }) {
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
   const [confirming, setConfirming] = useState(false);
   const { state } = useOutbox();
-  // The notice above the button says why nothing happens offline.
+  const offline = useOffline();
   const onlineFirst = useOnlineFirst(useCallback(() => {}, []));
 
   const remove = useMutation(
@@ -100,14 +99,15 @@ function DeleteSource({ id, title }: { id: string; title: string }) {
 
   return (
     <View style={styles.foot}>
-      <OfflineNotice message={t('outbox.editSourceNeedsConnection')} />
       {remove.isError && <Text style={styles.error}>{t('deletion.deleteFailed')}</Text>}
-      <DangerAction
+      <Button
+        variant="text"
+        tone="danger"
         label={t('deletion.deleteSource')}
         onPress={() => void onlineFirst(ask)}
         busy={remove.isPending && !confirming}
         // Until the Notes are counted, it cannot tell whether to ask.
-        disabled={noteCount === undefined}
+        disabled={noteCount === undefined || offline || saving}
       />
       <ConfirmDialog
         visible={confirming}
@@ -133,7 +133,7 @@ const makeStyles = (c: Colors) =>
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
     lead: { ...typeScale.body, color: c.ink2 },
     spinner: { color: c.accent },
-    foot: { gap: space.sm, marginTop: space.lg },
+    foot: { gap: space.sm, marginTop: space.lg, alignItems: 'center' },
     error: { ...typeScale.body, color: c.danger },
     title: { fontStyle: 'italic' },
   });

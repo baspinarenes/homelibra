@@ -1,6 +1,6 @@
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IconComponent } from './icon';
@@ -81,21 +81,32 @@ export function HeaderTextAction({
   label,
   onPress,
   disabled = false,
+  busy = false,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Spins in place of the word (Kaydet while saving) and takes no presses. */
+  busy?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const inactive = disabled || busy;
   return (
     <Pressable
       role="button"
-      aria-disabled={disabled}
-      disabled={disabled}
+      aria-label={label}
+      aria-disabled={inactive}
+      aria-busy={busy || undefined}
+      disabled={inactive}
       onPress={onPress}
-      style={[styles.textAction, disabled && styles.off]}
+      style={[styles.textAction, disabled && !busy && styles.off]}
     >
-      <Text style={styles.textActionLabel}>{label}</Text>
+      {busy ? (
+        <ActivityIndicator size={20} color={colors.accent} style={styles.busy} />
+      ) : (
+        <Text style={styles.textActionLabel}>{label}</Text>
+      )}
     </Pressable>
   );
 }
@@ -156,5 +167,7 @@ const makeStyles = (c: Colors) =>
     icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control },
     textAction: { height: 44, paddingHorizontal: 12, justifyContent: 'center' },
     textActionLabel: { ...typeScale.action, color: c.accent },
+    // As wide as Kaydet, so the title does not shift while saving.
+    busy: { width: 32 },
     off: { opacity: 0.45 },
   });

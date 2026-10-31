@@ -2,9 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
-import { OfflineNotice } from '@/components/offline-notice';
 import { draftToInput, emptyDraft, type SourceDraft, SourceForm, useLeaveAfterSave } from '@/components/source-form';
-import { useOffline } from '@/lib/network';
 import { trpcClient } from '@/lib/trpc';
 
 /**
@@ -13,7 +11,6 @@ import { trpcClient } from '@/lib/trpc';
  */
 export default function NewSourceScreen() {
   const { t } = useTranslation();
-  const offline = useOffline();
   const giveCover = useGiveSuggestedCover();
   const create = useMutation({
     mutationFn: async (draft: SourceDraft) => {
@@ -28,9 +25,9 @@ export default function NewSourceScreen() {
       screenTitle={t('sourceForm.newTitle')}
       initial={emptyDraft}
       saving={create.isPending}
-      failed={create.isError && !offline}
-      onSave={(draft) => !offline && create.mutate(draft)}
-      footer={<OfflineNotice message={t('outbox.addSourceNeedsConnection')} />}
+      failed={create.isError}
+      offlineNotice={t('outbox.addSourceNeedsConnection')}
+      onSave={(draft) => create.mutate(draft)}
     />
   );
 }
