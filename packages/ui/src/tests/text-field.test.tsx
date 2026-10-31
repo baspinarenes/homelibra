@@ -30,12 +30,6 @@ describe('TextField', () => {
     expect(text(page)).toBe('ISBN');
   });
 
-  it('keeps its name for the screen reader alone when the label is hidden', () => {
-    const page = render(<TextField label="Etiket ara ya da yeni yaz" labelHidden value="" />);
-    expect(inputs(page)[0]!.attrs['aria-label']).toBe('Etiket ara ya da yeni yaz');
-    expect(text(page)).toBe('');
-  });
-
   it('writes many lines when asked', () => {
     const page = render(<TextField label="Ek bilgi" multiline value="" />);
     expect(inputs(page)[0]!.tag).toBe('textarea');

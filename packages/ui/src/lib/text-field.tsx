@@ -11,7 +11,6 @@ import { useTheme, useThemedStyles } from './use-theme';
  */
 export function TextField({
   label,
-  labelHidden = false,
   required = false,
   labelHidden = false,
   error,
@@ -23,8 +22,6 @@ export function TextField({
   ...input
 }: {
   label: string;
-  /** A field the sheet's title already names (a search over a list): the label is read, not shown. */
-  labelHidden?: boolean;
   required?: boolean;
   /** Not shown, only read out: where the sheet's title already says what goes in (Yeniden adlandır). */
   labelHidden?: boolean;
