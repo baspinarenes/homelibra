@@ -88,7 +88,7 @@ export default function EmailChangeScreen() {
             autoFocus
             onSubmitEditing={() => newEmail.trim() && sendCode(newEmail.trim())}
           />
-          <Text style={styles.hint}>{t('signIn.durableAddressHint')}</Text>
+          <Text style={styles.hint}>{t('emailChange.durableAddressHint')}</Text>
           <View style={styles.action}>
             <PrimaryButton
               label={t('emailChange.sendCode')}

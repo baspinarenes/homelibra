@@ -15,7 +15,9 @@ export function TextField({
   labelHidden = false,
   error,
   quote = false,
+  code = false,
   multiline = false,
+  onChangeText,
   onFocus,
   onBlur,
   style,
@@ -29,6 +31,8 @@ export function TextField({
   error?: string;
   /** An Excerpt, in the quote face (Charis SIL, upright). */
   quote?: boolean;
+  /** A six-digit sign-in code: the number pad, the code from the email offered, digits only, in mono. */
+  code?: boolean;
 } & TextInputProps) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
@@ -47,6 +51,10 @@ export function TextField({
         aria-invalid={invalid || undefined}
         placeholderTextColor={colors.muted2}
         multiline={multiline}
+        {...(code && codeInput)}
+        onChangeText={
+          code && onChangeText ? (value) => onChangeText(value.replace(/\D/g, '').slice(0, 6)) : onChangeText
+        }
         onFocus={(event) => {
           setFocused(true);
           onFocus?.(event);
@@ -58,6 +66,7 @@ export function TextField({
         style={[
           styles.input,
           quote && styles.quote,
+          code && styles.code,
           multiline && styles.multiline,
           invalid && styles.invalid,
           focused && styles.focused,
@@ -69,6 +78,14 @@ export function TextField({
     </View>
   );
 }
+
+const codeInput: TextInputProps = {
+  keyboardType: 'number-pad',
+  inputMode: 'numeric',
+  autoComplete: 'one-time-code',
+  textContentType: 'oneTimeCode',
+  maxLength: 6,
+};
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
@@ -90,6 +107,13 @@ const makeStyles = (c: Colors) =>
       textAlignVertical: 'center',
     },
     quote: { ...typeScale.excerpt, color: c.quoteInk },
+    code: {
+      fontFamily: typeScale.locator.fontFamily,
+      fontSize: 24,
+      lineHeight: 30,
+      letterSpacing: 8,
+      textAlign: 'center',
+    },
     multiline: { minHeight: 92, textAlignVertical: 'top' },
     invalid: { borderColor: c.danger },
     // An accent border and a 3px accent-soft ring.

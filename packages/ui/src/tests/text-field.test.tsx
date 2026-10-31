@@ -34,4 +34,12 @@ describe('TextField', () => {
     const page = render(<TextField label="Ek bilgi" multiline value="" />);
     expect(inputs(page)[0]!.tag).toBe('textarea');
   });
+
+  it('takes a six-digit sign-in code as a one-time code from the number pad', () => {
+    const page = render(<TextField label="Giriş kodu" code value="48" onChangeText={() => {}} />);
+    const attrs = inputs(page)[0]!.attrs;
+    expect(attrs.inputMode).toBe('numeric');
+    expect(attrs.autoComplete).toBe('one-time-code');
+    expect(attrs.maxLength).toBe('6');
+  });
 });
