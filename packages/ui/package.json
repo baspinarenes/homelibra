@@ -17,7 +17,8 @@
     "./section-heading": "./src/section-heading.ts",
     "./tab-bar": "./src/tab-bar.ts",
     "./text-tabs": "./src/text-tabs.ts",
-    "./term-table": "./src/term-table.ts"
+    "./term-table": "./src/term-table.ts",
+    "./strip": "./src/strip.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
