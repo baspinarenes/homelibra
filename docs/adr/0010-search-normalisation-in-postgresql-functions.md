@@ -4,7 +4,7 @@ status: accepted
 
 # Search normalisation runs in PostgreSQL functions, with corrected Snowball stems
 
-The search contract (ADR-0005) needs stemming to run on Turkish-lowercased text before folding, but a PostgreSQL text search configuration cannot run a filter after its stemmer. So the whole pipeline lives in SQL functions in our own image (ADR-0006, ADR-0007): Turkish lowercasing (I → ı, İ → i), then the built-in `turkish_stem` on text that has lost its transcription marks but still has ç ğ ı ö ş ü, then the contract's folding. The same functions build each note's `tsvector` (a generated column) and parse each query, so the normalisation exists in one place and the API passes only the raw query text. The setup passes the contract's scenario table on PostgreSQL 17.11 (baspinarenes/homelibra#28, prototype on the `prototype/tr-search` branch).
+The search contract (ADR-0005) needs stemming to run on Turkish-lowercased text before folding, but a PostgreSQL text search configuration cannot run a filter after its stemmer. So the whole pipeline lives in SQL functions in our own image (ADR-0006, ADR-0007): Turkish lowercasing (I → ı, İ → i), then the built-in `turkish_stem` on text that has lost its transcription marks but still has ç ğ ı ö ş ü, then the contract's folding. The same functions build each note's `tsvector` (a generated column) and parse each query, so the normalisation exists in one place and the API passes only the raw query text. The setup passed the contract's scenario table on PostgreSQL 17.11 (baspinarenes/homelibra#28, prototype on the `prototype/tr-search` branch) and again on 18.6, which the beta starts on (#42).
 
 ## Shape
 
@@ -25,4 +25,4 @@ The search contract (ADR-0005) needs stemming to run on Turkish-lowercased text 
 - Row 4 of the contract's scenario table (ulema → "ulemanın görüşü") moved from the prefix tier to the stem tier, by Enes's decision. It has the same shape as row 26 (gitmiş → gitmişti, stem tier): in both, the query word is the stem of the note's word, and Snowball over-trims the query word itself. No setup ranks both rows as the table first said.
 - The rules add stem candidates nobody will type (ulema → ulem, Osmanlılar → osmanil) and a few real collisions (aşkı → aşık, doğru → doğur). This is the noise ADR-0005 accepts.
 - The folding function wraps `unaccent`, which is STABLE, and is marked IMMUTABLE so that it can feed a generated column. Changing the `unaccent` rules means reindexing.
-- The scenario table runs as an automated test against our `postgres:17` image. It runs again on every PostgreSQL upgrade, because both the stemmer and lowercasing can change.
+- The scenario table runs as an automated test against our `postgres:18` image. It runs again on every PostgreSQL upgrade, because both the stemmer and lowercasing can change.

@@ -342,11 +342,11 @@ generate HOMELIBRA_OWNER_PASSWORD
 generate HOMELIBRA_APP_PASSWORD
 if ! already_saved DB_UUID; then
   open_url "$COOLIFY_URL/projects"
-  step "Create a project Homelibra (or open it) → production → '+ New' → PostgreSQL."
+  step "Create a project Homelibra (or open it) → production → '+ New' → PostgreSQL 18."
   step "General → Image: $IMAGES/homelibra-postgres:main"
   step "Leave 'Initial Database' as postgres: our init script creates homelibra itself."
-  step "Persistent Storage: the destination must be /var/lib/postgresql/data (PostgreSQL 17)."
-  note "Coolify defaults to /var/lib/postgresql for 18; fix it before the first start."
+  step "Persistent Storage: leave the destination at /var/lib/postgresql (PostgreSQL 18)."
+  note "Picking another version would mount another path and keep the data outside the volume."
   pause "Press Enter to put the environment variables on your clipboard."
   to_clipboard "HOMELIBRA_OWNER_PASSWORD=$HOMELIBRA_OWNER_PASSWORD
 HOMELIBRA_APP_PASSWORD=$HOMELIBRA_APP_PASSWORD
