@@ -1,4 +1,6 @@
+import { Section, Sections } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
+import { SettingsRow, SettingsRows } from '@homelibra/ui/settings-row';
 import {
   type Colors,
   setThemePreference,
@@ -14,7 +16,6 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ContactSection, PrivacyDocumentsSection } from '@/components/privacy-sections';
-import { SettingsRow, SettingsRows, SettingsSection } from '@/components/settings-list';
 import { SignOutButton } from '@/components/sign-out-button';
 import { authClient } from '@/lib/auth-client';
 
@@ -37,36 +38,45 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <SettingsSection title={t('settings.appearance')} first>
-        <View style={styles.theme}>
-          <Text style={styles.themeLabel}>{t('settings.themeLabel')}</Text>
-          <Segment label={t('settings.themeLabel')} options={themes} value={preference} onChange={setThemePreference} />
+      <Sections>
+        <Section title={t('settings.appearance')}>
+          <View style={styles.theme}>
+            <Text style={styles.themeLabel}>{t('settings.themeLabel')}</Text>
+            <Segment
+              label={t('settings.themeLabel')}
+              options={themes}
+              value={preference}
+              onChange={setThemePreference}
+            />
+          </View>
+        </Section>
+        <Section title={t('settings.account')} spacing="rows">
+          <SettingsRows>
+            <SettingsRow
+              label={t('privacy.email')}
+              value={session?.user.email}
+              onPress={() => router.push('/settings/email')}
+            />
+            <SettingsRow label={t('privacy.export')} onPress={() => router.push('/settings/export')} />
+            <SettingsRow
+              label={t('privacy.deleteAccount')}
+              tone="danger"
+              onPress={() => router.push('/settings/delete')}
+            />
+          </SettingsRows>
+        </Section>
+        <PrivacyDocumentsSection />
+        <ContactSection />
+        <View style={styles.signOut}>
+          {/* The text button's word sits 4 in; pull it back to the gutter. */}
+          <View style={styles.signOutButton}>
+            <SignOutButton />
+          </View>
+          <Text style={styles.version}>
+            {t('settings.appVersion', { version: Constants.expoConfig?.version ?? '' })}
+          </Text>
         </View>
-      </SettingsSection>
-      <SettingsSection title={t('settings.account')}>
-        <SettingsRows>
-          <SettingsRow
-            label={t('privacy.email')}
-            value={session?.user.email}
-            onPress={() => router.push('/settings/email')}
-          />
-          <SettingsRow label={t('privacy.export')} onPress={() => router.push('/settings/export')} />
-          <SettingsRow
-            label={t('privacy.deleteAccount')}
-            tone="danger"
-            onPress={() => router.push('/settings/delete')}
-          />
-        </SettingsRows>
-      </SettingsSection>
-      <PrivacyDocumentsSection />
-      <ContactSection />
-      <View style={styles.signOut}>
-        {/* The text button's word sits 4 in; pull it back to the gutter. */}
-        <View style={styles.signOutButton}>
-          <SignOutButton />
-        </View>
-        <Text style={styles.version}>{t('settings.appVersion', { version: Constants.expoConfig?.version ?? '' })}</Text>
-      </View>
+      </Sections>
     </ScrollView>
   );
 }
@@ -77,7 +87,7 @@ const makeStyles = (c: Colors) =>
     content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
     theme: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
     themeLabel: { ...typeScale.body, color: c.fg },
-    signOut: { paddingTop: space.sm, paddingBottom: 18, borderTopWidth: 1, borderTopColor: c.lineSoft },
+    signOut: { paddingTop: space.sm, paddingBottom: 18 },
     signOutButton: { alignSelf: 'flex-start', marginLeft: -space.xs },
     version: { ...typeScale.caption, color: c.muted },
   });

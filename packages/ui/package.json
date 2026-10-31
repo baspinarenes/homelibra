@@ -15,6 +15,7 @@
     "./toast": "./src/toast.ts",
     "./screen-header": "./src/screen-header.ts",
     "./section-heading": "./src/section-heading.ts",
+    "./settings-row": "./src/settings-row.ts",
     "./tab-bar": "./src/tab-bar.ts",
     "./text-tabs": "./src/text-tabs.ts",
     "./term-table": "./src/term-table.ts",

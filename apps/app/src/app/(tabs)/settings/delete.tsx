@@ -1,5 +1,6 @@
 import { Button } from '@homelibra/ui/button';
 import { Section, Sections } from '@homelibra/ui/section-heading';
+import { SettingsRow } from '@homelibra/ui/settings-row';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -8,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CodeInput } from '@/components/code-input';
-import { SettingsRow } from '@/components/settings-list';
 import { authClient } from '@/lib/auth-client';
 import { forgetQueries } from '@/lib/query-provider';
 import { useTRPC } from '@/lib/trpc';

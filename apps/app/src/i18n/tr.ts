@@ -417,7 +417,6 @@ export const tr = {
   },
   placeholder: {
     comingSoon: 'Bu bölüm yakında.',
-    soon: 'Yakında',
   },
   account: {
     signOut: 'Çıkış yap',

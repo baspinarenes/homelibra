@@ -1,11 +1,11 @@
 import { Button } from '@homelibra/ui/button';
+import { SectionText } from '@homelibra/ui/section-heading';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { SettingsText } from '@/components/settings-list';
 import { apiUrl } from '@/lib/api-url';
 import { downloadLibraryExport } from '@/lib/library-export';
 
@@ -22,7 +22,7 @@ export function LibraryExportDownload() {
   if (Platform.OS !== 'web') {
     return (
       <View style={styles.block}>
-        <SettingsText>{t('libraryExport.onWeb')}</SettingsText>
+        <SectionText>{t('libraryExport.onWeb')}</SectionText>
         <Text accessibilityRole="link" style={styles.link} onPress={() => Linking.openURL(`${apiUrl}/settings/export`)}>
           {t('libraryExport.openWeb')}
         </Text>
