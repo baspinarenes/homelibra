@@ -1,21 +1,19 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { normalizeIsbn } from '@homelibra/core/source';
+import { Sheet } from '@homelibra/ui/sheet';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Checkbox } from '@/components/checkbox';
-import { PrimaryButton } from '@/components/primary-button';
-import { SecondaryButton } from '@/components/secondary-button';
 import { CoverImage } from '@/components/source-cover';
 import type { Cover } from '@/lib/cover';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 export type IsbnSuggestion = NonNullable<inferRouterOutputs<AppRouter>['lookups']['isbn']>;
 
@@ -113,7 +111,6 @@ function SuggestionSheet({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   const [withCover, setWithCover] = useState(true);
   const { title, author, date, fields, cover } = suggestion;
   const rows = [
@@ -124,50 +121,34 @@ function SuggestionSheet({
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('isbn.close')}
-          style={styles.dismiss}
-          onPress={onClose}
-        />
-        <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
-          <View style={styles.header}>
-            <Text style={styles.heading}>{t('isbn.title')}</Text>
-            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.close}>{t('isbn.close')}</Text>
-            </Pressable>
+    <Sheet
+      visible={visible}
+      title={t('isbn.title')}
+      closeLabel={t('isbn.close')}
+      onClose={onClose}
+      primary={{ label: t('isbn.accept'), onPress: () => onAccept(withCover) }}
+    >
+      <Text style={styles.lead}>{t('isbn.lead', { isbn: suggestion.isbn })}</Text>
+      <View style={styles.offer}>
+        {cover && (
+          <View style={styles.coverColumn}>
+            <CoverImage file={cover.large} style={styles.preview} />
+            <Text style={styles.credit}>{t('isbn.coverCredit')}</Text>
           </View>
-          <ScrollView contentContainerStyle={styles.body}>
-            <Text style={styles.lead}>{t('isbn.lead', { isbn: suggestion.isbn })}</Text>
-            <View style={styles.offer}>
-              {cover && (
-                <View style={styles.coverColumn}>
-                  <CoverImage file={cover.large} style={styles.preview} />
-                  <Text style={styles.credit}>{t('isbn.coverCredit')}</Text>
-                </View>
-              )}
-              <View style={styles.fields}>
-                {rows.map(({ key, label, value }) => (
-                  <View key={key} style={styles.row}>
-                    <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
-                    <Text style={[styles.value, key === 'title' && styles.titleValue, !value && styles.empty]}>
-                      {value ?? t('isbn.none')}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+        )}
+        <View style={styles.fields}>
+          {rows.map(({ key, label, value }) => (
+            <View key={key} style={styles.row}>
+              <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
+              <Text style={[styles.value, key === 'title' && styles.titleValue, !value && styles.empty]}>
+                {value ?? t('isbn.none')}
+              </Text>
             </View>
-            {cover && <Checkbox label={t('isbn.useCover')} checked={withCover} onChange={setWithCover} />}
-            <View style={styles.buttons}>
-              <PrimaryButton label={t('isbn.accept')} onPress={() => onAccept(withCover)} />
-              <SecondaryButton label={t('isbn.dismiss')} onPress={onClose} />
-            </View>
-          </ScrollView>
+          ))}
         </View>
       </View>
-    </Modal>
+      {cover && <Checkbox label={t('isbn.useCover')} checked={withCover} onChange={setWithCover} />}
+    </Sheet>
   );
 }
 
@@ -210,31 +191,9 @@ const makeStyles = (c: Colors) =>
     action: { ...typeScale.button, color: c.accent },
     status: { ...typeScale.caption, color: c.muted },
     inactive: { opacity: 0.45 },
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      maxHeight: '90%',
-      alignSelf: 'center',
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: space.lg,
-      paddingTop: space.lg,
-      paddingBottom: space.sm,
-    },
-    heading: { ...typeScale.sourceTitle, color: c.fg },
-    close: { ...typeScale.button, color: c.accent },
-    body: { gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm },
     lead: { ...typeScale.caption, color: c.muted },
     offer: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
-    coverColumn: { gap: 6 },
+    coverColumn: { gap: 6, alignItems: 'center' },
     // 2:3, as a Cover is shown everywhere.
     preview: { width: 96, height: 144 },
     credit: { ...typeScale.caption, color: c.muted },
@@ -244,7 +203,6 @@ const makeStyles = (c: Colors) =>
     value: { ...typeScale.body, color: c.fg },
     titleValue: { ...typeScale.sourceTitleSm },
     empty: { color: c.muted },
-    buttons: { gap: space.sm, marginTop: space.sm },
     accepted: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     thumb: { width: 40, height: 56 },
     acceptedText: { ...typeScale.caption, color: c.muted, flexShrink: 1 },
