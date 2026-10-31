@@ -1,11 +1,9 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ListMessage } from '@/components/list-message';
-import { NameInput } from '@/components/name-input';
 import type { CollectionSort } from '@/lib/dizin-sort';
 import { useTRPC } from '@/lib/trpc';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
@@ -19,48 +17,13 @@ export function useCollections(sort: CollectionSort) {
 /**
  * Dosyalar in Dizin (#51, #127): every Collection with its Tags and how many
  * Notes it shows now, in the order chosen under Sırala. A row opens the
- * Collection.
+ * Collection; a new one starts from Dizin's "+" (Yeni dosya, #128).
  */
 export function CollectionList({ sort }: { sort: CollectionSort }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const trpc = useTRPC();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const collections = useCollections(sort);
-  const [naming, setNaming] = useState(false);
-  const create = useMutation(
-    trpc.collections.create.mutationOptions({
-      onSuccess: async ({ id }) => {
-        setNaming(false);
-        await queryClient.invalidateQueries({ queryKey: trpc.collections.list.queryKey() });
-        router.push({ pathname: '/collection/[id]', params: { id } });
-      },
-    }),
-  );
-
-  const header = (
-    <View style={styles.new}>
-      {naming ? (
-        <NameInput
-          confirmLabel={t('collection.create')}
-          busy={create.isPending}
-          onConfirm={(name) => create.mutate({ name, tags: [] })}
-          onCancel={() => setNaming(false)}
-        />
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setNaming(true)}
-          hitSlop={6}
-          style={({ pressed }) => pressed && styles.pressed}
-        >
-          <Text style={styles.newLabel}>{t('collection.newCollection')}</Text>
-        </Pressable>
-      )}
-      {create.isError && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
-    </View>
-  );
 
   if (collections.isPending) return <ActivityIndicator style={styles.status} color={styles.spinner.color} />;
   if (collections.isError) {
@@ -77,7 +40,6 @@ export function CollectionList({ sort }: { sort: CollectionSort }) {
       data={collections.data}
       keyExtractor={(collection) => collection.id}
       keyboardShouldPersistTaps="handled"
-      ListHeaderComponent={header}
       ListEmptyComponent={
         <ListMessage
           title={t('collections.emptyTitle')}
@@ -110,9 +72,6 @@ const makeStyles = (c: Colors) =>
     status: { marginTop: space.xl },
     spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
-    new: { gap: space.sm, paddingTop: space.md, paddingBottom: space.sm },
-    newLabel: { ...typeScale.button, fontSize: 15, color: c.accent },
-    error: { ...typeScale.caption, color: c.danger },
     row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     texts: { flex: 1, minWidth: 0, gap: 3 },
