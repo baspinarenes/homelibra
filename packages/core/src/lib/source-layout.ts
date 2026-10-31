@@ -18,7 +18,6 @@ export type SourceType = (typeof sourceTypes)[number];
 /** The type-specific fields. They live in one structured value, so a type change never drops one. */
 export const sourceFields = [
   'publisher',
-  'placeOfPublication',
   'edition',
   'container',
   'volumeIssue',
@@ -64,12 +63,12 @@ export type SourceLayout = {
 };
 
 const layouts: Record<SourceType, SourceLayout> = {
-  book: { identifier: 'isbn', open: ['publisher', 'placeOfPublication'], tucked: ['edition', 'firstEditionDate'] },
+  book: { identifier: 'isbn', open: ['publisher'], tucked: ['edition', 'firstEditionDate'] },
   article: { identifier: 'doi', open: ['container', 'volumeIssue', 'pageRange'], tucked: [] },
   thesis: { identifier: null, open: ['university', 'thesisType'], tucked: [] },
   archive: { identifier: null, open: [], tucked: [] },
   manuscript: { identifier: null, open: ['library', 'shelfmark'], tucked: [] },
-  periodical: { identifier: null, open: ['placeOfPublication'], tucked: [] },
+  periodical: { identifier: null, open: [], tucked: [] },
   recording: { identifier: null, open: ['url'], tucked: ['series', 'duration'] },
   webPage: { identifier: null, open: ['url', 'siteName', 'accessDate'], tucked: [] },
   other: { identifier: null, open: [], tucked: [] },
@@ -80,7 +79,7 @@ export function sourceLayout(type: SourceType): SourceLayout {
   return layouts[type];
 }
 
-/** What the form holds besides Tür, Başlık, Yazar and Künye notu: ISBN, DOI and the field values. */
+/** What the form holds besides Tür, Başlık, Yazar and Ek bilgi: ISBN, DOI and the field values. */
 export type SourceValues = SourceFieldValues & Partial<Record<SourceIdentifier, string>>;
 
 /** Whether a field holds something: text that is not blank, or a Date. */

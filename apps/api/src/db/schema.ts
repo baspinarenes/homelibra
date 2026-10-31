@@ -180,7 +180,7 @@ export const source = pgTable(
      */
     readingStatus: readingStatus('reading_status').notNull().default('reading'),
     /**
-     * What search matches by word: Başlık, Yazar, Künye notu and the
+     * What search matches by word: Başlık, Yazar, Ek bilgi and the
      * type-specific text fields, through the search functions of 0011_search.
      */
     searchVector: tsvector('search_vector')
