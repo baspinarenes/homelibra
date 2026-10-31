@@ -9,19 +9,19 @@ describe('scrubEvent', () => {
   it('keeps the path of the request but drops its query, where tRPC carries a query’s input', () => {
     const event = scrubEvent({
       request: {
-        url: `https://homelibra.app/api/trpc/search.library?batch=1&input=${searched}`,
+        url: `https://homelibra.com/api/trpc/search.library?batch=1&input=${searched}`,
         query_string: `batch=1&input=${searched}`,
         method: 'GET',
       },
     });
 
-    expect(event.request).toEqual({ url: 'https://homelibra.app/api/trpc/search.library', method: 'GET' });
+    expect(event.request).toEqual({ url: 'https://homelibra.com/api/trpc/search.library', method: 'GET' });
   });
 
   it('drops the body, cookies and headers of the request, where a mutation carries a Note and a session its token', () => {
     const event = scrubEvent({
       request: {
-        url: 'https://homelibra.app/api/trpc/notes.capture?batch=1',
+        url: 'https://homelibra.com/api/trpc/notes.capture?batch=1',
         method: 'POST',
         data: { 0: { excerpt: 'Kadı sicilinde geçen vakıf kaydı' } },
         cookies: { 'better-auth.session_token': 'secret' },
@@ -29,7 +29,7 @@ describe('scrubEvent', () => {
       },
     });
 
-    expect(event.request).toEqual({ url: 'https://homelibra.app/api/trpc/notes.capture', method: 'POST' });
+    expect(event.request).toEqual({ url: 'https://homelibra.com/api/trpc/notes.capture', method: 'POST' });
   });
 
   it('keeps the SQL of a failed query but drops the parameters Drizzle appends to its message', () => {
@@ -55,12 +55,12 @@ describe('scrubEvent', () => {
   it('scrubs the breadcrumbs it carries, which native code adds without passing through scrubBreadcrumb', () => {
     const event = scrubEvent({
       breadcrumbs: [
-        { category: 'http', data: { url: `https://homelibra.app/api/trpc/search.library?input=${searched}` } },
+        { category: 'http', data: { url: `https://homelibra.com/api/trpc/search.library?input=${searched}` } },
       ],
     });
 
     expect(event.breadcrumbs).toEqual([
-      { category: 'http', data: { url: 'https://homelibra.app/api/trpc/search.library' } },
+      { category: 'http', data: { url: 'https://homelibra.com/api/trpc/search.library' } },
     ]);
   });
 });
@@ -72,13 +72,13 @@ describe('scrubBreadcrumb', () => {
         category: 'fetch',
         data: {
           method: 'GET',
-          url: `https://homelibra.app/api/trpc/search.library?input=${searched}`,
+          url: `https://homelibra.com/api/trpc/search.library?input=${searched}`,
           status_code: 500,
         },
       }),
     ).toEqual({
       category: 'fetch',
-      data: { method: 'GET', url: 'https://homelibra.app/api/trpc/search.library', status_code: 500 },
+      data: { method: 'GET', url: 'https://homelibra.com/api/trpc/search.library', status_code: 500 },
     });
   });
 
