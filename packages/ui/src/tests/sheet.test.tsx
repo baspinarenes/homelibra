@@ -36,6 +36,22 @@ describe('Sheet', () => {
     expect(byRole(page, 'button').map(nameOf)).toEqual(['Kapat', 'Konumsuz', 'Tamam']);
   });
 
+  it('stands at its full height, 48 below the top, when its body is a list that scrolls itself', () => {
+    const style = (fill: boolean) => {
+      const page = render(
+        <Sheet visible fill={fill} title="Kaynak seç" closeLabel="Kapat" onClose={noop}>
+          <Text>Osmanlı Belgelerinin Dili</Text>
+        </Sheet>,
+      );
+      return byRole(page, 'dialog')[0]!.attrs.style ?? '';
+    };
+    // A sheet that fits its content may grow to a height; one that fills stands at it.
+    const tallest = /max-height:([-\d.]+px)/.exec(style(false))?.[1];
+    expect(tallest).toBeDefined();
+    expect(style(false)).not.toMatch(/(^|;)height:/);
+    expect(style(true)).toMatch(new RegExp(`(^|;)height:${tallest}`));
+  });
+
   it('is not there until opened', () => {
     const page = render(
       <Sheet visible={false} title="Konum" closeLabel="Kapat" onClose={noop}>

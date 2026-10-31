@@ -364,7 +364,6 @@ export const tr = {
     none: 'Etiket yok; etiketsiz de kaydedilir.',
     search: 'Etiket ara ya da yeni yaz',
     newTag: '+ “{{name}}” yeni etiket',
-    remove: '{{name}} etiketini kaldır',
     done: 'Tamam',
     close: 'Kapat',
     counts: '{{notes}} not · {{sources}} kaynak',

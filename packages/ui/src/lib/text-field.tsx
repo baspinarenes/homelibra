@@ -11,6 +11,7 @@ import { useTheme, useThemedStyles } from './use-theme';
  */
 export function TextField({
   label,
+  labelHidden = false,
   required = false,
   error,
   quote = false,
@@ -21,6 +22,8 @@ export function TextField({
   ...input
 }: {
   label: string;
+  /** A field the sheet's title already names (a search over a list): the label is read, not shown. */
+  labelHidden?: boolean;
   required?: boolean;
   /** What is wrong with the value; shown below the field in `danger`. */
   error?: string;
@@ -33,10 +36,12 @@ export function TextField({
   const invalid = error !== undefined && error !== '';
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>
-        {label.toLocaleUpperCase('tr')}
-        {required && <Text style={styles.required}> *</Text>}
-      </Text>
+      {!labelHidden && (
+        <Text style={styles.label}>
+          {label.toLocaleUpperCase('tr')}
+          {required && <Text style={styles.required}> *</Text>}
+        </Text>
+      )}
       <TextInput
         aria-label={label}
         aria-invalid={invalid || undefined}
