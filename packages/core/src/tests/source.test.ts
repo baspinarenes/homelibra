@@ -5,12 +5,12 @@ import { keptHidden, sourceLayout } from '../source';
 // The Sade form's table from the Source form prototype (#18).
 describe('sourceLayout', () => {
   it.each([
-    ['book', 'isbn', ['publisher', 'placeOfPublication'], ['edition', 'firstEditionDate']],
+    ['book', 'isbn', ['publisher'], ['edition', 'firstEditionDate']],
     ['article', 'doi', ['container', 'volumeIssue', 'pageRange'], []],
     ['thesis', null, ['university', 'thesisType'], []],
     ['archive', null, [], []],
     ['manuscript', null, ['library', 'shelfmark'], []],
-    ['periodical', null, ['placeOfPublication'], []],
+    ['periodical', null, [], []],
     ['recording', null, ['url'], ['series', 'duration']],
     ['webPage', null, ['url', 'siteName', 'accessDate'], []],
     ['other', null, [], []],
@@ -20,7 +20,7 @@ describe('sourceLayout', () => {
 });
 
 describe('keptHidden', () => {
-  const book = { isbn: '978-975-05-0000-0', publisher: 'İletişim', edition: '3. baskı', placeOfPublication: '' };
+  const book = { isbn: '978-975-05-0000-0', publisher: 'İletişim', edition: '3. baskı' };
 
   it('lists the filled values a new type does not show', () => {
     expect(keptHidden('article', { ...book, container: 'Belleten' })).toEqual(['isbn', 'publisher', 'edition']);

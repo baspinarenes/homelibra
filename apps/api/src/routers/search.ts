@@ -59,7 +59,7 @@ async function notesIn(tx: LibraryTx, accountId: string, q: string, scope: SQL) 
 export const searchRouter = router({
   /**
    * Searches the whole Library by the words of Notes (Excerpt and Comment)
-   * and Sources (Başlık, Yazar, Künye notu, type-specific fields). The query
+   * and Sources (Başlık, Yazar, Ek bilgi, type-specific fields). The query
    * goes to the database as typed; all folding and parsing happen there
    * (ADR-0010). Locator, Tags and Date are not searched. Every match is
    * returned, a page of Notes at a time: `cursor` is how many came before.

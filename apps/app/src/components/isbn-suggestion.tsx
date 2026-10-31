@@ -120,7 +120,6 @@ function SuggestionSheet({
     { key: 'title', label: t('sourceForm.title'), value: title },
     { key: 'author', label: t('sourceForm.author'), value: author },
     { key: 'publisher', label: t('sourceFields.publisher'), value: fields.publisher },
-    { key: 'place', label: t('sourceFields.placeOfPublication'), value: fields.placeOfPublication },
     { key: 'year', label: t('isbn.year'), value: date && formatDate(date) },
   ];
 
