@@ -54,7 +54,7 @@ export function IdentifierCard({
           {hint}
         </Text>
       )}
-      {children && <View style={[styles.foot, { borderTopColor: `${colors.accentFg}4D` }]}>{children}</View>}
+      {children && <View style={styles.foot}>{children}</View>}
     </View>
   );
 }
@@ -88,6 +88,12 @@ const makeStyles = (c: Colors) =>
     action: { justifyContent: 'center' },
     hint: { ...typeScale.caption, color: c.accentFg },
     alert: typeScale.strong,
-    // On-accent at 30%, set inline from the theme.
-    foot: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: 10, borderTopWidth: 1 },
+    foot: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: c.accentRule,
+    },
   });

@@ -17,6 +17,7 @@ export const palette = {
     faint: '#C2BAAA',
     accent: '#A65A40',
     accentFg: '#FFF6EE',
+    accentRule: 'rgba(255,246,238,0.3)', // a rule on `accent`: accentFg at 30%
     accentSub: '#FCF0E8',
     accentSoft: '#F4E4DA',
     chipBg: '#EFE7D7',
@@ -45,6 +46,7 @@ export const palette = {
     faint: '#615749',
     accent: '#D08A6E',
     accentFg: '#1C1813',
+    accentRule: 'rgba(28,24,19,0.3)',
     accentSub: '#3B2A20',
     accentSoft: '#3A2A20',
     chipBg: '#33291B',

@@ -1,7 +1,7 @@
 import { Text } from 'react-native';
 import { describe, expect, it } from 'vitest';
 
-import { keepThemePreferenceIn, radius, setThemePreference, type ThemePreference, useTheme } from '../theme';
+import { keepThemePreferenceIn, palette, radius, setThemePreference, type ThemePreference, useTheme } from '../theme';
 import { render, text } from './render';
 
 function Probe() {
@@ -12,6 +12,13 @@ function Probe() {
 describe('theme', () => {
   it('has the tight corner scale', () => {
     expect(radius).toEqual({ cover: 3, chip: 6, control: 8, sheet: 12, pill: 999 });
+  });
+
+  // The rule over an identifier card's foot (Kaynak formu): on-accent at 30%, as the canvas mixes it.
+  it.each(['light', 'dark'] as const)('rules on accent with accentFg at 30%% in %s', (scheme) => {
+    const { accentFg, accentRule } = palette[scheme];
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(accentFg.slice(i, i + 2), 16));
+    expect(accentRule).toBe(`rgba(${r},${g},${b},0.3)`);
   });
 
   it('follows the system until a choice is kept', () => {
