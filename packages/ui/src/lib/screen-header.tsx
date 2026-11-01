@@ -1,5 +1,4 @@
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
-import X from 'lucide-react-native/icons/x';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,18 +20,15 @@ export function ScreenHeader({
   title,
   onBack,
   backLabel,
-  backIcon = 'arrow',
   titleAccessory,
   right,
 }: {
-  /** Text, set in upper case ("GENEL BAKIŞ"), or a node of the screen's own in the title's place (a name being written). */
+  /** Text, set in upper case ("GENEL BAKIŞ"), or a node of the screen's own in the title's place. */
   title: ReactNode;
   /** Shows the back arrow (pushed screens). */
   onBack?: () => void;
   /** What screen readers call the back arrow; needed with `onBack`. */
   backLabel?: string;
-  /** `close` draws an X in the arrow's place, for a header being edited (Vazgeç). */
-  backIcon?: 'arrow' | 'close';
   /** An icon right beside the title (Ara's Arama ipuçları), the actions still at the right. */
   titleAccessory?: ReactNode;
   /** The actions: `HeaderTextAction`s and `HeaderIconAction`s. */
@@ -46,11 +42,7 @@ export function ScreenHeader({
       <View style={styles.bar}>
         {onBack ? (
           <Pressable role="button" aria-label={backLabel} onPress={onBack} style={styles.icon}>
-            {backIcon === 'close' ? (
-              <X color={colors.fg} size={22} strokeWidth={1.6} />
-            ) : (
-              <ArrowLeft color={colors.fg} size={24} strokeWidth={1.6} />
-            )}
+            <ArrowLeft color={colors.fg} size={24} strokeWidth={1.6} />
           </Pressable>
         ) : (
           <View style={styles.noBack} />
