@@ -24,7 +24,12 @@ export function ListMessage({
     <View style={styles.center}>
       {title && <Text style={[styles.title, large && styles.large]}>{title}</Text>}
       <Text style={styles.lead}>{lead}</Text>
-      {action && <Button label={action.label} onPress={action.onPress} variant={action.variant ?? 'primary'} />}
+      {action && (
+        // Button sits at the start of its row (`alignSelf: 'flex-start'`); the wrapper is what `center` centres.
+        <View>
+          <Button label={action.label} onPress={action.onPress} variant={action.variant ?? 'primary'} />
+        </View>
+      )}
     </View>
   );
 }
