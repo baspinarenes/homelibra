@@ -38,6 +38,12 @@ export const tr = {
     themeSystem: 'Sistem',
     themeLight: 'Açık',
     themeDark: 'Koyu',
+    lastNotedLabel: 'Kaldığın yer',
+    lastNotedNote: 'Not önde',
+    lastNotedSource: 'Kaynak önde',
+    dividerLabel: 'Bölüm ayracı',
+    dividerRule: 'Çizgi',
+    dividerBand: 'Şerit',
     account: 'Hesap',
     appVersion: 'Homelibra {{version}}',
   },
@@ -151,6 +157,7 @@ export const tr = {
     takeNoteLead: 'Okuduğun kaynağa not düş.',
     takeNote: 'Not al',
     lastNoted: 'Kaldığın yer',
+    goOn: 'Yazmaya devam et ›',
   },
   // How long ago a Note was captured.
   elapsed: {

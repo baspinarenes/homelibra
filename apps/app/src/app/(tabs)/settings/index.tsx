@@ -18,9 +18,17 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ContactSection, PrivacyDocumentsSection } from '@/components/privacy-sections';
 import { SignOutButton } from '@/components/sign-out-button';
 import { authClient } from '@/lib/auth-client';
+import {
+  type HomeDivider,
+  type LastNotedLayout,
+  setHomeDivider,
+  setLastNotedLayout,
+  useHomeDivider,
+  useLastNotedLayout,
+} from '@/lib/home-appearance';
 
 /**
- * Ayarlar, on one page (#113): the theme, the Account's own pages (address,
+ * Ayarlar, on one page (#113): the theme and how Genel Bakış looks, the Account's own pages (address,
  * export, deletion) with sign-out under them (#140), the privacy documents,
  * contact, and the app's version. Every right of #40 (story 14) is one tap away.
  */
@@ -35,6 +43,16 @@ export default function SettingsScreen() {
     { value: 'light', label: t('settings.themeLight') },
     { value: 'dark', label: t('settings.themeDark') },
   ];
+  const lastNotedLayout = useLastNotedLayout();
+  const lastNotedLayouts: { value: LastNotedLayout; label: string }[] = [
+    { value: 'note', label: t('settings.lastNotedNote') },
+    { value: 'source', label: t('settings.lastNotedSource') },
+  ];
+  const homeDivider = useHomeDivider();
+  const homeDividers: { value: HomeDivider; label: string }[] = [
+    { value: 'rule', label: t('settings.dividerRule') },
+    { value: 'band', label: t('settings.dividerBand') },
+  ];
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -47,6 +65,24 @@ export default function SettingsScreen() {
               options={themes}
               value={preference}
               onChange={setThemePreference}
+            />
+          </View>
+          <View style={styles.theme}>
+            <Text style={styles.themeLabel}>{t('settings.lastNotedLabel')}</Text>
+            <Segment
+              label={t('settings.lastNotedLabel')}
+              options={lastNotedLayouts}
+              value={lastNotedLayout}
+              onChange={setLastNotedLayout}
+            />
+          </View>
+          <View style={styles.theme}>
+            <Text style={styles.themeLabel}>{t('settings.dividerLabel')}</Text>
+            <Segment
+              label={t('settings.dividerLabel')}
+              options={homeDividers}
+              value={homeDivider}
+              onChange={setHomeDivider}
             />
           </View>
         </Section>

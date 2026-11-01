@@ -67,11 +67,20 @@ export type Scheme = keyof typeof palette;
 export type Colors = { readonly [K in keyof typeof palette.light]: string };
 
 export const shadows = {
-  light: { card: '0 1px 4px rgba(42,37,32,0.10)', lift: '0 8px 22px rgba(42,37,32,0.16)' },
-  dark: { card: '0 1px 3px rgba(0,0,0,0.35)', lift: '0 8px 22px rgba(0,0,0,0.45)' },
+  light: {
+    card: '0 1px 4px rgba(42,37,32,0.10)',
+    lift: '0 8px 22px rgba(42,37,32,0.16)',
+    rule: '0 2px 8px rgba(42,37,32,0.14)',
+  },
+  dark: {
+    card: '0 1px 3px rgba(0,0,0,0.35)',
+    lift: '0 8px 22px rgba(0,0,0,0.45)',
+    rule: '0 2px 8px rgba(0,0,0,0.45)',
+  },
 } as const;
 
-export type Shadows = { readonly card: string; readonly lift: string };
+// `rule`: the soft shadow under Genel Bakış's section rule (Çizgi).
+export type Shadows = { readonly card: string; readonly lift: string; readonly rule: string };
 
 // From this width up, web gets the left tab rail and the two-column Source form.
 export const wideMinWidth = 720;
