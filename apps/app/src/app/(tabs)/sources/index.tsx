@@ -1,17 +1,18 @@
+import type { AppRouter } from '@homelibra/api';
 import { type CalendarDate, inYearRange } from '@homelibra/core/date';
 import { type SourceType, sourceTypes } from '@homelibra/core/source';
-import { Button } from '@homelibra/ui/button';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Segment } from '@homelibra/ui/segment';
-import { Sheet } from '@homelibra/ui/sheet';
+import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import type { inferRouterInputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -23,11 +24,12 @@ import {
   yearRangeLabel,
   yearRangeOf,
 } from '@/components/date-filter';
+import { ListMessage } from '@/components/list-message';
 import type { ReadingStatus } from '@/components/reading-status';
 import { SourceListRow } from '@/components/source-list-row';
 import { useTRPC } from '@/lib/trpc';
 
-type Sort = 'last' | 'title' | 'author' | 'date';
+type Sort = inferRouterInputs<AppRouter>['sources']['list']['sort'];
 
 /** What Süz ve sırala sets: the order, and the Tür and Tarih filters; a filter with nothing chosen keeps all. */
 type Choices = { sort: Sort; types: SourceType[]; dates: YearRangeDraft };
@@ -44,8 +46,8 @@ const unfiltered = (choices: Choices): Choices => ({
   dates: { ...emptyYearRange, calendar: choices.dates.calendar },
 });
 
-/** Whether the filters keep a Source, by the rule `sources.list` follows: for the sheet's live count. */
-function keeps({ types, dates }: Choices) {
+/** The test the filters put a Source to, by the rule `sources.list` follows: for the sheet's live count. */
+function sourceFilter({ types, dates }: Choices) {
   const range = yearRangeOf(dates);
   return (source: { type: SourceType; date: CalendarDate | null }) =>
     (types.length === 0 || types.includes(source.type)) && (!range || inYearRange(source.date, range));
@@ -85,20 +87,19 @@ export default function SourcesScreen() {
 
   if (all.isPending || all.isError || all.data.length === 0) {
     return (
-      <View style={styles.center}>
+      <View style={styles.screen}>
         <Stack.Screen options={{ headerRight: () => <HeaderActions onAdd={addSource} /> }} />
         {all.isPending ? (
-          <ActivityIndicator color={styles.spinner.color} />
+          <ActivityIndicator style={styles.pending} color={styles.spinner.color} />
         ) : all.isError ? (
-          <Text style={styles.lead}>{t('sources.loadFailed')}</Text>
+          <ListMessage lead={t('sources.loadFailed')} />
         ) : (
-          <>
-            <Text style={styles.title}>{t('sources.emptyTitle')}</Text>
-            <Text style={styles.lead}>{t('sources.emptyLead')}</Text>
-            <View style={styles.action}>
-              <Button label={t('sources.add')} onPress={addSource} />
-            </View>
-          </>
+          <ListMessage
+            title={t('sources.emptyTitle')}
+            large
+            lead={t('sources.emptyLead')}
+            action={{ label: t('sources.add'), onPress: addSource }}
+          />
         )}
       </View>
     );
@@ -106,31 +107,29 @@ export default function SourcesScreen() {
 
   const rows = sources.data ?? [];
   // The Sources of the chosen types that the Tarih filter hides for having no Date.
-  const ofTypes = keeps({ ...choices, dates: emptyYearRange });
+  const ofTypes = sourceFilter({ ...choices, dates: emptyYearRange });
   const undated = dates ? all.data.filter((source) => !source.date && ofTypes(source)).length : 0;
   const reading = rows.filter((source) => source.readingStatus === 'reading');
   const finished = rows.filter((source) => source.readingStatus === 'finished');
   const clearFilters = () => setChoices(unfiltered(choices));
 
   const empty = () => {
-    if (sources.isPending) return <ActivityIndicator color={styles.spinner.color} />;
-    if (sources.isError) return <Text style={styles.empty}>{t('sources.loadFailed')}</Text>;
+    if (sources.isPending) return <ActivityIndicator style={styles.pending} color={styles.spinner.color} />;
+    if (sources.isError) return <ListMessage lead={t('sources.loadFailed')} />;
     if (filterOn) {
       return (
-        <View style={styles.tabEmpty}>
-          <Text style={styles.lead}>{t('sources.filterEmpty')}</Text>
-          <Button variant="text" label={t('sources.clearFilter')} onPress={clearFilters} />
-        </View>
+        <ListMessage
+          lead={t('sources.filterEmpty')}
+          action={{ label: t('sources.clearFilter'), variant: 'text', onPress: clearFilters }}
+        />
       );
     }
-    if (tab === 'finished') return <Text style={styles.empty}>{t('sources.finishedEmpty')}</Text>;
+    if (tab === 'finished') return <ListMessage lead={t('sources.finishedEmpty')} />;
     return (
-      <View style={styles.tabEmpty}>
-        <Text style={styles.lead}>{t('sources.readingEmpty')}</Text>
-        <View style={styles.tabEmptyAction}>
-          <Button variant="secondary" label={t('sources.add')} onPress={addSource} />
-        </View>
-      </View>
+      <ListMessage
+        lead={t('sources.readingEmpty')}
+        action={{ label: t('sources.add'), variant: 'secondary', onPress: addSource }}
+      />
     );
   };
 
@@ -193,7 +192,7 @@ export default function SourcesScreen() {
       <FilterSheet
         draft={draft}
         onChange={setDraft}
-        count={draft ? all.data.filter(keeps(draft)).length : 0}
+        count={draft ? all.data.filter(sourceFilter(draft)).length : 0}
         onApply={() => {
           if (draft) setChoices(draft);
           setDraft(null);
@@ -226,15 +225,17 @@ function FilterSheet({
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   // The last choices stay on screen while the sheet slides away.
-  const [shown, setShown] = useState(draft ?? initial);
-  if (draft && draft !== shown) setShown(draft);
+  const [lastDraft, setLastDraft] = useState(draft ?? initial);
+  if (draft && draft !== lastDraft) setLastDraft(draft);
   const toggle = (type: SourceType) =>
     onChange({
-      ...shown,
-      types: shown.types.includes(type) ? shown.types.filter((other) => other !== type) : [...shown.types, type],
+      ...lastDraft,
+      types: lastDraft.types.includes(type)
+        ? lastDraft.types.filter((other) => other !== type)
+        : [...lastDraft.types, type],
     });
   // A year its calendar does not have (1400 r.) cannot be applied.
-  const yearMissing = hasYear(shown.dates) && yearRangeOf(shown.dates) === null;
+  const yearMissing = hasYear(lastDraft.dates) && yearRangeOf(lastDraft.dates) === null;
 
   return (
     <Sheet
@@ -244,13 +245,13 @@ function FilterSheet({
       onClose={onClose}
       secondary={{
         label: t('sources.clear'),
-        onPress: () => onChange(unfiltered(shown)),
-        disabled: shown.types.length === 0 && !hasYear(shown.dates),
+        onPress: () => onChange(unfiltered(lastDraft)),
+        disabled: lastDraft.types.length === 0 && !hasYear(lastDraft.dates),
       }}
       primary={{ label: t('sources.show', { count }), onPress: onApply, disabled: yearMissing }}
     >
       <View style={styles.sheet}>
-        <Field label={t('sources.sort')}>
+        <SheetField label={t('sources.sort')}>
           <Segment
             label={t('sources.sort')}
             options={[
@@ -259,39 +260,29 @@ function FilterSheet({
               { value: 'author', label: t('sources.byAuthor') },
               { value: 'date', label: t('sources.byDate') },
             ]}
-            value={shown.sort}
-            onChange={(sort) => onChange({ ...shown, sort })}
+            value={lastDraft.sort}
+            onChange={(sort) => onChange({ ...lastDraft, sort })}
             block
           />
-        </Field>
-        <Field label={t('sources.types')}>
+        </SheetField>
+        <SheetField label={t('sources.types')}>
           <ChipRow>
             {sourceTypes.map((type) => (
               <Chip
                 key={type}
                 label={t(`sourceTypes.${type}.label`)}
                 tone="outline"
-                selected={shown.types.includes(type)}
+                selected={lastDraft.types.includes(type)}
                 onPress={() => toggle(type)}
               />
             ))}
           </ChipRow>
-        </Field>
-        <Field label={t('sources.dates')}>
-          <YearRangeFields value={shown.dates} onChange={(dates) => onChange({ ...shown, dates })} />
-        </Field>
+        </SheetField>
+        <SheetField label={t('sources.dates')}>
+          <YearRangeFields value={lastDraft.dates} onChange={(dates) => onChange({ ...lastDraft, dates })} />
+        </SheetField>
       </View>
     </Sheet>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label.toLocaleUpperCase('tr')}</Text>
-      {children}
-    </View>
   );
 }
 
@@ -325,31 +316,10 @@ const makeStyles = (c: Colors) =>
     list: { flex: 1 },
     // Grows so an empty tab's message can sit in the middle.
     content: { flexGrow: 1, paddingHorizontal: space.lg, paddingBottom: space.xxl },
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: space.xl,
-      gap: space.sm,
-      backgroundColor: c.page,
-    },
-    title: { ...typeScale.title, color: c.fg, textAlign: 'center' },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    action: { marginTop: space.lg },
+    pending: { flex: 1 },
     spinner: { color: c.accent },
     headerActions: { flexDirection: 'row', alignItems: 'center' },
     filters: { gap: space.sm, paddingTop: space.md },
     hint: { ...typeScale.caption, color: c.muted },
-    tabEmpty: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: space.md,
-      paddingHorizontal: space.lg,
-    },
-    tabEmptyAction: { marginTop: space.xs },
-    empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
     sheet: { gap: 18 },
-    field: { gap: 6 },
-    fieldLabel: { ...typeScale.fieldLabel, color: c.muted },
   });

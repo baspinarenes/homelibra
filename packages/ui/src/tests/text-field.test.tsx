@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { TextField } from '../text-field';
-import { all, render, text } from './render';
+import { all, css, render, text } from './render';
 
 const inputs = (page: ReturnType<typeof render>) => all(page).filter((n) => n.tag === 'input' || n.tag === 'textarea');
 
@@ -16,6 +16,13 @@ describe('TextField', () => {
     const page = render(<TextField label="Yeni ad" labelHidden value="matbuat" onChangeText={() => {}} />);
     expect(text(page)).toBe('');
     expect(inputs(page)[0]!.attrs['aria-label']).toBe('Yeni ad');
+  });
+
+  it('sets an Excerpt in the quote face', () => {
+    const draw = (excerpt: boolean) =>
+      inputs(render(<TextField label="Alıntı" value="" excerpt={excerpt} multiline onChangeText={() => {}} />))[0]!;
+    expect(css(draw(true), 'fontFamily')).toContain('CharisSIL');
+    expect(css(draw(false), 'fontFamily')).not.toContain('CharisSIL');
   });
 
   it('shows what is wrong below an invalid field', () => {

@@ -61,7 +61,7 @@ describe('Reading status', () => {
     expect(await api.sources.setReadingStatus({ id, status: 'finished' })).toEqual({ untaggedCount: 0 });
   });
 
-  it('keeps finished Sources out of Ana sayfa\'s "Son not aldığın" while a Source being read has a Note', async () => {
+  it("keeps finished Sources out of Genel bakış's Kaldığın yer while a Source being read has a Note", async () => {
     const api = await scholar();
     const { id: kadi } = await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib' });
     const { id: vakif } = await api.sources.create({ type: 'book', title: "Osmanlı'da Vakıf" });
@@ -82,7 +82,7 @@ describe('Reading status', () => {
     expect((await api.sources.lastNoted())?.source.title).toBe("Osmanlı'da Vakıf");
   });
 
-  it('lists the Sources being read for Ana sayfa, the last noted first, then the ones without a Note, newest first', async () => {
+  it('lists the Sources being read for Genel bakış, the last noted first, then the ones without a Note, newest first', async () => {
     const api = await scholar();
     const { id: kadi } = await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib', author: 'Ortaylı' });
     const { id: vakif } = await api.sources.create({ type: 'book', title: "Osmanlı'da Vakıf" });

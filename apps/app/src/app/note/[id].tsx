@@ -175,7 +175,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <TextField label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline quote />
+        <TextField label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline excerpt />
         <TextField label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
         <View style={styles.tags}>
           <Text style={styles.label}>{t('tags.field').toLocaleUpperCase('tr')}</Text>

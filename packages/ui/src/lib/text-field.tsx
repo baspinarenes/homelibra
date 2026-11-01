@@ -14,7 +14,7 @@ export function TextField({
   required = false,
   labelHidden = false,
   error,
-  quote = false,
+  excerpt = false,
   code = false,
   multiline = false,
   onChangeText,
@@ -29,8 +29,8 @@ export function TextField({
   labelHidden?: boolean;
   /** What is wrong with the value; shown below the field in `danger`. */
   error?: string;
-  /** An Excerpt, in the quote face (Charis SIL, upright). */
-  quote?: boolean;
+  /** Holds an Excerpt: set in the quote face (Charis SIL, upright). */
+  excerpt?: boolean;
   /** A six-digit sign-in code: the number pad, the code from the email offered, digits only, in mono. */
   code?: boolean;
 } & TextInputProps) {
@@ -65,7 +65,7 @@ export function TextField({
         }}
         style={[
           styles.input,
-          quote && styles.quote,
+          excerpt && styles.excerpt,
           code && styles.code,
           multiline && styles.multiline,
           invalid && styles.invalid,
@@ -106,7 +106,7 @@ const makeStyles = (c: Colors) =>
       includeFontPadding: false,
       textAlignVertical: 'center',
     },
-    quote: { ...typeScale.excerpt, color: c.quoteInk },
+    excerpt: { ...typeScale.excerpt, color: c.quoteInk },
     code: {
       fontFamily: typeScale.locator.fontFamily,
       fontSize: 24,

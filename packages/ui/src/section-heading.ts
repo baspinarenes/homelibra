@@ -1,1 +1,1 @@
-export { Section, SectionHeading, Sections } from './lib/section-heading';
+export { Section, SectionHeading, Sections, SectionText } from './lib/section-heading';

@@ -2,7 +2,7 @@ import Trash from 'lucide-react-native/icons/trash';
 import { Text } from 'react-native';
 import { describe, expect, it } from 'vitest';
 
-import { Sheet, SheetAction } from '../sheet';
+import { Sheet, SheetAction, SheetField } from '../sheet';
 import { byRole, nameOf, render, text } from './render';
 
 const noop = () => {};
@@ -53,12 +53,14 @@ describe('Sheet', () => {
   });
 
   it('is not there until opened', () => {
-    const page = render(
-      <Sheet visible={false} title="Konum" closeLabel="Kapat" onClose={noop}>
-        <Text>s. 12</Text>
-      </Sheet>,
-    );
-    expect(byRole(page, 'dialog')).toEqual([]);
+    const draw = (visible: boolean) =>
+      render(
+        <Sheet visible={visible} title="Konum" closeLabel="Kapat" onClose={noop}>
+          <Text>s. 12</Text>
+        </Sheet>,
+      );
+    expect(byRole(draw(true), 'dialog')).toHaveLength(1);
+    expect(byRole(draw(false), 'dialog')).toEqual([]);
   });
 });
 
@@ -66,5 +68,16 @@ describe('SheetAction', () => {
   it('is a row named by what it does', () => {
     const page = render(<SheetAction icon={Trash} label="Kapağı kaldır" destructive onPress={noop} />);
     expect(byRole(page, 'button').map(nameOf)).toEqual(['Kapağı kaldır']);
+  });
+});
+
+describe('SheetField', () => {
+  it('labels its control in Turkish upper case, above it', () => {
+    const page = render(
+      <SheetField label="Tür">
+        <Text>Kitap</Text>
+      </SheetField>,
+    );
+    expect(text(page)).toBe('TÜRKitap');
   });
 });

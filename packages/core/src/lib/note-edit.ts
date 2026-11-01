@@ -8,11 +8,8 @@ export type NoteFields = {
   comment: string | null;
 };
 
-/** A Note's texts as typed, before they are stored. */
+/** A Note's texts as typed, before they are stored; as an edit, a field left out stays. */
 export type NoteText = { locator?: string | null; excerpt?: string | null; comment?: string | null };
-
-/** A change to a stored Note. A field left out stays; a blank or null one is emptied. */
-export type NoteEdit = NoteText;
 
 // Blank means empty. Inner line breaks stay: an Excerpt is copied verbatim.
 const stored = (text: string | null | undefined) => text?.trim() || null;
@@ -45,7 +42,7 @@ export function capturedNote({ locator, excerpt, comment }: NoteText): NoteField
  * Null when the edit would leave neither an Excerpt nor a Comment; the Note
  * then stays as it was.
  */
-export function editedNote(current: Omit<NoteFields, 'locatorSort'>, edit: NoteEdit): NoteFields | null {
+export function editedNote(current: Omit<NoteFields, 'locatorSort'>, edit: NoteText): NoteFields | null {
   const locator = edit.locator === undefined ? current.locator : stored(edit.locator);
   return withText({
     locator,
@@ -53,4 +50,21 @@ export function editedNote(current: Omit<NoteFields, 'locatorSort'>, edit: NoteE
     excerpt: edit.excerpt === undefined ? current.excerpt : stored(edit.excerpt),
     comment: edit.comment === undefined ? current.comment : stored(edit.comment),
   });
+}
+
+/**
+ * A stored Note's sort value read from its Locator again, by today's rule;
+ * null when the stored one is that already. For the one-off work that
+ * corrects sort values stored by an older rule or by hand (#125).
+ */
+export function rederivedSort({
+  locator,
+  locatorSort,
+}: Pick<NoteFields, 'locator' | 'locatorSort'>): Pick<NoteFields, 'locatorSort'> | null {
+  const derived = derivedSort(locator);
+  const same =
+    derived === null || locatorSort === null
+      ? derived === locatorSort
+      : derived.length === locatorSort.length && derived.every((part, index) => part === locatorSort[index]);
+  return same ? null : { locatorSort: derived };
 }

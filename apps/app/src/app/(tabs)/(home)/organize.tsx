@@ -5,7 +5,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 import { ToOrganizeRow, useToOrganize } from '@/components/to-organize';
 
 /**
- * Düzenlenecekler (#13), from Ana sayfa's strip: every Source with an
+ * Düzenlenecekler (#13), from Genel bakış's strip: every Source with an
  * untagged Note since its last "Bitir", the finished ones first, each part
  * the last noted first. A row opens
  * the Source page, where "Düzenle · N etiketsiz" starts the work.

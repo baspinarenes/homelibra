@@ -40,7 +40,7 @@ const undoGone = (error: unknown) =>
 /**
  * Offers Geri al for an operation the server took a snapshot of: the token
  * it returned goes back to `undo`, and every query refreshes, since a
- * Source or Note coming back shows up in lists, search and Ana sayfa alike.
+ * Source or Note coming back shows up in lists, search and Genel bakış alike.
  */
 export function offerServerUndo(message: string, token: string | null) {
   offerReceiptUndo(

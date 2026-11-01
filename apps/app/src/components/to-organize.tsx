@@ -18,7 +18,7 @@ type ToOrganize = inferRouterOutputs<AppRouter>['organize']['list'][number];
 /** Titles the Genel bakış strip names; its count tells the rest. */
 const stripTitles = 3;
 
-/** Düzenlenecekler (#13): the Sources with untagged Notes since their last "Bitir". Shared by Ana sayfa, its tab badge and the list. */
+/** Düzenlenecekler (#13): the Sources with untagged Notes since their last "Bitir". Shared by Genel bakış, its tab badge and the list. */
 export function useToOrganize() {
   const trpc = useTRPC();
   return useQuery(trpc.organize.list.queryOptions());
