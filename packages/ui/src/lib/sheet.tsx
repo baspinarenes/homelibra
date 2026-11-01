@@ -1,6 +1,7 @@
-import { type ReactNode, useMemo, useRef } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Modal,
   PanResponder,
   Pressable,
@@ -68,6 +69,23 @@ export function Sheet({
   const keyboardTop = useKeyboardTop();
   const { height } = useWindowDimensions();
   const drag = useRef(new Animated.Value(0)).current;
+  // 0 gone, 1 up. The dim fades in place while the sheet slides over it, so
+  // the Modal stays open until the way out has played.
+  const shown = useRef(new Animated.Value(0)).current;
+  const [mounted, setMounted] = useState(visible);
+  if (visible && !mounted) setMounted(true);
+
+  useEffect(() => {
+    if (visible) drag.setValue(0);
+    Animated.timing(shown, {
+      toValue: visible ? 1 : 0,
+      duration: visible ? 280 : 220,
+      easing: visible ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished && !visible) setMounted(false);
+    });
+  }, [visible, shown, drag]);
 
   const pan = useMemo(
     () =>
@@ -86,19 +104,22 @@ export function Sheet({
   // 14 clear of the keyboard when it is up, of the navigation bar or the home indicator otherwise.
   const bottom = (keyboardTop > 0 ? keyboardTop : insets.bottom) + 14;
   const tallest = height - insets.top - 48;
+  const rise = shown.interpolate({ inputRange: [0, 1], outputRange: [height, 0] });
 
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
-      animationType="slide"
+      animationType="none"
       statusBarTranslucent
       navigationBarTranslucent
       onRequestClose={onClose}
       onDismiss={onHidden}
     >
-      <View style={styles.backdrop}>
-        <Pressable aria-hidden style={styles.dismiss} onPress={onClose} />
+      <View style={styles.frame}>
+        <Animated.View style={[styles.backdrop, { opacity: shown }]}>
+          <Pressable aria-hidden style={styles.dismiss} onPress={onClose} />
+        </Animated.View>
         <Animated.View
           role="dialog"
           aria-modal
@@ -107,7 +128,7 @@ export function Sheet({
             styles.sheet,
             fill ? { height: tallest } : { maxHeight: tallest },
             { paddingBottom: bottom },
-            { transform: [{ translateY: drag }] },
+            { transform: [{ translateY: Animated.add(rise, drag) }] },
           ]}
         >
           <View {...pan.panHandlers} style={styles.top}>
@@ -197,7 +218,8 @@ export function SheetAction({
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
+    frame: { flex: 1, justifyContent: 'flex-end' },
+    backdrop: { ...StyleSheet.absoluteFill, backgroundColor: c.scrim },
     dismiss: { ...StyleSheet.absoluteFill },
     sheet: {
       width: '100%',
