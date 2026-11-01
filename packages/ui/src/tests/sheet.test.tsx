@@ -27,13 +27,13 @@ describe('Sheet', () => {
         title="Konum"
         closeLabel="Kapat"
         onClose={noop}
-        secondary={{ label: 'Konumsuz', onPress: noop }}
+        secondary={{ label: 'Konum yok', onPress: noop }}
         primary={{ label: 'Tamam', onPress: noop }}
       >
         <Text>s. 12</Text>
       </Sheet>,
     );
-    expect(byRole(page, 'button').map(nameOf)).toEqual(['Kapat', 'Konumsuz', 'Tamam']);
+    expect(byRole(page, 'button').map(nameOf)).toEqual(['Kapat', 'Konum yok', 'Tamam']);
   });
 
   it('stands at its full height, 48 below the top, when its body is a list that scrolls itself', () => {

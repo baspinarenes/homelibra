@@ -147,7 +147,7 @@ export function Sheet({
           ) : (
             <ScrollView
               style={styles.scroll}
-              contentContainerStyle={styles.body}
+              contentContainerStyle={[styles.body, styles.scrolled]}
               keyboardShouldPersistTaps="handled"
               bounces={false}
             >
@@ -239,12 +239,16 @@ const makeStyles = (c: Colors) =>
     // second line goes below, Kapat staying on the first one's baseline.
     title: { ...typeScale.sourceTitle, color: c.fg, flex: 1, paddingTop: 10, paddingBottom: 9 },
     close: { marginTop: 2, marginBottom: -2 },
-    scroll: { flexGrow: 0, flexShrink: 1 },
+    // The scroll clips what it holds: it reaches 4 past the body on every side, so a field at the
+    // body's edge keeps its border and its 3px focus ring.
+    scroll: { flexGrow: 0, flexShrink: 1, margin: -4 },
+    scrolled: { padding: 4 },
     body: { gap: 14 },
     filled: { flex: 1 },
     footer: { flexDirection: 'row', gap: 8 },
-    secondary: { flex: 1 },
-    primary: { flex: 2 },
+    // A third for the secondary, more when its label needs it, so it never wraps; the primary takes the rest.
+    secondary: { flexShrink: 0, minWidth: '33%' },
+    primary: { flex: 1 },
     action: {
       flexDirection: 'row',
       alignItems: 'center',

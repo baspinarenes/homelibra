@@ -67,11 +67,20 @@ export type Scheme = keyof typeof palette;
 export type Colors = { readonly [K in keyof typeof palette.light]: string };
 
 export const shadows = {
-  light: { card: '0 1px 4px rgba(42,37,32,0.10)', lift: '0 8px 22px rgba(42,37,32,0.16)' },
-  dark: { card: '0 1px 3px rgba(0,0,0,0.35)', lift: '0 8px 22px rgba(0,0,0,0.45)' },
+  light: {
+    card: '0 1px 4px rgba(42,37,32,0.10)',
+    lift: '0 8px 22px rgba(42,37,32,0.16)',
+    rule: '0 2px 8px rgba(42,37,32,0.14)',
+  },
+  dark: {
+    card: '0 1px 3px rgba(0,0,0,0.35)',
+    lift: '0 8px 22px rgba(0,0,0,0.45)',
+    rule: '0 2px 8px rgba(0,0,0,0.45)',
+  },
 } as const;
 
-export type Shadows = { readonly card: string; readonly lift: string };
+// `rule`: the soft shadow under Genel Bakış's section rule (Çizgi).
+export type Shadows = { readonly card: string; readonly lift: string; readonly rule: string };
 
 // From this width up, web gets the left tab rail and the two-column Source form.
 export const wideMinWidth = 720;
@@ -106,9 +115,14 @@ export const type = {
   screenTitle: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 2.2 }, // every screen's header, upper case
   sourceTitle: { fontFamily: fonts.serifMedium, fontSize: 21, lineHeight: 28 }, // also a sheet's title
   sourceTitleSm: { fontFamily: fonts.serifMedium, fontSize: 17, lineHeight: 23 }, // a list row
+  summary: { fontFamily: fonts.serif, fontSize: 21, lineHeight: 29 }, // Kütüphanen's sentence
+  // Heavier EB Garamond at the size of the line it sits in: a count set apart in `summary`.
+  strongSerif: { fontFamily: fonts.serifMedium },
   excerpt: { fontFamily: fonts.quote, fontSize: 16, lineHeight: 27 }, // + 2px quoteBar left rule
   excerptSm: { fontFamily: fonts.quote, fontSize: 15, lineHeight: 25 },
+  excerptLg: { fontFamily: fonts.quote, fontSize: 19, lineHeight: 32 }, // Kaldığın yer's words, Not önde
   body: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
+  bodyLg: { fontFamily: fonts.sans, fontSize: 17, lineHeight: 25 }, // Kaldığın yer's comment, Not önde
   bodySm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 20 }, // a form's error, Arama ipuçları
   comment: { fontFamily: fonts.sans, fontSize: 14.5, lineHeight: 22 }, // a Note's comment under its excerpt
   commentSm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 22 }, // the same under excerptSm
