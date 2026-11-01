@@ -246,8 +246,9 @@ const makeStyles = (c: Colors) =>
     body: { gap: 14 },
     filled: { flex: 1 },
     footer: { flexDirection: 'row', gap: 8 },
-    secondary: { flex: 1 },
-    primary: { flex: 2 },
+    // A third for the secondary, more when its label needs it, so it never wraps; the primary takes the rest.
+    secondary: { flexShrink: 0, minWidth: '33%' },
+    primary: { flex: 1 },
     action: {
       flexDirection: 'row',
       alignItems: 'center',
