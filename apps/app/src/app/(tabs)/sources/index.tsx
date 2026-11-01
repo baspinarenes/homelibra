@@ -9,10 +9,10 @@ import { TextTabs } from '@homelibra/ui/text-tabs';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { inferRouterInputs } from '@trpc/server';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -70,6 +70,20 @@ export default function SourcesScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<ReadingStatus>('reading');
   const [choices, setChoices] = useState(initial);
+  // A link from Genel Bakış's Kütüphanen opens a tab (`tab`) or narrows to one Tür (`type`), the tab kept.
+  // Taken into the screen's own state once, then cleared, so the same link works again.
+  const link = useLocalSearchParams<{ tab?: string; type?: string }>();
+  const linked = link.tab || link.type ? `${link.tab}|${link.type}` : null;
+  const [taken, setTaken] = useState<string | null>(null);
+  if (linked !== taken) {
+    setTaken(linked);
+    if (link.tab === 'reading' || link.tab === 'finished') setTab(link.tab);
+    const type = sourceTypes.find((known) => known === link.type);
+    if (type) setChoices((current) => ({ ...current, types: [type] }));
+  }
+  useEffect(() => {
+    if (linked) router.setParams({ tab: undefined, type: undefined });
+  }, [linked, router]);
   // The sheet's choices while it is open; "Kapat" drops them.
   const [draft, setDraft] = useState<Choices | null>(null);
   const { sort, types } = choices;
