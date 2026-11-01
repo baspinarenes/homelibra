@@ -25,6 +25,14 @@ describe('TextField', () => {
     expect(css(draw(false), 'fontFamily')).not.toContain('CharisSIL');
   });
 
+  it('keeps 14 inside its edge and has its 3px focus ring before it is focused', () => {
+    // On Android an outline that appears on focus drops the input's padding.
+    const [input] = inputs(render(<TextField label="Dosyanın adı" value="" onChangeText={() => {}} />));
+    expect(css(input!, 'paddingInline')).toBe('14px');
+    expect(css(input!, 'outlineWidth')).toBe('3px');
+    expect(css(input!, 'outlineColor')).toBe('transparent');
+  });
+
   it('shows what is wrong below an invalid field', () => {
     const page = render(<TextField label="ISBN" value="975-08-0035" error="Bu bir ISBN’e benzemiyor." />);
     expect(inputs(page)[0]!.attrs['aria-invalid']).toBe('true');

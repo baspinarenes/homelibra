@@ -6,13 +6,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
+import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
 import { narrowView, SearchField, useSearchText, useTagSearch } from '@/components/note-search';
 import { useTRPC } from '@/lib/trpc';
 
 /**
- * A Tag's page (#51, story 104): "Etiket: " and its name in the header, and
- * under it the Collection view of that one Tag, saved nowhere; its switch
+ * A Tag's page (#51, story 104): ETİKET in the header, and under it the
+ * Tag's name and the Collection view of that one Tag, saved nowhere; its switch
  * lives on the page, and its search box only narrows what is shown. "Dosya
  * yap" in the header makes it a Collection of the same name, Tag and switch
  * and opens that instead.
@@ -60,6 +60,7 @@ export default function TagScreen() {
 
   const bar = (
     <>
+      <ViewName name={tag.name} />
       <SourceNotesSwitch
         value={includeSourceNotes}
         count={view.data.sourceOnlyCount}
@@ -79,8 +80,7 @@ export default function TagScreen() {
           title: tag.name,
           header: ({ navigation, back }: NativeStackHeaderProps) => (
             <ScreenHeader
-              prefix={t('collection.tagTitlePrefix')}
-              title={tag.name}
+              title={t('collection.tagPageTitle')}
               onBack={back ? navigation.goBack : undefined}
               backLabel={t('screenHeader.back')}
               right={

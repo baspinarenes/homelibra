@@ -52,6 +52,16 @@ describe('Sheet', () => {
     expect(style(true)).toMatch(new RegExp(`(^|;)height:${tallest}`));
   });
 
+  it("keeps 14 clear of the phone's navigation bar", () => {
+    const page = render(
+      <Sheet visible title="Filtrele" closeLabel="Kapat" onClose={noop} primary={{ label: 'Uygula', onPress: noop }}>
+        <Text>Yıllar</Text>
+      </Sheet>,
+    );
+    // The render helper's phone has a 20px gesture bar.
+    expect(byRole(page, 'dialog')[0]!.attrs.style).toMatch(/padding-bottom:34px/);
+  });
+
   it('is not there until opened', () => {
     const draw = (visible: boolean) =>
       render(
