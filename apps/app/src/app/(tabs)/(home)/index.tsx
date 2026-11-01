@@ -66,7 +66,7 @@ export default function HomeScreen() {
           </View>
         )}
         <LastNotedSection lastNoted={lastNoted.data} afterAlerts={alerts} />
-        <ReadingList exceptId={lastNoted.data.source.id} />
+        <ReadingList />
         <RecentTags />
       </ScrollView>
     );

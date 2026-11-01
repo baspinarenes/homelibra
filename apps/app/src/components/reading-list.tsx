@@ -16,16 +16,16 @@ const shownCount = 6;
 
 /**
  * Genel Bakış's Okunuyor (story 162): the Sources being read, the last noted
- * first, without the one Kaldığın yer already shows. A row opens the
- * Source page. Nothing when no other Source is being read.
+ * first, the one Kaldığın yer shows too, so the list is whole even with one
+ * Source. A row opens the Source page. Nothing when no Source is being read.
  */
-export function ReadingList({ exceptId }: { exceptId: string | undefined }) {
+export function ReadingList() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const reading = useQuery(trpc.sources.reading.queryOptions());
-  const sources = reading.data?.filter((source) => source.id !== exceptId) ?? [];
+  const sources = reading.data ?? [];
   if (sources.length === 0) return null;
 
   return (
