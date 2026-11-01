@@ -51,6 +51,18 @@
           "photosPermission": "Homelibra, kaynaklarına kapak seçebilmen için fotoğraflarına erişir.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 72,
+          "resizeMode": "contain",
+          "backgroundColor": "#F6F2EA",
+          "dark": {
+            "backgroundColor": "#1C1813"
+          }
+        }
       ]
     ],
     "experiments": {

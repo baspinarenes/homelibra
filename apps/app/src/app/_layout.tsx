@@ -9,7 +9,9 @@ import { keepThemePreferenceIn, useTheme } from '@homelibra/ui/theme';
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -22,6 +24,10 @@ import { queryClient, TRPCProvider, trpcClient } from '@/lib/trpc';
 
 // Read synchronously at startup, so the first frame already has the right theme.
 keepThemePreferenceIn({ load: loadThemePreference, save: saveThemePreference });
+
+// The native splash (the logo) stays up until the session and fonts are in,
+// so a cold start goes straight from the logo to the first screen.
+void SplashScreen.preventAutoHideAsync();
 
 export default Sentry.wrap(RootLayout);
 
@@ -51,6 +57,10 @@ function RootLayout() {
   // outright: Expo Router's own fallback is the shortest route name.
   const home = !session ? '/sign-in' : closed ? '/account-closed' : !termsAccepted ? '/welcome' : '/';
 
+  useEffect(() => {
+    if (!loading) void SplashScreen.hideAsync();
+  }, [loading]);
+
   return (
     <SafeAreaProvider>
       <QueryProvider>
@@ -58,6 +68,7 @@ function RootLayout() {
           <OutboxProvider>
             {/* Follows the app's theme, which Ayarlar can pin away from the system's. */}
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            {/* Under the native splash on Android and iOS; only the web, which has none, sees it. */}
             {loading ? (
               <View style={[styles.splash, { backgroundColor: colors.page }]}>
                 <ActivityIndicator color={colors.accent} />
