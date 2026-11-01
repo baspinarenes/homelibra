@@ -6,7 +6,7 @@ import { draftToInput, emptyDraft, type SourceDraft, SourceForm, useLeaveAfterSa
 import { trpcClient } from '@/lib/trpc';
 
 /**
- * Yeni kaynak: from Kaynaklar and from Genel bakış's "İlk kaynağını ekle".
+ * Yeni kaynak: from Kaynaklar and from Genel Bakış's "İlk kaynağını ekle".
  * Online only: the outbox carries Notes, not Sources (#58).
  */
 export default function NewSourceScreen() {

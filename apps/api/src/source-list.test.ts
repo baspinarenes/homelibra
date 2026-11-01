@@ -66,7 +66,7 @@ describe('Kaynaklar by Son not', () => {
   });
 });
 
-// Kaynaklar's Süz ve sırala (#122): the Tür filter keeps the Sources of the
+// Kaynaklar's Filtrele ve sırala (#122): the Tür filter keeps the Sources of the
 // chosen types; with none chosen, every type.
 describe('Tür filter in Kaynaklar', () => {
   it('keeps only the Sources of the chosen types, with the Tarih filter on top', async () => {

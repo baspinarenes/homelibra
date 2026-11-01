@@ -10,11 +10,11 @@ import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
 
-/** Genel bakış shows this many; "Tümü ›" opens Kaynaklar for the rest. */
+/** Genel Bakış shows this many; "Tümü ›" opens Kaynaklar for the rest. */
 const shownCount = 6;
 
 /**
- * Genel bakış's Okunuyor (story 162): the Sources being read, the last noted
+ * Genel Bakış's Okunuyor (story 162): the Sources being read, the last noted
  * first, without the one Kaldığın yer already shows. A row opens the
  * Source page. Nothing when no other Source is being read.
  */

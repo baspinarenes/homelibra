@@ -4,7 +4,7 @@ import { queryClient, trpcOptions } from './trpc';
 
 /**
  * Everywhere a Source or a Note shows: Source pages and lists (Kaynaklar,
- * Genel bakış, Okunuyor), search, Etiketler and tag pages, Düzenlenecekler and
+ * Genel Bakış, Okunuyor), search, Etiketler and tag pages, Düzenlenecekler and
  * the tab badge, Collections.
  */
 const showingLibrary = [

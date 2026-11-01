@@ -5,7 +5,7 @@ import { type Colors, type as typeScale } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 /**
- * One part of a sheet that sets several things (Süz ve sırala, Süz): its
+ * One part of a sheet that sets several things (Filtrele ve sırala, Filtrele): its
  * label in Turkish upper case, as a TextField's, and its control 6 under it.
  */
 export function SheetField({ label, children }: { label: string; children: ReactNode }) {
