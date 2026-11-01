@@ -18,7 +18,7 @@ describe('ScreenHeader', () => {
   });
 
   it("sets a page's name in upper case, the Turkish way", () => {
-    const page = render(<ScreenHeader title="Genel bakış" />);
+    const page = render(<ScreenHeader title="Genel Bakış" />);
     expect(text(byRole(page, 'heading')[0]!)).toBe('GENEL BAKIŞ');
   });
 
@@ -68,14 +68,14 @@ describe('ScreenHeader', () => {
       const [heading] = byRole(page, 'heading');
       return all(page).filter((n) => all(n).includes(heading!) && css(n, 'height') === '44px');
     };
-    const bare = render(<ScreenHeader title="Genel bakış" />);
+    const bare = render(<ScreenHeader title="Genel Bakış" />);
     const withIcons = render(
       <ScreenHeader
         title="Kaynaklar"
         right={
           <>
             <HeaderIconAction icon={Trash} label="Sırala" size={24} onPress={noop} />
-            <HeaderIconAction icon={Trash} label="Süz" size={24} onPress={noop} />
+            <HeaderIconAction icon={Trash} label="Filtrele" size={24} onPress={noop} />
           </>
         }
       />,
@@ -89,14 +89,14 @@ describe('ScreenHeader', () => {
       <ScreenHeader
         title="Ara"
         titleAccessory={<HeaderIconAction icon={Trash} label="Arama ipuçları" tone="muted" onPress={noop} />}
-        right={<HeaderIconAction icon={Trash} label="Süz" onPress={noop} />}
+        right={<HeaderIconAction icon={Trash} label="Filtrele" onPress={noop} />}
       />,
     );
     const [heading] = byRole(page, 'heading');
     const [tips, filter] = byRole(page, 'button');
     expect(text(heading!)).toBe('ARA');
     expect(nameOf(tips!)).toBe('Arama ipuçları');
-    expect(nameOf(filter!)).toBe('Süz');
+    expect(nameOf(filter!)).toBe('Filtrele');
     const order = all(page);
     expect(order.indexOf(heading!)).toBeLessThan(order.indexOf(tips!));
   });
@@ -134,8 +134,8 @@ describe('ScreenHeader', () => {
 
 describe('HeaderIconAction', () => {
   it('lights a dot over its icon while what it opens is in effect (a filter is on)', () => {
-    const [plain] = byRole(render(<HeaderIconAction icon={Trash} label="Süz ve sırala" onPress={noop} />), 'button');
-    const [lit] = byRole(render(<HeaderIconAction icon={Trash} label="Süz ve sırala" dot onPress={noop} />), 'button');
+    const [plain] = byRole(render(<HeaderIconAction icon={Trash} label="Filtrele" onPress={noop} />), 'button');
+    const [lit] = byRole(render(<HeaderIconAction icon={Trash} label="Filtrele" dot onPress={noop} />), 'button');
     expect(all(lit!).length).toBe(all(plain!).length + 1);
   });
 });
