@@ -359,7 +359,7 @@ const makeStyles = (c: Colors) =>
     pressed: { opacity: 0.7 },
     heading: {
       gap: 10,
-      paddingTop: 2,
+      paddingTop: space.md,
       paddingBottom: 14,
       borderBottomWidth: 1,
       borderBottomColor: c.line,
