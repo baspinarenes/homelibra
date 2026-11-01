@@ -552,9 +552,12 @@ const makeStyles = (c: Colors) =>
       paddingTop: 10,
       paddingBottom: 10,
       textAlignVertical: 'top',
+      // No browser focus ring on web. Set from the start, not on focus: adding an outline to an
+      // Android input redraws its background and drops its padding, the text then touching the border.
+      outlineWidth: 0,
     },
-    // Only the accent border, as in the design; no browser focus ring on web.
-    focused: { borderColor: c.accent, outlineWidth: 0 },
+    // Only the accent border, as in the design.
+    focused: { borderColor: c.accent },
     inputGrowing: { minHeight: minInputHeight, maxHeight: maxInputHeight },
     inputExpanded: { height: '100%' },
     // The author's words: the quote face on a ground of its own, with the quote rule.
