@@ -3,7 +3,7 @@ import { type Colors, space, type as typeScale, useThemedStyles } from '@homelib
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { type Matches, SearchField } from '@/components/note-search';
+import { type Matches, SearchField, ShortWords } from '@/components/note-search';
 
 /** "Bu kaynakta ara", beside "Düzenle · N etiketsiz" in the Source page's heading. */
 export function SourceSearchButton({ onPress }: { onPress: () => void }) {
@@ -13,13 +13,15 @@ export function SourceSearchButton({ onPress }: { onPress: () => void }) {
 
 /**
  * The open "Bu kaynakta ara" box: the Source's Notes narrow to the ones
- * that match, "2 / 15 not" under it. Kapat puts it away and brings the
- * writing box back.
+ * that match, "2 / 15 not" under it, and over that, while some match, the
+ * words too short for a prefix match (#144; with none, the page names them
+ * under its empty line). Kapat puts it away and brings the writing box back.
  */
 export function SourceSearchBar({
   text,
   onChange,
   matches,
+  shortWords,
   failed,
   total,
   onClose,
@@ -27,6 +29,7 @@ export function SourceSearchBar({
   text: string;
   onChange: (text: string) => void;
   matches: Matches | null;
+  shortWords: readonly string[];
   failed: boolean;
   total: number;
   onClose: () => void;
@@ -45,7 +48,12 @@ export function SourceSearchBar({
       {failed ? (
         <Text style={styles.failed}>{t('noteSearch.failed')}</Text>
       ) : (
-        matches && <Text style={styles.count}>{t('noteSearch.matchCount', { shown: matches.size, count: total })}</Text>
+        matches && (
+          <>
+            {matches.size > 0 && <ShortWords words={shortWords} />}
+            <Text style={styles.count}>{t('noteSearch.matchCount', { shown: matches.size, count: total })}</Text>
+          </>
+        )
       )}
     </View>
   );

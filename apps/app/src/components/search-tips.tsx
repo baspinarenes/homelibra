@@ -10,8 +10,9 @@ type Row = { term: string; description: string };
 
 /**
  * Ara's info icon, right beside its title, and the Arama ipuçları sheet it
- * opens (#132): where search looks (Nerede arar) and its two operators
- * (Yazım), each a term at the left and what it means at the right. The
+ * opens (#132): where search looks (Nerede arar) and how a query is written
+ * (Yazım: its two operators and the short-word rule, #144), each a term at
+ * the left and what it means at the right. The
  * sheet only explains, so it has no action of its own.
  */
 export function SearchTips() {

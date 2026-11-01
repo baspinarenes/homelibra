@@ -75,7 +75,11 @@ function useMatches(query: string, found: { data: Found | undefined; isError: bo
     () => (query === '' || !found.data ? null : new Map(found.data.notes.map((note) => [note.id, note]))),
     [query, found.data],
   );
-  return { matches, failed: query !== '' && found.isError };
+  return {
+    matches,
+    shortWords: (query !== '' && found.data?.shortWords) || [],
+    failed: query !== '' && found.isError,
+  };
 }
 
 /** What a Collection's view and a Tag's page have, as far as narrowing goes. */
@@ -159,6 +163,24 @@ export function SearchField({
 }
 
 /**
+ * "«ad» 3 harften kısa, yalnızca tam kelime olarak aranır." for the query's
+ * words the server named too short for a prefix match (#144), so a Note
+ * missing for it is not missed unknowingly (ADR-0005). Nothing when there
+ * are none. The same line in Ara and in a Source's or a view's box;
+ * `centered` under an empty line.
+ */
+export function ShortWords({ words, centered = false }: { words: readonly string[] | undefined; centered?: boolean }) {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
+  if (!words?.length) return null;
+  return (
+    <Text style={[styles.short, centered && styles.centered]}>
+      {t('noteSearch.shortWords', { words: words.map((word) => `«${word}»`).join(', ') })}
+    </Text>
+  );
+}
+
+/**
  * An Excerpt or a Comment with the words the search matched marked. When
  * the text has changed since the search ran, it shows as it is now, unmarked.
  */
@@ -213,4 +235,6 @@ const makeStyles = (c: Colors) =>
     clear: { position: 'absolute', right: 10 },
     close: { ...typeScale.button, color: c.accent },
     hit: { backgroundColor: c.mark, color: c.fg },
+    short: { ...typeScale.caption, color: c.muted },
+    centered: { textAlign: 'center' },
   });

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
-import { narrowView, SearchField, useSearchText, useTagSearch } from '@/components/note-search';
+import { narrowView, SearchField, ShortWords, useSearchText, useTagSearch } from '@/components/note-search';
 import { useTRPC } from '@/lib/trpc';
 
 /**
@@ -67,6 +67,8 @@ export default function TagScreen() {
         onChange={setIncludeSourceNotes}
       />
       <SearchField value={search.text} onChange={search.setText} placeholder={t('noteSearch.inView')} />
+      {/* With no match, the words stand under "Eşleşen not yok." instead. */}
+      {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
       <ViewCount view={shown} of={view.data} />
       {searched.failed && <Text style={styles.error}>{t('noteSearch.failed')}</Text>}
       {save.isError && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
@@ -99,6 +101,7 @@ export default function TagScreen() {
         view={shown}
         bar={bar}
         matches={searched.matches}
+        underEmpty={searched.matches && <ShortWords words={searched.shortWords} centered />}
         empty={searched.matches ? t('noteSearch.viewEmpty') : t('collection.emptyTagNoNotes')}
       />
     </>

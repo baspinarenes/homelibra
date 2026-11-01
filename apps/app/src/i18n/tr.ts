@@ -201,6 +201,7 @@ export const tr = {
     tipsSyntaxRows: [
       { term: '"bâb-ı âlî"', description: 'tam bu ifadeyi arar' },
       { term: '-kelime', description: 'bu kelime geçenleri çıkarır' },
+      { term: 'ad', description: '3 harften kısaysa yalnızca tam kelime' },
     ],
     // The header's Filtrele icon, its sheet and the filter chips under the box (#132).
     filter: 'Filtrele',
@@ -574,6 +575,8 @@ export const tr = {
     clear: 'Aramayı temizle',
     sourceEmpty: 'Bu kaynakta eşleşen not yok.',
     viewEmpty: 'Eşleşen not yok.',
+    // The words the server named under 3 letters, each in «», joined by commas (#144).
+    shortWords: '{{words}} 3 harften kısa, yalnızca tam kelime olarak aranır.',
     matchCount: '{{shown}} / {{count}} not',
     viewMatchCounts: '{{shown}} / {{notes}} not · {{sources}} kaynak',
     failed: 'Arama yapılamadı. Bağlantını kontrol edip yeniden dene.',

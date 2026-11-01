@@ -23,17 +23,20 @@ type Note = Group['notes'][number];
  * gives, each Source's heading sticking under the bar while its Notes
  * scroll. The same layout on the phone and the desktop. A Source's heading
  * opens the Source page; a Note opens there, in place. While its search
- * box finds Notes, `matches` marks the words they matched.
+ * box finds Notes, `matches` marks the words they matched. `underEmpty`
+ * stands under `empty` when there are none.
  */
 export function CollectionView({
   view,
   bar,
   empty,
+  underEmpty,
   matches = null,
 }: {
   view: ViewData;
   bar: ReactNode;
   empty: string;
+  underEmpty?: ReactNode;
   matches?: Matches | null;
 }) {
   const styles = useThemedStyles(makeStyles);
@@ -49,7 +52,12 @@ export function CollectionView({
         keyExtractor={(note) => note.id}
         extraData={matches}
         stickySectionHeadersEnabled
-        ListEmptyComponent={<Text style={styles.empty}>{empty}</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyBox}>
+            <Text style={styles.empty}>{empty}</Text>
+            {underEmpty}
+          </View>
+        }
         renderSectionHeader={({ section }) => (
           <SourceHeading
             source={section.source}
@@ -212,7 +220,8 @@ const makeStyles = (c: Colors) =>
       borderBottomColor: c.line,
     },
     content: { paddingBottom: space.xxl },
-    empty: { ...typeScale.body, color: c.ink2, textAlign: 'center', padding: space.xl },
+    emptyBox: { gap: space.sm, padding: space.xl },
+    empty: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     pressed: { opacity: 0.7 },
     heading: {
       flexDirection: 'row',

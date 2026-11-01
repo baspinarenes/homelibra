@@ -13,7 +13,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { CopyMarkdownAction, DeleteCollectionAction } from '@/components/collection-actions';
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
 import { DefinitionTags } from '@/components/definition-tags';
-import { narrowView, SearchField, useCollectionSearch, useSearchText } from '@/components/note-search';
+import { narrowView, SearchField, ShortWords, useCollectionSearch, useSearchText } from '@/components/note-search';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
 
@@ -109,6 +109,8 @@ function CollectionPage({ collection }: { collection: Collection }) {
         onChange={(value) => setSwitch.mutate({ id: collection.id, includeSourceNotes: value })}
       />
       <SearchField value={search.text} onChange={search.setText} placeholder={t('noteSearch.inView')} />
+      {/* With no match, the words stand under "Eşleşen not yok." instead. */}
+      {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
       <ViewCount view={shown} of={collection} />
       {searched.failed && <Text style={styles.error}>{t('noteSearch.failed')}</Text>}
       {failed && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
@@ -133,6 +135,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
           view={shown}
           bar={bar}
           matches={searched.matches}
+          underEmpty={searched.matches && <ShortWords words={searched.shortWords} centered />}
           empty={
             searched.matches
               ? t('noteSearch.viewEmpty')

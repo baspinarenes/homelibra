@@ -25,6 +25,7 @@ import {
   yearRangeLabel,
   yearRangeOf,
 } from '@/components/date-filter';
+import { ShortWords } from '@/components/note-search';
 import { SourceCover } from '@/components/source-cover';
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/lib/settled';
@@ -82,6 +83,8 @@ function hiddenLine(
  * (#40, story 154), applied by "N sonucu göster". While a filter is on the
  * icon has a dot and a chip under the box names it, × taking it off. The
  * info icon beside the title, set by the tab's layout, opens Arama ipuçları.
+ * Words too short for a prefix match are named in a line over the results,
+ * or under "Sonuç yok." (#144).
  */
 export default function SearchScreen() {
   const { t } = useTranslation();
@@ -177,6 +180,7 @@ export default function SearchScreen() {
       ) : sources.length === 0 && notes.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.lead}>{t('search.empty')}</Text>
+          <ShortWords words={first?.shortWords} centered />
         </View>
       ) : (
         <FlatList
@@ -187,6 +191,11 @@ export default function SearchScreen() {
           keyExtractor={(note) => note.id}
           ListHeaderComponent={
             <>
+              {!!first?.shortWords.length && (
+                <View style={styles.short}>
+                  <ShortWords words={first.shortWords} />
+                </View>
+              )}
               {sources.length > 0 && (
                 <View style={styles.group}>
                   <GroupHeading label={t('search.sources')} count={sources.length} />
@@ -449,6 +458,7 @@ const makeStyles = (c: Colors) =>
       backgroundColor: c.page,
     },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    short: { paddingTop: space.md },
     spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
     boxRow: { paddingTop: space.md, paddingBottom: 10, paddingHorizontal: space.gutter, alignItems: 'center' },

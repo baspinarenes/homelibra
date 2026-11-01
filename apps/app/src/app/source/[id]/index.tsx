@@ -23,7 +23,7 @@ import {
 
 import { CoverEditor } from '@/components/cover-editor';
 import { AddCommentButton, NoteComposer, type NoteComposerHandle } from '@/components/note-composer';
-import { type Match, MarkedText, useSearchText, useSourceSearch } from '@/components/note-search';
+import { type Match, MarkedText, ShortWords, useSearchText, useSourceSearch } from '@/components/note-search';
 import { OutboxStatus } from '@/components/outbox-status';
 import { ReadingStatusButton } from '@/components/reading-status';
 import { SourceSearchBar, SourceSearchButton } from '@/components/source-search';
@@ -214,6 +214,7 @@ function SourcePage({
                   text={search.text}
                   onChange={search.setText}
                   matches={searched.matches}
+                  shortWords={searched.shortWords}
                   failed={searched.failed}
                   total={notes.length}
                   onClose={closeSearch}
@@ -222,7 +223,10 @@ function SourcePage({
             </View>
           }
           ListEmptyComponent={
-            <Text style={styles.empty}>{t(searched.matches ? 'noteSearch.sourceEmpty' : 'sourcePage.empty')}</Text>
+            <View style={styles.emptyBox}>
+              <Text style={styles.empty}>{t(searched.matches ? 'noteSearch.sourceEmpty' : 'sourcePage.empty')}</Text>
+              {searched.matches && <ShortWords words={searched.shortWords} centered />}
+            </View>
           }
           renderItem={({ item: note, index }) => (
             <NoteRow
@@ -368,7 +372,8 @@ const makeStyles = (c: Colors) =>
     byline: { ...typeScale.caption, color: c.muted },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
     hidden: { display: 'none' },
-    empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
+    emptyBox: { gap: space.sm, paddingVertical: space.xl },
+    empty: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     row: { flexDirection: 'row', gap: 10, paddingVertical: space.md },
     rowAbove: { paddingBottom: 0 },
     // Under the texts, past the Locator's column and the row's gap.
