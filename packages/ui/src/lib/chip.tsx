@@ -92,7 +92,7 @@ const makeStyles = (c: Colors) =>
       paddingHorizontal: 9,
       borderRadius: radius.chip,
     },
-    label: { fontFamily: typeScale.label.fontFamily, fontSize: 13, lineHeight: 18 },
+    label: { ...typeScale.labelSm },
     tag: { backgroundColor: c.chipBg },
     tagInk: { color: c.chipInk },
     add: { borderWidth: 1, borderStyle: 'dashed', borderColor: c.lineStrong, paddingVertical: 2, paddingHorizontal: 8 },

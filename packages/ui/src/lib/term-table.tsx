@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { type Colors, fonts, type as typeScale } from './tokens';
+import { type Colors, type as typeScale } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 export type TermRow = { term: string; description: string };
@@ -31,7 +31,7 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, paddingBottom: 10 },
     ruled: { borderTopWidth: 1, borderTopColor: c.lineSoft, paddingTop: 10 },
-    // The body's line height, so the two columns' first lines share a baseline.
-    term: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: typeScale.body.lineHeight, color: c.fg, width: 120 },
+    // On the body's line, so the two columns' first lines share a baseline.
+    term: { ...typeScale.term, color: c.fg, width: 120 },
     description: { ...typeScale.body, color: c.ink2, flex: 1 },
   });

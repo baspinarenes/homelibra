@@ -458,7 +458,7 @@ const makeStyles = (c: Colors) =>
     typeHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
     typeLabel: { ...typeScale.label, color: c.fg, flexShrink: 1, marginTop: -1 },
     typeLabelSelected: { color: c.accent },
-    typeScope: { ...typeScale.caption, fontSize: 11, lineHeight: 14, color: c.muted },
+    typeScope: { ...typeScale.captionSm, color: c.muted },
     stack: { gap: space.lg },
     columns: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.lg, marginHorizontal: -space.sm },
     column: { width: '50%', paddingHorizontal: space.sm },

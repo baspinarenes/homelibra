@@ -113,5 +113,5 @@ const makeStyles = (c: Colors) =>
     switchCount: { color: c.muted },
     preview: { gap: 4, paddingTop: 14, borderTopWidth: 1, borderTopColor: c.lineSoft },
     counts: { ...typeScale.body, color: c.ink2 },
-    error: { ...typeScale.body, fontSize: 14, lineHeight: 20, color: c.danger },
+    error: { ...typeScale.bodySm, color: c.danger },
   });

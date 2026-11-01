@@ -74,5 +74,5 @@ const makeStyles = (c: Colors) =>
     text: { flex: 1, gap: 2 },
     title: { ...typeScale.sourceTitleSm, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
-    when: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
+    when: { ...typeScale.count, color: c.muted },
   });

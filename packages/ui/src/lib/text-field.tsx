@@ -113,10 +113,7 @@ const makeStyles = (c: Colors) =>
     },
     excerpt: { ...typeScale.excerpt, color: c.quoteInk },
     code: {
-      fontFamily: typeScale.locator.fontFamily,
-      fontSize: 24,
-      lineHeight: 30,
-      letterSpacing: 8,
+      ...typeScale.signInCode,
       textAlign: 'center',
     },
     multiline: { minHeight: 92, textAlignVertical: 'top' },
