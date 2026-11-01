@@ -8,10 +8,6 @@ export const tr = {
     search: 'Ara',
     settings: 'Ayarlar',
   },
-  tabBar: {
-    // Read for Genel bakış while its dot shows.
-    homeToOrganize: 'Genel bakış, düzenlenecek kaynak var',
-  },
   screenHeader: {
     back: 'Geri',
   },
@@ -155,7 +151,6 @@ export const tr = {
     takeNoteLead: 'Okuduğun kaynağa not düş.',
     takeNote: 'Not al',
     lastNoted: 'Kaldığın yer',
-    toOrganize: 'Düzenlenecekler · {{count}} kaynak',
   },
   // How long ago a Note was captured.
   elapsed: {
@@ -445,7 +440,6 @@ export const tr = {
     waiting: '{{count}} not bekliyor',
     queued: 'kuyrukta',
     sending: 'gönderiliyor',
-    synced: 'eşitlendi',
     needsConnection: 'Bağlantı gerekiyor',
     searchNeedsConnection: 'Arama için bağlantı gerekiyor',
     // #58: a Note whose Source was deleted elsewhere while it waited.
@@ -572,37 +566,6 @@ export const tr = {
     failed: 'Kapak eklenemedi. Bağlantını kontrol edip yeniden dene.',
     removeFailed: 'Kapak kaldırılamadı. Bağlantını kontrol edip yeniden dene.',
   },
-  // Organizing pass: Düzenlenecekler and Düzenle mode (#53). The word "tur" never shows (#13).
-  organize: {
-    title: 'Düzenlenecekler',
-    sources: '{{count}} kaynak',
-    lead: 'Son “Bitir”den sonra etiketsiz notu gelen kaynaklar.',
-    empty: 'Düzenlenecek kaynak yok.',
-    loadFailed: 'Düzenlenecekler yüklenemedi.',
-    untagged: '{{count}} etiketsiz',
-    enter: 'Düzenle',
-    enterCount: 'Düzenle · {{count}} etiketsiz',
-    mode: 'Düzenle',
-    close: 'Kapat',
-    finish: 'Bitir',
-    finished: '“{{title}}” Düzenlenecekler’den çıktı',
-    finishFailed: 'Bitirilemedi. Bağlantını kontrol edip yeniden dene.',
-    new: 'yeni',
-    filterLabel: 'Gösterilen notlar',
-    untaggedOnly: 'Etiketsizler',
-    all: 'Tümü',
-    noneLeft: 'Etiketsiz not kalmadı.',
-    recentTags: 'Az önce kullanılan',
-    pickFirst: 'Etiket takmak için önce not seç.',
-    select: 'Notu seç',
-    selected: '{{count}} seçili',
-    selectAll: 'Tümünü seç',
-    clearSelection: 'Seçimi kaldır',
-    tagSelected: 'Etiketle',
-    selectedTitle: 'Seçili notlara etiket',
-    tagged: '{{count}} nota etiket takıldı',
-    tagFailed: 'Etiketlenemedi. Bağlantını kontrol edip yeniden dene.',
-  },
   // "Bu kaynakta ara", the search box of a Collection or a Tag's page, and Ara's selector (#56).
   noteSearch: {
     inSource: 'Bu kaynakta ara',
@@ -656,30 +619,9 @@ export const tr = {
     toReading: 'Yeniden okunuyor yap',
     failed: 'Okuma durumu değiştirilemedi. Bağlantını kontrol edip yeniden dene.',
     needsConnection: 'Okuma durumunu değiştirmek için bağlantı gerekiyor',
-    untagged: '{{count}} etiketsiz not var.',
-    finishedTitle: 'Kaynak bitti',
-    organizeNow: 'Şimdi düzenle',
-    close: 'Kapat',
     readingSection: 'Okunuyor',
     finishedSection: 'Bitti',
     all: 'Tümü ›',
-  },
-  // Düzenle mode's selection: Birleştir, Taşı, Sil, and the keys on the web (#54).
-  selection: {
-    merge: 'Birleştir',
-    move: 'Taşı',
-    delete: 'Sil',
-    deleted: '{{count}} not silindi',
-    moved: '{{count}} not “{{title}}” kaynağına taşındı',
-    merged: '{{count}} not birleştirildi',
-    mergeNeedsTwo: 'Birleştirmek için en az iki not seç.',
-    pickFirst: 'Önce not seç.',
-    failed: 'Yapılamadı. Bağlantını kontrol edip yeniden dene.',
-    keys: 'j/k gezin · x seç · t etiket · Delete sil',
-    previewTitle: 'Birleştirme önizlemesi',
-    previewLead: '{{count}} not, ilkinin yerinde tek not olacak. Konumu ve metni burada düzeltebilirsin.',
-    close: 'Kapat',
-    mergeFailed: 'Birleştirilemedi. Bağlantını kontrol edip yeniden dene.',
   },
   // Library export (#66): the whole Library as one ZIP, from the web.
   libraryExport: {

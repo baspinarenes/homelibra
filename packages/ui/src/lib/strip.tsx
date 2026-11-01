@@ -6,7 +6,7 @@ import { useTheme, useThemedStyles } from './use-theme';
 
 /**
  * A yellow strip at the top of a screen for what waits on the scholar
- * (2 notun kaynağı silinmiş, Düzenlenecekler · 3 kaynak): one link, all of
+ * (2 notun kaynağı silinmiş): one link, all of
  * it pressable, a chevron at the right. `detail` is a second line, cut with
  * "…" where it does not fit. Strips stand 8 apart.
  */

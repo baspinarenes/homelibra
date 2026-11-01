@@ -3,12 +3,12 @@ import { formatDate } from '@homelibra/core/date';
 import { lastCaptured } from '@homelibra/core/note';
 import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -24,23 +24,23 @@ import {
 import { CoverEditor } from '@/components/cover-editor';
 import { AddCommentButton, NoteComposer, type NoteComposerHandle } from '@/components/note-composer';
 import { type Match, MarkedText, useSearchText, useSourceSearch } from '@/components/note-search';
-import { NewMark, OrganizeEntry, OrganizeMode } from '@/components/organize-mode';
 import { OutboxStatus } from '@/components/outbox-status';
 import { ReadingStatusButton } from '@/components/reading-status';
 import { SourceSearchBar, SourceSearchButton } from '@/components/source-search';
 import { SourceTags } from '@/components/source-tags';
 import { NoteTagsLine } from '@/components/tag-chips';
 import { knownNotes } from '@/lib/known-notes';
-import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
-import { offerUndo } from '@/lib/undo';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 
 // Tries at placing a Note whose row is not laid out yet, and the wait between them in ms.
 const scrollRetries = 5;
 const scrollRetryAfter = 50;
+
+// How long a Note is sent before its row says "gönderiliyor", in ms: a quick send says nothing.
+const slowSendAfter = 1000;
 
 /** A Note the list keeps in view: just above the box while writing, or mid-screen when a search opened it. */
 type Pin = { id: string; at: 'box' | 'middle' };
@@ -107,11 +107,6 @@ function SourcePage({
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const headerHeight = useHeaderHeight();
-  const trpc = useTRPC();
-  // "Düzenle · N etiketsiz" and the Notes marked "yeni" (#53).
-  const organize = useQuery(trpc.organize.source.queryOptions({ sourceId: source.id }));
-  const fresh = useMemo(() => new Set(organize.data?.newNoteIds), [organize.data]);
-  const [organizing, setOrganizing] = useState(false);
   const [searching, setSearching] = useState(false);
   const search = useSearchText();
   const searched = useSourceSearch(source.id, searching ? search.query : '');
@@ -123,13 +118,7 @@ function SourcePage({
     setSearching(false);
     search.setText('');
   };
-  // Düzenle mode is online only, and starts from what the outbox still had to send (#58).
-  const onlineFirst = useOnlineFirst(useCallback(() => offerUndo({ message: t('outbox.needsConnection') }), [t]));
   const [expanded, setExpanded] = useState(false);
-  // Kaldığın yer opens the box with the focus in it.
-  const [writing, setWriting] = useState(write);
-  // The Note saved last on this page.
-  const [freshId, setFreshId] = useState<string | null>(null);
   // The Excerpt that offers "Yorum ekle", as the box says.
   const [commentable, setCommentable] = useState<string | null>(null);
   const composer = useRef<NoteComposerHandle>(null);
@@ -145,23 +134,13 @@ function SourcePage({
     const target = pin.current;
     const index = target ? listed.findIndex((n) => n.id === target.id) : -1;
     if (!target || index < 0) return;
-    // Above the box with room for the marked Note's outline.
-    const above = target.at === 'box';
-    list.current?.scrollToIndex({
-      index,
-      animated: false,
-      viewPosition: above ? 1 : 0.5,
-      viewOffset: above ? -space.md : 0,
-    });
+    list.current?.scrollToIndex({ index, animated: false, viewPosition: target.at === 'box' ? 1 : 0.5 });
   };
   const pinAboveBox = (id: string) => {
     pin.current = { id, at: 'box' };
     retries.current = 0;
     scrollToPin();
   };
-
-  // Outlined: the Note saved last here, else the one captured last while writing, else the one a search opened.
-  const marked = freshId ?? (writing ? last?.note.id : found) ?? null;
 
   // Yazar · Tarih · Ek bilgi · not sayısı, the Date as it was entered.
   const byline = [
@@ -172,18 +151,6 @@ function SourcePage({
   ]
     .filter(Boolean)
     .join(' · ');
-
-  // Düzenle mode is the same list, worked on; the writing box hides meanwhile.
-  if (organizing)
-    return (
-      <OrganizeMode
-        source={source}
-        notes={notes}
-        statuses={statuses}
-        fresh={fresh}
-        onClose={() => setOrganizing(false)}
-      />
-    );
 
   return (
     <KeyboardAvoidingView
@@ -209,7 +176,7 @@ function SourcePage({
           style={styles.screen}
           contentContainerStyle={styles.content}
           data={listed}
-          extraData={[marked, statuses, searched.matches, commentable]}
+          extraData={[statuses, searched.matches, commentable]}
           keyExtractor={(note) => note.id}
           keyboardShouldPersistTaps="handled"
           onLayout={scrollToPin}
@@ -230,24 +197,18 @@ function SourcePage({
                 <View style={styles.identityText}>
                   <View style={styles.typeLine}>
                     <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-                    <ReadingStatusButton
-                      sourceId={source.id}
-                      status={source.readingStatus}
-                      onOrganize={() => setOrganizing(true)}
-                    />
+                    <ReadingStatusButton sourceId={source.id} status={source.readingStatus} />
                   </View>
                   <Text style={styles.title}>{source.title}</Text>
                   <Text style={styles.byline}>{byline}</Text>
                 </View>
               </View>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
-              <View style={styles.actions}>
-                <OrganizeEntry
-                  count={organize.data?.untaggedCount ?? 0}
-                  onPress={() => void onlineFirst(() => setOrganizing(true))}
-                />
-                {!searching && <SourceSearchButton onPress={() => setSearching(true)} />}
-              </View>
+              {!searching && (
+                <View style={styles.actions}>
+                  <SourceSearchButton onPress={() => setSearching(true)} />
+                </View>
+              )}
               {searching && (
                 <SourceSearchBar
                   text={search.text}
@@ -267,9 +228,7 @@ function SourcePage({
             <NoteRow
               note={note}
               divided={index > 0}
-              marked={note.id === marked}
               match={searched.matches?.get(note.id)}
-              fresh={fresh.has(note.id)}
               status={statuses.get(note.id)}
               onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
               action={
@@ -295,14 +254,10 @@ function SourcePage({
           onExpandedChange={setExpanded}
           autoFocus={write}
           onFocusChange={(focused) => {
-            setWriting(focused);
             if (focused && last) pinAboveBox(last.note.id);
             else if (!focused) pin.current = null;
           }}
-          onSaved={(id) => {
-            setFreshId(id);
-            pinAboveBox(id);
-          }}
+          onSaved={pinAboveBox}
           onCommentableChange={setCommentable}
         />
       </View>
@@ -311,17 +266,33 @@ function SourcePage({
 }
 
 /**
+ * The status a Note's row says, from where the phone's outbox has it:
+ * nothing once sent, nor while a send takes under {@link slowSendAfter}.
+ */
+function useShownStatus(status: NoteStatus | undefined) {
+  const sending = status === 'sending';
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!sending) return;
+    const timer = setTimeout(() => setSlow(true), slowSendAfter);
+    return () => {
+      clearTimeout(timer);
+      setSlow(false);
+    };
+  }, [sending]);
+  return status === 'synced' || (sending && !slow) ? undefined : status;
+}
+
+/**
  * Locator on the left (— when it has none), Excerpt and ↳ Comment on the
- * right; under them, on the phone, where the outbox has the Note:
- * kuyrukta / gönderiliyor / eşitlendi / Kaynağı silinmiş. A Note still
+ * right; under them, on the phone, while the outbox still has the Note:
+ * kuyrukta / gönderiliyor / gönderilemedi / Kaynağı silinmiş. A Note still
  * waiting opens for editing too, through the outbox (#58).
  */
 function NoteRow({
   note,
   divided,
-  marked,
   match,
-  fresh,
   status,
   onPress,
   onLayout,
@@ -329,11 +300,8 @@ function NoteRow({
 }: {
   note: ListedNote;
   divided: boolean;
-  marked: boolean;
   /** What "Bu kaynakta ara" found in it, to mark. */
   match: Match | undefined;
-  /** Came into the Source after its last "Bitir". */
-  fresh: boolean;
   status: NoteStatus | undefined;
   onPress: () => void;
   onLayout: () => void;
@@ -342,33 +310,36 @@ function NoteRow({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const waiting = status !== undefined && status !== 'synced';
+  const shown = useShownStatus(status);
   // A button may not sit inside the row's own: the action goes under it, in the texts' column.
   const below = Boolean(action);
-  const outer = [divided && styles.divided, marked && styles.marked];
   const row = (
     <Pressable
       accessibilityRole="button"
       accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
       onLayout={onLayout}
-      style={({ pressed }) => [styles.row, !below && outer, below && styles.rowAbove, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.row,
+        !below && divided && styles.divided,
+        below && styles.rowAbove,
+        pressed && styles.pressed,
+      ]}
     >
       <View style={styles.locatorColumn}>
         <Text style={styles.locator}>{note.locator ?? '—'}</Text>
-        {fresh && <NewMark />}
       </View>
       <View style={styles.texts}>
         {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} style={styles.excerpt} />}
         {note.comment && <MarkedText text={note.comment} marks={match?.comment} style={styles.comment} prefix="↳ " />}
         <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
-        {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
+        {shown && <Text style={styles.status}>{t(`outbox.${shown}`)}</Text>}
       </View>
     </Pressable>
   );
   if (!below) return row;
   return (
-    <View style={outer}>
+    <View style={divided && styles.divided}>
       {row}
       <View style={styles.action}>{action}</View>
     </View>
@@ -403,14 +374,6 @@ const makeStyles = (c: Colors) =>
     // Under the texts, past the Locator's column and the row's gap.
     action: { paddingLeft: 68 + 10, paddingTop: 6, paddingBottom: space.sm },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    // An outline, so the row keeps its place while marked.
-    marked: {
-      outlineWidth: 2,
-      outlineStyle: 'solid',
-      outlineColor: c.accent,
-      outlineOffset: 3,
-      borderRadius: radius.cover,
-    },
     locatorColumn: { width: 68, gap: space.xs, paddingTop: 4 },
     locator: { ...typeScale.locator, color: c.muted },
     texts: { flex: 1, gap: 6 },
@@ -422,6 +385,5 @@ const makeStyles = (c: Colors) =>
       paddingLeft: 11,
     },
     comment: { ...typeScale.body, fontSize: 14.5, color: c.ink3 },
-    status: { ...typeScale.caption, color: c.muted2 },
-    waiting: { color: c.warn },
+    status: { ...typeScale.caption, color: c.warn },
   });

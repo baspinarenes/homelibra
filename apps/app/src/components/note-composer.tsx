@@ -120,11 +120,23 @@ export function NoteComposer({
   // same Note again cannot make a second one.
   const attempt = useRef<{ id: string; key: string } | null>(null);
 
+  // The keyboard, while up, covers the phone's navigation bar: the box sits
+  // right on it then, with no room kept for the bar.
+  const [keyboardUp, setKeyboardUp] = useState(false);
   // Android keeps the focus when its keyboard is put away: let the box close
   // with it, so the next tap opens it again (and brings the list back).
   useEffect(() => {
-    const hidden = Keyboard.addListener('keyboardDidHide', () => inputRef.current?.blur());
-    return () => hidden.remove();
+    const shown = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () =>
+      setKeyboardUp(true),
+    );
+    const hidden = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardUp(false);
+      inputRef.current?.blur();
+    });
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
   }, []);
 
   // A Locator gets old while the screen stays open.
@@ -256,7 +268,13 @@ export function NoteComposer({
   const shownLocator = locator.trim() || t('capture.noLocator');
 
   return (
-    <View style={[styles.composer, { paddingBottom: insets.bottom + space.md }, expanded && styles.composerExpanded]}>
+    <View
+      style={[
+        styles.composer,
+        { paddingBottom: (keyboardUp ? 0 : insets.bottom) + space.md },
+        expanded && styles.composerExpanded,
+      ]}
+    >
       <SharedUndoBar />
       {replyTo ? (
         // "s. 52 alıntısına yorum": the Comment's Excerpt, in place of the controls.

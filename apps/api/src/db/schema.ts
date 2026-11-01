@@ -169,12 +169,6 @@ export const source = pgTable(
     coverKeyLarge: text('cover_key_large'),
     coverKeySmall: text('cover_key_small'),
     /**
-     * The last "Bitir" of an Organizing pass on this Source; null before the
-     * first. Düzenlenecekler counts only the untagged Notes that entered the
-     * Source after it, and the Source page marks them "yeni".
-     */
-    lastFinishedAt: timestamp('last_finished_at', { withTimezone: true }),
-    /**
      * Reading status: a new Source is being read; only the scholar finishes
      * it or reads it again, never a Note. No history, date or count.
      */
@@ -231,8 +225,7 @@ export const note = pgTable(
     comment: text('comment'),
     /**
      * When the Note came into its Source: captured, or moved there from
-     * another. Organizing pass counts a Note "yeni" by it; capture time stays
-     * the id's and a move never changes it (#36).
+     * another. Capture time stays the id's and a move never changes it (#36).
      */
     enteredSourceAt: timestamp('entered_source_at', { withTimezone: true }).notNull().defaultNow(),
     /** What search matches: the Excerpt's and the Comment's words (ADR-0010). Locator is not searched. */

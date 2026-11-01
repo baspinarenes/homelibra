@@ -18,11 +18,6 @@ export type TabBarTab = {
   key: string;
   label: string;
   icon: TabBarIcon;
-  /**
-   * When set, a dot marks the tab and screen readers hear this instead of
-   * the label. Hidden while the tab is open.
-   */
-  dot?: string;
 };
 
 /**
@@ -48,23 +43,19 @@ export function TabBar({
         const open = tab.key === active;
         const Icon = icons[tab.icon];
         const color = open ? colors.accent : colors.muted;
-        const dot = open ? undefined : tab.dot;
         return (
           <Pressable
             key={tab.key}
             role="tab"
             aria-selected={open}
-            aria-label={dot ?? tab.label}
+            aria-label={tab.label}
             onPress={() => onPress(tab.key)}
             style={styles.tab}
           >
             {({ pressed }) => (
               <>
                 {pressed && <View style={styles.pressed} />}
-                <View>
-                  <Icon color={color} size={22} strokeWidth={1.6} />
-                  {dot !== undefined && <View style={styles.dot} />}
-                </View>
+                <Icon color={color} size={22} strokeWidth={1.6} />
                 <Text style={[styles.label, { color }]} numberOfLines={1}>
                   {tab.label}
                 </Text>
@@ -90,18 +81,6 @@ const makeStyles = (c: Colors) =>
       bottom: 4,
       borderRadius: radius.control,
       backgroundColor: c.accentSoft,
-    },
-    // Top right of the icon, ringed in the page colour.
-    dot: {
-      position: 'absolute',
-      top: -1 - 2,
-      right: -4 - 2,
-      width: 7 + 4,
-      height: 7 + 4,
-      borderRadius: radius.pill,
-      borderWidth: 2,
-      borderColor: c.page,
-      backgroundColor: c.accent,
     },
     label: { ...typeScale.tab },
   });

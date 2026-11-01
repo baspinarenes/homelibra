@@ -3,8 +3,8 @@ import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 
 /**
  * A row as the database's `to_jsonb` gives it: SQL column names, JSON
- * values. Kept this way so a column added later (Reading status, the last
- * "Bitir", Cover keys) is in the snapshot and comes back without any change
+ * values. Kept this way so a column added later (Reading status, Cover
+ * keys) is in the snapshot and comes back without any change
  * here or a migration of old records.
  */
 export type StoredRow = Record<string, unknown>;
