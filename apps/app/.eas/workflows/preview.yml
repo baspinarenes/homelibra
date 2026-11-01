@@ -1,0 +1,46 @@
+# On main, for the Android preview build (internal APK on the `preview` channel):
+# when the native side is unchanged, the phones on the last preview build get
+# an over-the-air update; when it changed, EAS builds a new APK instead. The
+# fingerprint decides which, so screen-only merges don't spend a build.
+name: Preview
+
+on:
+  push:
+    branches: ['main']
+    # Only what goes into the app; API, infra and docs merges don't run this.
+    paths:
+      - apps/app/**
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
+
+jobs:
+  fingerprint:
+    name: Fingerprint
+    type: fingerprint
+    environment: preview
+  get_android_build:
+    name: Find a preview build with this fingerprint
+    needs: [fingerprint]
+    type: get-build
+    params:
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+      platform: android
+      profile: preview
+  build_android:
+    name: Build Android preview
+    needs: [get_android_build]
+    if: ${{ !needs.get_android_build.outputs.build_id }}
+    type: build
+    params:
+      platform: android
+      profile: preview
+  publish_android_update:
+    name: Publish Android update
+    needs: [get_android_build]
+    if: ${{ needs.get_android_build.outputs.build_id }}
+    type: update
+    environment: preview
+    params:
+      channel: preview
+      platform: android
