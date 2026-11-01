@@ -119,8 +119,8 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     section: { gap: 14, paddingVertical: 22 },
     pressed: { opacity: 0.7 },
-    sentence: { ...typeScale.title, fontSize: 21, lineHeight: 29, color: c.ink2 },
-    count: { ...typeScale.sourceTitle, lineHeight: 29, color: c.fg },
+    sentence: { ...typeScale.summary, color: c.ink2 },
+    count: { ...typeScale.strongSerif, color: c.fg },
     rule: { height: 1, backgroundColor: c.lineSoft },
     breakdown: { gap: 10 },
     breakdownTitle: { ...typeScale.micro, color: c.muted },
@@ -130,7 +130,7 @@ const makeStyles = (c: Colors) =>
     legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     swatch: { width: 8, height: 8, borderRadius: radius.cover },
     legendLabel: { ...typeScale.label, color: c.ink3 },
-    legendCount: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
+    legendCount: { ...typeScale.count, color: c.muted },
     // Okuma durumu's two colours: the accent for what is being read.
     reading: { color: c.accent },
     finished: { color: c.faint },

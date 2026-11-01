@@ -225,12 +225,12 @@ const makeStyles = (c: Colors) =>
     },
     comment: { ...typeScale.body, color: c.ink2 },
     // Not önde: the words last written, large and dark, the Source a line under them.
-    leadExcerpt: { ...typeScale.excerpt, fontSize: 19, lineHeight: 29, color: c.fg },
-    leadComment: { ...typeScale.body, fontSize: 17, lineHeight: 25, color: c.fg },
+    leadExcerpt: { ...typeScale.excerptLg, color: c.fg },
+    leadComment: { ...typeScale.bodyLg, color: c.fg },
     sourceLine: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     sourceTitle: { ...typeScale.sourceTitleSm, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
     goOn: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-    goOnText: { ...typeScale.link, fontSize: 14, color: c.accent },
+    goOnText: { ...typeScale.button, color: c.accent },
     goOnLocator: { ...typeScale.locator, color: c.muted, flexShrink: 1 },
   });

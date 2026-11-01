@@ -115,9 +115,14 @@ export const type = {
   screenTitle: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 2.2 }, // every screen's header, upper case
   sourceTitle: { fontFamily: fonts.serifMedium, fontSize: 21, lineHeight: 28 }, // also a sheet's title
   sourceTitleSm: { fontFamily: fonts.serifMedium, fontSize: 17, lineHeight: 23 }, // a list row
+  summary: { fontFamily: fonts.serif, fontSize: 21, lineHeight: 29 }, // Kütüphanen's sentence
+  // Heavier EB Garamond at the size of the line it sits in: a count set apart in `summary`.
+  strongSerif: { fontFamily: fonts.serifMedium },
   excerpt: { fontFamily: fonts.quote, fontSize: 16, lineHeight: 27 }, // + 2px quoteBar left rule
   excerptSm: { fontFamily: fonts.quote, fontSize: 15, lineHeight: 25 },
+  excerptLg: { fontFamily: fonts.quote, fontSize: 19, lineHeight: 32 }, // Kaldığın yer's words, Not önde
   body: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
+  bodyLg: { fontFamily: fonts.sans, fontSize: 17, lineHeight: 25 }, // Kaldığın yer's comment, Not önde
   bodySm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 20 }, // a form's error, Arama ipuçları
   comment: { fontFamily: fonts.sans, fontSize: 14.5, lineHeight: 22 }, // a Note's comment under its excerpt
   commentSm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 22 }, // the same under excerptSm
