@@ -1,10 +1,15 @@
 import '@/lib/sentry';
 import '@/i18n';
 
-import { CharisSIL_400Regular } from '@expo-google-fonts/charis-sil';
-import { EBGaramond_400Regular, EBGaramond_500Medium } from '@expo-google-fonts/eb-garamond';
-import { RedditMono_400Regular, RedditMono_500Medium } from '@expo-google-fonts/reddit-mono';
-import { RedditSans_400Regular, RedditSans_500Medium, RedditSans_600SemiBold } from '@expo-google-fonts/reddit-sans';
+// Per-weight paths: a package's root index requires every weight, which bundles them all.
+import { CharisSIL_400Regular } from '@expo-google-fonts/charis-sil/400Regular';
+import { EBGaramond_400Regular } from '@expo-google-fonts/eb-garamond/400Regular';
+import { EBGaramond_500Medium } from '@expo-google-fonts/eb-garamond/500Medium';
+import { RedditMono_400Regular } from '@expo-google-fonts/reddit-mono/400Regular';
+import { RedditMono_500Medium } from '@expo-google-fonts/reddit-mono/500Medium';
+import { RedditSans_400Regular } from '@expo-google-fonts/reddit-sans/400Regular';
+import { RedditSans_500Medium } from '@expo-google-fonts/reddit-sans/500Medium';
+import { RedditSans_600SemiBold } from '@expo-google-fonts/reddit-sans/600SemiBold';
 import { keepThemePreferenceIn, useTheme } from '@homelibra/ui/theme';
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
