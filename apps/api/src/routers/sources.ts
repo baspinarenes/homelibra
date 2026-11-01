@@ -15,7 +15,7 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
 import { coverColumns, coverOf } from '../covers/covers';
-import { note, source } from '../db/schema';
+import { note, source, tag } from '../db/schema';
 import { dateFilter, inDates } from '../search/dates';
 import { mySource } from '../sources/sources';
 import { tagsOfSource } from '../tags/tags';
@@ -97,6 +97,37 @@ export const sourcesRouter = router({
   home: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx.select({ sourceCount: count() }).from(source).where(eq(source.accountId, ctx.accountId));
     return { sourceCount: row?.sourceCount ?? 0 };
+  }),
+
+  /**
+   * Genel Bakış's Kütüphanen (#71): how many Sources, Notes and Tags the
+   * Library holds; its Sources by Tür, only the Türs it has, the most first
+   * and ties in the glossary's order; and by Reading status. A Tag is gone
+   * once nothing uses it, so every Tag counts.
+   */
+  library: libraryProcedure.query(async ({ ctx }) => {
+    const mine = eq(source.accountId, ctx.accountId);
+    const byType = await ctx.tx
+      .select({ type: source.type, count: count() })
+      .from(source)
+      .where(mine)
+      .groupBy(source.type);
+    const byStatus = await ctx.tx
+      .select({ status: source.readingStatus, count: count() })
+      .from(source)
+      .where(mine)
+      .groupBy(source.readingStatus);
+    const [notes] = await ctx.tx.select({ count: count() }).from(note).where(eq(note.accountId, ctx.accountId));
+    const [tags] = await ctx.tx.select({ count: count() }).from(tag).where(eq(tag.accountId, ctx.accountId));
+    const inStatus = (status: 'reading' | 'finished') => byStatus.find((row) => row.status === status)?.count ?? 0;
+    return {
+      sourceCount: byType.reduce((sum, row) => sum + row.count, 0),
+      noteCount: notes?.count ?? 0,
+      tagCount: tags?.count ?? 0,
+      types: byType.sort((a, b) => b.count - a.count || sourceTypes.indexOf(a.type) - sourceTypes.indexOf(b.type)),
+      reading: inStatus('reading'),
+      finished: inStatus('finished'),
+    };
   }),
 
   /**
