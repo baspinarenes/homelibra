@@ -134,6 +134,7 @@ describe('Library search', () => {
       noteTotal: 0,
       nextCursor: null,
       hiddenUndated: { sources: 0, notes: 0 },
+      shortWords: [],
     });
     expect(await naib.search.library({ query: '"kadı hükmü"' })).toEqual({
       sources: [],
@@ -141,6 +142,7 @@ describe('Library search', () => {
       noteTotal: 0,
       nextCursor: null,
       hiddenUndated: { sources: 0, notes: 0 },
+      shortWords: [],
     });
     expect((await kadi.search.library({ query: 'kadı' })).noteTotal).toBe(1);
   });
@@ -181,10 +183,32 @@ describe('Library search', () => {
     const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Kadı sicilleri' });
     await api.notes.create({ id: uuidv7(), sourceId, excerpt: 'Kadı hükmü verdi.' });
 
-    const nothing = { sources: [], notes: [], noteTotal: 0, nextCursor: null, hiddenUndated: { sources: 0, notes: 0 } };
+    const nothing = {
+      sources: [],
+      notes: [],
+      noteTotal: 0,
+      nextCursor: null,
+      hiddenUndated: { sources: 0, notes: 0 },
+      shortWords: [],
+    };
     for (const query of ['', '   ', '-kadın', '""', '…, ;']) {
       expect(await api.search.library({ query })).toEqual(nothing);
     }
+  });
+
+  // Under 3 letters a word is matched whole and by its stem, never as the start
+  // of a longer one (ADR-0005); the app says so, as typed (#144).
+  it.each([
+    ['ad', ['ad']],
+    ['ʿâd', ['ʿâd']],
+    ['ad "el" -ve', ['ad']],
+    ['adam', []],
+    // Once, however it is spelt again.
+    ['ad AD âd', ['ad']],
+  ])('names the words of %s too short for a prefix match: %j', async (query, shortWords) => {
+    const api = await (await t.signIn(scholarEmail())).call();
+
+    expect((await api.search.library({ query })).shortWords).toEqual(shortWords);
   });
 
   it('pages through every matching Note, best first', async () => {

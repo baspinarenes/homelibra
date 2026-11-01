@@ -26,11 +26,22 @@ export const NOTE_PAGE = 50;
 const queryText = z.string().max(500);
 
 /**
+ * The query's words under 3 letters, as typed: they match only as whole
+ * words and by their stems, never as the start of a longer word (ADR-0005),
+ * and the app says so (#144). The database decides, by hl_term's rule.
+ */
+async function shortWords(tx: LibraryTx, q: string) {
+  const [row] = await tx.execute<{ words: string[] }>(sql`select hl_short_words(${q}) as words`);
+  return row?.words ?? [];
+}
+
+/**
  * The Notes `n` (an SQL alias of note) within `scope` that match the query,
  * best first, by the same functions as the Library search: the rules are
  * the same wherever the box is (#40, story 156). Each comes with its whole
  * Excerpt and Comment, the matching words marked, for a list that shows
- * the Notes themselves rather than a part of them.
+ * the Notes themselves rather than a part of them; with them, the query's
+ * words too short for a prefix match (#144).
  */
 async function notesIn(tx: LibraryTx, accountId: string, q: string, scope: SQL) {
   const rows = await tx.execute<{
@@ -47,6 +58,7 @@ async function notesIn(tx: LibraryTx, accountId: string, q: string, scope: SQL) 
        where ${scope}
        order by h.rnk`);
   return {
+    shortWords: await shortWords(tx, q),
     notes: rows.map((row) => ({
       id: row.id,
       match: matchOf(row.tier),
@@ -63,7 +75,8 @@ export const searchRouter = router({
    * goes to the database as typed; all folding and parsing happen there
    * (ADR-0010). Locator, Tags and Date are not searched. Every match is
    * returned, a page of Notes at a time: `cursor` is how many came before.
-   * Sources come with the first page only.
+   * Sources come with the first page only, and so do the query's words
+   * too short for a prefix match (#144).
    *
    * The Tarih filter keeps the Sources, and the Notes whose Source, dated
    * in the years asked; with the first page come how many matches it hid
@@ -147,6 +160,7 @@ export const searchRouter = router({
         noteTotal,
         nextCursor: offset + notes.length < noteTotal ? offset + notes.length : null,
         hiddenUndated: { sources: hiddenUndated.sources, notes: hiddenUndated.notes },
+        shortWords: offset > 0 ? [] : await shortWords(ctx.tx, query),
       };
     }),
 
@@ -184,8 +198,8 @@ export const searchRouter = router({
 });
 
 /** {@link notesIn} the Notes a view shows. */
-function notesInView(tx: LibraryTx, accountId: string, q: string, noteIds: string[]) {
-  if (noteIds.length === 0) return { notes: [] };
+async function notesInView(tx: LibraryTx, accountId: string, q: string, noteIds: string[]) {
+  if (noteIds.length === 0) return { shortWords: await shortWords(tx, q), notes: [] };
   const ids = sql`array[${sql.join(
     noteIds.map((id) => sql`${id}`),
     sql`, `,

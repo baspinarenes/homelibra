@@ -46,6 +46,25 @@ describe('The scenario table in every scope', () => {
   });
 });
 
+// The words matched only whole come back as from the Library search (#144).
+describe('The short words in every scope', () => {
+  const query = 'ad "el" -ve';
+
+  it('are the same in a Source, a Collection and on a Tag’s page', async () => {
+    const sourceId = scenario.notes.values().next().value!.sourceId;
+    expect((await scenario.api.search.source({ sourceId, query })).shortWords).toEqual(['ad']);
+    expect((await scenario.api.search.collection({ id: collectionId, query })).shortWords).toEqual(['ad']);
+    expect((await scenario.api.search.tag({ tagId, includeSourceNotes: true, query })).shortWords).toEqual(['ad']);
+  });
+
+  it('come back from a view with no Notes too', async () => {
+    const api = await scholar();
+    const { id } = await api.collections.create({ name: 'Boş', tags: ['boş'] });
+
+    expect(await api.search.collection({ id, query })).toEqual({ shortWords: ['ad'], notes: [] });
+  });
+});
+
 describe('Searching a Collection or a Tag page', () => {
   it('finds only the Notes its view shows, by their own Tag or, with the switch on, their Source’s', async () => {
     const api = await scholar();
@@ -102,6 +121,7 @@ describe('Bu kaynakta ara', () => {
     await api.notes.create({ id: uuidv7(), sourceId: otherId, excerpt: 'Kadı tayini.' });
 
     expect(await api.search.source({ sourceId, query: 'kadı' })).toEqual({
+      shortWords: [],
       notes: [
         {
           id,
