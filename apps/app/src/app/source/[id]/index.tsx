@@ -3,6 +3,7 @@ import { formatDate } from '@homelibra/core/date';
 import { lastCaptured } from '@homelibra/core/note';
 import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { SectionHeading } from '@homelibra/ui/section-heading';
 import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
@@ -191,36 +192,41 @@ function SourcePage({
             pin.current = null;
           }}
           ListHeaderComponent={
-            <View style={styles.heading}>
-              <View style={styles.identity}>
-                <CoverEditor sourceId={source.id} type={source.type} cover={source.cover} />
-                <View style={styles.identityText}>
-                  <View style={styles.typeLine}>
-                    <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-                    <ReadingStatusButton sourceId={source.id} status={source.readingStatus} />
+            <>
+              <View style={styles.heading}>
+                <View style={styles.identity}>
+                  <CoverEditor sourceId={source.id} type={source.type} cover={source.cover} />
+                  <View style={styles.identityText}>
+                    <View style={styles.typeLine}>
+                      <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
+                      <ReadingStatusButton sourceId={source.id} status={source.readingStatus} />
+                    </View>
+                    <Text style={styles.title}>{source.title}</Text>
+                    <Text style={styles.byline}>{byline}</Text>
                   </View>
-                  <Text style={styles.title}>{source.title}</Text>
-                  <Text style={styles.byline}>{byline}</Text>
                 </View>
+                <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
+                {!searching && (
+                  <View style={styles.actions}>
+                    <SourceSearchButton onPress={() => setSearching(true)} />
+                  </View>
+                )}
+                {searching && (
+                  <SourceSearchBar
+                    text={search.text}
+                    onChange={search.setText}
+                    matches={searched.matches}
+                    shortWords={searched.shortWords}
+                    failed={searched.failed}
+                    total={notes.length}
+                    onClose={closeSearch}
+                  />
+                )}
               </View>
-              <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
-              {!searching && (
-                <View style={styles.actions}>
-                  <SourceSearchButton onPress={() => setSearching(true)} />
-                </View>
-              )}
-              {searching && (
-                <SourceSearchBar
-                  text={search.text}
-                  onChange={search.setText}
-                  matches={searched.matches}
-                  shortWords={searched.shortWords}
-                  failed={searched.failed}
-                  total={notes.length}
-                  onClose={closeSearch}
-                />
-              )}
-            </View>
+              <View style={styles.notesHeading}>
+                <SectionHeading title={t('sourcePage.notes')} />
+              </View>
+            </>
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
@@ -364,6 +370,8 @@ const makeStyles = (c: Colors) =>
       borderBottomWidth: 1,
       borderBottomColor: c.line,
     },
+    // As a Section spaces its heading: 18 under the rule, the first row's own 12 below.
+    notesHeading: { paddingTop: 18 },
     identity: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
     identityText: { flex: 1, gap: space.xs },
     typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },

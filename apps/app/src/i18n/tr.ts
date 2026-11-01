@@ -163,6 +163,7 @@ export const tr = {
   sourcePage: {
     edit: 'Düzenle',
     noteCount: '{{count}} not',
+    notes: 'Notlar',
     empty: 'Bu kaynaktan henüz not yok. Aşağıya yazmaya başla.',
     loadFailed: 'Kaynak yüklenemedi.',
     editNote: 'Notu düzenle',
