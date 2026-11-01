@@ -125,12 +125,7 @@ export default function SourcesScreen() {
       );
     }
     if (tab === 'finished') return <ListMessage lead={t('sources.finishedEmpty')} />;
-    return (
-      <ListMessage
-        lead={t('sources.readingEmpty')}
-        action={{ label: t('sources.add'), variant: 'secondary', onPress: addSource }}
-      />
-    );
+    return <ListMessage lead={t('sources.readingEmpty')} action={{ label: t('sources.add'), onPress: addSource }} />;
   };
 
   return (

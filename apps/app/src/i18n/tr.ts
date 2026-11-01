@@ -230,7 +230,7 @@ export const tr = {
     filter: 'Filtrele ve sırala',
     filterActive: 'Filtrele ve sırala, filtre etkin',
     statusTabs: 'Okuma durumu',
-    readingEmpty: 'Şu an okuduğun kaynak yok. Bitirdiklerin Bitti sekmesinde.',
+    readingEmpty: 'Okuduğun kaynak yok.',
     finishedEmpty: 'Henüz bitirdiğin kaynak yok.',
     // The Filtrele ve sırala sheet and the filter chips under the tabs (#122).
     close: 'Kapat',
