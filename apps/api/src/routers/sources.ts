@@ -16,7 +16,6 @@ import { z } from 'zod';
 
 import { coverColumns, coverOf } from '../covers/covers';
 import { note, source } from '../db/schema';
-import { waiting, waitingCount } from '../organize/waiting';
 import { dateFilter, inDates } from '../search/dates';
 import { mySource } from '../sources/sources';
 import { tagsOfSource } from '../tags/tags';
@@ -104,9 +103,8 @@ export const sourcesRouter = router({
    * The Kaynaklar list, by Son not (the Source noted last first), by Başlık,
    * by Yazar or by Tarih (oldest first, across calendars); Sources without a
    * Note, a Yazar or a Tarih come last. Each with its Reading status (the app
-   * splits the list into Okunuyor and Bitti), how many Notes it has, when the
-   * last one was captured and how many untagged ones Düzenle waits on
-   * ("N etiketsiz"). The Tarih filter keeps only Sources dated in its years
+   * splits the list into Okunuyor and Bitti), how many Notes it has and when
+   * the last one was captured. The Tarih filter keeps only Sources dated in its years
    * (#40, story 164); the Tür filter only Sources of its types, every type
    * while none is chosen (#122).
    */
@@ -135,9 +133,6 @@ export const sourcesRouter = router({
           lastNoteId: sql<string | null>`(select n.id from ${note} n
                                            where n.source_id = source.id and n.account_id = ${ctx.accountId}
                                            order by n.id desc limit 1)`,
-          untaggedCount: sql<number>`(select count(*) from ${note} n
-                                       where n.source_id = source.id and n.account_id = ${ctx.accountId}
-                                         and ${waiting(ctx.accountId, 'n', 'source')})::int`,
         })
         .from(source)
         .where(
@@ -270,10 +265,7 @@ export const sourcesRouter = router({
 
   /**
    * The Reading status button on the Source page's heading: okunuyor or
-   * bitti, nothing else (no date, no history). Finishing a Source says how
-   * many Notes Organizing pass still waits on there, so the app can offer
-   * "Şimdi düzenle / Sonra" (#13); otherwise, and when it was finished
-   * already, 0.
+   * bitti, nothing else (no date, no history).
    */
   setReadingStatus: libraryProcedure
     .input(z.object({ id: z.uuid(), status: z.enum(source.readingStatus.enumValues) }))
@@ -281,10 +273,8 @@ export const sourcesRouter = router({
       const mine = mySource(ctx.accountId, input.id);
       const [before] = await ctx.tx.select({ status: source.readingStatus }).from(source).where(mine).for('update');
       if (!before) throw new TRPCError({ code: 'NOT_FOUND' });
-      if (before.status === input.status) return { untaggedCount: 0 };
+      if (before.status === input.status) return;
       await ctx.tx.update(source).set({ readingStatus: input.status, updatedAt: new Date() }).where(mine);
-      const finishing = input.status === 'finished';
-      return { untaggedCount: finishing ? await waitingCount(ctx.tx, ctx.accountId, input.id) : 0 };
     }),
 
   /**

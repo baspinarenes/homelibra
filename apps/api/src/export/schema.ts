@@ -70,7 +70,6 @@ const exportedSource = z
     readingStatus: z
       .enum(['reading', 'finished'])
       .meta({ description: 'Okuma durumu: reading (okunuyor), finished (bitti).' }),
-    lastFinishedAt: instant.nullable().meta({ description: 'Bu kaynakta son "Bitir"in anı; hiç bitirilmediyse null.' }),
     tags: tagNames.meta({
       description: 'Kaynağın kendi etiketleri. Notlarına geçmez; her notun etiketleri notta yazar.',
     }),

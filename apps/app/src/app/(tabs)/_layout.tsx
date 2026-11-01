@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Platform, useWindowDimensions } from 'react-native';
 
 import { TabIcon } from '@/components/tab-icon';
-import { useToOrganize } from '@/components/to-organize';
 
 const tabs = [
   { route: '(home)', key: 'home', icon: 'overview' },
@@ -24,8 +23,6 @@ export default function TabsLayout() {
   const { width } = useWindowDimensions();
   const rail = Platform.OS === 'web' && width >= wideMinWidth; // below it, a bottom bar (library-nav prototype)
   const { colors } = useTheme();
-  // Genel bakış's dot: Düzenlenecekler holds at least one Source.
-  const toOrganize = (useToOrganize().data?.length ?? 0) > 0;
 
   return (
     <Tabs
@@ -36,12 +33,7 @@ export default function TabsLayout() {
               const open = state.routes[state.index];
               return (
                 <TabBar
-                  tabs={tabs.map(({ key, icon }) => ({
-                    key,
-                    icon,
-                    label: t(`tabs.${key}`),
-                    dot: key === 'home' && toOrganize ? t('tabBar.homeToOrganize') : undefined,
-                  }))}
+                  tabs={tabs.map(({ key, icon }) => ({ key, icon, label: t(`tabs.${key}`) }))}
                   active={tabs.find((tab) => tab.route === open?.name)?.key ?? ''}
                   onPress={(key) => {
                     const route = state.routes.find((r) => r.name === tabs.find((tab) => tab.key === key)?.route);

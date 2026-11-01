@@ -13,7 +13,6 @@ import { LostNotesNotice, useLostNoteCount } from '@/components/lost-notes-notic
 import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
 import { SourceCover } from '@/components/source-cover';
-import { ToOrganizeStrip, useToOrganize } from '@/components/to-organize';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
 
@@ -27,7 +26,6 @@ export default function HomeScreen() {
   const home = useQuery(trpc.sources.home.queryOptions());
   const lastNoted = useQuery(trpc.sources.lastNoted.queryOptions());
   const lostNotes = useLostNoteCount();
-  const toOrganize = useToOrganize();
 
   if (home.isPending || lastNoted.isPending) {
     return (
@@ -56,15 +54,14 @@ export default function HomeScreen() {
     );
   }
 
-  // What waits on the scholar heads Genel bakış in yellow strips; then where they left off.
+  // What waits on the scholar heads Genel bakış in a yellow strip; then where they left off.
   if (lastNoted.data) {
-    const alerts = lostNotes > 0 || !!toOrganize.data?.length;
+    const alerts = lostNotes > 0;
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         {alerts && (
           <View style={styles.alerts}>
             <LostNotesNotice />
-            <ToOrganizeStrip />
           </View>
         )}
         <LastNotedSection lastNoted={lastNoted.data} afterAlerts={alerts} />

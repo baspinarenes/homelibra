@@ -138,7 +138,6 @@ export async function libraryExport(db: Db, covers: ObjectStorage, accountId: st
       fields: row.fields,
       hiddenFields: keptHidden(row.type, { ...row.fields, isbn: row.isbn ?? undefined, doi: row.doi ?? undefined }),
       readingStatus: row.readingStatus,
-      lastFinishedAt: row.lastFinishedAt?.toISOString() ?? null,
       tags: tagsOfSource(row.id),
       cover,
       markdown,
