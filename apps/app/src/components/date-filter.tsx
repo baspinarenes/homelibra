@@ -1,199 +1,121 @@
 import { type Calendar, calendars, formatDate, type YearRange, yearRange } from '@homelibra/core/date';
-import { useMemo, useState } from 'react';
+import { Segment } from '@homelibra/ui/segment';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-
-import { useSettled } from '@/lib/settled';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
-
-type Side = 'from' | 'to';
-
-/** One year of the filter as typed, with the calendar its chip shows. */
-type YearDraft = { calendar: Calendar; year: string };
-
-/** The Tarih filter as the scholar sets it: Başlangıç and Bitiş, each with its own calendar chip. */
-export type DateFilterDraft = Record<Side, YearDraft>;
-
-const emptyDraft: DateFilterDraft = {
-  from: { calendar: 'gregorian', year: '' },
-  to: { calendar: 'gregorian', year: '' },
-};
-
-const boundOf = ({ calendar, year }: YearDraft) => (year.trim() ? { calendar, year: Number(year) } : null);
+import { StyleSheet, Text, View } from 'react-native';
 
 /**
- * The Tarih filter's state for a list (#40, story 164). `range` is what the
- * list asks the server for once typing settles: null while no year is set
- * or a year is not in its calendar (the panel says which).
+ * The Tarih filter as the scholar types it (#122): one calendar for both
+ * years, and Başlangıç and Bitiş as typed, either left blank.
  */
-export function useDateFilter() {
-  const [draft, setDraft] = useState(emptyDraft);
-  const settled = useSettled(draft);
-  const range = useMemo(() => {
-    const value: YearRange = { from: boundOf(settled.from), to: boundOf(settled.to) };
-    return (value.from || value.to) && yearRange(value) ? value : null;
-  }, [settled]);
-  return { draft, setDraft, range };
+export type YearRangeDraft = { calendar: Calendar; from: string; to: string };
+
+/** No year typed, Milâdî chosen. */
+export const emptyYearRange: YearRangeDraft = { calendar: 'gregorian', from: '', to: '' };
+
+const boundOf = (calendar: Calendar, year: string) => (year.trim() ? { calendar, year: Number(year) } : null);
+
+/** Whether a year is typed on either side. */
+export const hasYear = (draft: YearRangeDraft) => draft.from.trim() !== '' || draft.to.trim() !== '';
+
+/**
+ * The years the filter keeps, as `sources.list` and `search.library` take
+ * them: null while no year is typed or a year is not in its calendar
+ * (1400 r.), when the filter keeps everything.
+ */
+export function yearRangeOf(draft: YearRangeDraft): YearRange | null {
+  const range: YearRange = { from: boundOf(draft.calendar, draft.from), to: boundOf(draft.calendar, draft.to) };
+  return (range.from || range.to) && yearRange(range) ? range : null;
+}
+
+/** The years as a filter chip shows them: "1324 r. – 1330 r.", "1500 – …". */
+export function yearRangeLabel(range: YearRange, open: string) {
+  const side = (bound: YearRange['from']) => (bound ? formatDate(bound) : open);
+  return `${side(range.from)} – ${side(range.to)}`;
 }
 
 /**
- * "Tarih: tümü ▾", or the years set ("Tarih: 1324 r. – 1330 r."); it opens
- * the panel: Başlangıç and Bitiş years, a chip beside each cycling Milâdî
- * → Hicrî → Rumî (as in the Source form), Temizle, and the Milâdî years the
- * filter stands for ("≈ 1908–1915 Milâdî"). Sources are compared by the
- * first day of their Date; those without one are hidden.
+ * The Tarih filter's fields, for a Süz sheet (Kaynaklar, Ara): a Milâdî |
+ * Hicrî | Rumî segment over Başlangıç and Bitiş years on the number pad.
+ * Below, the Milâdî years a Hicrî or Rumî range stands for ("≈ 1908–1915
+ * Milâdî") and that undated Sources are hidden, or the year its calendar
+ * does not have. Sources are compared by the first day of their Date.
  */
-export function DateFilter({
-  draft,
-  onChange,
-}: {
-  draft: DateFilterDraft;
-  onChange: (draft: DateFilterDraft) => void;
-}) {
-  const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
-  const [open, setOpen] = useState(false);
-  const active = draft.from.year.trim() !== '' || draft.to.year.trim() !== '';
-  const shown = (side: Side) => {
-    const bound = boundOf(draft[side]);
-    return bound ? formatDate(bound) : t('dateFilter.open');
-  };
-  const range = { from: boundOf(draft.from), to: boundOf(draft.to) };
-  const bounds = yearRange(range);
-  // The year its calendar does not have, for the message.
-  const missing = (['from', 'to'] as const).find((side) => {
-    const bound = range[side];
-    return bound && !yearRange({ from: bound });
-  });
-
-  return (
-    <View style={styles.filter}>
-      <Pressable
-        accessibilityRole="button"
-        aria-expanded={open}
-        onPress={() => setOpen(!open)}
-        style={({ pressed }) => [styles.toggle, active && styles.toggleActive, pressed && styles.pressed]}
-      >
-        <Text style={[styles.toggleText, active && styles.toggleTextActive]}>
-          {t('dateFilter.label', { range: active ? `${shown('from')} – ${shown('to')}` : t('dateFilter.any') })} ▾
-        </Text>
-      </Pressable>
-      {open && (
-        <View style={styles.panel}>
-          <View style={styles.years}>
-            <YearField
-              label={t('dateFilter.from')}
-              value={draft.from}
-              onChange={(from) => onChange({ ...draft, from })}
-            />
-            <YearField label={t('dateFilter.to')} value={draft.to} onChange={(to) => onChange({ ...draft, to })} />
-            {active && (
-              <Pressable accessibilityRole="button" onPress={() => onChange(emptyDraft)} hitSlop={8}>
-                <Text style={styles.clear}>{t('dateFilter.clear')}</Text>
-              </Pressable>
-            )}
-          </View>
-          {missing ? (
-            <Text style={styles.problem}>
-              {t('dateFilter.notInCalendar', {
-                year: draft[missing].year,
-                calendar: t(`date.calendars.${draft[missing].calendar}`),
-              })}
-            </Text>
-          ) : (
-            <Text style={styles.hint}>
-              {active && bounds
-                ? t('dateFilter.hint', {
-                    from: bounds.gregorian.from ?? t('dateFilter.open'),
-                    to: bounds.gregorian.to ?? t('dateFilter.open'),
-                  })
-                : t('dateFilter.lead')}
-            </Text>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
-
-function YearField({
-  label,
+export function YearRangeFields({
   value,
   onChange,
 }: {
-  label: string;
-  value: YearDraft;
-  onChange: (value: YearDraft) => void;
+  value: YearRangeDraft;
+  onChange: (value: YearRangeDraft) => void;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
-  const next = calendars[(calendars.indexOf(value.calendar) + 1) % calendars.length]!;
-  return (
+  const bounds = yearRange({ from: boundOf(value.calendar, value.from), to: boundOf(value.calendar, value.to) });
+  // The year its calendar does not have, for the message.
+  const missing = [value.from, value.to].find((year) => {
+    const bound = boundOf(value.calendar, year);
+    return bound && !yearRange({ from: bound });
+  });
+  const year = (side: 'from' | 'to') => (
     <View style={styles.year}>
-      <Text style={styles.yearLabel}>{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
+      {/* Read out by the field itself. */}
+      <Text aria-hidden style={styles.yearLabel}>
+        {t(`dateFilter.${side}`)}
+      </Text>
+      <TextField
+        label={t(`dateFilter.${side}`)}
+        labelHidden
         placeholder={t('dateFilter.year')}
-        placeholderTextColor={colors.muted2}
-        value={value.year}
-        onChangeText={(text) => onChange({ ...value, year: text.replace(/\D/g, '') })}
+        value={value[side]}
+        onChangeText={(text) => onChange({ ...value, [side]: text.replace(/\D/g, '') })}
         inputMode="numeric"
+        keyboardType="number-pad"
         maxLength={4}
-        style={styles.input}
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('dateFilter.changeCalendar', { side: label, calendar: t(`date.calendars.${next}`) })}
-        onPress={() => onChange({ ...value, calendar: next })}
-        hitSlop={6}
-        style={styles.chip}
-      >
-        <Text style={styles.chipText}>{t(`date.calendars.${value.calendar}`)} ↻</Text>
-      </Pressable>
+    </View>
+  );
+
+  return (
+    <View style={styles.fields}>
+      <Segment
+        label={t('dateFilter.calendar')}
+        options={calendars.map((calendar) => ({ value: calendar, label: t(`date.calendars.${calendar}`) }))}
+        value={value.calendar}
+        onChange={(calendar) => onChange({ ...value, calendar })}
+        block
+      />
+      <View style={styles.years}>
+        {year('from')}
+        <Text style={styles.dash}>–</Text>
+        {year('to')}
+      </View>
+      {missing ? (
+        <Text style={styles.problem}>
+          {t('dateFilter.notInCalendar', { year: missing, calendar: t(`date.calendars.${value.calendar}`) })}
+        </Text>
+      ) : (
+        <Text style={styles.hint}>
+          {value.calendar !== 'gregorian' && hasYear(value) && bounds
+            ? t('dateFilter.hint', {
+                from: bounds.gregorian.from ?? t('dateFilter.open'),
+                to: bounds.gregorian.to ?? t('dateFilter.open'),
+              })
+            : t('dateFilter.lead')}
+        </Text>
+      )}
     </View>
   );
 }
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    filter: { gap: space.sm },
-    pressed: { opacity: 0.7 },
-    toggle: {
-      alignSelf: 'flex-start',
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.button,
-      paddingVertical: 6,
-      paddingHorizontal: space.md,
-    },
-    toggleActive: { borderColor: c.accent },
-    toggleText: { ...typeScale.label, color: c.ink2 },
-    toggleTextActive: { color: c.accent },
-    panel: { gap: space.sm, paddingBottom: space.xs },
-    years: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.md },
-    year: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    yearLabel: { ...typeScale.caption, minWidth: 62, color: c.muted },
-    input: {
-      ...typeScale.body,
-      width: 72,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.input,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-    },
-    chip: {
-      borderWidth: 1,
-      borderColor: c.accent,
-      borderRadius: radius.chip,
-      paddingHorizontal: 8,
-      paddingVertical: 1,
-    },
-    chipText: { ...typeScale.caption, fontFamily: typeScale.button.fontFamily, color: c.accent },
-    clear: { ...typeScale.button, color: c.accent },
+    fields: { gap: 6 },
+    years: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
+    year: { flex: 1, gap: 6 },
+    yearLabel: { ...typeScale.label, fontSize: 13, lineHeight: 16, color: c.ink2 },
+    // Level with the inputs' text, whatever the label above them.
+    dash: { ...typeScale.body, width: 14, paddingBottom: 12, textAlign: 'center', color: c.muted },
     hint: { ...typeScale.caption, color: c.muted },
     problem: { ...typeScale.caption, color: c.danger },
   });

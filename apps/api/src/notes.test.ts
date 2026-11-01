@@ -154,29 +154,6 @@ describe('Note editing', () => {
     });
   });
 
-  it('keeps a corrected sort value until the Locator text changes, then derives it again', async () => {
-    const { api, sourceId } = await scholarWithSource();
-    const id = uuidv7();
-    await api.notes.create({ id, sourceId, locator: '29 Z 1310, 1234/56', excerpt: 'İrade.' });
-
-    await api.notes.update({ id, locatorSort: [1234, 56, 29, 1310] });
-    await api.notes.update({ id, comment: 'Tarih önce yazılmış.' });
-    expect(await api.notes.get({ id })).toMatchObject({ locatorSort: [1234, 56, 29, 1310] });
-
-    await api.notes.update({ id, locator: '29 Z 1310, 1234/57' });
-    expect(await api.notes.get({ id })).toMatchObject({ locatorSort: [29, 1310, 1234, 57] });
-  });
-
-  it('takes only whole numbers and folio halves as a sort value', async () => {
-    const { api, sourceId } = await scholarWithSource();
-    const id = uuidv7();
-    await api.notes.create({ id, sourceId, locator: 'vr. 12', excerpt: 'Ferman.' });
-
-    await expect(api.notes.update({ id, locatorSort: [12.25] })).rejects.toMatchObject({ code: 'BAD_REQUEST' });
-    await api.notes.update({ id, locatorSort: [12.5] });
-    expect(await api.notes.get({ id })).toMatchObject({ locatorSort: [12.5] });
-  });
-
   it('cannot leave a Note without an Excerpt or a Comment', async () => {
     const { api, sourceId } = await scholarWithSource();
     const id = uuidv7();
@@ -200,7 +177,7 @@ describe('Note editing', () => {
   });
 });
 
-describe("Ana sayfa's last noted Source", () => {
+describe("Genel bakış's last noted Source", () => {
   it('is the Source of the latest Note, with that Note', async () => {
     const api = await (await t.signIn(scholarEmail())).call();
     const kadi = await api.sources.create({
@@ -311,17 +288,16 @@ describe('Detaching a Comment (Geri al after attaching)', () => {
     ]);
   });
 
-  it("keeps the Excerpt's sort value, corrected or not, so the two stay together in Locator order", async () => {
+  it("keeps the Excerpt's sort value, so the two stay together in Locator order", async () => {
     const { api, sourceId } = await scholarWithSource();
     const id = uuidv7();
     await api.notes.create({ id, sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });
-    await api.notes.update({ id, locatorSort: [44] });
     await api.notes.attachComment({ id, comment: 'Naiplik bir tür kiralama mı?' });
     const commentNoteId = uuidv7();
 
     await api.notes.detachComment({ id, commentNoteId });
 
-    expect(await api.notes.get({ id: commentNoteId })).toMatchObject({ locator: 's. 45', locatorSort: [44] });
+    expect(await api.notes.get({ id: commentNoteId })).toMatchObject({ locator: 's. 45', locatorSort: [45] });
   });
 
   it('is sent again without harm', async () => {

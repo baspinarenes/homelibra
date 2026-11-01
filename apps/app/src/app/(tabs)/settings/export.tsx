@@ -1,13 +1,15 @@
+import { Section, SectionText } from '@homelibra/ui/section-heading';
+import { TermTable } from '@homelibra/ui/term-table';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { LibraryExportDownload } from '@/components/library-export';
-import { SettingsSection, SettingsText } from '@/components/settings-list';
-import { type Colors, space, useThemedStyles } from '@/theme';
 
 /**
  * Kütüphaneni dışa aktar (#40, stories 16-18; ADR-0004): what the ZIP
- * holds, and its download. Free and at any time; Hesabı sil links here.
+ * holds, file by file in a table (#115), and its download. Free and at any
+ * time; Hesabı sil links here.
  */
 export default function LibraryExportScreen() {
   const { t } = useTranslation();
@@ -15,14 +17,17 @@ export default function LibraryExportScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.top}>
-        <SettingsText>{t('libraryExport.lead')}</SettingsText>
+        <SectionText>{t('libraryExport.lead')}</SectionText>
         <LibraryExportDownload />
       </View>
-      <SettingsSection title={t('libraryExport.contentsHeading')}>
-        <SettingsText>{t('libraryExport.json')}</SettingsText>
-        <SettingsText>{t('libraryExport.markdown')}</SettingsText>
-        <SettingsText>{t('libraryExport.covers')}</SettingsText>
-      </SettingsSection>
+      <Section title={t('libraryExport.contentsHeading')} spacing="text">
+        <TermTable
+          rows={t('libraryExport.files', { returnObjects: true }).map((file) => ({
+            term: file.name,
+            description: file.description,
+          }))}
+        />
+      </Section>
     </ScrollView>
   );
 }

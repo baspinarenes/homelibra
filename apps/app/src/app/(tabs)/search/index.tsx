@@ -1,29 +1,34 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
+import { Button } from '@homelibra/ui/button';
+import { Chip, ChipRow } from '@homelibra/ui/chip';
+import { HeaderIconAction } from '@homelibra/ui/screen-header';
+import { SectionHeading } from '@homelibra/ui/section-heading';
+import { Segment } from '@homelibra/ui/segment';
+import { Sheet, SheetField } from '@homelibra/ui/sheet';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
+import Search from 'lucide-react-native/icons/search';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { DateFilter, useDateFilter } from '@/components/date-filter';
-import { Segment } from '@/components/segment';
+import {
+  emptyYearRange,
+  hasYear,
+  type YearRangeDraft,
+  YearRangeFields,
+  yearRangeLabel,
+  yearRangeOf,
+} from '@/components/date-filter';
 import { SourceCover } from '@/components/source-cover';
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/lib/settled';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type Results = inferRouterOutputs<AppRouter>['search']['library'];
 type NoteResult = Results['notes'][number];
@@ -38,12 +43,45 @@ const FIRST_SOURCES = 3;
 /** Tümü / Notlar / Kaynaklar. */
 type Kind = 'all' | 'notes' | 'sources';
 
+/** What Süz sets: which results show, and the Tarih filter. Tümü and no year keep everything. */
+type Choices = { kind: Kind; dates: YearRangeDraft };
+
+const initial: Choices = { kind: 'all', dates: emptyYearRange };
+
+/** Every filter off, the calendar kept. */
+const unfiltered = (choices: Choices): Choices => ({
+  kind: 'all',
+  dates: { ...emptyYearRange, calendar: choices.dates.calendar },
+});
+
+/** How many results a kind shows, by a search's first page. */
+function countOf(kind: Kind, first: Results) {
+  if (kind === 'notes') return first.noteTotal;
+  if (kind === 'sources') return first.sources.length;
+  return first.sources.length + first.noteTotal;
+}
+
+/** The "Tarihsiz kaynaklardan … gizli" line for what the kind shows, or null when nothing is hidden. */
+function hiddenLine(
+  t: ReturnType<typeof useTranslation>['t'],
+  kind: Kind,
+  hidden: Results['hiddenUndated'] | undefined,
+) {
+  if (!hidden) return null;
+  if (kind === 'notes') return hidden.notes > 0 ? t('search.hiddenNotes', { count: hidden.notes }) : null;
+  if (kind === 'sources') return hidden.sources > 0 ? t('dateFilter.hiddenSources', { count: hidden.sources }) : null;
+  return hidden.sources > 0 || hidden.notes > 0 ? t('dateFilter.hiddenResults', hidden) : null;
+}
+
 /**
  * Ara: the whole Library searched by the words of its Notes and Sources
- * (ADR-0005). The box in the top bar sends the query as typed; the server
- * folds, stems, ranks and marks the matching words (ADR-0010). Under it,
- * Tümü / Notlar / Kaynaklar and the Tarih filter, which keeps the Sources,
- * and the Notes whose Source, dated in its years (#40, story 154).
+ * (ADR-0005). The box under the title sends the query as typed; the server
+ * folds, stems, ranks and marks the matching words (ADR-0010). The header's
+ * Süz icon opens Süz (#132): Tümü / Notlar / Kaynaklar and the Tarih filter,
+ * which keeps the Sources, and the Notes whose Source, dated in its years
+ * (#40, story 154), applied by "N sonucu göster". While a filter is on the
+ * icon has a dot and a chip under the box names it, × taking it off. The
+ * info icon beside the title, set by the tab's layout, opens Arama ipuçları.
  */
 export default function SearchScreen() {
   const { t } = useTranslation();
@@ -52,41 +90,73 @@ export default function SearchScreen() {
   const [text, setText] = useState('');
   const query = useSettled(text.trim());
   const offline = useOffline();
-  const [kind, setKind] = useState<Kind>('all');
-  const dates = useDateFilter();
+  const [choices, setChoices] = useState(initial);
+  // The sheet's choices while it is open; "Kapat" drops them.
+  const [draft, setDraft] = useState<Choices | null>(null);
+  const { kind } = choices;
+  const dates = yearRangeOf(choices.dates);
+  const filterOn = kind !== 'all' || dates !== null;
+  const search = (range: typeof dates) =>
+    trpc.search.library.infiniteQueryOptions({ query, dates: range }, { getNextPageParam: (page) => page.nextCursor });
   const results = useInfiniteQuery({
-    ...trpc.search.library.infiniteQueryOptions(
-      { query, dates: dates.range },
-      { getNextPageParam: (page) => page.nextCursor },
-    ),
+    ...search(dates),
     enabled: query !== '',
     // Keep the last results on screen while the next query runs.
     placeholderData: keepPreviousData,
   });
+  // The sheet's count: the same search with the years in the sheet, once typing settles.
+  const draftDates = yearRangeOf(useSettled(draft?.dates ?? choices.dates));
+  const counted = useInfiniteQuery({
+    ...search(draftDates),
+    enabled: draft !== null && query !== '',
+    placeholderData: keepPreviousData,
+  });
+  const counts = counted.data?.pages[0];
   const first = results.data?.pages[0];
   const sources = kind === 'notes' ? [] : (first?.sources ?? []);
   const notes = kind === 'sources' ? [] : (results.data?.pages.flatMap((page) => page.notes) ?? []);
-  const hidden = first?.hiddenUndated;
+  const hidden = hiddenLine(t, kind, query !== '' && dates ? first?.hiddenUndated : undefined);
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ headerTitle: () => <SearchBox value={text} onChange={setText} offline={offline} /> }} />
-      {!offline && (
-        <View style={styles.controls}>
-          <Segment
-            label={t('noteSearch.kindLabel')}
-            options={[
-              { value: 'all', label: t('noteSearch.all') },
-              { value: 'notes', label: t('noteSearch.notes') },
-              { value: 'sources', label: t('noteSearch.sources') },
-            ]}
-            value={kind}
-            onChange={setKind}
-          />
-          <DateFilter draft={dates.draft} onChange={dates.setDraft} />
-          {query !== '' && hidden && (hidden.sources > 0 || hidden.notes > 0) && (
-            <Text style={styles.hidden}>{t('dateFilter.hiddenResults', hidden)}</Text>
-          )}
+      <Stack.Screen
+        options={{
+          // Offline there is nothing to narrow.
+          headerRight: offline
+            ? undefined
+            : () => (
+                <HeaderIconAction
+                  icon={SlidersHorizontal}
+                  label={t(filterOn ? 'search.filterActive' : 'search.filter')}
+                  dot={filterOn}
+                  size={24}
+                  onPress={() => setDraft(choices)}
+                />
+              ),
+        }}
+      />
+      <SearchBox value={text} onChange={setText} offline={offline} />
+      {!offline && filterOn && (
+        <View style={styles.filters}>
+          <ChipRow>
+            {kind !== 'all' && (
+              <Chip
+                label={t(kind === 'notes' ? 'noteSearch.notes' : 'noteSearch.sources')}
+                selected
+                removable
+                onPress={() => setChoices({ ...choices, kind: 'all' })}
+              />
+            )}
+            {dates && (
+              <Chip
+                label={yearRangeLabel(dates, t('dateFilter.open'))}
+                selected
+                removable
+                onPress={() => setChoices({ ...choices, dates: unfiltered(choices).dates })}
+              />
+            )}
+          </ChipRow>
+          {hidden && <Text style={styles.hidden}>{hidden}</Text>}
         </View>
       )}
       {offline ? (
@@ -94,7 +164,7 @@ export default function SearchScreen() {
           <Text style={styles.lead}>{t('outbox.searchNeedsConnection')}</Text>
         </View>
       ) : query === '' ? (
-        <Hint />
+        <View style={styles.screen} />
       ) : results.isPending ? (
         <View style={styles.center}>
           <ActivityIndicator color={styles.spinner.color} />
@@ -102,6 +172,7 @@ export default function SearchScreen() {
       ) : results.isError ? (
         <View style={styles.center}>
           <Text style={styles.lead}>{t('search.failed')}</Text>
+          <Button variant="text" label={t('search.retry')} onPress={() => void results.refetch()} />
         </View>
       ) : sources.length === 0 && notes.length === 0 ? (
         <View style={styles.center}>
@@ -117,7 +188,7 @@ export default function SearchScreen() {
           ListHeaderComponent={
             <>
               {sources.length > 0 && (
-                <View style={styles.sources}>
+                <View style={styles.group}>
                   <GroupHeading label={t('search.sources')} count={sources.length} />
                   {(kind === 'sources' ? sources : sources.slice(0, FIRST_SOURCES)).map((source, i) => (
                     <SourceRow key={source.id} source={source} divided={i > 0} />
@@ -125,7 +196,7 @@ export default function SearchScreen() {
                   {kind === 'all' && sources.length > FIRST_SOURCES && (
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => setKind('sources')}
+                      onPress={() => setChoices({ ...choices, kind: 'sources' })}
                       style={({ pressed }) => [styles.allSources, pressed && styles.pressed]}
                     >
                       <Text style={styles.allSourcesText}>{t('search.allSources', { count: sources.length })}</Text>
@@ -133,7 +204,11 @@ export default function SearchScreen() {
                   )}
                 </View>
               )}
-              {notes.length > 0 && <GroupHeading label={t('search.notes')} count={first?.noteTotal ?? 0} />}
+              {notes.length > 0 && (
+                <View style={[styles.group, sources.length > 0 && styles.divided]}>
+                  <GroupHeading label={t('search.notes')} count={first?.noteTotal ?? 0} />
+                </View>
+              )}
             </>
           }
           renderItem={({ item: note, index }) => <NoteRow note={note} divided={index > 0} />}
@@ -148,11 +223,100 @@ export default function SearchScreen() {
           }
         />
       )}
+      <FilterSheet
+        draft={draft}
+        onChange={setDraft}
+        count={draft && query !== '' && counts ? countOf(draft.kind, counts) : null}
+        onApply={() => {
+          if (draft) setChoices(draft);
+          setDraft(null);
+        }}
+        onClose={() => setDraft(null)}
+      />
     </View>
   );
 }
 
-/** Offline it says a search needs the connection, so no result is taken for "not yok". */
+/** The sheet's main action per kind, with N and before a word is typed. */
+const showLabels = {
+  all: ['search.showAll', 'search.showAllUncounted'],
+  notes: ['search.showNotes', 'search.showNotesUncounted'],
+  sources: ['search.showSources', 'search.showSourcesUncounted'],
+} as const;
+
+/**
+ * Süz: Sonuçlar (Tümü | Notlar | Kaynaklar) and Tarih (one calendar, two
+ * years); Temizle and "N sonucu göster" ("N notu", "N kaynağı" for one
+ * kind), N following the choices.
+ */
+function FilterSheet({
+  draft,
+  onChange,
+  count,
+  onApply,
+  onClose,
+}: {
+  /** Null while the sheet is closed. */
+  draft: Choices | null;
+  onChange: (draft: Choices) => void;
+  /** Null before a word is typed, when there is nothing to count. */
+  count: number | null;
+  onApply: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
+  // The last choices stay on screen while the sheet slides away.
+  const [lastDraft, setLastDraft] = useState(draft ?? initial);
+  if (draft && draft !== lastDraft) setLastDraft(draft);
+  // A year its calendar does not have (1400 r.) cannot be applied.
+  const yearMissing = hasYear(lastDraft.dates) && yearRangeOf(lastDraft.dates) === null;
+  const [counted, uncounted] = showLabels[lastDraft.kind];
+
+  return (
+    <Sheet
+      visible={draft !== null}
+      title={t('search.filter')}
+      closeLabel={t('search.close')}
+      onClose={onClose}
+      secondary={{
+        label: t('search.clearFilters'),
+        onPress: () => onChange(unfiltered(lastDraft)),
+        disabled: lastDraft.kind === 'all' && !hasYear(lastDraft.dates),
+      }}
+      primary={{
+        label: count === null ? t(uncounted) : t(counted, { count }),
+        onPress: onApply,
+        disabled: yearMissing,
+      }}
+    >
+      <View style={styles.sheet}>
+        <SheetField label={t('noteSearch.kindLabel')}>
+          <Segment
+            label={t('noteSearch.kindLabel')}
+            options={[
+              { value: 'all', label: t('noteSearch.all') },
+              { value: 'notes', label: t('noteSearch.notes') },
+              { value: 'sources', label: t('noteSearch.sources') },
+            ]}
+            value={lastDraft.kind}
+            onChange={(kind) => onChange({ ...lastDraft, kind })}
+            block
+          />
+        </SheetField>
+        <SheetField label={t('search.dates')}>
+          <YearRangeFields value={lastDraft.dates} onChange={(dates) => onChange({ ...lastDraft, dates })} />
+        </SheetField>
+      </View>
+    </Sheet>
+  );
+}
+
+/**
+ * The box under the title, a magnifier at its left and × at its right once
+ * something is typed. Offline it says a search needs the connection, so no
+ * result is taken for "not yok".
+ */
 function SearchBox({
   value,
   onChange,
@@ -165,58 +329,45 @@ function SearchBox({
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
-  // The header sizes its title to its content: give the box the bar's width,
-  // which the header itself caps beside the web's tab rail.
-  const { width } = useWindowDimensions();
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={[styles.box, { width: Math.min(BOX_WIDTH, width - 2 * space.lg) }]}>
-      <TextInput
-        accessibilityLabel={t('tabs.search')}
-        placeholder={t(offline ? 'outbox.searchNeedsConnection' : 'search.placeholder')}
-        editable={!offline}
-        placeholderTextColor={colors.muted2}
-        value={value}
-        onChangeText={onChange}
-        autoFocus
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="search"
-        style={styles.input}
-      />
-      {value !== '' && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('search.clear')}
-          onPress={() => onChange('')}
-          hitSlop={8}
-          style={styles.clear}
-        >
-          <X color={colors.muted} size={18} strokeWidth={1.8} />
-        </Pressable>
-      )}
-    </View>
-  );
-}
-
-/** What an empty box shows: where search looks, and its two operators. */
-function Hint() {
-  const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.hint}>
-      <Text style={styles.hintText}>{t('search.hintScope')}</Text>
-      <Text style={styles.hintText}>
-        <Text style={styles.code}>{t('search.hintQuoteExample')}</Text> {t('search.hintQuote')} ·{' '}
-        <Text style={styles.code}>{t('search.hintExcludeExample')}</Text> {t('search.hintExclude')}
-      </Text>
-      <Text style={styles.hintText}>{t('search.hintNotSearched')}</Text>
+    <View style={styles.boxRow}>
+      <View style={[styles.box, offline && styles.boxOff]}>
+        <TextInput
+          accessibilityLabel={t('tabs.search')}
+          placeholder={t(offline ? 'outbox.searchNeedsConnection' : 'search.placeholder')}
+          editable={!offline}
+          placeholderTextColor={colors.muted2}
+          value={value}
+          onChangeText={onChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          autoFocus
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          style={[styles.input, focused && styles.focused]}
+        />
+        <View aria-hidden pointerEvents="none" style={styles.glass}>
+          <Search color={offline ? colors.muted2 : colors.muted} size={18} strokeWidth={1.8} />
+        </View>
+        {value !== '' && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('search.clear')}
+            onPress={() => onChange('')}
+            style={({ pressed }) => [styles.clear, pressed && styles.pressed]}
+          >
+            <X color={colors.muted} size={18} strokeWidth={1.8} />
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
 
 function GroupHeading({ label, count }: { label: string; count: number }) {
-  const styles = useThemedStyles(makeStyles);
-  return <Text style={styles.group}>{`${label} · ${count}`.toLocaleUpperCase('tr')}</Text>;
+  return <SectionHeading title={`${label} · ${count}`} />;
 }
 
 function SourceRow({ source, divided }: { source: SourceResult; divided: boolean }) {
@@ -285,32 +436,44 @@ function NoteRow({ note, divided }: { note: NoteResult; divided: boolean }) {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
-    sources: { paddingBottom: space.lg },
-    controls: { gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md },
+    content: { paddingHorizontal: space.gutter, paddingBottom: space.xxl },
+    group: { paddingTop: space.md, paddingBottom: space.xs },
+    filters: { gap: space.sm, paddingHorizontal: space.gutter, paddingTop: 2 },
     hidden: { ...typeScale.caption, color: c.muted },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space.md,
+      padding: space.xl,
+      backgroundColor: c.page,
+    },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
-    box: { flexDirection: 'row', alignItems: 'center', maxWidth: '100%' },
+    boxRow: { paddingTop: 2, paddingBottom: 10, paddingHorizontal: space.gutter, alignItems: 'center' },
+    box: { width: '100%', maxWidth: BOX_WIDTH, justifyContent: 'center' },
+    boxOff: { opacity: 0.6 },
+    glass: { position: 'absolute', left: 13 },
     input: {
       ...typeScale.body,
-      flex: 1,
       color: c.fg,
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
-      paddingLeft: 12,
-      paddingRight: 36,
-      paddingVertical: 8,
+      borderRadius: radius.control,
+      minHeight: 46,
+      paddingVertical: 12,
+      paddingLeft: 40,
+      paddingRight: 40,
+      // Android adds its own padding above and below the line otherwise.
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
-    clear: { position: 'absolute', right: 10 },
-    hint: { flex: 1, gap: space.md, padding: space.lg, backgroundColor: c.page },
-    hintText: { ...typeScale.body, color: c.muted },
-    code: { ...typeScale.locator, color: c.ink3 },
-    group: { ...typeScale.micro, color: c.muted, paddingTop: space.md, paddingBottom: space.sm },
+    // An accent border and a 3px accent-soft ring, as every field has.
+    focused: { borderColor: c.accent, outlineColor: c.accentSoft, outlineWidth: 3, outlineStyle: 'solid' },
+    clear: { position: 'absolute', right: 1, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    sheet: { gap: 18 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
     sourceText: { flex: 1, gap: 2 },

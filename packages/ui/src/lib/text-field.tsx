@@ -1,0 +1,122 @@
+import { useState } from 'react';
+import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
+
+import { type Colors, radius, type as typeScale } from './tokens';
+import { useTheme, useThemedStyles } from './use-theme';
+
+/**
+ * A labelled text input. Every field looks the same, a Source's title too:
+ * body 15/22 with 14px inside the edge, so the caret never touches it and
+ * g, ğ, y, ş are not cut off below.
+ */
+export function TextField({
+  label,
+  required = false,
+  labelHidden = false,
+  error,
+  excerpt = false,
+  code = false,
+  multiline = false,
+  onChangeText,
+  onFocus,
+  onBlur,
+  style,
+  ...input
+}: {
+  label: string;
+  required?: boolean;
+  /** Not shown, only read out: where the sheet's title already says what goes in (Yeniden adlandır). */
+  labelHidden?: boolean;
+  /** What is wrong with the value; shown below the field in `danger`. */
+  error?: string;
+  /** Holds an Excerpt: set in the quote face (Charis SIL, upright). */
+  excerpt?: boolean;
+  /** A six-digit sign-in code: the number pad, the code from the email offered, digits only, in mono. */
+  code?: boolean;
+} & TextInputProps) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
+  const invalid = error !== undefined && error !== '';
+  return (
+    <View style={styles.field}>
+      {!labelHidden && (
+        <Text style={styles.label}>
+          {label.toLocaleUpperCase('tr')}
+          {required && <Text style={styles.required}> *</Text>}
+        </Text>
+      )}
+      <TextInput
+        aria-label={label}
+        aria-invalid={invalid || undefined}
+        placeholderTextColor={colors.muted2}
+        multiline={multiline}
+        {...(code && codeInput)}
+        onChangeText={
+          code && onChangeText ? (value) => onChangeText(value.replace(/\D/g, '').slice(0, 6)) : onChangeText
+        }
+        onFocus={(event) => {
+          setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          onBlur?.(event);
+        }}
+        style={[
+          styles.input,
+          excerpt && styles.excerpt,
+          code && styles.code,
+          multiline && styles.multiline,
+          invalid && styles.invalid,
+          focused && styles.focused,
+          style,
+        ]}
+        {...input}
+      />
+      {invalid && <Text style={styles.error}>{error}</Text>}
+    </View>
+  );
+}
+
+const codeInput: TextInputProps = {
+  keyboardType: 'number-pad',
+  inputMode: 'numeric',
+  autoComplete: 'one-time-code',
+  textContentType: 'oneTimeCode',
+  maxLength: 6,
+};
+
+const makeStyles = (c: Colors) =>
+  StyleSheet.create({
+    field: { gap: 6 },
+    label: { ...typeScale.fieldLabel, color: c.muted },
+    required: { color: c.accent },
+    input: {
+      ...typeScale.body,
+      color: c.fg,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.line,
+      borderRadius: radius.control,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      minHeight: 46,
+      // Android adds its own padding above and below the line otherwise.
+      includeFontPadding: false,
+      textAlignVertical: 'center',
+    },
+    excerpt: { ...typeScale.excerpt, color: c.quoteInk },
+    code: {
+      fontFamily: typeScale.locator.fontFamily,
+      fontSize: 24,
+      lineHeight: 30,
+      letterSpacing: 8,
+      textAlign: 'center',
+    },
+    multiline: { minHeight: 92, textAlignVertical: 'top' },
+    invalid: { borderColor: c.danger },
+    // An accent border and a 3px accent-soft ring.
+    focused: { borderColor: c.accent, outlineColor: c.accentSoft, outlineWidth: 3, outlineStyle: 'solid' },
+    error: { ...typeScale.caption, color: c.danger },
+  });

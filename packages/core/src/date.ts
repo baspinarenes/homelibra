@@ -11,4 +11,5 @@ export {
   type Month,
   sortValue,
 } from './lib/calendar-date';
+export { type DateWheels, dateWheels, turnWheels, wheelChoices, wheelsDate } from './lib/date-wheels';
 export { inYearRange, type YearBound, type YearRange, yearRange } from './lib/year-range';

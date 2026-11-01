@@ -1,14 +1,17 @@
 import { EMAIL_TAKEN } from '@homelibra/core/errors';
+import { Button } from '@homelibra/ui/button';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CodeInput } from '@/components/code-input';
-import { PrimaryButton } from '@/components/primary-button';
 import { authClient } from '@/lib/auth-client';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
+import { offerUndo } from '@/lib/undo';
 
-type Step = { kind: 'address' } | { kind: 'code'; newEmail: string } | { kind: 'done'; newEmail: string };
+type Step = { kind: 'address' } | { kind: 'code'; newEmail: string };
 
 /** Better Auth's error code for text that is not an email address. */
 const INVALID_EMAIL = 'INVALID_EMAIL';
@@ -16,11 +19,13 @@ const INVALID_EMAIL = 'INVALID_EMAIL';
 /**
  * E-posta değiştirme: a code goes to the new address and the old one is told
  * afterwards, so a scholar keeps their Library when their institution's
- * address closes (#40, story 10).
+ * address closes (#40, story 10). Once the code is right the screen closes
+ * back to Ayarlar, which shows the new address and says it changed (#114).
  */
 export default function EmailChangeScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const router = useRouter();
   const { data: session, refetch } = authClient.useSession();
   const currentEmail = session?.user.email ?? '';
   const [step, setStep] = useState<Step>({ kind: 'address' });
@@ -52,11 +57,16 @@ export default function EmailChangeScreen() {
     setBusy(true);
     setError(null);
     const { error: failed } = await authClient.emailOtp.changeEmail({ newEmail: address, otp: code });
-    setBusy(false);
-    if (failed) return setError(t('emailChange.errors.invalidCode'));
-    setStep({ kind: 'done', newEmail: address });
-    // Better Auth's client does not refetch the session after this call by itself.
+    if (failed) {
+      setBusy(false);
+      return setError(t('emailChange.errors.invalidCode'));
+    }
+    // Better Auth's client does not refetch the session after this call by
+    // itself; Ayarlar's E-posta adresi row reads the new address from it.
     await refetch();
+    router.dismissTo('/settings');
+    // Ayarlar's tab shows the app's one notice at its foot.
+    offerUndo({ message: t('emailChange.changed') });
   }
 
   return (
@@ -65,10 +75,8 @@ export default function EmailChangeScreen() {
         <>
           <Text style={styles.lead}>{t('emailChange.current', { email: currentEmail })}</Text>
           <Text style={styles.lead}>{t('emailChange.lead')}</Text>
-          <Text style={styles.label}>{t('emailChange.newLabel')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholderTextColor={styles.placeholder.color}
+          <TextField
+            label={t('emailChange.newLabel')}
             value={newEmail}
             onChangeText={setNewEmail}
             placeholder={t('signIn.emailPlaceholder')}
@@ -79,9 +87,9 @@ export default function EmailChangeScreen() {
             autoFocus
             onSubmitEditing={() => newEmail.trim() && sendCode(newEmail.trim())}
           />
-          <Text style={styles.hint}>{t('signIn.durableAddressHint')}</Text>
+          <Text style={styles.hint}>{t('emailChange.durableAddressHint')}</Text>
           <View style={styles.action}>
-            <PrimaryButton
+            <Button
               label={t('emailChange.sendCode')}
               busy={busy}
               disabled={!newEmail.trim()}
@@ -94,10 +102,14 @@ export default function EmailChangeScreen() {
       {step.kind === 'code' ? (
         <>
           <Text style={styles.lead}>{t('emailChange.codeSentTo', { email: step.newEmail })}</Text>
-          <Text style={styles.label}>{t('emailChange.codeLabel')}</Text>
-          <CodeInput value={code} onChange={setCode} onSubmit={() => submitCode(step.newEmail)} />
+          <CodeInput
+            label={t('emailChange.codeLabel')}
+            value={code}
+            onChange={setCode}
+            onSubmit={() => submitCode(step.newEmail)}
+          />
           <View style={styles.action}>
-            <PrimaryButton
+            <Button
               label={t('emailChange.submit')}
               busy={busy}
               disabled={code.length !== 6}
@@ -115,8 +127,6 @@ export default function EmailChangeScreen() {
         </>
       ) : null}
 
-      {step.kind === 'done' ? <Text style={styles.lead}>{t('emailChange.done', { email: step.newEmail })}</Text> : null}
-
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </ScrollView>
   );
@@ -127,22 +137,9 @@ const makeStyles = (c: Colors) =>
     screen: { flex: 1, backgroundColor: c.page },
     content: { alignSelf: 'center', width: '100%', maxWidth: 480, padding: space.lg, gap: space.sm },
     lead: { ...typeScale.body, color: c.ink2, marginBottom: space.sm },
-    label: { ...typeScale.micro, textTransform: 'uppercase', color: c.muted },
-    input: {
-      borderColor: c.line,
-      borderWidth: 1,
-      borderRadius: radius.input,
-      paddingHorizontal: space.md,
-      paddingVertical: space.md,
-      ...typeScale.body,
-      fontSize: 16,
-      color: c.fg,
-      backgroundColor: c.surface,
-    },
     hint: { ...typeScale.caption, color: c.muted },
     action: { marginTop: space.md },
     links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
     link: { ...typeScale.label, color: c.accent },
     error: { ...typeScale.label, color: c.warn, marginTop: space.sm },
-    placeholder: { color: c.muted2 },
   });

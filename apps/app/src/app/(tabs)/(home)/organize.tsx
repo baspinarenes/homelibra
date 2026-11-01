@@ -1,11 +1,11 @@
+import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { ToOrganizeRow, useToOrganize } from '@/components/to-organize';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
- * Düzenlenecekler (#13), from Ana sayfa's strip: every Source with an
+ * Düzenlenecekler (#13), from Genel bakış's strip: every Source with an
  * untagged Note since its last "Bitir", the finished ones first, each part
  * the last noted first. A row opens
  * the Source page, where "Düzenle · N etiketsiz" starts the work.
@@ -13,6 +13,7 @@ import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme'
 export default function ToOrganizeScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const sources = useToOrganize();
 
   if (!sources.data) {
@@ -21,7 +22,7 @@ export default function ToOrganizeScreen() {
         {sources.isError ? (
           <Text style={styles.lead}>{t('organize.loadFailed')}</Text>
         ) : (
-          <ActivityIndicator color={styles.spinner.color} />
+          <ActivityIndicator color={colors.accent} />
         )}
       </View>
     );
@@ -43,9 +44,8 @@ export default function ToOrganizeScreen() {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    spinner: { color: c.accent },
-    hint: { ...typeScale.caption, color: c.muted, paddingTop: space.sm, paddingBottom: space.xs },
+    content: { paddingHorizontal: space.gutter, paddingBottom: space.xxl },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xxl, backgroundColor: c.page },
+    hint: { ...typeScale.caption, color: c.muted, paddingTop: space.xs, paddingBottom: space.sm },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center', paddingVertical: space.xl },
   });

@@ -3,8 +3,9 @@ import '@/i18n';
 
 import { CharisSIL_400Regular } from '@expo-google-fonts/charis-sil';
 import { EBGaramond_400Regular, EBGaramond_500Medium } from '@expo-google-fonts/eb-garamond';
-import { RedditMono_500Medium } from '@expo-google-fonts/reddit-mono';
+import { RedditMono_400Regular, RedditMono_500Medium } from '@expo-google-fonts/reddit-mono';
 import { RedditSans_400Regular, RedditSans_500Medium, RedditSans_600SemiBold } from '@expo-google-fonts/reddit-sans';
+import { keepThemePreferenceIn, useTheme } from '@homelibra/ui/theme';
 import * as Sentry from '@sentry/react-native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -16,8 +17,11 @@ import { useHeaderOptions } from '@/components/tab-stack';
 import { authClient } from '@/lib/auth-client';
 import { OutboxProvider } from '@/lib/outbox';
 import { QueryProvider } from '@/lib/query-provider';
+import { loadThemePreference, saveThemePreference } from '@/lib/theme-preference';
 import { queryClient, TRPCProvider, trpcClient } from '@/lib/trpc';
-import { useTheme } from '@/theme';
+
+// Read synchronously at startup, so the first frame already has the right theme.
+keepThemePreferenceIn({ load: loadThemePreference, save: saveThemePreference });
 
 export default Sentry.wrap(RootLayout);
 
@@ -26,7 +30,7 @@ function RootLayout() {
   const { scheme, colors } = useTheme();
   // Pushed over the tabs (the Source page and form, note editing), so they keep a back button.
   const pushedScreen = { ...useHeaderOptions(), headerShown: true };
-  // Keys must match `fonts` in theme.ts. A font that fails to load falls back to the system font.
+  // Keys must match `fonts` in @homelibra/ui/theme. A font that fails to load falls back to the system font.
   const [fontsLoaded, fontError] = useFonts({
     EBGaramond_400Regular,
     EBGaramond_500Medium,
@@ -34,6 +38,7 @@ function RootLayout() {
     RedditSans_400Regular,
     RedditSans_500Medium,
     RedditSans_600SemiBold,
+    RedditMono_400Regular,
     RedditMono_500Medium,
   });
   // Better Auth refetches the session on window focus and, while signed out,
@@ -66,6 +71,7 @@ function RootLayout() {
                   <Stack.Screen name="source/[id]/edit" options={pushedScreen} />
                   <Stack.Screen name="note/[id]" options={pushedScreen} />
                   <Stack.Screen name="lost-notes" options={pushedScreen} />
+                  <Stack.Screen name="collection/new" options={pushedScreen} />
                   <Stack.Screen name="collection/[id]" options={pushedScreen} />
                   <Stack.Screen name="tag/[id]" options={pushedScreen} />
                 </Stack.Protected>
@@ -80,7 +86,7 @@ function RootLayout() {
                 <Stack.Protected guard={!session} redirectTo={home}>
                   <Stack.Screen name="sign-in" />
                 </Stack.Protected>
-                {/* Hesap ve gizlilik's documents open signed in or not. */}
+                {/* The privacy documents and Gizlilik open signed in or not. */}
                 <Stack.Screen name="privacy" />
               </Stack>
             )}

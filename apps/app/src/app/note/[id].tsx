@@ -1,14 +1,14 @@
-import { editedNote, formatSortValue, locatorSortValue } from '@homelibra/core/note';
 import { type KnownNote, pendingNote } from '@homelibra/outbox';
+import { Button } from '@homelibra/ui/button';
+import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { TextField } from '@homelibra/ui/text-field';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { DangerAction } from '@/components/danger-action';
-import { Field } from '@/components/field';
-import { PrimaryButton } from '@/components/primary-button';
 import { TagChips } from '@/components/tag-chips';
 import { type PickedSource, SourcePicker } from '@/components/source-picker';
 import { SourceTypeIcon } from '@/components/source-type-icon';
@@ -16,13 +16,6 @@ import { knownNotes } from '@/lib/known-notes';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { offerReceiptUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
-
-/** The sort value a Locator text gets, as the field shows it; empty when it holds no number. */
-const derivedText = (locator: string) => {
-  const value = locatorSortValue(locator);
-  return value ? formatSortValue(value) : '';
-};
 
 /**
  * Notu düzenle, opened from a Note on the Source page. Its Kaynak field
@@ -88,15 +81,6 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
   const [excerpt, setExcerpt] = useState(note.excerpt ?? '');
   const [comment, setComment] = useState(note.comment ?? '');
   const [tags, setTags] = useState(() => note.tags.map((tag) => tag.name));
-  // The sort value the scholar typed here; until then the field shows the
-  // stored one, and the derived one once the Locator text changes (#2 §5).
-  const [typedSort, setTypedSort] = useState<string | null>(null);
-  // Sent only when typed here: a value without numbers derives it again.
-  const typed = typedSort === null ? undefined : locatorSortValue(typedSort);
-  // As the server will keep it, by the same rule; the Note's texts stay, so it is never null.
-  const sortValue = editedNote(note, { locator, locatorSort: typed })?.locatorSort ?? null;
-  const sortText = typedSort ?? (sortValue ? formatSortValue(sortValue) : '');
-  const corrected = sortValue !== null && sortValue.join() !== locatorSortValue(locator)?.join();
 
   const { colors } = useTheme();
   const [pickingSource, setPickingSource] = useState(false);
@@ -126,7 +110,6 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         excerpt,
         comment,
         tags,
-        ...(typed !== undefined && { locatorSort: typed }),
       });
       const moved = moveTo && (await apply({ type: 'moveNote', id: note.id, sourceId: moveTo.id }));
       leave();
@@ -157,23 +140,13 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
   const canSave = hasText && busy === null;
   const save = () => canSave && void update();
 
-  const sortHint = !locator.trim()
-    ? t('noteEdit.noLocator')
-    : corrected
-      ? t('noteEdit.corrected')
-      : sortText
-        ? t('noteEdit.derived')
-        : t('noteEdit.unsortable');
-
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Stack.Screen
         options={{
           title: t('noteEdit.title'),
           headerRight: () => (
-            <Pressable accessibilityRole="button" onPress={save} disabled={!canSave} hitSlop={8}>
-              <Text style={[styles.headerSave, !canSave && styles.inactive]}>{t('noteEdit.save')}</Text>
-            </Pressable>
+            <HeaderTextAction label={t('noteEdit.save')} onPress={save} disabled={!canSave} busy={busy === 'save'} />
           ),
         }}
       />
@@ -194,53 +167,35 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
             </Text>
           </Pressable>
         </View>
-        <Field
+        <TextField
           label={t('noteEdit.locator')}
           value={locator}
-          onChangeText={(text) => {
-            setLocator(text);
-            // A new Locator text derives its sort value again; correct it after.
-            setTypedSort(null);
-          }}
+          onChangeText={setLocator}
           placeholder={t('capture.locatorPlaceholder')}
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <View style={styles.sort}>
-          <Field
-            label={t('noteEdit.locatorSort')}
-            value={sortText}
-            onChangeText={setTypedSort}
-            editable={locator.trim() !== ''}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.hint}>
-            {sortHint}
-            {corrected && (
-              <Text accessibilityRole="button" onPress={() => setTypedSort(derivedText(locator))} style={styles.link}>
-                {` ${t('noteEdit.rederive')}`}
-              </Text>
-            )}
-          </Text>
-        </View>
-        <Field label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline quote />
-        <Field label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
+        <TextField label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline excerpt />
+        <TextField label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
         <View style={styles.tags}>
           <Text style={styles.label}>{t('tags.field').toLocaleUpperCase('tr')}</Text>
           <TagChips names={tags} pickerTitle={t('tags.noteTitle')} onChange={setTags} />
         </View>
         {!hasText && <Text style={styles.error}>{t('noteEdit.needsText')}</Text>}
         {failed === 'save' && <Text style={styles.error}>{t('noteEdit.saveFailed')}</Text>}
-        <PrimaryButton label={t('noteEdit.save')} onPress={save} busy={busy === 'save'} disabled={!canSave} />
         <View style={styles.foot}>
           {failed === 'delete' && <Text style={styles.error}>{t('deletion.deleteFailed')}</Text>}
-          <DangerAction
-            label={t('deletion.deleteNote')}
-            onPress={() => void remove()}
-            busy={busy === 'delete'}
-            disabled={busy === 'save'}
-          />
+          {/* The Button keeps 4 on each side of its word; this puts the word on the form's edge. */}
+          <View style={styles.deletePlace}>
+            <Button
+              label={t('deletion.deleteNote')}
+              variant="text"
+              tone="danger"
+              onPress={() => void remove()}
+              busy={busy === 'delete'}
+              disabled={busy === 'save'}
+            />
+          </View>
         </View>
       </View>
       <SourcePicker
@@ -264,14 +219,11 @@ const makeStyles = (c: Colors) =>
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     spinner: { color: c.accent },
     form: { gap: space.lg, width: '100%', maxWidth: 640, alignSelf: 'center' },
-    sort: { gap: 6 },
     tags: { gap: 8 },
-    hint: { ...typeScale.caption, color: c.muted },
-    link: { ...typeScale.caption, color: c.accent },
     error: { ...typeScale.body, color: c.danger },
     warning: { ...typeScale.body, color: c.warn },
     sourceField: { gap: 6 },
-    label: { ...typeScale.micro, color: c.muted },
+    label: { ...typeScale.fieldLabel, color: c.muted },
     source: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -281,13 +233,12 @@ const makeStyles = (c: Colors) =>
       paddingVertical: 10,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
+      borderRadius: radius.control,
       backgroundColor: c.surface,
     },
     sourceTitle: { ...typeScale.sourceTitleSm, flex: 1, color: c.fg },
     sourceGone: { ...typeScale.label, flex: 1, color: c.warn },
     pressed: { opacity: 0.7 },
     foot: { gap: space.sm, marginTop: space.lg },
-    headerSave: { ...typeScale.button, fontSize: 15, color: c.accent, paddingHorizontal: space.sm },
-    inactive: { opacity: 0.45 },
+    deletePlace: { alignSelf: 'flex-start', marginLeft: -4 },
   });

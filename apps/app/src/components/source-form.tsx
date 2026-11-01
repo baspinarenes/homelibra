@@ -16,30 +16,32 @@ import {
   type SourceType,
   sourceTypes,
 } from '@homelibra/core/source';
+import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { TextField } from '@homelibra/ui/text-field';
+import {
+  type Colors,
+  radius,
+  space,
+  type as typeScale,
+  useTheme,
+  useThemedStyles,
+  wideMinWidth,
+} from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
+import Link from 'lucide-react-native/icons/link';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  type TextInputProps,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/components/date-input';
-import { Field } from '@/components/field';
-import { AcceptedCover, type IsbnSuggestion, IsbnLookup, type SuggestedCover } from '@/components/isbn-suggestion';
-import { PrimaryButton } from '@/components/primary-button';
+import { IdentifierCard } from '@/components/identifier-card';
+import { IsbnCard, type IsbnSuggestion, type SuggestedCover } from '@/components/isbn-suggestion';
 import { SourceTypeIcon } from '@/components/source-type-icon';
+import { useOffline } from '@/lib/network';
 import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles, wideMinWidth } from '@/theme';
 
 type TextValues = Partial<Record<SourceIdentifier | SourceTextField, string>>;
 
@@ -162,16 +164,18 @@ export function draftToInput({ values, dates, date, suggestedCover: _, ...draft 
 }
 
 /**
- * The Source form, Sade variant (#18): Tür → ISBN/DOI → Başlık → Yazar →
- * Tarih → type-specific fields (sparse ones behind a button) → Künye notu.
- * Only Tür and Başlık are required. A type change hides fields and never
- * clears them.
+ * The Source form, Sade variant (#18): Tür → the ISBN/DOI card → Başlık →
+ * Yazar → Tarih → type-specific fields (sparse ones behind a button) → Ek
+ * bilgi. Only Tür and Başlık are required. A type change hides fields and
+ * never clears them. Kaydet is only in the header (#120); a failed save and
+ * being offline are said on a strip under it.
  */
 export function SourceForm({
   screenTitle,
   initial,
   saving,
   failed,
+  offlineNotice,
   onSave,
   footer,
 }: {
@@ -179,8 +183,10 @@ export function SourceForm({
   initial: SourceDraft;
   saving: boolean;
   failed: boolean;
+  /** Why Kaydet does nothing offline: saving a Source is online only (#58). */
+  offlineNotice: string;
   onSave: (draft: SourceDraft) => void;
-  /** Under the save button, at the form's very foot: Kaynağı sil when editing. */
+  /** At the form's very foot: Kaynağı sil when editing. */
   footer?: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -189,6 +195,7 @@ export function SourceForm({
   const wide = Platform.OS === 'web' && width >= wideMinWidth;
   const [draft, setDraft] = useState(initial);
   const [tuckedOpen, setTuckedOpen] = useState(false);
+  const offline = useOffline();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const doiFill = useMutation({
@@ -196,6 +203,18 @@ export function SourceForm({
     onSuccess: (fill) => fill && setDraft((d) => withDoiFill(d, fill)),
   });
   const doi = normalizeDoi(draft.values.doi ?? '');
+  const doiHint = doiFill.isPending
+    ? t('sourceForm.doiFilling')
+    : doiFill.isError
+      ? t('sourceForm.doiFailed')
+      : doiFill.isSuccess
+        ? doiFill.data
+          ? t('sourceForm.doiFilled')
+          : t('sourceForm.doiNotFound')
+        : // Before anything is typed, the card says what asking brings.
+          (draft.values.doi ?? '').trim() === ''
+          ? t('sourceForm.doiHint')
+          : null;
 
   const layout = sourceLayout(draft.type);
   const typeFields = [...layout.open, ...(tuckedOpen ? layout.tucked : [])];
@@ -203,7 +222,7 @@ export function SourceForm({
   const datesReady = [draft.date, ...typeFields.filter(isSourceDateField).map((key) => draft.dates[key])].every(
     (date) => !readDateDraft(date).problem,
   );
-  const canSave = draft.title.trim() !== '' && datesReady && !saving;
+  const canSave = draft.title.trim() !== '' && datesReady && !saving && !offline;
   const save = () => canSave && onSave(draft);
   // A new type starts with its sparse fields behind the button again.
   const changeType = (type: SourceType) => {
@@ -234,7 +253,7 @@ export function SourceForm({
   };
   const typeText = t(`sourceTypes.${draft.type}`, { returnObjects: true });
 
-  const fieldInput = (key: SourceIdentifier | SourceField, extra?: TextInputProps) =>
+  const fieldInput = (key: SourceField) =>
     isSourceDateField(key) ? (
       <DateInput
         key={key}
@@ -244,26 +263,26 @@ export function SourceForm({
         today={key === 'accessDate'}
       />
     ) : (
-      <Field
+      <TextField
         key={key}
         label={t(`sourceFields.${key}`)}
         value={draft.values[key] ?? ''}
         onChangeText={(value) => setValue(key, value)}
         placeholder={key === 'container' ? t('sourceForm.containerExample') : undefined}
-        autoCapitalize={key === 'url' || key === 'doi' ? 'none' : undefined}
-        {...extra}
+        autoCapitalize={key === 'url' ? 'none' : undefined}
       />
     );
 
+  // Offline says why Kaydet does nothing; a failed save says to try again.
+  const notice = offline ? offlineNotice : failed ? t('sourceForm.saveFailed') : null;
+
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <FormScreen notice={notice}>
       <Stack.Screen
         options={{
           title: screenTitle,
           headerRight: () => (
-            <Pressable accessibilityRole="button" onPress={save} disabled={!canSave} hitSlop={8}>
-              <Text style={[styles.headerSave, !canSave && styles.inactive]}>{t('sourceForm.save')}</Text>
-            </Pressable>
+            <HeaderTextAction label={t('sourceForm.save')} onPress={save} disabled={!canSave} busy={saving} />
           ),
         }}
       />
@@ -279,52 +298,41 @@ export function SourceForm({
           </View>
         </View>
 
-        {layout.identifier && fieldInput(layout.identifier, { autoCapitalize: 'none', autoCorrect: false })}
         {layout.identifier === 'isbn' && (
-          <IsbnLookup
+          <IsbnCard
             isbn={draft.values.isbn ?? ''}
+            onChangeIsbn={(value) => setValue('isbn', value)}
             onAccept={(suggestion, cover) => setDraft((d) => withIsbnSuggestion(d, suggestion, cover))}
-          />
-        )}
-        {layout.identifier === 'isbn' && draft.suggestedCover && (
-          <AcceptedCover
-            suggested={draft.suggestedCover}
-            onDrop={() => setDraft((d) => ({ ...d, suggestedCover: null }))}
+            suggestedCover={draft.suggestedCover}
+            onDropCover={() => setDraft((d) => ({ ...d, suggestedCover: null }))}
           />
         )}
         {layout.identifier === 'doi' && (
-          <View style={styles.lookup}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => doi && doiFill.mutate(doi)}
-              disabled={!doi || doiFill.isPending}
-              hitSlop={6}
-            >
-              <Text style={[styles.lookupAction, !doi && styles.inactive]}>
-                {doiFill.isPending ? t('sourceForm.doiFilling') : t('sourceForm.doiFill')}
-              </Text>
-            </Pressable>
-            {(doiFill.isSuccess || doiFill.isError) && (
-              <Text style={styles.lookupStatus}>
-                {doiFill.isError
-                  ? t('sourceForm.doiFailed')
-                  : doiFill.data
-                    ? t('sourceForm.doiFilled')
-                    : t('sourceForm.doiNotFound')}
-              </Text>
-            )}
-          </View>
+          <IdentifierCard
+            label={t('sourceFields.doi')}
+            value={draft.values.doi ?? ''}
+            onChangeText={(value) => setValue('doi', value)}
+            placeholder={t('sourceForm.doiPlaceholder')}
+            action={{
+              label: doiFill.isError ? t('sourceForm.identifierRetry') : t('sourceForm.doiFill'),
+              icon: Link,
+              onPress: () => doi && doiFill.mutate(doi),
+              disabled: !doi,
+              busy: doiFill.isPending,
+            }}
+            hint={doiHint}
+            alert={doiFill.isError}
+          />
         )}
 
-        <Field
+        <TextField
           label={t('sourceForm.title')}
           required
           value={draft.title}
           onChangeText={(title) => setDraft((d) => ({ ...d, title }))}
           placeholder={typeText.titleExample}
-          serif
         />
-        <Field
+        <TextField
           label={t('sourceForm.author')}
           value={draft.author}
           onChangeText={(author) => setDraft((d) => ({ ...d, author }))}
@@ -349,13 +357,23 @@ export function SourceForm({
         {!tuckedOpen && layout.tucked.length > 0 && (
           <Pressable accessibilityRole="button" onPress={() => setTuckedOpen(true)} style={styles.more}>
             <Text style={styles.moreText}>
-              {t('sourceForm.showTucked', { fields: layout.tucked.map((key) => t(`sourceFields.${key}`)).join(', ') })}
+              {t('sourceForm.showTucked', {
+                fields: layout.tucked.map((key) => t(`sourceFields.${key}`)).join(', '),
+              })}
               {tuckedFilled > 0 && (
                 <Text style={styles.moreCount}> {t('sourceForm.tuckedFilled', { count: tuckedFilled })}</Text>
               )}
             </Text>
           </Pressable>
         )}
+
+        <TextField
+          label={t('sourceForm.bibliographicNote')}
+          value={draft.bibliographicNote}
+          onChangeText={(bibliographicNote) => setDraft((d) => ({ ...d, bibliographicNote }))}
+          placeholder={t('sourceForm.bibliographicNoteExample')}
+          multiline
+        />
 
         {kept.length > 0 && (
           <Text style={styles.kept}>
@@ -372,21 +390,26 @@ export function SourceForm({
           </Text>
         )}
 
-        <Field
-          label={t('sourceForm.bibliographicNote')}
-          value={draft.bibliographicNote}
-          onChangeText={(bibliographicNote) => setDraft((d) => ({ ...d, bibliographicNote }))}
-          placeholder={t('sourceForm.bibliographicNoteExample')}
-          multiline
-        />
-
-        {failed && <Text style={styles.error}>{t('sourceForm.saveFailed')}</Text>}
-        <View style={wide && styles.saveWide}>
-          <PrimaryButton label={t('sourceForm.save')} onPress={save} busy={saving} disabled={!canSave} />
-        </View>
         {footer}
       </View>
-    </ScrollView>
+    </FormScreen>
+  );
+}
+
+/** The form's screen: the strip under the header, when there is something to say, and the form scrolling below it. */
+function FormScreen({ notice, children }: { notice: string | null; children: ReactNode }) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.screen}>
+      {notice && (
+        <View role="alert" style={styles.strip}>
+          <Text style={styles.notice}>{notice}</Text>
+        </View>
+      )}
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {children}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -428,7 +451,7 @@ const makeStyles = (c: Colors) =>
       paddingHorizontal: 9,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
+      borderRadius: radius.control,
       backgroundColor: c.surface,
     },
     typeChipSelected: { borderColor: c.accent, backgroundColor: c.accentSub },
@@ -440,23 +463,16 @@ const makeStyles = (c: Colors) =>
     columns: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.lg, marginHorizontal: -space.sm },
     column: { width: '50%', paddingHorizontal: space.sm },
     more: { alignSelf: 'flex-start', paddingVertical: 6 },
-    lookup: { gap: 4, marginTop: -space.sm, alignItems: 'flex-start' },
-    lookupAction: { ...typeScale.button, color: c.accent },
-    lookupStatus: { ...typeScale.caption, color: c.muted },
     moreText: { ...typeScale.button, color: c.accent },
     moreCount: { ...typeScale.caption, color: c.muted },
-    kept: {
-      ...typeScale.caption,
-      color: c.muted,
-      borderWidth: 1,
-      borderStyle: 'dashed',
-      borderColor: c.line,
-      borderRadius: radius.input,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
+    kept: { ...typeScale.caption, color: c.muted },
+    // Under the header, the screen's width: a failed save or being offline.
+    strip: {
+      paddingVertical: 10,
+      paddingHorizontal: space.gutter,
+      backgroundColor: c.warnSoft,
+      borderBottomWidth: 1,
+      borderBottomColor: c.line,
     },
-    error: { ...typeScale.body, color: c.danger },
-    saveWide: { alignSelf: 'flex-end' },
-    headerSave: { ...typeScale.button, fontSize: 15, color: c.accent, paddingHorizontal: space.sm },
-    inactive: { opacity: 0.45 },
+    notice: { ...typeScale.label, color: c.warn },
   });

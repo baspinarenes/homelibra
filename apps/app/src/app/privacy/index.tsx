@@ -1,26 +1,28 @@
+import { Section, Sections, SectionText } from '@homelibra/ui/section-heading';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { ContactLink, ContactSection, PrivacyDocumentsSection } from '@/components/privacy-sections';
-import { SettingsSection, SettingsText } from '@/components/settings-list';
-import { type Colors, space, useThemedStyles } from '@/theme';
 
 /**
- * Hesap ve gizlilik without signing in, so a scholar who cannot get into the
- * app still finds the privacy notice and the way to delete their Account.
+ * Gizlilik without signing in, so a scholar who cannot get into the app
+ * still finds the privacy notice and the way to delete their Account.
  */
 export default function PublicPrivacyScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <PrivacyDocumentsSection />
-      <SettingsSection title={t('privacy.deleteSection')}>
-        <SettingsText>{t('privacy.deleteInApp')}</SettingsText>
-        <SettingsText>{t('privacy.deleteByEmail')}</SettingsText>
-        <ContactLink />
-      </SettingsSection>
-      <ContactSection />
+      <Sections>
+        <PrivacyDocumentsSection />
+        <Section title={t('privacy.deleteSection')} spacing="text">
+          <SectionText>{t('privacy.deleteInApp')}</SectionText>
+          <SectionText>{t('privacy.deleteByEmail')}</SectionText>
+          <ContactLink />
+        </Section>
+        <ContactSection />
+      </Sections>
     </ScrollView>
   );
 }

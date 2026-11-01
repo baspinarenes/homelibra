@@ -1,0 +1,50 @@
+{
+  "name": "@homelibra/ui",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./theme": "./src/theme.ts",
+    "./text-field": "./src/text-field.ts",
+    "./button": "./src/button.ts",
+    "./chip": "./src/chip.ts",
+    "./segment": "./src/segment.ts",
+    "./switch": "./src/switch.ts",
+    "./checkbox": "./src/checkbox.ts",
+    "./sheet": "./src/sheet.ts",
+    "./dialog": "./src/dialog.ts",
+    "./toast": "./src/toast.ts",
+    "./screen-header": "./src/screen-header.ts",
+    "./section-heading": "./src/section-heading.ts",
+    "./settings-row": "./src/settings-row.ts",
+    "./tab-bar": "./src/tab-bar.ts",
+    "./text-tabs": "./src/text-tabs.ts",
+    "./term-table": "./src/term-table.ts",
+    "./strip": "./src/strip.ts",
+    "./logo": "./src/logo.ts",
+    "./wheels": "./src/wheels.ts",
+    "./illustration": "./src/illustration.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "lucide-react-native": "^1.58.0",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-svg": "15.16.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "lucide-react-native": "^1.58.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-svg": "15.16.0",
+    "react-native-web": "~0.21.4",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

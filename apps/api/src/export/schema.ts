@@ -46,7 +46,7 @@ const fields = z
   )
   .meta({
     description:
-      'Türe özel alanlar, yalnızca dolu olanlar: publisher (Yayınevi), placeOfPublication (Yayın yeri), edition (Baskı/cilt), container (İçinde), volumeIssue (Cilt/sayı), pageRange (Sayfa aralığı), university (Üniversite), thesisType (Tez türü), library (Kütüphane), shelfmark (Koleksiyon ve numara), url (URL), series (Seri/program adı), duration (Süre), siteName (Site adı), firstEditionDate (İlk baskı tarihi, Tarih), accessDate (Erişim tarihi, Tarih). Kaynağın türünde görünmeyen ama korunan alanlar da buradadır; hangileri olduğu `hiddenFields`ta yazar.',
+      'Türe özel alanlar, yalnızca dolu olanlar: publisher (Yayınevi), edition (Baskı/cilt), container (İçinde), volumeIssue (Cilt/sayı), pageRange (Sayfa aralığı), university (Üniversite), thesisType (Tez türü), library (Kütüphane), shelfmark (Koleksiyon ve numara), url (URL), series (Seri/program adı), duration (Süre), siteName (Site adı), firstEditionDate (İlk baskı tarihi, Tarih), accessDate (Erişim tarihi, Tarih). Kaynağın türünde görünmeyen ama korunan alanlar da buradadır; hangileri olduğu `hiddenFields`ta yazar.',
   });
 
 const exportedSource = z
@@ -60,7 +60,7 @@ const exportedSource = z
     author: z.string().nullable().meta({ description: 'Yazar, atıfta yazıldığı gibi.' }),
     isbn: z.string().nullable().meta({ description: 'ISBN, girildiği gibi.' }),
     doi: z.string().nullable().meta({ description: 'DOI, girildiği gibi.' }),
-    bibliographicNote: z.string().nullable().meta({ description: 'Künye notu.' }),
+    bibliographicNote: z.string().nullable().meta({ description: 'Ek bilgi.' }),
     date: calendarDate.nullable().meta({ description: 'Tarih (türüne göre basım, belge, telif tarihi…).' }),
     fields,
     hiddenFields: z.array(z.string()).meta({
@@ -95,7 +95,7 @@ const exportedNote = z
       .meta({ description: 'Konum (Locator), atıfta yazıldığı gibi; "Konumsuz" not için null.' }),
     locatorSort: z.array(z.number()).nullable().meta({
       description:
-        'Konum sırasının dayandığı değer: Konum’daki sayılar (varak b yüzü +0,5; zaman saniye olarak) ya da elle düzeltilmiş değer. Sayı yoksa null.',
+        'Konum sırasının dayandığı değer, Konum’dan türetilir: Konum’daki sayılar (varak b yüzü +0,5; zaman saniye olarak). Sayı yoksa null.',
     }),
     excerpt: z.string().nullable().meta({ description: 'Alıntı (Excerpt).' }),
     comment: z.string().nullable().meta({ description: 'Yorum (Comment).' }),

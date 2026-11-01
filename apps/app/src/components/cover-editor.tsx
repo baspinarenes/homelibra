@@ -1,10 +1,14 @@
 import type { SourceType } from '@homelibra/core/source';
+import { Sheet, SheetAction } from '@homelibra/ui/sheet';
+import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import Camera from 'lucide-react-native/icons/camera';
+import ImageIcon from 'lucide-react-native/icons/image';
+import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CoverImage, SourceCover } from '@/components/source-cover';
 import { type Cover, coverFiles } from '@/lib/cover';
@@ -12,7 +16,6 @@ import { useImageDrop } from '@/lib/image-drop';
 import { useOffline } from '@/lib/network';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * The Cover in the Source page's heading (#40, "Cover"). Tapping it opens a
@@ -24,7 +27,6 @@ import { type Colors, radius, space, type as typeScale, useThemedStyles } from '
 export function CoverEditor({ sourceId, type, cover }: { sourceId: string; type: SourceType; cover: Cover | null }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const offline = useOffline();
@@ -106,33 +108,17 @@ export function CoverEditor({ sourceId, type, cover }: { sourceId: string; type:
           </View>
         )}
       </Pressable>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={styles.backdrop}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('cover.close')}
-            style={styles.dismiss}
-            onPress={() => setOpen(false)}
-          />
-          <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
-            <View style={styles.header}>
-              <Text style={styles.heading}>{t('cover.title')}</Text>
-              <Pressable accessibilityRole="button" onPress={() => setOpen(false)} hitSlop={8}>
-                <Text style={styles.close}>{t('cover.close')}</Text>
-              </Pressable>
-            </View>
-            <SheetBody
-              cover={cover}
-              onPick={(from) => void pick(from)}
-              onDrop={take}
-              onRemove={() => {
-                setOpen(false);
-                remove.mutate({ sourceId });
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
+      <Sheet visible={open} title={t('cover.title')} closeLabel={t('cover.close')} onClose={() => setOpen(false)}>
+        <SheetBody
+          cover={cover}
+          onPick={(from) => void pick(from)}
+          onDrop={take}
+          onRemove={() => {
+            setOpen(false);
+            remove.mutate({ sourceId });
+          }}
+        />
+      </Sheet>
     </>
   );
 }
@@ -153,41 +139,24 @@ function SheetBody({
   const drop = useImageDrop(onDrop);
   const web = Platform.OS === 'web';
   return (
-    <View style={styles.body}>
+    <>
       {web && (
         <View ref={drop.ref} style={[styles.dropZone, drop.over && styles.dropping]}>
           {cover && <CoverImage file={cover.large} style={styles.preview} />}
           <Text style={styles.hint}>{t('cover.dropHint')}</Text>
         </View>
       )}
-      {!web && cover && <CoverImage file={cover.large} style={styles.preview} />}
+      {!web && cover && <CoverImage file={cover.large} style={styles.previewAlone} />}
       <View>
-        {!web && <Action label={t('cover.camera')} onPress={() => onPick('camera')} />}
-        <Action label={web ? t('cover.file') : t('cover.library')} onPress={() => onPick('library')} />
-        {cover && <Action label={t('cover.remove')} onPress={onRemove} destructive />}
+        {!web && <SheetAction icon={Camera} label={t('cover.camera')} onPress={() => onPick('camera')} />}
+        <SheetAction
+          icon={ImageIcon}
+          label={web ? t('cover.file') : t('cover.library')}
+          onPress={() => onPick('library')}
+        />
+        {cover && <SheetAction icon={Trash} label={t('cover.remove')} onPress={onRemove} destructive />}
       </View>
-    </View>
-  );
-}
-
-function Action({
-  label,
-  onPress,
-  destructive = false,
-}: {
-  label: string;
-  onPress: () => void;
-  destructive?: boolean;
-}) {
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.action, pressed && styles.pressed]}
-    >
-      <Text style={[styles.actionLabel, destructive && styles.destructive]}>{label}</Text>
-    </Pressable>
+    </>
   );
 }
 
@@ -197,29 +166,9 @@ const makeStyles = (c: Colors) =>
     dropping: { outlineWidth: 2, outlineStyle: 'dashed', outlineColor: c.accent, outlineOffset: 3 },
     busy: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: c.scrim },
     spinner: { color: c.accent },
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: space.lg,
-      paddingTop: space.lg,
-      paddingBottom: space.sm,
-    },
-    heading: { ...typeScale.sourceTitle, color: c.fg },
-    close: { ...typeScale.button, color: c.accent },
-    body: { gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm },
     // 2:3, as the file is shown everywhere.
     preview: { width: 120, height: 180 },
+    previewAlone: { width: 120, height: 180, alignSelf: 'center', marginBottom: 4 },
     dropZone: {
       alignItems: 'center',
       gap: space.md,
@@ -227,10 +176,7 @@ const makeStyles = (c: Colors) =>
       borderWidth: 1,
       borderStyle: 'dashed',
       borderColor: c.line,
-      borderRadius: radius.card,
+      borderRadius: radius.control,
     },
     hint: { ...typeScale.caption, color: c.muted },
-    action: { paddingVertical: space.md, borderTopWidth: 1, borderTopColor: c.lineSoft },
-    actionLabel: { ...typeScale.body, color: c.fg },
-    destructive: { color: c.danger },
   });

@@ -1,5 +1,6 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +8,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type ListedSource = inferRouterOutputs<AppRouter>['sources']['list'][number];
 

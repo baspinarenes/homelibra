@@ -1,12 +1,11 @@
+import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
+import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
-import { PrimaryButton } from '@/components/primary-button';
-import { SecondaryButton } from '@/components/secondary-button';
 import { useOffline } from '@/lib/network';
 import { useOutbox } from '@/lib/outbox';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * Asked on sign-out while Notes still wait in the phone's outbox (#58, spec
@@ -45,16 +44,11 @@ export function SignOutWarning({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={cancel}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('outbox.cancel')}
-          style={styles.dismiss}
-          onPress={cancel}
-        />
-        <View accessibilityViewIsModal role="alertdialog" style={styles.dialog}>
-          <Text style={styles.message}>{t('outbox.signOutWarning', { count: state.waiting })}</Text>
+    <Dialog
+      visible={visible}
+      message={
+        <>
+          <DialogMessage>{t('outbox.signOutWarning', { count: state.waiting })}</DialogMessage>
           {notSent && (
             <Text role="status" style={styles.notSent}>
               {[t('outbox.notSent', { count: state.waiting }), offline && t('outbox.needsConnection')]
@@ -62,31 +56,19 @@ export function SignOutWarning({
                 .join(' · ')}
             </Text>
           )}
-          <View style={styles.actions}>
-            <SecondaryButton label={t('outbox.cancel')} onPress={cancel} disabled={sending} />
-            <SecondaryButton label={t('outbox.signOutAnyway')} onPress={onSignOut} disabled={sending} />
-            <PrimaryButton label={t('outbox.sendFirst')} onPress={() => void sendFirst()} busy={sending} />
-          </View>
-        </View>
-      </View>
-    </Modal>
+        </>
+      }
+      cancelLabel={t('outbox.cancel')}
+      alternative={{ label: t('outbox.signOutAnyway'), onPress: onSignOut }}
+      confirmLabel={t('outbox.sendFirst')}
+      busy={sending}
+      onConfirm={() => void sendFirst()}
+      onCancel={cancel}
+    />
   );
 }
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'center', padding: space.xl, backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    dialog: {
-      width: '100%',
-      maxWidth: 420,
-      alignSelf: 'center',
-      gap: space.lg,
-      padding: space.xl,
-      borderRadius: radius.card,
-      backgroundColor: c.page,
-    },
-    message: { ...typeScale.body, color: c.fg },
     notSent: { ...typeScale.body, color: c.warn },
-    actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: space.md },
   });

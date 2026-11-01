@@ -1,4 +1,6 @@
 import { formatDate } from '@homelibra/core/date';
+import { SectionHeading } from '@homelibra/ui/section-heading';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,14 +9,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
-/** Ana sayfa shows this many; "Tümü ›" opens Kaynaklar for the rest. */
+/** Genel bakış shows this many; "Tümü ›" opens Kaynaklar for the rest. */
 const shownCount = 6;
 
 /**
- * Ana sayfa's Okunuyor (story 162): the Sources being read, the last noted
- * first, without the one "Son not aldığın" already shows. A row opens the
+ * Genel bakış's Okunuyor (story 162): the Sources being read, the last noted
+ * first, without the one Kaldığın yer already shows. A row opens the
  * Source page. Nothing when no other Source is being read.
  */
 export function ReadingList({ exceptId }: { exceptId: string | undefined }) {
@@ -29,15 +30,10 @@ export function ReadingList({ exceptId }: { exceptId: string | undefined }) {
   return (
     <View style={styles.section}>
       <View style={styles.head}>
-        <Text style={styles.label}>{t('readingStatus.readingSection').toLocaleUpperCase('tr')}</Text>
-        <Pressable
-          accessibilityRole="link"
-          onPress={() => router.navigate('/sources')}
-          hitSlop={8}
-          style={({ pressed }) => pressed && styles.pressed}
-        >
-          <Text style={styles.all}>{t('readingStatus.all')}</Text>
-        </Pressable>
+        <SectionHeading
+          title={t('readingStatus.readingSection')}
+          link={{ label: t('readingStatus.all'), onPress: () => router.navigate('/sources') }}
+        />
       </View>
       {sources.slice(0, shownCount).map((source, index) => {
         const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
@@ -69,15 +65,9 @@ export function ReadingList({ exceptId }: { exceptId: string | undefined }) {
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    section: { paddingTop: 18 },
-    head: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'baseline',
-      paddingBottom: space.xs,
-    },
-    label: { ...typeScale.micro, color: c.accent },
-    all: { ...typeScale.button, color: c.accent },
+    // Under Kaldığın yer, a thin rule between.
+    section: { paddingVertical: 18, borderTopWidth: 1, borderTopColor: c.lineSoft },
+    head: { paddingBottom: space.xs },
     pressed: { opacity: 0.7 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },

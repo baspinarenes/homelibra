@@ -1,4 +1,5 @@
 import type { AppRouter } from '@homelibra/api';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import X from 'lucide-react-native/icons/x';
@@ -9,7 +10,6 @@ import { Pressable, StyleSheet, Text, TextInput, type TextStyle, View } from 're
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/lib/settled';
 import { useTRPC } from '@/lib/trpc';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@/theme';
 
 type Found = inferRouterOutputs<AppRouter>['search']['source'];
 
@@ -205,7 +205,7 @@ const makeStyles = (c: Colors) =>
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.line,
-      borderRadius: radius.input,
+      borderRadius: radius.control,
       paddingLeft: 12,
       paddingRight: 36,
       paddingVertical: 8,

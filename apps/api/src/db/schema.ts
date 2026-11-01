@@ -180,7 +180,7 @@ export const source = pgTable(
      */
     readingStatus: readingStatus('reading_status').notNull().default('reading'),
     /**
-     * What search matches by word: Başlık, Yazar, Künye notu and the
+     * What search matches by word: Başlık, Yazar, Ek bilgi and the
      * type-specific text fields, through the search functions of 0011_search.
      */
     searchVector: tsvector('search_vector')
@@ -223,8 +223,8 @@ export const note = pgTable(
     /** Free-form, as the scholar would cite it; null speaks of the Source as a whole. */
     locator: text('locator'),
     /**
-     * What the Locator sorts by (core's compareNotes): derived from it, or
-     * corrected by hand until the Locator text changes. Null when it holds no number.
+     * What the Locator sorts by (core's compareNotes), always derived from it
+     * by core's capturedNote / editedNote. Null when it holds no number.
      */
     locatorSort: doublePrecision('locator_sort').array(),
     excerpt: text('excerpt'),

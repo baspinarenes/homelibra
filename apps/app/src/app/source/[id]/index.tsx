@@ -2,11 +2,13 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { lastCaptured } from '@homelibra/core/note';
 import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
+import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -20,7 +22,7 @@ import {
 } from 'react-native';
 
 import { CoverEditor } from '@/components/cover-editor';
-import { NoteComposer } from '@/components/note-composer';
+import { AddCommentButton, NoteComposer, type NoteComposerHandle } from '@/components/note-composer';
 import { type Match, MarkedText, useSearchText, useSourceSearch } from '@/components/note-search';
 import { NewMark, OrganizeEntry, OrganizeMode } from '@/components/organize-mode';
 import { OutboxStatus } from '@/components/outbox-status';
@@ -33,7 +35,6 @@ import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 
@@ -47,15 +48,16 @@ type Pin = { id: string; at: 'box' | 'middle' };
 /**
  * The Source page (#35, #87): the Source's heading and its Notes in Locator
  * order, with the writing box at its foot. Capture happens here; it has no
- * screen of its own. "Devam et" opens the page ready to write (`write`), a
- * search result on the Note it found (`note`), every other way in as for
- * reading: the box closed and the list at the top. "Bu kaynakta ara"
+ * screen of its own. Genel bakış's Kaldığın yer opens the page ready to
+ * write (`write`), a search result on the Note it found (`note`), every
+ * other way in as for reading: the box closed and the list at the top. "Bu kaynakta ara"
  * narrows the list to the Notes that match and hides the writing box.
  */
 export default function SourceScreen() {
   const { id, write, note } = useLocalSearchParams<{ id: string; write?: string; note?: string }>();
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
@@ -79,7 +81,7 @@ export default function SourceScreen() {
         ) : waitingForNetwork ? (
           <Text style={styles.lead}>{t('outbox.needsConnection')}</Text>
         ) : (
-          <ActivityIndicator color={styles.spinner.color} />
+          <ActivityIndicator color={colors.accent} />
         )}
       </View>
     );
@@ -124,10 +126,13 @@ function SourcePage({
   // Düzenle mode is online only, and starts from what the outbox still had to send (#58).
   const onlineFirst = useOnlineFirst(useCallback(() => offerUndo({ message: t('outbox.needsConnection') }), [t]));
   const [expanded, setExpanded] = useState(false);
-  // "Devam et" opens the box with the focus in it.
+  // Kaldığın yer opens the box with the focus in it.
   const [writing, setWriting] = useState(write);
   // The Note saved last on this page.
   const [freshId, setFreshId] = useState<string | null>(null);
+  // The Excerpt that offers "Yorum ekle", as the box says.
+  const [commentable, setCommentable] = useState<string | null>(null);
+  const composer = useRef<NoteComposerHandle>(null);
   const last = useMemo(() => lastCaptured(notes), [notes]);
   const list = useRef<FlatList<ListedNote>>(null);
   const pin = useRef<Pin | null>(
@@ -158,7 +163,7 @@ function SourcePage({
   // Outlined: the Note saved last here, else the one captured last while writing, else the one a search opened.
   const marked = freshId ?? (writing ? last?.note.id : found) ?? null;
 
-  // Yazar · Tarih · Künye notu · not sayısı, the Date as it was entered.
+  // Yazar · Tarih · Ek bilgi · not sayısı, the Date as it was entered.
   const byline = [
     source.author,
     source.date && formatDate(source.date),
@@ -191,13 +196,10 @@ function SourcePage({
           title: '',
           headerTitle: () => <OutboxStatus />,
           headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
+            <HeaderTextAction
+              label={t('sourcePage.edit')}
               onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
-              hitSlop={8}
-            >
-              <Text style={styles.headerAction}>{t('sourcePage.edit')}</Text>
-            </Pressable>
+            />
           ),
         }}
       />
@@ -207,7 +209,7 @@ function SourcePage({
           style={styles.screen}
           contentContainerStyle={styles.content}
           data={listed}
-          extraData={[marked, statuses, searched.matches]}
+          extraData={[marked, statuses, searched.matches, commentable]}
           keyExtractor={(note) => note.id}
           keyboardShouldPersistTaps="handled"
           onLayout={scrollToPin}
@@ -235,9 +237,9 @@ function SourcePage({
                     />
                   </View>
                   <Text style={styles.title}>{source.title}</Text>
+                  <Text style={styles.byline}>{byline}</Text>
                 </View>
               </View>
-              <Text style={styles.byline}>{byline}</Text>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
               <View style={styles.actions}>
                 <OrganizeEntry
@@ -270,6 +272,9 @@ function SourcePage({
               fresh={fresh.has(note.id)}
               status={statuses.get(note.id)}
               onPress={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
+              action={
+                note.id === commentable && <AddCommentButton onPress={() => composer.current?.commentOnLastExcerpt()} />
+              }
               // A Note just come in is placed by estimate until its row is measured: place it again then.
               onLayout={() => {
                 if (pin.current?.id === note.id) setTimeout(scrollToPin, 0);
@@ -279,8 +284,9 @@ function SourcePage({
         />
       )}
       {/* Hidden rather than gone while searching, so a draft in it stays. */}
-      <View style={searching && styles.hidden}>
+      <View style={[expanded && styles.screen, searching && styles.hidden]}>
         <NoteComposer
+          ref={composer}
           sourceId={source.id}
           sourceType={source.type}
           carriedLocator={last?.note.locator ?? ''}
@@ -297,6 +303,7 @@ function SourcePage({
             setFreshId(id);
             pinAboveBox(id);
           }}
+          onCommentableChange={setCommentable}
         />
       </View>
     </KeyboardAvoidingView>
@@ -318,6 +325,7 @@ function NoteRow({
   status,
   onPress,
   onLayout,
+  action,
 }: {
   note: ListedNote;
   divided: boolean;
@@ -329,64 +337,71 @@ function NoteRow({
   status: NoteStatus | undefined;
   onPress: () => void;
   onLayout: () => void;
+  /** Under the Note's texts: "Yorum ekle" on the Excerpt saved last. */
+  action?: ReactNode;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const waiting = status !== undefined && status !== 'synced';
-  return (
+  // A button may not sit inside the row's own: the action goes under it, in the texts' column.
+  const below = Boolean(action);
+  const outer = [divided && styles.divided, marked && styles.marked];
+  const row = (
     <Pressable
       accessibilityRole="button"
       accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
       onLayout={onLayout}
-      style={({ pressed }) => [
-        styles.row,
-        divided && styles.divided,
-        marked && styles.marked,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.row, !below && outer, below && styles.rowAbove, pressed && styles.pressed]}
     >
-      <Text style={styles.locator}>{note.locator ?? '—'}</Text>
+      <View style={styles.locatorColumn}>
+        <Text style={styles.locator}>{note.locator ?? '—'}</Text>
+        {fresh && <NewMark />}
+      </View>
       <View style={styles.texts}>
         {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} style={styles.excerpt} />}
         {note.comment && <MarkedText text={note.comment} marks={match?.comment} style={styles.comment} prefix="↳ " />}
-        <View style={styles.marks}>
-          <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
-          {fresh && <NewMark />}
-        </View>
+        <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
         {status && <Text style={[styles.status, waiting && styles.waiting]}>{t(`outbox.${status}`)}</Text>}
       </View>
     </Pressable>
+  );
+  if (!below) return row;
+  return (
+    <View style={outer}>
+      {row}
+      <View style={styles.action}>{action}</View>
+    </View>
   );
 }
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
+    content: { paddingHorizontal: space.gutter, paddingBottom: space.lg },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
-    headerAction: { ...typeScale.button, fontSize: 15, color: c.accent, paddingHorizontal: space.sm },
     heading: {
-      gap: space.md,
-      paddingTop: space.sm,
-      paddingBottom: 18,
-      marginBottom: space.xs,
+      gap: 10,
+      paddingTop: 2,
+      paddingBottom: 14,
       borderBottomWidth: 1,
       borderBottomColor: c.line,
     },
-    identity: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-    identityText: { flex: 1, gap: 2 },
-    typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: 2 },
+    identity: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+    identityText: { flex: 1, gap: space.xs },
+    typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     type: { ...typeScale.micro, color: c.accent },
     title: { ...typeScale.sourceTitle, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
     hidden: { display: 'none' },
     empty: { ...typeScale.body, color: c.ink2, paddingVertical: space.xl, textAlign: 'center' },
-    row: { flexDirection: 'row', gap: space.md, paddingVertical: space.md },
+    row: { flexDirection: 'row', gap: 10, paddingVertical: space.md },
+    rowAbove: { paddingBottom: 0 },
+    // Under the texts, past the Locator's column and the row's gap.
+    action: { paddingLeft: 68 + 10, paddingTop: 6, paddingBottom: space.sm },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     // An outline, so the row keeps its place while marked.
     marked: {
@@ -396,9 +411,9 @@ const makeStyles = (c: Colors) =>
       outlineOffset: 3,
       borderRadius: radius.cover,
     },
-    locator: { ...typeScale.locator, color: c.muted, width: 84, paddingTop: 4 },
+    locatorColumn: { width: 68, gap: space.xs, paddingTop: 4 },
+    locator: { ...typeScale.locator, color: c.muted },
     texts: { flex: 1, gap: 6 },
-    marks: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
     excerpt: {
       ...typeScale.excerpt,
       color: c.quoteInk,

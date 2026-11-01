@@ -263,7 +263,7 @@ describe('A Collection’s definition', () => {
     expect(await api.tags.list({ sort: 'name' })).toEqual([]);
   });
 
-  it('uses a Tag: one put into it counts as last used on Ana sayfa', async () => {
+  it('uses a Tag: one put into it counts as last used on Genel bakış', async () => {
     const api = await scholar();
     const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Kadılık' });
     await capture(api, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });
@@ -333,6 +333,137 @@ describe('Dosyalar', () => {
   });
 });
 
+describe('Dosyalar · Sırala (#124)', () => {
+  const MINUTE_MS = 60 * 1000;
+
+  it('Son değişen: the Collection whose name, Tags or switch changed last comes first; a new Note does not count', async () => {
+    const api = await scholar();
+    const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Jön Türkler' });
+    const { id: renamed } = await api.collections.create({ name: 'Taslak', tags: [] });
+    t.passTime(MINUTE_MS);
+    const { id: retagged } = await api.collections.create({ name: 'Basın', tags: [] });
+    t.passTime(MINUTE_MS);
+    const { id: switched } = await api.collections.create({ name: 'Ordu', tags: [] });
+    t.passTime(MINUTE_MS);
+    const { id: fed } = await api.collections.create({ name: 'Kadılar', tags: ['kadı'] });
+    t.passTime(MINUTE_MS);
+    await api.collections.setIncludeSourceNotes({ id: switched, includeSourceNotes: false });
+    t.passTime(MINUTE_MS);
+    await api.collections.setTags({ id: retagged, names: ['basın'] });
+    t.passTime(MINUTE_MS);
+    await api.collections.rename({ id: renamed, name: 'Makale' });
+    t.passTime(MINUTE_MS);
+    await capture(api, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });
+
+    const ids = (await api.collections.list({ sort: 'recent' })).map((row) => row.id);
+
+    expect(ids).toEqual([renamed, retagged, switched, fed]);
+  });
+
+  it('Not sayısı: the Collection showing the most Notes first, a tie A–Z', async () => {
+    const api = await scholar();
+    const { id: fond } = await api.sources.create({ type: 'archive', author: 'BOA', title: 'DH.MKT' });
+    await api.tags.setOnSource({ sourceId: fond, names: ['ordu'] });
+    await capture(api, fond, { excerpt: 'Tahrirat.' });
+    await capture(api, fond, { excerpt: 'Telgraf.', tags: ['basın'] });
+    await capture(api, fond, { excerpt: 'Arzuhal.', tags: ['kadı'] });
+    await api.collections.create({ name: 'Zabıta', tags: [] });
+    await api.collections.create({ name: 'Ordu', tags: ['ordu'] });
+    await api.collections.create({ name: 'Kadılar', tags: ['kadı'] });
+    await api.collections.create({ name: 'Basın', tags: ['basın'] });
+
+    const rows = await api.collections.list({ sort: 'notes' });
+
+    expect(rows.map((row) => [row.name, row.noteCount])).toEqual([
+      ['Ordu', 3],
+      ['Basın', 1],
+      ['Kadılar', 1],
+      ['Zabıta', 0],
+    ]);
+  });
+
+  it('Ada göre: A–Z in Turkish order, as without a sort', async () => {
+    const api = await scholar();
+    for (const name of ['İzmir', 'Çorum', 'Ilgaz', 'Cemiyet']) await api.collections.create({ name, tags: [] });
+
+    const sorted = (await api.collections.list({ sort: 'name' })).map((row) => row.name);
+
+    expect(sorted).toEqual(['Cemiyet', 'Çorum', 'Ilgaz', 'İzmir']);
+    expect((await api.collections.list()).map((row) => row.name)).toEqual(sorted);
+  });
+
+  it('shows no other Library’s Collections, whichever the order', async () => {
+    const mine = await scholar();
+    const theirs = await scholar();
+    await mine.collections.create({ name: 'Dosyam', tags: ['kadı'] });
+
+    for (const sort of ['recent', 'name', 'notes'] as const)
+      expect(await theirs.collections.list({ sort })).toEqual([]);
+  });
+});
+
+describe('Yeni dosya · önizleme (#124)', () => {
+  const counts = ({ noteCount, sourceCount, sourceOnlyCount }: Record<string, unknown>) => ({
+    noteCount,
+    sourceCount,
+    sourceOnlyCount,
+  });
+
+  it('counts what a Collection of these Tags would show, as its view does once saved, switch on or off', async () => {
+    const api = await scholar();
+    const { id: fond } = await api.sources.create({ type: 'archive', author: 'BOA', title: 'Y.PRK.ASK' });
+    await api.tags.setOnSource({ sourceId: fond, names: ['ordu'] });
+    for (const excerpt of ['Bir.', 'İki.', 'Üç.']) await capture(api, fond, { excerpt });
+    await capture(api, fond, { excerpt: 'Dört.', tags: ['ordu'] });
+    const { id: other } = await api.sources.create({ type: 'book', title: 'Ordu ve Siyaset' });
+    await capture(api, other, { excerpt: 'Beş.', tags: ['ordu', 'basın'] });
+    const { id: press } = await api.sources.create({ type: 'periodical', title: 'Tanin' });
+    await capture(api, press, { excerpt: 'Altı.', tags: ['basın'] });
+    const tags = ['Ordu', '#basın'];
+
+    const on = await api.collections.preview({ tags, includeSourceNotes: true });
+    const off = await api.collections.preview({ tags, includeSourceNotes: false });
+    const { id } = await api.collections.create({ name: 'Ordu ve basın', tags });
+    const savedOn = await api.collections.view({ id });
+    await api.collections.setIncludeSourceNotes({ id, includeSourceNotes: false });
+    const savedOff = await api.collections.view({ id });
+
+    expect(on).toEqual({ noteCount: 6, sourceCount: 3, sourceOnlyCount: 3 });
+    expect(off).toEqual({ noteCount: 3, sourceCount: 3, sourceOnlyCount: 3 });
+    expect(counts(savedOn)).toEqual(on);
+    expect(counts(savedOff)).toEqual(off);
+  });
+
+  it('takes a name the Library has no Tag of as bringing nothing, and makes neither a Tag nor a Collection', async () => {
+    const api = await scholar();
+    const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Kadılık' });
+    await capture(api, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });
+
+    const preview = await api.collections.preview({ tags: ['kadı', 'vakıf'], includeSourceNotes: true });
+    const none = await api.collections.preview({ tags: ['vakıf'], includeSourceNotes: true });
+    const empty = await api.collections.preview({ tags: [], includeSourceNotes: true });
+
+    expect(preview).toEqual({ noteCount: 1, sourceCount: 1, sourceOnlyCount: 0 });
+    expect(none).toEqual({ noteCount: 0, sourceCount: 0, sourceOnlyCount: 0 });
+    expect(empty).toEqual({ noteCount: 0, sourceCount: 0, sourceOnlyCount: 0 });
+    expect(names(await api.tags.list({ sort: 'name' }))).toEqual(['kadı']);
+    expect(await api.collections.list()).toEqual([]);
+  });
+
+  it('counts only its own Library’s Notes', async () => {
+    const mine = await scholar();
+    const theirs = await scholar();
+    const { id: sourceId } = await mine.sources.create({ type: 'book', title: 'Kadılık' });
+    await capture(mine, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });
+
+    expect(await theirs.collections.preview({ tags: ['kadı'], includeSourceNotes: true })).toEqual({
+      noteCount: 0,
+      sourceCount: 0,
+      sourceOnlyCount: 0,
+    });
+  });
+});
+
 describe('A Tag’s page', () => {
   it('is the view of that one Tag, unsaved, with the switch as the scholar sets it there', async () => {
     const api = await scholar();
@@ -351,7 +482,7 @@ describe('A Tag’s page', () => {
     expect(await api.collections.list()).toEqual([]);
   });
 
-  it('is saved as a Collection with the same name and Tag (Dosya olarak kaydet)', async () => {
+  it('is saved as a Collection with the same name and Tag (Dosya yap)', async () => {
     const api = await scholar();
     const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Kadılık' });
     await capture(api, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });

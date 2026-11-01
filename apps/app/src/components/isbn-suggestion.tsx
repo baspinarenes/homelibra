@@ -1,21 +1,21 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { normalizeIsbn } from '@homelibra/core/source';
+import { Checkbox } from '@homelibra/ui/checkbox';
+import { Sheet } from '@homelibra/ui/sheet';
+import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
+import ScanBarcode from 'lucide-react-native/icons/scan-barcode';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Checkbox } from '@/components/checkbox';
-import { PrimaryButton } from '@/components/primary-button';
-import { SecondaryButton } from '@/components/secondary-button';
+import { IdentifierCard } from '@/components/identifier-card';
 import { CoverImage } from '@/components/source-cover';
 import type { Cover } from '@/lib/cover';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@/theme';
 
 export type IsbnSuggestion = NonNullable<inferRouterOutputs<AppRouter>['lookups']['isbn']>;
 
@@ -23,21 +23,27 @@ export type IsbnSuggestion = NonNullable<inferRouterOutputs<AppRouter>['lookups'
 export type SuggestedCover = { isbn: string; cover: Cover };
 
 /**
- * ISBN ile öner (#40, #65): under the Book form's ISBN field. Open Library's
- * fields, and its cover when it has one ("Kapak: Open Library"), are shown
- * on a suggestion sheet first; nothing reaches the form until the scholar
- * accepts them there.
+ * The Book form's ISBN card with ISBN ile öner (#40, #65, #120). Open
+ * Library's fields, and its cover when it has one ("Kapak: Open Library"),
+ * are shown on a suggestion sheet first; nothing reaches the form until the
+ * scholar accepts them there. The accepted cover stays at the card's foot
+ * until the Source is saved or the scholar drops it.
  */
-export function IsbnLookup({
+export function IsbnCard({
   isbn,
+  onChangeIsbn,
   onAccept,
+  suggestedCover,
+  onDropCover,
 }: {
   /** The ISBN field as typed. */
   isbn: string;
+  onChangeIsbn: (isbn: string) => void;
   onAccept: (suggestion: IsbnSuggestion, cover: SuggestedCover | null) => void;
+  suggestedCover: SuggestedCover | null | undefined;
+  onDropCover: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -52,34 +58,46 @@ export function IsbnLookup({
   const current = lookup.variables === isbn13;
   const suggestion = current ? lookup.data : undefined;
 
-  const status = !current
-    ? null
-    : lookup.isError
-      ? t('isbn.failed')
-      : lookup.isSuccess && suggestion === null
-        ? t('isbn.notFound')
-        : accepted
-          ? t('isbn.accepted')
-          : null;
+  const failed = current && lookup.isError;
+  // Before anything is typed, the card says what asking brings.
+  const hint = !current
+    ? isbn.trim() === ''
+      ? t('isbn.hint')
+      : null
+    : lookup.isPending
+      ? t('isbn.asking')
+      : lookup.isError
+        ? t('isbn.failed')
+        : lookup.isSuccess && suggestion === null
+          ? t('isbn.notFound')
+          : accepted
+            ? t('isbn.accepted')
+            : null;
 
   return (
-    <View style={styles.lookup}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          if (!isbn13) return;
-          // Asked again for the same ISBN, the sheet comes back without a second request.
-          if (current && suggestion) setOpen(true);
-          else lookup.mutate(isbn13);
+    <>
+      <IdentifierCard
+        label={t('sourceFields.isbn')}
+        value={isbn}
+        onChangeText={onChangeIsbn}
+        placeholder={t('isbn.placeholder')}
+        action={{
+          label: failed ? t('sourceForm.identifierRetry') : t('isbn.suggest'),
+          icon: ScanBarcode,
+          onPress: () => {
+            if (!isbn13) return;
+            // Asked again for the same ISBN, the sheet comes back without a second request.
+            if (current && suggestion) setOpen(true);
+            else lookup.mutate(isbn13);
+          },
+          disabled: !isbn13,
+          busy: lookup.isPending,
         }}
-        disabled={!isbn13 || lookup.isPending}
-        hitSlop={6}
+        hint={hint}
+        alert={failed}
       >
-        <Text style={[styles.action, !isbn13 && styles.inactive]}>
-          {lookup.isPending ? t('isbn.asking') : t('isbn.suggest')}
-        </Text>
-      </Pressable>
-      {status && <Text style={styles.status}>{status}</Text>}
+        {suggestedCover && <AcceptedCover suggested={suggestedCover} onDrop={onDropCover} />}
+      </IdentifierCard>
       {suggestion && (
         <SuggestionSheet
           visible={open}
@@ -95,7 +113,7 @@ export function IsbnLookup({
           }}
         />
       )}
-    </View>
+    </>
   );
 }
 
@@ -113,77 +131,59 @@ function SuggestionSheet({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   const [withCover, setWithCover] = useState(true);
   const { title, author, date, fields, cover } = suggestion;
   const rows = [
     { key: 'title', label: t('sourceForm.title'), value: title },
     { key: 'author', label: t('sourceForm.author'), value: author },
     { key: 'publisher', label: t('sourceFields.publisher'), value: fields.publisher },
-    { key: 'place', label: t('sourceFields.placeOfPublication'), value: fields.placeOfPublication },
     { key: 'year', label: t('isbn.year'), value: date && formatDate(date) },
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('isbn.close')}
-          style={styles.dismiss}
-          onPress={onClose}
-        />
-        <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
-          <View style={styles.header}>
-            <Text style={styles.heading}>{t('isbn.title')}</Text>
-            <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-              <Text style={styles.close}>{t('isbn.close')}</Text>
-            </Pressable>
+    <Sheet
+      visible={visible}
+      title={t('isbn.title')}
+      closeLabel={t('isbn.close')}
+      onClose={onClose}
+      primary={{ label: t('isbn.accept'), onPress: () => onAccept(withCover) }}
+    >
+      <Text style={styles.lead}>{t('isbn.lead', { isbn: suggestion.isbn })}</Text>
+      <View style={styles.offer}>
+        {cover && (
+          <View style={styles.coverColumn}>
+            <CoverImage file={cover.large} style={styles.preview} />
+            <Text style={styles.credit}>{t('isbn.coverCredit')}</Text>
           </View>
-          <ScrollView contentContainerStyle={styles.body}>
-            <Text style={styles.lead}>{t('isbn.lead', { isbn: suggestion.isbn })}</Text>
-            <View style={styles.offer}>
-              {cover && (
-                <View style={styles.coverColumn}>
-                  <CoverImage file={cover.large} style={styles.preview} />
-                  <Text style={styles.credit}>{t('isbn.coverCredit')}</Text>
-                </View>
-              )}
-              <View style={styles.fields}>
-                {rows.map(({ key, label, value }) => (
-                  <View key={key} style={styles.row}>
-                    <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
-                    <Text style={[styles.value, key === 'title' && styles.titleValue, !value && styles.empty]}>
-                      {value ?? t('isbn.none')}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+        )}
+        <View style={styles.fields}>
+          {rows.map(({ key, label, value }) => (
+            <View key={key} style={styles.row}>
+              <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
+              <Text style={[styles.value, key === 'title' && styles.titleValue, !value && styles.empty]}>
+                {value ?? t('isbn.none')}
+              </Text>
             </View>
-            {cover && <Checkbox label={t('isbn.useCover')} checked={withCover} onChange={setWithCover} />}
-            <View style={styles.buttons}>
-              <PrimaryButton label={t('isbn.accept')} onPress={() => onAccept(withCover)} />
-              <SecondaryButton label={t('isbn.dismiss')} onPress={onClose} />
-            </View>
-          </ScrollView>
+          ))}
         </View>
       </View>
-    </Modal>
+      {cover && <Checkbox label={t('isbn.useCover')} checked={withCover} onChange={setWithCover} />}
+    </Sheet>
   );
 }
 
-/** In the form after accepting: the cover the Source will get on save, until the scholar drops it. */
-export function AcceptedCover({ suggested, onDrop }: { suggested: SuggestedCover; onDrop: () => void }) {
+/** At the ISBN card's foot after accepting: the cover the Source will get on save, until the scholar drops it. */
+function AcceptedCover({ suggested, onDrop }: { suggested: SuggestedCover; onDrop: () => void }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.accepted}>
+    <>
       <CoverImage file={suggested.cover.small} style={styles.thumb} />
       <Text style={styles.acceptedText}>{t('isbn.coverOnSave')}</Text>
       <Pressable accessibilityRole="button" onPress={onDrop} hitSlop={8}>
-        <Text style={styles.action}>{t('isbn.dropCover')}</Text>
+        <Text style={styles.dropCover}>{t('isbn.dropCover')}</Text>
       </Pressable>
-    </View>
+    </>
   );
 }
 
@@ -207,35 +207,9 @@ export function useGiveSuggestedCover() {
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    lookup: { gap: 4, marginTop: -space.sm, alignItems: 'flex-start' },
-    action: { ...typeScale.button, color: c.accent },
-    status: { ...typeScale.caption, color: c.muted },
-    inactive: { opacity: 0.45 },
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      maxHeight: '90%',
-      alignSelf: 'center',
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.hero,
-      borderTopRightRadius: radius.hero,
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: space.lg,
-      paddingTop: space.lg,
-      paddingBottom: space.sm,
-    },
-    heading: { ...typeScale.sourceTitle, color: c.fg },
-    close: { ...typeScale.button, color: c.accent },
-    body: { gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm },
     lead: { ...typeScale.caption, color: c.muted },
     offer: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
-    coverColumn: { gap: 6 },
+    coverColumn: { gap: 6, alignItems: 'center' },
     // 2:3, as a Cover is shown everywhere.
     preview: { width: 96, height: 144 },
     credit: { ...typeScale.caption, color: c.muted },
@@ -245,8 +219,8 @@ const makeStyles = (c: Colors) =>
     value: { ...typeScale.body, color: c.fg },
     titleValue: { ...typeScale.sourceTitleSm },
     empty: { color: c.muted },
-    buttons: { gap: space.sm, marginTop: space.sm },
-    accepted: { flexDirection: 'row', alignItems: 'center', gap: space.md },
     thumb: { width: 40, height: 56 },
-    acceptedText: { ...typeScale.caption, color: c.muted, flexShrink: 1 },
+    // On the ISBN card's accent ground.
+    acceptedText: { ...typeScale.caption, color: c.accentFg, flex: 1 },
+    dropCover: { ...typeScale.link, color: c.accentFg, textDecorationLine: 'underline' },
   });

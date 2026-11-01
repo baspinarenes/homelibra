@@ -1,15 +1,15 @@
 import type { ListedNote } from '@homelibra/outbox';
+import { Button } from '@homelibra/ui/button';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { MergePreview } from '@/components/merge-preview';
 import { type PickedSource, SourcePicker } from '@/components/source-picker';
 import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@/theme';
 
 /**
  * Birleştir, Taşı and Sil for Düzenle mode's selection (#13, #36), each
@@ -109,48 +109,21 @@ export type SelectionActions = ReturnType<typeof useSelectionActions>;
 /** The selection bar's second line: Birleştir · Taşı · Sil, quiet until Notes are selected. */
 export function SelectionActionsRow({ actions }: { actions: SelectionActions }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const none = actions.count === 0 || actions.busy;
   return (
     <View style={styles.row}>
-      <Action label={t('selection.merge')} onPress={actions.merge} inactive={actions.count < 2 || actions.busy} />
-      <Action label={t('selection.move')} onPress={actions.move} inactive={none} />
-      <Action label={t('selection.delete')} onPress={actions.remove} inactive={none} danger />
+      <Button
+        label={t('selection.merge')}
+        variant="text"
+        disabled={actions.count < 2 || actions.busy}
+        onPress={actions.merge}
+      />
+      <Button label={t('selection.move')} variant="text" disabled={none} onPress={actions.move} />
+      <Button label={t('selection.delete')} variant="text" tone="danger" disabled={none} onPress={actions.remove} />
     </View>
   );
 }
 
-function Action({
-  label,
-  onPress,
-  inactive,
-  danger = false,
-}: {
-  label: string;
-  onPress: () => void;
-  inactive: boolean;
-  danger?: boolean;
-}) {
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={inactive}
-      onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => [styles.action, inactive && styles.inactive, pressed && styles.pressed]}
-    >
-      <Text style={[styles.label, danger && styles.danger]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    row: { flexDirection: 'row', alignItems: 'center', gap: space.xl },
-    action: { minHeight: 36, justifyContent: 'center' },
-    label: { ...typeScale.button, color: c.accent },
-    danger: { color: c.danger },
-    inactive: { opacity: 0.45 },
-    pressed: { opacity: 0.7 },
-  });
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+});

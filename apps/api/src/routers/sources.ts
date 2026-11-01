@@ -10,7 +10,7 @@ import {
 } from '@homelibra/core/source';
 import { capturedAt } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
@@ -94,7 +94,7 @@ const sourceColumns = {
 };
 
 export const sourcesRouter = router({
-  /** What Ana sayfa needs; while the Library is empty it shows "İlk kaynağını ekle". */
+  /** What Genel bakış needs; while the Library is empty it shows "İlk kaynağını ekle". */
   home: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx.select({ sourceCount: count() }).from(source).where(eq(source.accountId, ctx.accountId));
     return { sourceCount: row?.sourceCount ?? 0 };
@@ -107,10 +107,17 @@ export const sourcesRouter = router({
    * splits the list into Okunuyor and Bitti), how many Notes it has, when the
    * last one was captured and how many untagged ones Düzenle waits on
    * ("N etiketsiz"). The Tarih filter keeps only Sources dated in its years
-   * (#40, story 164).
+   * (#40, story 164); the Tür filter only Sources of its types, every type
+   * while none is chosen (#122).
    */
   list: libraryProcedure
-    .input(z.object({ sort: z.enum(['last', 'title', 'author', 'date']), dates: dateFilter.nullish() }))
+    .input(
+      z.object({
+        sort: z.enum(['last', 'title', 'author', 'date']),
+        dates: dateFilter.nullish(),
+        types: z.array(z.enum(sourceTypes)).nullish(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const rows = await ctx.tx
         .select({
@@ -133,7 +140,13 @@ export const sourcesRouter = router({
                                          and ${waiting(ctx.accountId, 'n', 'source')})::int`,
         })
         .from(source)
-        .where(and(eq(source.accountId, ctx.accountId), inDates(input.dates, sql`${source.dateSort}`)));
+        .where(
+          and(
+            eq(source.accountId, ctx.accountId),
+            inDates(input.dates, sql`${source.dateSort}`),
+            input.types?.length ? inArray(source.type, input.types) : undefined,
+          ),
+        );
       type Row = (typeof rows)[number];
       const byTitle = (a: Row, b: Row) => compareTr(a.title, b.title);
       const lastWhenNull = <T>(a: T | null, b: T | null, compare: (a: T, b: T) => number) => {
@@ -156,9 +169,9 @@ export const sourcesRouter = router({
     }),
 
   /**
-   * Ana sayfa's "Son not aldığın" and "Devam et": the latest Note of a Source
-   * being read, and that Source. With no such Note, the latest Note of all
-   * rather than nothing; null before the first Note.
+   * Genel bakış's Kaldığın yer: the latest Note of a Source being read, and
+   * that Source, opened ready to write. With no such Note, the latest Note
+   * of all rather than nothing; null before the first Note.
    */
   lastNoted: libraryProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.tx
@@ -191,7 +204,7 @@ export const sourcesRouter = router({
   }),
 
   /**
-   * Ana sayfa's Okunuyor: the Sources being read, the last noted first, then
+   * Genel bakış's Okunuyor: the Sources being read, the last noted first, then
    * the ones without a Note yet, the newest first.
    */
   reading: libraryProcedure.query(async ({ ctx }) => {
