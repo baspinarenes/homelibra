@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { CopyMarkdownAction, DeleteCollectionAction } from '@/components/collection-actions';
-import { CollectionView, SourceNotesSwitch, ViewCount } from '@/components/collection-view';
+import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
 import { DefinitionTags } from '@/components/definition-tags';
 import { narrowView, SearchField, useCollectionSearch, useSearchText } from '@/components/note-search';
 import { SharedUndoBar } from '@/components/undo-bar';
@@ -18,9 +18,9 @@ import { useTRPC } from '@/lib/trpc';
 type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
 
 /**
- * A Collection (#51): "Dosya: " and its name in the header, beside it the
- * Markdown copy of the Notes shown (only the matches while searching) and
- * Dosyayı sil (#52). Under the header its Tags as chips, the source-notes
+ * A Collection (#51): DOSYA in the header, beside it the Markdown copy of
+ * the Notes shown (only the matches while searching) and Dosyayı sil (#52).
+ * Under the header its name in full, its Tags as chips, the source-notes
  * switch and the count in a fixed bar, its Notes by Source under that.
  * Every change in the bar is kept in the definition, apart from the search
  * box, which only narrows what is shown. Tapping the name turns the header
@@ -90,10 +90,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
       />
     ) : (
       <ScreenHeader
-        prefix={t('collection.titlePrefix')}
-        title={collection.name}
-        onTitlePress={() => setRenaming(true)}
-        titleHint={t('collection.rename')}
+        title={t('collection.pageTitle')}
         onBack={back ? navigation.goBack : undefined}
         backLabel={t('screenHeader.back')}
         right={
@@ -107,6 +104,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
 
   const bar = (
     <>
+      <ViewName name={collection.name} onPress={() => setRenaming(true)} hint={t('collection.rename')} />
       <DefinitionTags names={tagNames} onChange={(names) => setTags.mutate({ id: collection.id, names })} />
       <SourceNotesSwitch
         value={includeSourceNotes}

@@ -22,22 +22,6 @@ describe('ScreenHeader', () => {
     expect(text(byRole(page, 'heading')[0]!)).toBe('GENEL BAKIŞ');
   });
 
-  it('keeps the letters of a name the scholar wrote, only its prefix in upper case', () => {
-    const page = render(
-      <ScreenHeader prefix="Dosya: " title="İttihat ve Terakki makalesi" onBack={noop} backLabel="Geri" />,
-    );
-    expect(text(byRole(page, 'heading')[0]!)).toBe('DOSYA: İttihat ve Terakki makalesi');
-  });
-
-  it('makes the title a button when it can be tapped, the prefix kept', () => {
-    const page = render(
-      <ScreenHeader prefix="Dosya: " title="Matbuat ve sansür" onTitlePress={noop} onBack={noop} backLabel="Geri" />,
-    );
-    const [, title] = byRole(page, 'button');
-    expect(text(title!)).toBe('DOSYA: Matbuat ve sansür');
-    expect(byRole(title!, 'heading')).toHaveLength(1);
-  });
-
   it('lets a word in the header tell screen readers more than it shows', () => {
     const page = render(
       <HeaderTextAction label="Dosya yap" accessibilityLabel="Bu etiketten dosya yap" onPress={noop} />,

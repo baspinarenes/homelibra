@@ -129,6 +129,32 @@ function NoteRow({
   );
 }
 
+/**
+ * The Collection's or the Tag's name at the top of the bar, in full on as many
+ * lines as it takes (#139): the header only says DOSYA or ETİKET. `onPress`
+ * makes it the way to its renaming.
+ */
+export function ViewName({ name, onPress, hint }: { name: string; onPress?: () => void; hint?: string }) {
+  const styles = useThemedStyles(makeStyles);
+  const heading = (
+    <Text role="heading" style={styles.name}>
+      {name}
+    </Text>
+  );
+  return onPress ? (
+    <Pressable
+      role="button"
+      accessibilityHint={hint}
+      onPress={onPress}
+      style={({ pressed }) => pressed && styles.pressed}
+    >
+      {heading}
+    </Pressable>
+  ) : (
+    heading
+  );
+}
+
 /** "Etiketli kaynakların tüm notları" and how many Notes only a Source's Tag brings ("+5 not"). */
 export function SourceNotesSwitch({
   value,
@@ -210,6 +236,8 @@ const makeStyles = (c: Colors) =>
     comment: { ...typeScale.body, fontSize: 14, color: c.ink3 },
     why: { ...typeScale.caption, color: c.chipInk },
     viaSource: { ...typeScale.caption, color: c.warn },
+    // EB Garamond reaches 27 below and above at 21; the padding keeps g, ğ, y of the last line.
+    name: { ...typeScale.sourceTitle, color: c.fg, paddingBottom: 2 },
     switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     switchLabel: { ...typeScale.label, flexShrink: 1, color: c.fg },
     switchCount: { color: c.muted },

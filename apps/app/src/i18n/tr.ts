@@ -499,9 +499,9 @@ export const tr = {
     cancel: 'Vazgeç',
     rename: 'Adı değiştir',
     save: 'Kaydet',
-    // Before the name in a Collection's and a Tag's header (#129).
-    titlePrefix: 'Dosya: ',
-    tagTitlePrefix: 'Etiket: ',
+    // A Collection's and a Tag's header; the name stands in full under it (#139).
+    pageTitle: 'Dosya',
+    tagPageTitle: 'Etiket',
     noteCount: '{{count}} not',
     counts: '{{notes}} not · {{sources}} kaynak',
     noTags: 'etiketsiz',

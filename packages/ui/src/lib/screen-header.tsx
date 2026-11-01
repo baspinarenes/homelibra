@@ -13,31 +13,20 @@ import { useTheme, useThemedStyles } from './use-theme';
  * (#139): the back arrow when there is one, the title in mono right beside
  * it on one line, the actions at the right, a 1px `line` rule underneath.
  * The bar is 44 high with icons or without, so the title stands at the same
- * height on every screen.
+ * height on every screen. The title is the page's kind, never a name the
+ * scholar wrote: a Collection's page says DOSYA and sets its name in full
+ * under the rule.
  */
 export function ScreenHeader({
   title,
-  prefix,
-  onTitlePress,
-  titleHint,
   onBack,
   backLabel,
   backIcon = 'arrow',
   titleAccessory,
   right,
 }: {
-  /**
-   * Text, or a node of the screen's own in the title's place (a search box).
-   * A page's name is set in upper case ("GENEL BAKIŞ"); after a `prefix` the
-   * text is a name the scholar wrote and keeps its own letters.
-   */
+  /** Text, set in upper case ("GENEL BAKIŞ"), or a node of the screen's own in the title's place (a name being written). */
   title: ReactNode;
-  /** Set before the title in `muted` and upper case, as "DOSYA: ". */
-  prefix?: string;
-  /** Makes a text title a button (a Collection's name opens its renaming). */
-  onTitlePress?: () => void;
-  /** What tapping the title does, for screen readers ("Adı değiştir"). */
-  titleHint?: string;
   /** Shows the back arrow (pushed screens). */
   onBack?: () => void;
   /** What screen readers call the back arrow; needed with `onBack`. */
@@ -52,20 +41,6 @@ export function ScreenHeader({
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const { top } = useSafeAreaInsets();
-  const titled = typeof title === 'string';
-  const heading = titled && (
-    <Text role="heading" style={styles.title} numberOfLines={1}>
-      {prefix ? (
-        <>
-          <Text style={styles.prefix}>{prefix.toLocaleUpperCase('tr')}</Text>
-          {title}
-        </>
-      ) : (
-        title.toLocaleUpperCase('tr')
-      )}
-    </Text>
-  );
-
   return (
     <View style={[styles.header, { paddingTop: top + 6 }]}>
       <View style={styles.bar}>
@@ -80,20 +55,11 @@ export function ScreenHeader({
         ) : (
           <View style={styles.noBack} />
         )}
-        {titled ? (
+        {typeof title === 'string' ? (
           <View style={styles.head}>
-            {onTitlePress ? (
-              <Pressable
-                role="button"
-                accessibilityHint={titleHint}
-                onPress={onTitlePress}
-                style={({ pressed }) => [styles.titlePress, pressed && styles.pressed]}
-              >
-                {heading}
-              </Pressable>
-            ) : (
-              heading
-            )}
+            <Text role="heading" style={styles.title} numberOfLines={1}>
+              {title.toLocaleUpperCase('tr')}
+            </Text>
             {titleAccessory}
           </View>
         ) : (
@@ -191,9 +157,7 @@ const makeStyles = (c: Colors) =>
     // The right edge puts a tab root's 24px icons on the 22 gutter.
     bar: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 6, paddingRight: 12 },
     head: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 2 },
-    titlePress: { flexShrink: 1, minWidth: 0 },
     title: { ...typeScale.screenTitle, color: c.fg, flexShrink: 1, paddingLeft: 2 },
-    prefix: { color: c.muted },
     slot: { flex: 1, minWidth: 0 },
     // Without an arrow the title stands on the 22 gutter.
     noBack: { width: 12 },
@@ -216,5 +180,4 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.pill,
       backgroundColor: c.accent,
     },
-    pressed: { opacity: 0.7 },
   });
