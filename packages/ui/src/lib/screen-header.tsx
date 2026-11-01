@@ -9,12 +9,13 @@ import { type Colors, radius, type as typeScale } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 /**
- * The bar at the top of a screen. A pushed screen's has the back arrow, the
- * title right beside it on one line and the actions at the right. A tab
- * root's has a large title and its action icons.
+ * The bar at the top of every screen, a tab root's and a pushed one's alike
+ * (#139): the back arrow when there is one, the title in mono right beside
+ * it on one line, the actions at the right, a 1px `line` rule underneath.
+ * The bar is 44 high with icons or without, so the title stands at the same
+ * height on every screen.
  */
 export function ScreenHeader({
-  variant = 'pushed',
   title,
   prefix,
   onTitlePress,
@@ -25,10 +26,13 @@ export function ScreenHeader({
   titleAccessory,
   right,
 }: {
-  variant?: 'pushed' | 'root';
-  /** Text, or a node of the screen's own in the title's place (a search box). */
+  /**
+   * Text, or a node of the screen's own in the title's place (a search box).
+   * A page's name is set in upper case ("GENEL BAKIŞ"); after a `prefix` the
+   * text is a name the scholar wrote and keeps its own letters.
+   */
   title: ReactNode;
-  /** Set before the title in `muted`, as "Dosya: ". */
+  /** Set before the title in `muted` and upper case, as "DOSYA: ". */
   prefix?: string;
   /** Makes a text title a button (a Collection's name opens its renaming). */
   onTitlePress?: () => void;
@@ -40,7 +44,7 @@ export function ScreenHeader({
   backLabel?: string;
   /** `close` draws an X in the arrow's place, for a header being edited (Vazgeç). */
   backIcon?: 'arrow' | 'close';
-  /** A tab root's: an icon right beside the title (Ara's Arama ipuçları), the actions still at the right. */
+  /** An icon right beside the title (Ara's Arama ipuçları), the actions still at the right. */
   titleAccessory?: ReactNode;
   /** The actions: `HeaderTextAction`s and `HeaderIconAction`s. */
   right?: ReactNode;
@@ -49,33 +53,21 @@ export function ScreenHeader({
   const { colors } = useTheme();
   const { top } = useSafeAreaInsets();
   const titled = typeof title === 'string';
-  const heading = (
+  const heading = titled && (
     <Text role="heading" style={styles.title} numberOfLines={1}>
-      {prefix && <Text style={styles.prefix}>{prefix}</Text>}
-      {title}
+      {prefix ? (
+        <>
+          <Text style={styles.prefix}>{prefix.toLocaleUpperCase('tr')}</Text>
+          {title}
+        </>
+      ) : (
+        title.toLocaleUpperCase('tr')
+      )}
     </Text>
   );
 
-  if (variant === 'root') {
-    return (
-      <View style={[styles.root, { paddingTop: top + 14 }]}>
-        <View style={[styles.rootHead, !titled && styles.slot]}>
-          {titled ? (
-            <Text role="heading" style={styles.rootTitle} numberOfLines={1}>
-              {title}
-            </Text>
-          ) : (
-            <View style={styles.slot}>{title}</View>
-          )}
-          {titleAccessory}
-        </View>
-        {right && <View style={styles.actions}>{right}</View>}
-      </View>
-    );
-  }
-
   return (
-    <View style={[styles.pushed, { paddingTop: top }]}>
+    <View style={[styles.header, { paddingTop: top + 6 }]}>
       <View style={styles.bar}>
         {onBack ? (
           <Pressable role="button" aria-label={backLabel} onPress={onBack} style={styles.icon}>
@@ -88,17 +80,22 @@ export function ScreenHeader({
         ) : (
           <View style={styles.noBack} />
         )}
-        {titled && onTitlePress ? (
-          <Pressable
-            role="button"
-            accessibilityHint={titleHint}
-            onPress={onTitlePress}
-            style={({ pressed }) => [styles.slot, pressed && styles.pressed]}
-          >
-            {heading}
-          </Pressable>
-        ) : titled ? (
-          heading
+        {titled ? (
+          <View style={styles.head}>
+            {onTitlePress ? (
+              <Pressable
+                role="button"
+                accessibilityHint={titleHint}
+                onPress={onTitlePress}
+                style={({ pressed }) => [styles.titlePress, pressed && styles.pressed]}
+              >
+                {heading}
+              </Pressable>
+            ) : (
+              heading
+            )}
+            {titleAccessory}
+          </View>
         ) : (
           <View style={styles.slot}>{title}</View>
         )}
@@ -189,23 +186,16 @@ export function HeaderIconAction({
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    root: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingBottom: 10,
-      paddingLeft: 22,
-      paddingRight: 12,
-      backgroundColor: c.page,
-    },
-    rootHead: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1, minWidth: 0 },
-    rootTitle: { ...typeScale.display, color: c.fg, flexShrink: 1 },
-    pushed: { backgroundColor: c.page },
-    bar: { height: 56, flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 6 },
-    title: { ...typeScale.screenTitle, color: c.fg, flex: 1, minWidth: 0, paddingLeft: 2 },
+    header: { paddingBottom: 6, backgroundColor: c.page, borderBottomWidth: 1, borderBottomColor: c.line },
+    // One height on every screen: an icon's or Kaydet's 44 touch area, or the same without them.
+    // The right edge puts a tab root's 24px icons on the 22 gutter.
+    bar: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 6, paddingRight: 12 },
+    head: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 2 },
+    titlePress: { flexShrink: 1, minWidth: 0 },
+    title: { ...typeScale.screenTitle, color: c.fg, flexShrink: 1, paddingLeft: 2 },
     prefix: { color: c.muted },
     slot: { flex: 1, minWidth: 0 },
-    // Without an arrow the title keeps the root title's left edge.
+    // Without an arrow the title stands on the 22 gutter.
     noBack: { width: 12 },
     actions: { flexDirection: 'row', alignItems: 'center' },
     icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control },

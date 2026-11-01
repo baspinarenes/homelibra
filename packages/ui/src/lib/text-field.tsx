@@ -102,6 +102,11 @@ const makeStyles = (c: Colors) =>
       paddingHorizontal: 14,
       paddingVertical: 12,
       minHeight: 46,
+      // The focus ring is always there, only coloured on focus: adding an outline to an Android
+      // input redraws its background and drops its padding, the text then touching the border.
+      outlineColor: 'transparent',
+      outlineWidth: 3,
+      outlineStyle: 'solid',
       // Android adds its own padding above and below the line otherwise.
       includeFontPadding: false,
       textAlignVertical: 'center',
@@ -117,6 +122,6 @@ const makeStyles = (c: Colors) =>
     multiline: { minHeight: 92, textAlignVertical: 'top' },
     invalid: { borderColor: c.danger },
     // An accent border and a 3px accent-soft ring.
-    focused: { borderColor: c.accent, outlineColor: c.accentSoft, outlineWidth: 3, outlineStyle: 'solid' },
+    focused: { borderColor: c.accent, outlineColor: c.accentSoft },
     error: { ...typeScale.caption, color: c.danger },
   });

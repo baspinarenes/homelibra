@@ -451,7 +451,7 @@ const makeStyles = (c: Colors) =>
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
-    boxRow: { paddingTop: 2, paddingBottom: 10, paddingHorizontal: space.gutter, alignItems: 'center' },
+    boxRow: { paddingTop: space.md, paddingBottom: 10, paddingHorizontal: space.gutter, alignItems: 'center' },
     box: { width: '100%', maxWidth: BOX_WIDTH, justifyContent: 'center' },
     boxOff: { opacity: 0.6 },
     glass: { position: 'absolute', left: 13 },
@@ -469,9 +469,14 @@ const makeStyles = (c: Colors) =>
       // Android adds its own padding above and below the line otherwise.
       includeFontPadding: false,
       textAlignVertical: 'center',
+      // As in TextField, the ring is always there and only coloured on focus: an outline added
+      // on focus drops an Android input's padding and the placeholder runs under the glass.
+      outlineColor: 'transparent',
+      outlineWidth: 3,
+      outlineStyle: 'solid',
     },
     // An accent border and a 3px accent-soft ring, as every field has.
-    focused: { borderColor: c.accent, outlineColor: c.accentSoft, outlineWidth: 3, outlineStyle: 'solid' },
+    focused: { borderColor: c.accent, outlineColor: c.accentSoft },
     clear: { position: 'absolute', right: 1, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     sheet: { gap: 18 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
