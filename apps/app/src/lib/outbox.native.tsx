@@ -145,7 +145,7 @@ export function OutboxProvider({ children }: { children: ReactNode }) {
  * waiting to be sent. A screen does not know whether it is online: `apply`
  * resolves once the operation is safe (sent on the web, queued here) and
  * rejects when it is not. `drain` sends what waits, before an online-only
- * operation such as Düzenle mode; it resolves with how many Notes still wait.
+ * operation such as Kaynağı sil; it resolves with how many Notes still wait.
  */
 export function useOutbox(): OutboxValue {
   const value = useContext(OutboxContext);

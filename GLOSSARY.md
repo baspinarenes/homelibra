@@ -112,14 +112,10 @@ _Avoid_: page, position, reference, citation
 The numbers a Note's Locator is ordered by, always read from the Locator text; the scholar never sees or edits them, and fixes the order by fixing the Locator.
 _Avoid_: sort key, index, position
 
-**Note merge** (Not birleştirme):
-Combining two or more notes of the same source into one, for an excerpt cut in two by a page turn or a comment saved apart from its excerpt: the excerpts and comments are joined in locator order, the tags pooled, and the other notes are gone. Not to be confused with a tag merge.
-_Avoid_: join, combine, tag merge
-
 ### Finding things again
 
 **Tag** (Etiket):
-A flat, free-form label attached to notes and to sources, with no hierarchy, no type and no synonyms. Two names are the same tag when they differ only in letter case (by Turkish rules, so I and ı pair, İ and i pair) or in spacing; circumflexes, dotted versus dotless i and punctuation still make different tags. A tag on a source is not a tag on that source's notes.
+A flat, free-form label added to notes and to sources, with no hierarchy, no type and no synonyms. A tag exists only while something carries it: it comes into being when first added to a note or a source, is never made on its own, and is gone once nothing carries it. Two names are the same tag when they differ only in letter case (by Turkish rules, so I and ı pair, İ and i pair) or in spacing; circumflexes, dotted versus dotless i and punctuation still make different tags. A tag on a source is not a tag on that source's notes.
 _Avoid_: topic, keyword, category, subject, label, hashtag
 
 **Tag merge** (Etiket birleştirme):
@@ -139,10 +135,6 @@ _Avoid_: query, filter, lookup, find
 **Capture** (Yakalama):
 Recording a note quickly while reading or watching, on the phone or at the desk, possibly without tags.
 _Avoid_: entry, input, logging
-
-**Organizing pass** (Düzenleme turu):
-Going through one source's untagged notes, after capture and usually at the desk, to tag them and tidy them up: fixing locators and wording, merging notes. It can be done for any source at any time; finishing a source invites one but is not needed for it. Notes may be left untagged; ending the pass sets the source aside until new untagged notes are captured.
-_Avoid_: review, triage, cleanup, round
 
 **Geri al** (Undo):
 Taking back an operation just done (a deletion, a move, a merge, a tagging) within a few minutes, as if it had never happened. Offered right after the operation; nothing is kept for later.

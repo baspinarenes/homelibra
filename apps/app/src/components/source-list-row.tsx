@@ -13,8 +13,8 @@ type ListedSource = inferRouterOutputs<AppRouter>['sources']['list'][number];
 
 /**
  * A Kaynaklar row (#40, story 165): Cover, type, Başlık, Yazar · Tarih, then
- * the Note count · when the last Note came ("notsuz" without one), and
- * "N etiketsiz" when Düzenle waits on some. It opens the Source page.
+ * the Note count · when the last Note came ("notsuz" without one). It opens
+ * the Source page.
  */
 export function SourceListRow({ source, divided }: { source: ListedSource; divided: boolean }) {
   const { t } = useTranslation();
@@ -42,12 +42,7 @@ export function SourceListRow({ source, divided }: { source: ListedSource; divid
             {byline}
           </Text>
         )}
-        <View style={styles.counts}>
-          <Text style={styles.byline}>{notes}</Text>
-          {source.untaggedCount > 0 && (
-            <Text style={styles.untagged}>{t('organize.untagged', { count: source.untaggedCount })}</Text>
-          )}
-        </View>
+        <Text style={styles.byline}>{notes}</Text>
       </View>
     </Pressable>
   );
@@ -62,6 +57,4 @@ const makeStyles = (c: Colors) =>
     type: { ...typeScale.micro, color: c.muted },
     title: { ...typeScale.sourceTitleSm, color: c.fg },
     byline: { ...typeScale.caption, color: c.muted },
-    counts: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: space.sm },
-    untagged: { ...typeScale.caption, color: c.warn },
   });

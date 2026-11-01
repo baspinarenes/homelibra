@@ -4,7 +4,7 @@ import type { LibraryTx } from '../db/client';
 import { collection, collectionTag, note, noteTag, source, sourceTag, tag } from '../db/schema';
 import { type LinkTable, linkTables } from '../tags/tags';
 import { storedRow, type StoredRow } from './stored-row';
-import { recordUndo, type UndoSnapshot } from './undo';
+import { recordUndo } from './undo';
 
 /** What a Geri al'd delete takes: Sources, Notes, Collections or Tags, by id. */
 export type DeleteTarget = { sources: string[] } | { notes: string[] } | { collections: string[] } | { tags: string[] };
@@ -108,17 +108,15 @@ async function tagParts(
 /**
  * Deletes the target's rows still there, with everything that goes with
  * them, and keeps one Geri al record that brings it all back with the same
- * ids. `extra` joins that record: what the same operation added (`remove`)
- * or changed (`revert`), as Note merge does. Nothing to delete (gone
- * already, or never this Library's) records nothing and gives no token.
+ * ids. Nothing to delete (gone already, or never this Library's) records
+ * nothing and gives no token.
  */
 export async function deleteWithUndo(
   tx: LibraryTx,
   accountId: string,
   now: Date,
   target: DeleteTarget,
-  extra: Pick<UndoSnapshot, 'remove' | 'revert'> = {},
-): Promise<{ count: number; undoToken: string | null }> {
+): Promise<{ undoToken: string | null }> {
   const [kind, ids] = Object.entries(target)[0] as [Kind, string[]];
   const { table, along } = cascades[kind];
   const roots = ids.length
@@ -128,10 +126,10 @@ export async function deleteWithUndo(
         .where(mine(table, accountId, ids))
         .for('update')
     : [];
-  if (!roots.length) return { count: 0, undoToken: null };
+  if (!roots.length) return { undoToken: null };
   const found = roots.map(({ row }) => row.id as string);
   const reinsert = { ...(await along(tx, accountId, found)), [getTableName(table)]: roots.map(({ row }) => row) };
   await tx.delete(table).where(mine(table, accountId, found));
-  const undoToken = await recordUndo(tx, accountId, now, { ...extra, reinsert });
-  return { count: found.length, undoToken };
+  const undoToken = await recordUndo(tx, accountId, now, { reinsert });
+  return { undoToken };
 }

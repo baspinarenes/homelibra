@@ -46,7 +46,7 @@ describe('Note deletion', () => {
   });
 });
 
-/** When the Note came into its Source, as Organizing pass will read it (#53); no procedure shows it yet. */
+/** When the Note came into its Source (#53); only the Library export shows it. */
 async function enteredSourceAt(id: string) {
   const [row] = await t.owner.execute<{ at: string }>(
     sql`select entered_source_at::text as at from note where id = ${id}`,

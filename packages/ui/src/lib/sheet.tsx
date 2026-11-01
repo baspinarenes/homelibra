@@ -27,8 +27,9 @@ const dismissDistance = 80;
  * A sheet from the bottom of the screen, the same in every flow: the handle,
  * the title and "Kapat" always in one place. "Kapat", a drag down and a tap on
  * the dimmed screen close it; there is never a second close button. It stops
- * 48 below the top, and what does not fit scrolls inside it. With the
- * keyboard up it stands on the keyboard, its field and the action in sight.
+ * 48 below the top, and what does not fit scrolls inside it. Its foot keeps
+ * 14 clear of the phone's navigation bar. With the keyboard up it stands on
+ * the keyboard, its field and the action in sight.
  * A sheet that `fill`s is a list to choose from under a field: it stands at
  * its full height while the list narrows, and the list scrolls itself.
  */
@@ -82,8 +83,8 @@ export function Sheet({
     [drag, onClose],
   );
 
-  // Above the keyboard when it is up, above the navigation bar otherwise.
-  const bottom = keyboardTop > 0 ? keyboardTop + 14 : Math.max(insets.bottom, 14);
+  // 14 clear of the keyboard when it is up, of the navigation bar or the home indicator otherwise.
+  const bottom = (keyboardTop > 0 ? keyboardTop : insets.bottom) + 14;
   const tallest = height - insets.top - 48;
 
   return (

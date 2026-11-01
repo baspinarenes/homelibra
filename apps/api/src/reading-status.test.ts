@@ -12,12 +12,12 @@ async function scholar() {
 }
 type Api = Awaited<ReturnType<typeof scholar>>;
 
-/** Captures one Note per Locator, untagged unless Tags are given; returns their ids. */
-async function capture(api: Api, sourceId: string, locators: string[], tags?: string[]) {
+/** Captures one untagged Note per Locator; returns their ids. */
+async function capture(api: Api, sourceId: string, locators: string[]) {
   const ids: string[] = [];
   for (const locator of locators) {
     const id = uuidv7();
-    await api.notes.create({ id, sourceId, locator, excerpt: `${locator} üzerine.`, tags });
+    await api.notes.create({ id, sourceId, locator, excerpt: `${locator} üzerine.` });
     ids.push(id);
   }
   return ids;
@@ -40,25 +40,6 @@ describe('Reading status', () => {
 
     await api.sources.setReadingStatus({ id, status: 'reading' });
     expect(await statusOf(api, id)).toBe('reading');
-  });
-
-  it('says, on finishing, how many untagged Notes came since the last Bitir, for "Şimdi düzenle / Sonra"', async () => {
-    const api = await scholar();
-    const { id } = await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib' });
-    await capture(api, id, ['s. 1', 's. 2'], ['kadı']);
-    await capture(api, id, ['s. 3']);
-    await api.organize.finish({ sourceId: id });
-    t.passTime(hour);
-    await capture(api, id, ['s. 40', 's. 41', 's. 42']);
-    await capture(api, id, ['s. 43'], ['naib']);
-
-    expect(await api.sources.setReadingStatus({ id, status: 'finished' })).toEqual({ untaggedCount: 3 });
-    // Already finished: nothing to offer again; reading on: nothing to offer.
-    expect(await api.sources.setReadingStatus({ id, status: 'finished' })).toEqual({ untaggedCount: 0 });
-    expect(await api.sources.setReadingStatus({ id, status: 'reading' })).toEqual({ untaggedCount: 0 });
-
-    await api.organize.finish({ sourceId: id });
-    expect(await api.sources.setReadingStatus({ id, status: 'finished' })).toEqual({ untaggedCount: 0 });
   });
 
   it("keeps finished Sources out of Genel Bakış's Kaldığın yer while a Source being read has a Note", async () => {
@@ -119,32 +100,6 @@ describe('Reading status', () => {
     expect(rows.map(({ title, readingStatus }) => [title, readingStatus])).toEqual([
       ['Tanin', 'finished'],
       ['Taşrada Kadı ve Naib', 'reading'],
-    ]);
-  });
-
-  it('puts the finished Sources first in Düzenlenecekler, marked, then the rest by last Note', async () => {
-    const api = await scholar();
-    const { id: kadi } = await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib' });
-    const { id: vakif } = await api.sources.create({ type: 'book', title: "Osmanlı'da Vakıf" });
-    const { id: fon } = await api.sources.create({ type: 'archive', title: 'A.MKT.MHM' });
-    const { id: tanin } = await api.sources.create({ type: 'periodical', title: 'Tanin' });
-    await capture(api, kadi, ['s. 45']);
-    t.passTime(hour);
-    await capture(api, fon, ['g. 3']);
-    t.passTime(hour);
-    await capture(api, vakif, ['s. 10']);
-    t.passTime(hour);
-    await capture(api, tanin, ['nr. 3']);
-    await api.sources.setReadingStatus({ id: kadi, status: 'finished' });
-    await api.sources.setReadingStatus({ id: fon, status: 'finished' });
-
-    const rows = await api.organize.list();
-
-    expect(rows.map(({ title, finished }) => [title, finished])).toEqual([
-      ['A.MKT.MHM', true],
-      ['Taşrada Kadı ve Naib', true],
-      ['Tanin', false],
-      ["Osmanlı'da Vakıf", false],
     ]);
   });
 

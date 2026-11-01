@@ -98,11 +98,12 @@ export const fonts = {
 } as const;
 
 export const type = {
-  display: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 34 }, // tab root title
+  display: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 34 }, // welcome and sign-in title
   title: { fontFamily: fonts.serif, fontSize: 26, lineHeight: 30 }, // Collection name
-  screenTitle: { fontFamily: fonts.serifMedium, fontSize: 20, lineHeight: 26 }, // pushed screen's header
+  screenTitle: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 2.2 }, // every screen's header, upper case
   sourceTitle: { fontFamily: fonts.serifMedium, fontSize: 21, lineHeight: 25 }, // also a sheet's title
-  sourceTitleSm: { fontFamily: fonts.serifMedium, fontSize: 17, lineHeight: 20 }, // list row
+  // A list row. EB Garamond's ascent and descent take 22.2 at 17; on a shorter line Android may cut g, ğ, y, ş below.
+  sourceTitleSm: { fontFamily: fonts.serifMedium, fontSize: 17, lineHeight: 23 },
   excerpt: { fontFamily: fonts.quote, fontSize: 16, lineHeight: 25 }, // + 2px quoteBar left rule
   excerptSm: { fontFamily: fonts.quote, fontSize: 15, lineHeight: 23 },
   body: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
