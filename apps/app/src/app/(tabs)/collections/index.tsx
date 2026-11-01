@@ -1,11 +1,13 @@
+import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Sheet, SheetChoices } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
-import { router, useLocalSearchParams } from 'expo-router';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { CollectionList, useCollections } from '@/components/collection-list';
 import { TagList, useTags } from '@/components/tag-list';
@@ -14,10 +16,11 @@ import { type CollectionSort, type TagSort, useCollectionSort, useTagSort } from
 type DizinView = 'collections' | 'tags';
 
 /**
- * Dizin: Dosyalar | Etiketler as text tabs, each with its count, and Sırala
- * at the row's end. Etiketler lives here, not in its own tab, because a Tag's
- * page is already a temporary Collection. The view is a search param, so a
- * link can open Etiketler directly; each view's order is kept on the device.
+ * Dizin: Dosyalar | Etiketler as text tabs, each with its count; the header
+ * has Sırala and, on Dosyalar, + for a Yeni dosya (#140). Etiketler lives
+ * here, not in its own tab, because a Tag's page is already a temporary
+ * Collection. The view is a search param, so a link can open Etiketler
+ * directly; each view's order is kept on the device.
  */
 export default function DizinScreen() {
   const { t } = useTranslation();
@@ -58,6 +61,23 @@ export default function DizinScreen() {
 
   return (
     <View style={styles.screen}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <HeaderActions
+              sort={
+                sortable
+                  ? {
+                      label: t('collections.sortCurrent', { sort: (sortLabel ?? '').toLocaleLowerCase('tr') }),
+                      onPress: () => setSorting(true),
+                    }
+                  : undefined
+              }
+              onNew={view === 'collections' ? () => router.push('/collection/new') : undefined}
+            />
+          ),
+        }}
+      />
       <View style={styles.bar}>
         <TextTabs
           label={t('collections.viewLabel')}
@@ -67,14 +87,6 @@ export default function DizinScreen() {
           ]}
           value={view}
           onChange={(next) => router.setParams({ view: next === 'tags' ? 'tags' : undefined })}
-          right={
-            sortable && (
-              <SortButton
-                label={t('collections.sortCurrent', { sort: (sortLabel ?? '').toLocaleLowerCase('tr') })}
-                onPress={() => setSorting(true)}
-              />
-            )
-          }
         />
       </View>
       {view === 'tags' ? <TagList sort={tagSort} /> : <CollectionList sort={collectionSort} />}
@@ -104,21 +116,19 @@ export default function DizinScreen() {
   );
 }
 
-/** The filter icon and "Sırala" in accent; screen readers also hear the order in use. */
-function SortButton({ label, onPress }: { label: string; onPress: () => void }) {
+/**
+ * The header's icons: Sırala, once the view has rows to order (screen readers
+ * also hear the order in use); then + for a Yeni dosya, but not on Etiketler,
+ * since a Tag is never made on its own, only added to a Note or a Source.
+ */
+function HeaderActions({ sort, onNew }: { sort?: { label: string; onPress: () => void }; onNew?: () => void }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
   return (
-    <Pressable
-      role="button"
-      aria-label={label}
-      onPress={onPress}
-      style={({ pressed }) => [styles.sort, pressed && styles.pressed]}
-    >
-      <SlidersHorizontal color={colors.accent} size={20} strokeWidth={1.6} />
-      <Text style={styles.sortText}>{t('collections.sort')}</Text>
-    </Pressable>
+    <View style={styles.headerActions}>
+      {sort && <HeaderIconAction icon={SlidersHorizontal} label={sort.label} size={24} onPress={sort.onPress} />}
+      {onNew && <HeaderIconAction icon={Plus} label={t('collections.new')} size={24} onPress={onNew} />}
+    </View>
   );
 }
 
@@ -127,7 +137,5 @@ const makeStyles = (c: Colors) =>
     screen: { flex: 1, backgroundColor: c.page },
     // Lines up with the root title.
     bar: { paddingHorizontal: space.gutter, paddingTop: 2 },
-    sort: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingLeft: space.sm, paddingRight: 2 },
-    sortText: { ...typeScale.action, color: c.accent },
-    pressed: { opacity: 0.7 },
+    headerActions: { flexDirection: 'row', alignItems: 'center' },
   });
