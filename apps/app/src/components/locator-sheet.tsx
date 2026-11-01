@@ -12,7 +12,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
  * The writing box's Locator editor, a sheet over the Source page. Sources cited by page,
  * folio or time get a pad of the keys their Locators are written with; the
  * rest, and anything the pad cannot write, take free text. Either way the
- * Locator is stored as the text it shows, and Konumsuz | Tamam stand at the foot.
+ * Locator is stored as the text it shows, and Konum yok | Tamam stand at the foot.
  */
 export function LocatorSheet({
   visible,

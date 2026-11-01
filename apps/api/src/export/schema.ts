@@ -91,7 +91,7 @@ const exportedNote = z
     locator: z
       .string()
       .nullable()
-      .meta({ description: 'Konum (Locator), atıfta yazıldığı gibi; "Konumsuz" not için null.' }),
+      .meta({ description: 'Konum (Locator), atıfta yazıldığı gibi; konumu olmayan not için null.' }),
     locatorSort: z.array(z.number()).nullable().meta({
       description:
         'Konum sırasının dayandığı değer, Konum’dan türetilir: Konum’daki sayılar (varak b yüzü +0,5; zaman saniye olarak). Sayı yoksa null.',
