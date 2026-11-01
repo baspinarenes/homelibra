@@ -96,7 +96,6 @@ export default function SourcesScreen() {
         ) : (
           <ListMessage
             title={t('sources.emptyTitle')}
-            large
             lead={t('sources.emptyLead')}
             action={{ label: t('sources.add'), onPress: addSource }}
           />

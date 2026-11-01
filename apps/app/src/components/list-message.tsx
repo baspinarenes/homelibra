@@ -9,20 +9,17 @@ import { StyleSheet, Text, View } from 'react-native';
  */
 export function ListMessage({
   title,
-  large = false,
   lead,
   action,
 }: {
   title?: string;
-  /** The title in the larger face, where the whole screen is empty (Kaynaklar's "Henüz kaynak yok"). */
-  large?: boolean;
   lead: string;
   action?: { label: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'text' };
 }) {
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.center}>
-      {title && <Text style={[styles.title, large && styles.large]}>{title}</Text>}
+      {title && <Text style={styles.title}>{title}</Text>}
       <Text style={styles.lead}>{lead}</Text>
       {action && (
         // Button sits at the start of its row (`alignSelf: 'flex-start'`); the wrapper is what `center` centres.
@@ -44,7 +41,6 @@ const makeStyles = (c: Colors) =>
       paddingHorizontal: space.xxl,
       paddingVertical: space.xl,
     },
-    title: { ...typeScale.sourceTitleSm, color: c.fg, textAlign: 'center' },
-    large: typeScale.title,
+    title: { ...typeScale.title, color: c.fg, textAlign: 'center' },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
   });
