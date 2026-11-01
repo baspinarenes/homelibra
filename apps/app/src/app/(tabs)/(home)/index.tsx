@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { LibrarySummary } from '@/components/library-summary';
 import { LostNotesNotice, useLostNoteCount } from '@/components/lost-notes-notice';
 import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
@@ -68,6 +69,7 @@ export default function HomeScreen() {
         <LastNotedSection lastNoted={lastNoted.data} afterAlerts={alerts} />
         <ReadingList />
         <RecentTags />
+        <LibrarySummary />
       </ScrollView>
     );
   }

@@ -158,6 +158,12 @@ export const tr = {
     takeNote: 'Not al',
     lastNoted: 'Kaldığın yer',
     goOn: 'Yazmaya devam et ›',
+    libraryTitle: 'Kütüphanen',
+    // <count> is set apart; no-break spaces keep a number with its word and "var." off a line of its own.
+    librarySentence:
+      'Kütüphanende <count>{{sources}}\u00a0kaynak</count>, <count>{{notes}}\u00a0not</count> ve <count>{{tags}}\u00a0etiket</count>\u00a0var.',
+    libraryTypes: 'Kaynak dağılımı',
+    libraryStatus: 'Okuma durumu',
   },
   // How long ago a Note was captured.
   elapsed: {
