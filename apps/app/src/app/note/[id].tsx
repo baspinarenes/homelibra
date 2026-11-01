@@ -185,17 +185,15 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         {failed === 'save' && <Text style={styles.error}>{t('noteEdit.saveFailed')}</Text>}
         <View style={styles.foot}>
           {failed === 'delete' && <Text style={styles.error}>{t('deletion.deleteFailed')}</Text>}
-          {/* The Button keeps 4 on each side of its word; this puts the word on the form's edge. */}
-          <View style={styles.deletePlace}>
-            <Button
-              label={t('deletion.deleteNote')}
-              variant="text"
-              tone="danger"
-              onPress={() => void remove()}
-              busy={busy === 'delete'}
-              disabled={busy === 'save'}
-            />
-          </View>
+          <Button
+            label={t('deletion.deleteNote')}
+            variant="secondary"
+            tone="danger"
+            block
+            onPress={() => void remove()}
+            busy={busy === 'delete'}
+            disabled={busy === 'save'}
+          />
         </View>
       </View>
       <SourcePicker
@@ -240,5 +238,4 @@ const makeStyles = (c: Colors) =>
     sourceGone: { ...typeScale.label, flex: 1, color: c.warn },
     pressed: { opacity: 0.7 },
     foot: { gap: space.sm, marginTop: space.lg },
-    deletePlace: { alignSelf: 'flex-start', marginLeft: -4 },
   });
