@@ -1,7 +1,7 @@
 import Check from 'lucide-react-native/icons/check';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { type Colors, fonts } from './tokens';
+import { type Colors, fonts, type as typeScale } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 /**
@@ -49,6 +49,6 @@ const makeStyles = (c: Colors) =>
     option: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 52 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     pressed: { opacity: 0.7 },
-    text: { fontFamily: fonts.sans, fontSize: 16, lineHeight: 22, color: c.fg, flexShrink: 1 },
+    text: { ...typeScale.choice, color: c.fg, flexShrink: 1 },
     selectedText: { fontFamily: fonts.sansSemiBold, color: c.accent },
   });

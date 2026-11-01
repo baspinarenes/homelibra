@@ -86,5 +86,5 @@ const makeStyles = (c: Colors) =>
     open: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', gap: 10, paddingVertical: space.sm },
     pressed: { opacity: 0.7 },
     name: { ...typeScale.body, color: c.fg, flexShrink: 1 },
-    counts: { ...typeScale.locator, fontSize: 11.5, lineHeight: 16, color: c.muted },
+    counts: { ...typeScale.count, color: c.muted },
   });

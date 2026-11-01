@@ -52,6 +52,16 @@ const ownStyle = [
   },
 ];
 
+// A size and its line come from one `type` entry, which the theme test holds to its
+// face's height; a line written beside it can fall short, and Android cuts the glyphs.
+const ownSize = [
+  {
+    selector:
+      'ObjectExpression > Property[key.name=/^(?:fontSize|lineHeight)$/], JSXAttribute[name.name=/^(?:fontSize|lineHeight)$/]',
+    message: 'Sizes come from `type` in @homelibra/ui/theme: spread an entry, or add one there.',
+  },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -98,7 +108,12 @@ export default tseslint.config(
   },
   {
     files: ['apps/app/**'],
-    rules: { 'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownStyle] },
+    rules: { 'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownStyle, ...ownSize] },
+  },
+  {
+    files: ['packages/ui/**'],
+    ignores: ['packages/ui/src/lib/tokens.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownSize] },
   },
   {
     files: ['**/*.cjs', '**/metro.config.js', '**/babel.config.js'],

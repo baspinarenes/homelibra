@@ -70,7 +70,7 @@ const makeStyles = (c: Colors) =>
     blockOption: { flex: 1, alignItems: 'center' },
     compactGroup: { padding: 2, backgroundColor: c.page },
     compactOption: { paddingVertical: 4, paddingHorizontal: 11 },
-    compactText: { fontSize: 13 },
+    compactText: { ...typeScale.labelSm },
     selected: { backgroundColor: c.accent },
     text: { ...typeScale.label, color: c.ink2 },
     selectedText: { color: c.accentFg },

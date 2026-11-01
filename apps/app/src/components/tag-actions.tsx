@@ -293,14 +293,14 @@ function joinTr(parts: string[], and: string) {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     more: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-    moreText: { ...typeScale.button, fontSize: 18, color: c.muted },
+    moreText: { ...typeScale.more, color: c.muted },
     pressed: { opacity: 0.7 },
     hint: { ...typeScale.caption, color: c.muted },
     error: { ...typeScale.body, color: c.danger },
     row: { gap: 3, paddingVertical: 12 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     name: { ...typeScale.body, color: c.fg },
-    counts: { ...typeScale.locator, fontSize: 11.5, letterSpacing: 0, color: c.muted },
+    counts: { ...typeScale.count, color: c.muted },
     status: { paddingVertical: space.xl },
     lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
     strong: typeScale.strong,

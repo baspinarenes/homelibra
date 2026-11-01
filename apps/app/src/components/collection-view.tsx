@@ -241,8 +241,8 @@ const makeStyles = (c: Colors) =>
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     locator: { ...typeScale.locator, color: c.muted, width: 72, paddingTop: 3 },
     texts: { flex: 1, gap: 4 },
-    excerpt: { ...typeScale.excerpt, fontSize: 15, lineHeight: 23, color: c.quoteInk },
-    comment: { ...typeScale.body, fontSize: 14, color: c.ink3 },
+    excerpt: { ...typeScale.excerptSm, color: c.quoteInk },
+    comment: { ...typeScale.commentSm, color: c.ink3 },
     why: { ...typeScale.caption, color: c.chipInk },
     viaSource: { ...typeScale.caption, color: c.warn },
     // EB Garamond reaches 27 below and above at 21; the padding keeps g, ğ, y of the last line.

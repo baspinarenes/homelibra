@@ -78,5 +78,5 @@ const makeStyles = (c: Colors) =>
     name: { ...typeScale.sourceTitleSm, color: c.fg },
     tags: { ...typeScale.caption, color: c.chipInk },
     untagged: { ...typeScale.caption, color: c.muted2 },
-    count: { ...typeScale.locator, fontSize: 12, lineHeight: 16, color: c.muted },
+    count: { ...typeScale.collectionCount, color: c.muted },
   });
