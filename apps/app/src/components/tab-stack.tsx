@@ -7,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { tr } from '@/i18n/tr';
 
+import { PrototypeRootHeader, PrototypeSwitcher } from '@/components/prototype-root-title';
 import { SharedUndoBar } from '@/components/undo-bar';
 
 export type TabTitleKey = `tabs.${keyof typeof tr.tabs}`;
@@ -42,6 +43,7 @@ export function TabStack({
       <View pointerEvents="box-none" style={styles.foot}>
         <SharedUndoBar />
       </View>
+      <PrototypeSwitcher />
     </View>
   );
 }
@@ -56,8 +58,7 @@ const styles = StyleSheet.create({
 function RootHeader({ route, options, titleAccessory }: NativeStackHeaderProps & { titleAccessory?: ReactNode }) {
   const { colors } = useTheme();
   return (
-    <ScreenHeader
-      variant="root"
+    <PrototypeRootHeader
       title={options.title ?? route.name}
       titleAccessory={titleAccessory}
       right={options.headerRight?.({ canGoBack: false, tintColor: colors.accent })}
