@@ -54,7 +54,7 @@ export default function HomeScreen() {
     );
   }
 
-  // What waits on the scholar heads Genel bakış in a yellow strip; then where they left off.
+  // What waits on the scholar heads Genel Bakış in a yellow strip; then where they left off.
   if (lastNoted.data) {
     const alerts = lostNotes > 0;
     return (

@@ -21,8 +21,8 @@ import { authClient } from '@/lib/auth-client';
 
 /**
  * Ayarlar, on one page (#113): the theme, the Account's own pages (address,
- * export, deletion), the privacy documents, contact, and sign-out with the
- * app's version under it. Every right of #40 (story 14) is one tap away.
+ * export, deletion) with sign-out under them (#140), the privacy documents,
+ * contact, and the app's version. Every right of #40 (story 14) is one tap away.
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -64,18 +64,14 @@ export default function SettingsScreen() {
               onPress={() => router.push('/settings/delete')}
             />
           </SettingsRows>
+          {/* The text button's word sits 4 in; pull it back to the gutter. */}
+          <View style={styles.signOut}>
+            <SignOutButton />
+          </View>
         </Section>
         <PrivacyDocumentsSection />
         <ContactSection />
-        <View style={styles.signOut}>
-          {/* The text button's word sits 4 in; pull it back to the gutter. */}
-          <View style={styles.signOutButton}>
-            <SignOutButton />
-          </View>
-          <Text style={styles.version}>
-            {t('settings.appVersion', { version: Constants.expoConfig?.version ?? '' })}
-          </Text>
-        </View>
+        <Text style={styles.version}>{t('settings.appVersion', { version: Constants.expoConfig?.version ?? '' })}</Text>
       </Sections>
     </ScrollView>
   );
@@ -87,7 +83,6 @@ const makeStyles = (c: Colors) =>
     content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
     theme: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
     themeLabel: { ...typeScale.body, color: c.fg },
-    signOut: { paddingTop: space.sm, paddingBottom: 18 },
-    signOutButton: { alignSelf: 'flex-start', marginLeft: -space.xs },
-    version: { ...typeScale.caption, color: c.muted },
+    signOut: { alignSelf: 'flex-start', marginLeft: -space.xs },
+    version: { ...typeScale.caption, color: c.muted, paddingBottom: 18 },
   });

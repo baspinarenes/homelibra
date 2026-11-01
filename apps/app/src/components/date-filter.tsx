@@ -36,7 +36,7 @@ export function yearRangeLabel(range: YearRange, open: string) {
 }
 
 /**
- * The Tarih filter's fields, for a Süz sheet (Kaynaklar, Ara): a Milâdî |
+ * The Tarih filter's fields, for a Filtrele sheet (Kaynaklar, Ara): a Milâdî |
  * Hicrî | Rumî segment over Başlangıç and Bitiş years on the number pad.
  * Below, the Milâdî years a Hicrî or Rumî range stands for ("≈ 1908–1915
  * Milâdî") and that undated Sources are hidden, or the year its calendar

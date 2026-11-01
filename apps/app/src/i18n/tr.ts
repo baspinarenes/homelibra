@@ -2,7 +2,7 @@
 // keys are typed through i18next.d.ts, so a missing key fails typechecking.
 export const tr = {
   tabs: {
-    home: 'Genel bakış',
+    home: 'Genel Bakış',
     sources: 'Kaynaklar',
     collections: 'Dizin',
     search: 'Ara',
@@ -11,7 +11,7 @@ export const tr = {
   screenHeader: {
     back: 'Geri',
   },
-  // Dizin, the third tab: Dosyalar | Etiketler (#127).
+  // Dizin, the third tab: Dosyalar | Etiketler (#127), Sırala and + in its header (#140).
   collections: {
     viewLabel: 'Görünüm',
     collections: 'Dosyalar',
@@ -30,7 +30,7 @@ export const tr = {
     emptyTitle: 'Henüz dosyan yok',
     emptyLead: 'Bir yazının etiketlerini bir araya getirmek için sağ üstteki + ile yeni bir dosya aç.',
     tagsEmptyTitle: 'Henüz etiketin yok',
-    tagsEmptyLead: 'Bir nota ya da kaynağa “+ etiket” ile takabilirsin.',
+    tagsEmptyLead: 'Bir nota ya da kaynağa “+ etiket” ile ekleyebilirsin.',
   },
   settings: {
     appearance: 'Görünüm',
@@ -202,9 +202,9 @@ export const tr = {
       { term: '"bâb-ı âlî"', description: 'tam bu ifadeyi arar' },
       { term: '-kelime', description: 'bu kelime geçenleri çıkarır' },
     ],
-    // The header's Süz icon, its sheet and the filter chips under the box (#132).
-    filter: 'Süz',
-    filterActive: 'Süz, süzgeç etkin',
+    // The header's Filtrele icon, its sheet and the filter chips under the box (#132).
+    filter: 'Filtrele',
+    filterActive: 'Filtrele, filtre etkin',
     dates: 'Tarih',
     clearFilters: 'Temizle',
     showAll: '{{count}} sonucu göster',
@@ -224,23 +224,23 @@ export const tr = {
     emptyTitle: 'Henüz kaynak yok',
     emptyLead: 'Okuduğun bir kitabı, makaleyi ya da arşiv fonunu ekle.',
     loadFailed: 'Kaynaklar yüklenemedi.',
-    // The header's Süz icon and the Okunuyor | Bitti tabs (#121).
-    filter: 'Süz ve sırala',
-    filterActive: 'Süz ve sırala, süzgeç etkin',
+    // The header's Filtrele icon and the Okunuyor | Bitti tabs (#121).
+    filter: 'Filtrele ve sırala',
+    filterActive: 'Filtrele ve sırala, filtre etkin',
     statusTabs: 'Okuma durumu',
     readingEmpty: 'Şu an okuduğun kaynak yok. Bitirdiklerin Bitti sekmesinde.',
     finishedEmpty: 'Henüz bitirdiğin kaynak yok.',
-    // The Süz ve sırala sheet and the filter chips under the tabs (#122).
+    // The Filtrele ve sırala sheet and the filter chips under the tabs (#122).
     close: 'Kapat',
     sort: 'Sırala',
     types: 'Tür',
     dates: 'Tarih',
     clear: 'Temizle',
     show: '{{count}} kaynağı göster',
-    removeDates: 'Tarih süzgecini kaldır',
-    removeTypes: 'Tür süzgecini kaldır',
-    filterEmpty: 'Bu süzgeçle kaynak yok.',
-    clearFilter: 'Süzgeci temizle',
+    removeDates: 'Tarih filtresini kaldır',
+    removeTypes: 'Tür filtresini kaldır',
+    filterEmpty: 'Bu filtreyle kaynak yok.',
+    clearFilter: 'Filtreyi temizle',
   },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
@@ -416,7 +416,7 @@ export const tr = {
   account: {
     signOut: 'Çıkış yap',
   },
-  // Tag: the picker, the chips on Notes and Sources, Etiketler and Genel bakış's list (#49).
+  // Tag: the picker, the chips on Notes and Sources, Etiketler and Genel Bakış's list (#49).
   tags: {
     add: '+ etiket',
     untagged: 'etiketsiz',
@@ -589,7 +589,7 @@ export const tr = {
     year: 'yıl',
     open: '…',
     calendar: 'Takvim',
-    lead: 'Tarihe göre süzünce tarihsiz kaynaklar gizlenir.',
+    lead: 'Tarihe göre filtreleyince tarihsiz kaynaklar gizlenir.',
     hint: '≈ {{from}}–{{to}} Milâdî · tarihsiz kaynaklar gizlenir.',
     notInCalendar: '{{year}} yılı {{calendar}} takviminde yok.',
     hiddenSources: '{{count}} tarihsiz kaynak gizli',

@@ -11,7 +11,7 @@ export function useLostNoteCount() {
 }
 
 /**
- * The "N notun kaynağı silinmiş" strip on Genel bakış, while the phone holds
+ * The "N notun kaynağı silinmiş" strip on Genel Bakış, while the phone holds
  * Notes whose Source was deleted elsewhere: they wait for a new Source and
  * are never dropped unseen. Opens their list. Nothing otherwise.
  */

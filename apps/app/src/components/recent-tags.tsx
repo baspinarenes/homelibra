@@ -7,11 +7,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTRPC } from '@/lib/trpc';
 
-/** Genel bakış shows this many Tags; "Tümü ›" opens Etiketler for the rest. */
+/** Genel Bakış shows this many Tags; "Tümü ›" opens Etiketler for the rest. */
 const shownCount = 8;
 
 /**
- * Genel bakış's "Son kullanılan etiketler" (story 162): a flat, unboxed list of
+ * Genel Bakış's "Son kullanılan etiketler" (story 162): a flat, unboxed list of
  * the Tags put on last, each with "N not · M kaynak". Nothing while the
  * Library has no Tags.
  */

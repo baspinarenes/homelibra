@@ -177,7 +177,7 @@ describe('Note editing', () => {
   });
 });
 
-describe("Genel bakış's last noted Source", () => {
+describe("Genel Bakış's last noted Source", () => {
   it('is the Source of the latest Note, with that Note', async () => {
     const api = await (await t.signIn(scholarEmail())).call();
     const kadi = await api.sources.create({

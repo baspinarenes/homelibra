@@ -56,7 +56,7 @@ describe('adding a Cover', () => {
 });
 
 describe('where a Cover shows', () => {
-  it('comes with its Source on Genel bakış, in Kaynaklar and in search results', async () => {
+  it('comes with its Source on Genel Bakış, in Kaynaklar and in search results', async () => {
     const { api, sourceId } = await scholarWithSource();
     const { id: without } = await api.sources.create({ type: 'article', title: 'Kadı Sicilleri Üzerine' });
     await api.notes.create({ id: uuidv7(), sourceId, locator: 's. 45', excerpt: 'Kadı, naibini kendisi seçerdi.' });

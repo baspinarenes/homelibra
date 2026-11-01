@@ -31,7 +31,7 @@ import { useTRPC } from '@/lib/trpc';
 
 type Sort = inferRouterInputs<AppRouter>['sources']['list']['sort'];
 
-/** What Süz ve sırala sets: the order, and the Tür and Tarih filters; a filter with nothing chosen keeps all. */
+/** What Filtrele ve sırala sets: the order, and the Tür and Tarih filters; a filter with nothing chosen keeps all. */
 type Choices = { sort: Sort; types: SourceType[]; dates: YearRangeDraft };
 
 const initial: Choices = { sort: 'last', types: [], dates: emptyYearRange };
@@ -56,7 +56,7 @@ function sourceFilter({ types, dates }: Choices) {
 /**
  * Kaynaklar: every Source, by Son not (the default), Başlık, Yazar or Tarih,
  * under two tabs by Reading status, Okunuyor (open first) and Bitti, each
- * with its count. The header's Süz icon opens Süz ve sırala (#122): the
+ * with its count. The header's Filtrele icon opens Filtrele ve sırala (#122): the
  * order, the Tür filter and the Tarih filter, applied by "N kaynağı göster".
  * While a filter is on the icon has a dot, the tabs count what it keeps,
  * and a chip under them names it, × taking it off; the Tarih filter hides
@@ -204,7 +204,7 @@ export default function SourcesScreen() {
 }
 
 /**
- * Süz ve sırala: Sırala (Son not, Başlık, Yazar, Tarih; no direction),
+ * Filtrele ve sırala: Sırala (Son not, Başlık, Yazar, Tarih; no direction),
  * Tür (the nine types, any number chosen) and Tarih (one calendar, two
  * years); Temizle and "N kaynağı göster", N following the choices.
  */
@@ -287,7 +287,7 @@ function FilterSheet({
 }
 
 /**
- * The header's icons: Süz ve sırala, once there are Sources to narrow, with
+ * The header's icons: Filtrele ve sırala, once there are Sources to narrow, with
  * a dot while a filter is on; then Kaynak ekle.
  */
 function HeaderActions({ filter, onAdd }: { filter?: { on: boolean; onPress: () => void }; onAdd: () => void }) {

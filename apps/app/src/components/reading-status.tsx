@@ -26,7 +26,7 @@ export function ReadingStatusButton({ sourceId, status }: { sourceId: string; st
 
   const change = useMutation(
     trpc.sources.setReadingStatus.mutationOptions({
-      // Genel bakış's Kaldığın yer and Okunuyor, and Kaynaklar's tabs follow it.
+      // Genel Bakış's Kaldığın yer and Okunuyor, and Kaynaklar's tabs follow it.
       onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.sources.pathKey() }),
       onError: () => offerUndo({ message: t('readingStatus.failed') }),
     }),

@@ -43,7 +43,7 @@ const FIRST_SOURCES = 3;
 /** Tümü / Notlar / Kaynaklar. */
 type Kind = 'all' | 'notes' | 'sources';
 
-/** What Süz sets: which results show, and the Tarih filter. Tümü and no year keep everything. */
+/** What Filtrele sets: which results show, and the Tarih filter. Tümü and no year keep everything. */
 type Choices = { kind: Kind; dates: YearRangeDraft };
 
 const initial: Choices = { kind: 'all', dates: emptyYearRange };
@@ -77,7 +77,7 @@ function hiddenLine(
  * Ara: the whole Library searched by the words of its Notes and Sources
  * (ADR-0005). The box under the title sends the query as typed; the server
  * folds, stems, ranks and marks the matching words (ADR-0010). The header's
- * Süz icon opens Süz (#132): Tümü / Notlar / Kaynaklar and the Tarih filter,
+ * Filtrele icon opens Filtrele (#132): Tümü / Notlar / Kaynaklar and the Tarih filter,
  * which keeps the Sources, and the Notes whose Source, dated in its years
  * (#40, story 154), applied by "N sonucu göster". While a filter is on the
  * icon has a dot and a chip under the box names it, × taking it off. The
@@ -245,7 +245,7 @@ const showLabels = {
 } as const;
 
 /**
- * Süz: Sonuçlar (Tümü | Notlar | Kaynaklar) and Tarih (one calendar, two
+ * Filtrele: Sonuçlar (Tümü | Notlar | Kaynaklar) and Tarih (one calendar, two
  * years); Temizle and "N sonucu göster" ("N notu", "N kaynağı" for one
  * kind), N following the choices.
  */

@@ -270,7 +270,7 @@ describe('The Tag list', () => {
     expect(names(await api.tags.list({ sort: 'usage' }))).toEqual(['kadı', 'Çorum', 'Ilgaz', 'naib']);
   });
 
-  it('puts the last put on first, as many as asked (Genel bakış)', async () => {
+  it('puts the last put on first, as many as asked (Genel Bakış)', async () => {
     const api = await library();
 
     // Çorum and kadı went on the second Source together: A–Z between them.

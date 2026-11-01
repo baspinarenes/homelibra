@@ -32,7 +32,7 @@ export const tagsRouter = router({
   /**
    * Every Tag in the Library with how many Notes and Sources carry it
    * ("N not · M kaynak"): A–Z, Çok kullanılan (most carriers first), or
-   * last put on first (Genel bakış's "son kullanılan"). The Tag picker
+   * last put on first (Genel Bakış's "son kullanılan"). The Tag picker
    * suggests from the same list.
    */
   list: libraryProcedure
