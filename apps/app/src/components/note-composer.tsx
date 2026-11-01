@@ -506,7 +506,7 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
       backgroundColor: c.accentSoft,
     },
-    locatorText: { ...typeScale.locator, fontSize: 13, lineHeight: 18, color: c.accent },
+    locatorText: { ...typeScale.locatorSm, color: c.accent },
     locatorNone: { ...typeScale.label, color: c.accent },
     locatorStale: { backgroundColor: c.warnSoft },
     locatorStaleText: { color: c.warn },
@@ -529,8 +529,8 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
     },
     tagsChosen: { borderStyle: 'solid', borderColor: c.chipBg, backgroundColor: c.chipBg },
-    tagsText: { ...typeScale.label, fontSize: 13, color: c.accent },
-    tagsChosenText: { ...typeScale.label, fontSize: 13, color: c.chipInk },
+    tagsText: { ...typeScale.labelSm, color: c.accent },
+    tagsChosenText: { ...typeScale.labelSm, color: c.chipInk },
     mode: { marginLeft: 'auto' },
     // Genişlet / Küçült at the end of the controls, and × on the strip: an icon, no frame.
     iconAction: {

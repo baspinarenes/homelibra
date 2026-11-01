@@ -102,5 +102,5 @@ const makeStyles = (c: Colors) =>
     off: { opacity: 0.45 },
     pressed: { opacity: 0.8 },
     label: { ...typeScale.action },
-    smallLabel: { fontSize: 14 },
+    smallLabel: { ...typeScale.button },
   });

@@ -64,7 +64,7 @@ const makeStyles = (c: Colors) =>
     label: { ...typeScale.fieldLabel, color: c.muted },
     row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingTop: 2, paddingBottom: 10 },
     ruled: { borderTopWidth: 1, borderTopColor: c.lineSoft, paddingTop: 10 },
-    term: { ...typeScale.body, ...typeScale.strong, fontSize: 14, lineHeight: 20, color: c.fg, width: 96 },
-    code: { ...typeScale.locator, fontSize: 13, lineHeight: 20, color: c.ink3, width: 96 },
-    description: { ...typeScale.body, fontSize: 14, lineHeight: 20, color: c.ink2, flex: 1 },
+    term: { ...typeScale.bodySm, ...typeScale.strong, color: c.fg, width: 96 },
+    code: { ...typeScale.operator, color: c.ink3, width: 96 },
+    description: { ...typeScale.bodySm, color: c.ink2, flex: 1 },
   });

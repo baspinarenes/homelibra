@@ -129,16 +129,14 @@ export function LocatorSheet({
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     display: {
-      ...typeScale.locator,
-      fontSize: 26,
-      lineHeight: 34,
+      ...typeScale.locatorKey,
       color: c.fg,
       textAlign: 'center',
       paddingVertical: 6,
     },
-    displayEmpty: { ...typeScale.label, fontSize: 17, lineHeight: 34, color: c.muted },
+    displayEmpty: { ...typeScale.keyHint, color: c.muted },
     displayFresh: { color: c.muted2 },
-    input: { ...typeScale.locator, fontSize: 18, lineHeight: 24 },
+    input: { ...typeScale.locatorInput },
     pad: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     key: {
       // Three to a row: a third of the width less the two gaps.
@@ -152,7 +150,7 @@ const makeStyles = (c: Colors) =>
       backgroundColor: c.surface,
     },
     keyPressed: { backgroundColor: c.lineSoft },
-    keyLabel: { ...typeScale.locator, fontSize: 21, lineHeight: 26, color: c.fg },
+    keyLabel: { ...typeScale.key, color: c.fg },
     keyboard: { alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 8 },
     keyboardLabel: { ...typeScale.link, color: c.accent },
   });

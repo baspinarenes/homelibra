@@ -50,6 +50,6 @@ const makeStyles = (c: Colors) =>
     plain: { paddingRight: 16 },
     message: { ...typeScale.label, flex: 1, color: c.page },
     action: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 8 },
-    actionLabel: { fontFamily: typeScale.action.fontFamily, fontSize: 14, lineHeight: 18, color: c.accentSoft },
+    actionLabel: { ...typeScale.button, color: c.accentSoft },
     pressed: { opacity: 0.7 },
   });

@@ -397,6 +397,6 @@ const makeStyles = (c: Colors) =>
       borderLeftColor: c.quoteBar,
       paddingLeft: 11,
     },
-    comment: { ...typeScale.body, fontSize: 14.5, color: c.ink3 },
+    comment: { ...typeScale.comment, color: c.ink3 },
     status: { ...typeScale.caption, color: c.warn },
   });

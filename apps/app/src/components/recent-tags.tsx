@@ -68,5 +68,5 @@ const makeStyles = (c: Colors) =>
     },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     name: { ...typeScale.body, flexShrink: 1, color: c.fg },
-    counts: { ...typeScale.locator, fontSize: 11.5, color: c.muted },
+    counts: { ...typeScale.count, color: c.muted },
   });

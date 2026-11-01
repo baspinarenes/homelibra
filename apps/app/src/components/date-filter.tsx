@@ -113,7 +113,7 @@ const makeStyles = (c: Colors) =>
     fields: { gap: 6 },
     years: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
     year: { flex: 1, gap: 6 },
-    yearLabel: { ...typeScale.label, fontSize: 13, lineHeight: 16, color: c.ink2 },
+    yearLabel: { ...typeScale.labelSm, color: c.ink2 },
     // Level with the inputs' text, whatever the label above them.
     dash: { ...typeScale.body, width: 14, paddingBottom: 12, textAlign: 'center', color: c.muted },
     hint: { ...typeScale.caption, color: c.muted },

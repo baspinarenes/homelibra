@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { type Colors, fonts } from './tokens';
+import { type Colors, type as typeScale } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 /**
@@ -73,8 +73,8 @@ const makeStyles = (c: Colors) =>
       borderBottomColor: 'transparent',
     },
     selected: { borderBottomColor: c.accent },
-    text: { fontFamily: fonts.sansSemiBold, fontSize: 16, lineHeight: 20, color: c.muted },
+    text: { ...typeScale.textTab, color: c.muted },
     selectedText: { color: c.fg },
-    count: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: 16, color: c.muted },
+    count: { ...typeScale.locator, color: c.muted },
     selectedCount: { color: c.ink2 },
   });
