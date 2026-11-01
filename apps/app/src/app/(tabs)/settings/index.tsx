@@ -64,9 +64,8 @@ export default function SettingsScreen() {
               onPress={() => router.push('/settings/delete')}
             />
           </SettingsRows>
-          {/* The text button's word sits 4 in; pull it back to the gutter. */}
           <View style={styles.signOut}>
-            <SignOutButton />
+            <SignOutButton block />
           </View>
         </Section>
         <PrivacyDocumentsSection />
@@ -83,6 +82,6 @@ const makeStyles = (c: Colors) =>
     content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
     theme: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
     themeLabel: { ...typeScale.body, color: c.fg },
-    signOut: { alignSelf: 'flex-start', marginLeft: -space.xs },
+    signOut: { marginTop: space.lg },
     version: { ...typeScale.caption, color: c.muted, paddingBottom: 18 },
   });

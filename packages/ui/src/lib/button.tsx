@@ -9,7 +9,7 @@ export type ButtonVariant = 'primary' | 'danger' | 'secondary' | 'small' | 'text
 /**
  * The app's one button.
  * - `primary`: accent ground. `danger`: for the step that cannot be taken back.
- * - `secondary`: a frame, beside a primary one.
+ * - `secondary`: a frame, beside a primary one; with a `tone`, frame and word take that colour.
  * - `small`: a framed accent word in a row (Düzenle · 4 etiketsiz).
  * - `text`: a word alone (Kapat, Çıkış yap), in `accent` or `danger`.
  */
@@ -17,7 +17,7 @@ export function Button({
   label,
   onPress,
   variant = 'primary',
-  tone = 'accent',
+  tone,
   icon: Icon,
   block = false,
   onAccent = false,
@@ -27,7 +27,7 @@ export function Button({
   label: string;
   onPress: () => void;
   variant?: ButtonVariant;
-  /** The colour of a `text` button. */
+  /** The colour of a `text` button (accent if unset), or of a `secondary` button's frame and word. */
   tone?: 'accent' | 'danger';
   /** A lucide icon before the label. */
   icon?: IconComponent;
@@ -45,9 +45,9 @@ export function Button({
   const ink = {
     primary: colors.accentFg,
     danger: colors.accentFg,
-    secondary: colors.fg,
+    secondary: tone ? colors[tone] : colors.fg,
     small: colors.accent,
-    text: colors[tone],
+    text: colors[tone ?? 'accent'],
   }[variant];
   return (
     <Pressable
@@ -60,6 +60,7 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         styles[variant],
+        variant === 'secondary' && tone && { borderColor: colors[tone] },
         block && styles.block,
         onAccent && styles.onAccent,
         disabled && styles.off,
