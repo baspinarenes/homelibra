@@ -46,8 +46,8 @@ const unfiltered = (choices: Choices): Choices => ({
   dates: { ...emptyYearRange, calendar: choices.dates.calendar },
 });
 
-/** Whether the filters keep a Source, by the rule `sources.list` follows: for the sheet's live count. */
-function keeps({ types, dates }: Choices) {
+/** The test the filters put a Source to, by the rule `sources.list` follows: for the sheet's live count. */
+function sourceFilter({ types, dates }: Choices) {
   const range = yearRangeOf(dates);
   return (source: { type: SourceType; date: CalendarDate | null }) =>
     (types.length === 0 || types.includes(source.type)) && (!range || inYearRange(source.date, range));
@@ -107,7 +107,7 @@ export default function SourcesScreen() {
 
   const rows = sources.data ?? [];
   // The Sources of the chosen types that the Tarih filter hides for having no Date.
-  const ofTypes = keeps({ ...choices, dates: emptyYearRange });
+  const ofTypes = sourceFilter({ ...choices, dates: emptyYearRange });
   const undated = dates ? all.data.filter((source) => !source.date && ofTypes(source)).length : 0;
   const reading = rows.filter((source) => source.readingStatus === 'reading');
   const finished = rows.filter((source) => source.readingStatus === 'finished');
@@ -192,7 +192,7 @@ export default function SourcesScreen() {
       <FilterSheet
         draft={draft}
         onChange={setDraft}
-        count={draft ? all.data.filter(keeps(draft)).length : 0}
+        count={draft ? all.data.filter(sourceFilter(draft)).length : 0}
         onApply={() => {
           if (draft) setChoices(draft);
           setDraft(null);
@@ -225,15 +225,17 @@ function FilterSheet({
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   // The last choices stay on screen while the sheet slides away.
-  const [shown, setShown] = useState(draft ?? initial);
-  if (draft && draft !== shown) setShown(draft);
+  const [lastDraft, setLastDraft] = useState(draft ?? initial);
+  if (draft && draft !== lastDraft) setLastDraft(draft);
   const toggle = (type: SourceType) =>
     onChange({
-      ...shown,
-      types: shown.types.includes(type) ? shown.types.filter((other) => other !== type) : [...shown.types, type],
+      ...lastDraft,
+      types: lastDraft.types.includes(type)
+        ? lastDraft.types.filter((other) => other !== type)
+        : [...lastDraft.types, type],
     });
   // A year its calendar does not have (1400 r.) cannot be applied.
-  const yearMissing = hasYear(shown.dates) && yearRangeOf(shown.dates) === null;
+  const yearMissing = hasYear(lastDraft.dates) && yearRangeOf(lastDraft.dates) === null;
 
   return (
     <Sheet
@@ -243,8 +245,8 @@ function FilterSheet({
       onClose={onClose}
       secondary={{
         label: t('sources.clear'),
-        onPress: () => onChange(unfiltered(shown)),
-        disabled: shown.types.length === 0 && !hasYear(shown.dates),
+        onPress: () => onChange(unfiltered(lastDraft)),
+        disabled: lastDraft.types.length === 0 && !hasYear(lastDraft.dates),
       }}
       primary={{ label: t('sources.show', { count }), onPress: onApply, disabled: yearMissing }}
     >
@@ -258,8 +260,8 @@ function FilterSheet({
               { value: 'author', label: t('sources.byAuthor') },
               { value: 'date', label: t('sources.byDate') },
             ]}
-            value={shown.sort}
-            onChange={(sort) => onChange({ ...shown, sort })}
+            value={lastDraft.sort}
+            onChange={(sort) => onChange({ ...lastDraft, sort })}
             block
           />
         </SheetField>
@@ -270,14 +272,14 @@ function FilterSheet({
                 key={type}
                 label={t(`sourceTypes.${type}.label`)}
                 tone="outline"
-                selected={shown.types.includes(type)}
+                selected={lastDraft.types.includes(type)}
                 onPress={() => toggle(type)}
               />
             ))}
           </ChipRow>
         </SheetField>
         <SheetField label={t('sources.dates')}>
-          <YearRangeFields value={shown.dates} onChange={(dates) => onChange({ ...shown, dates })} />
+          <YearRangeFields value={lastDraft.dates} onChange={(dates) => onChange({ ...lastDraft, dates })} />
         </SheetField>
       </View>
     </Sheet>

@@ -267,11 +267,11 @@ function FilterSheet({
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   // The last choices stay on screen while the sheet slides away.
-  const [shown, setShown] = useState(draft ?? initial);
-  if (draft && draft !== shown) setShown(draft);
+  const [lastDraft, setLastDraft] = useState(draft ?? initial);
+  if (draft && draft !== lastDraft) setLastDraft(draft);
   // A year its calendar does not have (1400 r.) cannot be applied.
-  const yearMissing = hasYear(shown.dates) && yearRangeOf(shown.dates) === null;
-  const [counted, uncounted] = showLabels[shown.kind];
+  const yearMissing = hasYear(lastDraft.dates) && yearRangeOf(lastDraft.dates) === null;
+  const [counted, uncounted] = showLabels[lastDraft.kind];
 
   return (
     <Sheet
@@ -281,8 +281,8 @@ function FilterSheet({
       onClose={onClose}
       secondary={{
         label: t('search.clearFilters'),
-        onPress: () => onChange(unfiltered(shown)),
-        disabled: shown.kind === 'all' && !hasYear(shown.dates),
+        onPress: () => onChange(unfiltered(lastDraft)),
+        disabled: lastDraft.kind === 'all' && !hasYear(lastDraft.dates),
       }}
       primary={{
         label: count === null ? t(uncounted) : t(counted, { count }),
@@ -299,13 +299,13 @@ function FilterSheet({
               { value: 'notes', label: t('noteSearch.notes') },
               { value: 'sources', label: t('noteSearch.sources') },
             ]}
-            value={shown.kind}
-            onChange={(kind) => onChange({ ...shown, kind })}
+            value={lastDraft.kind}
+            onChange={(kind) => onChange({ ...lastDraft, kind })}
             block
           />
         </SheetField>
         <SheetField label={t('search.dates')}>
-          <YearRangeFields value={shown.dates} onChange={(dates) => onChange({ ...shown, dates })} />
+          <YearRangeFields value={lastDraft.dates} onChange={(dates) => onChange({ ...lastDraft, dates })} />
         </SheetField>
       </View>
     </Sheet>
