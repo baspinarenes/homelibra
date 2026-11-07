@@ -111,8 +111,8 @@ export default function HomeScreen() {
  * layout Ayarlar picks: the Note on top with the Source under it (Not önde),
  * or the Source on top with the Note under it (Kaynak önde). Either way it
  * ends in "Yazmaya devam et ›" and the Locator, and all of it is one press
- * that opens the Source ready to write, the box open with the last Locator
- * carried over (#87).
+ * that opens the Source ready to write, the writing sheet up with the last
+ * Locator carried over (#87, #157).
  */
 function LastNotedSection({
   lastNoted: { source, note },

@@ -2,12 +2,12 @@ import { byCapture, capturedAt } from './captured-at';
 
 export type LastCaptured<N> = {
   note: N;
-  /** When the scholar started noting at its Locator without a break, so the box can ask "hâlâ burada mı?". */
+  /** When the scholar started noting at its Locator without a break, so the writing sheet can ask "hâlâ burada mı?". */
   locatorSince: Date;
 };
 
 /**
- * The Note captured last in a Source, whose Locator the writing box carries
+ * The Note captured last in a Source, whose Locator the writing sheet carries
  * over, and since when that Locator has been in use. Notes come in any order
  * (the Source page lists them in Locator order); their UUIDv7 ids are
  * capture order (ADR-0008).
