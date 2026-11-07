@@ -63,7 +63,7 @@ export function ScreenHeader({
   );
 }
 
-/** A word in the header (Kaydet, Düzenle), in `accent`; faded while disabled. */
+/** A word in the header (Kaydet), in `accent`; faded while disabled. */
 export function HeaderTextAction({
   label,
   accessibilityLabel,
