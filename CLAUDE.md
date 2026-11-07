@@ -4,6 +4,10 @@ Packages are deep modules: see [packages/README.md](./packages/README.md) before
 
 Dependencies are hoisted: a library's source is in the root `node_modules/<name>`, with no `.pnpm` store and no per-app `node_modules` (`nodeLinker` in `pnpm-workspace.yaml`).
 
+## Version
+
+A PR that changes what ships in the app (`apps/app`, or `packages/*` outside tests and docs) raises `expo.version` in `apps/app/app.json`: run `pnpm version:bump patch` (or `minor`, `major`) and commit it. CI's `version` check fails the PR otherwise; see `scripts/version-bump.mjs`.
+
 ## Agent skills
 
 ### Issue tracker
