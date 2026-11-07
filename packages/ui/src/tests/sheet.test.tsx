@@ -2,6 +2,7 @@ import Trash from 'lucide-react-native/icons/trash';
 import { Text } from 'react-native';
 import { describe, expect, it } from 'vitest';
 
+import { Button } from '../button';
 import { Sheet, SheetAction, SheetField } from '../sheet';
 import { byRole, nameOf, render, text } from './render';
 
@@ -72,6 +73,24 @@ describe('Sheet', () => {
     );
     // The render helper's phone has a 20px gesture bar.
     expect(byRole(page, 'dialog')[0]!.attrs.style).toMatch(/padding-bottom:34px/);
+  });
+
+  it('puts a header of its own in place of the title and the X, still named by the title', () => {
+    const page = render(
+      <Sheet visible fill title="Yeni Not" header={<Button label="Kaydet" onPress={noop} />} onClose={noop}>
+        <Text>Alıntı</Text>
+      </Sheet>,
+    );
+    const [sheet] = byRole(page, 'dialog');
+    expect(nameOf(sheet!)).toBe('Yeni Not');
+    // The same sheet with a title has its X; with a header, the header's buttons are all it has.
+    const titled = render(
+      <Sheet visible fill title="Yeni Not" closeLabel="Kapat" onClose={noop}>
+        <Text>Alıntı</Text>
+      </Sheet>,
+    );
+    expect(byRole(titled, 'button').map(nameOf)).toEqual(['Kapat']);
+    expect(byRole(page, 'button').map(nameOf)).toEqual(['Kaydet']);
   });
 
   it('is not there until opened', () => {

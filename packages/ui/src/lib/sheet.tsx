@@ -22,6 +22,12 @@ import { useTheme, useThemedStyles } from './use-theme';
 
 type Action = { label: string; onPress: () => void; disabled?: boolean };
 
+/**
+ * How long after Android shows the sheet its window takes the keyboard, in
+ * ms: a field focused sooner gets a caret but no keyboard.
+ */
+const keyboardReadyAfter = 100;
+
 /** How far a drag on the handle or the title must go down before the sheet closes. */
 const dismissDistance = 80;
 
@@ -33,26 +39,47 @@ const dismissDistance = 80;
  * fit scrolls inside it. Its foot keeps 14 clear of the phone's navigation
  * bar. With the keyboard up it stands on the keyboard, its field and the
  * action in sight.
- * A sheet that `fill`s is a list to choose from under a field: it stands at
- * its full height while the list narrows, and the list scrolls itself.
+ * A sheet that `fill`s is a list to choose from under a field, or a page to
+ * write on: it stands at its full height while what it holds narrows, and
+ * that scrolls itself.
+ * A sheet with a `header` of its own (Vazgeç · Yeni Not · Kaydet) has it in
+ * place of the title and the X, under the handle; a drag down on it closes
+ * the sheet as on the title.
  */
 export function Sheet({
   visible,
   title,
   closeLabel,
+  header,
   onClose,
+  onShown,
   onHidden,
   primary,
   secondary,
   fill = false,
   children,
-}: {
+}: (
+  | {
+      /** What screen readers call the X: "Kapat", from the app's copy. */
+      closeLabel: string;
+      header?: never;
+    }
+  | {
+      closeLabel?: never;
+      /** The sheet's own top line, its way out among its buttons. */
+      header: ReactNode;
+    }
+) & {
   visible: boolean;
-  /** Wraps onto a second line when long. */
+  /** Wraps onto a second line when long; with a `header`, only what screen readers call the sheet. */
   title: string;
-  /** What screen readers call the X: "Kapat", from the app's copy. */
-  closeLabel: string;
+  /** The X, a drag down, the dimmed screen and Android's back all come here: a question may stand between. */
   onClose: () => void;
+  /**
+   * Once the sheet is up and takes the keyboard: the place to focus a field
+   * (autoFocus brings no keyboard on Android).
+   */
+  onShown?: () => void;
   /** Once the sheet has gone (web and iOS): the place to give focus back. */
   onHidden?: () => void;
   /** The main action, full width at the foot. */
@@ -117,6 +144,12 @@ export function Sheet({
       statusBarTranslucent
       navigationBarTranslucent
       onRequestClose={onClose}
+      onShow={
+        onShown &&
+        (() => {
+          setTimeout(onShown, keyboardReadyAfter);
+        })
+      }
       onDismiss={onHidden}
     >
       <View style={styles.frame}>
@@ -136,19 +169,21 @@ export function Sheet({
         >
           <View {...pan.panHandlers} style={styles.top}>
             <View style={styles.handle} />
-            <View style={styles.head}>
-              <Text variant="sourceTitle" style={styles.title} numberOfLines={2}>
-                {title}
-              </Text>
-              <Pressable
-                role="button"
-                aria-label={closeLabel}
-                onPress={onClose}
-                style={({ pressed }) => [styles.close, pressed && styles.pressed]}
-              >
-                <X color={colors.fg} size={24} strokeWidth={1.6} />
-              </Pressable>
-            </View>
+            {header ?? (
+              <View style={styles.head}>
+                <Text variant="sourceTitle" style={styles.title} numberOfLines={2}>
+                  {title}
+                </Text>
+                <Pressable
+                  role="button"
+                  aria-label={closeLabel}
+                  onPress={onClose}
+                  style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+                >
+                  <X color={colors.fg} size={24} strokeWidth={1.6} />
+                </Pressable>
+              </View>
+            )}
           </View>
           {fill ? (
             <View style={[styles.body, styles.filled]}>{children}</View>

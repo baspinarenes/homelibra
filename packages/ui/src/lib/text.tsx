@@ -49,7 +49,6 @@ const defaultColor: { [V in Variant]: keyof Colors | undefined } = {
   fieldLabel: 'muted',
   micro: 'muted',
   locator: 'muted',
-  locatorSm: 'accent',
   locatorKey: 'fg',
   locatorInput: 'fg',
   key: 'fg',

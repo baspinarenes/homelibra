@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Chip } from '../chip';
 import { Segment } from '../segment';
 import { Switch } from '../switch';
-import { all, byRole, css, nameOf, render, text } from './render';
+import { byRole, nameOf, render, text } from './render';
 
 const noop = () => {};
 
@@ -59,23 +59,6 @@ describe('Segment', () => {
     const options = byRole(page, 'radio');
     expect(options.map(text)).toEqual(['Tümü', 'Notlar', 'Kaynaklar']);
     expect(options.map((option) => option.attrs['aria-checked'])).toEqual(['false', 'true', 'false']);
-  });
-
-  it('sits in a toolbar row when compact: tighter options, smaller words', () => {
-    const options = [
-      { value: 'excerpt', label: 'Alıntı' },
-      { value: 'comment', label: 'Yorum' },
-    ] as const;
-    const draw = (compact: boolean) =>
-      render(<Segment compact={compact} label="Not" options={options} value="excerpt" onChange={noop} />);
-    const [option] = byRole(draw(true), 'radio');
-    const [word] = all(option!);
-    // The toolbar row of Not yazma alanı: 4/11 inside each option, 13px words.
-    expect(css(option!, 'paddingBlock')).toBe('4px');
-    expect(css(option!, 'paddingInline')).toBe('11px');
-    expect(css(word!, 'fontSize')).toBe('13px');
-    const [regular] = byRole(draw(false), 'radio');
-    expect(css(regular!, 'paddingBlock')).toBe('6px');
   });
 });
 

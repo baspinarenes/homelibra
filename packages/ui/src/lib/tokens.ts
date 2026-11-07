@@ -137,7 +137,7 @@ export const type = {
   textTab: { fontFamily: fonts.sansSemiBold, fontSize: 16, lineHeight: 21 }, // TextTabs
   more: { fontFamily: fonts.sansSemiBold, fontSize: 18, lineHeight: 24 }, // a row's ⋯
   label: { fontFamily: fonts.sansMedium, fontSize: 13.5, lineHeight: 18 },
-  labelSm: { fontFamily: fonts.sansMedium, fontSize: 13, lineHeight: 18 }, // a Chip, a compact Segment
+  labelSm: { fontFamily: fonts.sansMedium, fontSize: 13, lineHeight: 18 }, // a Chip
   wheel: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 20 }, // Wheels' rows around the centre
   wheelCentre: { fontFamily: fonts.sansMedium, fontSize: 18, lineHeight: 24 },
   keyHint: { fontFamily: fonts.sansMedium, fontSize: 17, lineHeight: 34 }, // an empty locatorKey, as tall as it
@@ -149,7 +149,6 @@ export const type = {
   fieldLabel: { fontFamily: fonts.mono, fontSize: 11, lineHeight: 15, letterSpacing: 1.1 }, // TextField's label, upper case
   micro: { fontFamily: fonts.mono, fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }, // a Source's type, upper case
   locator: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: 17 }, // also TextTabs' count
-  locatorSm: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 18 }, // the composer's Locator
   locatorKey: { fontFamily: fonts.mono, fontSize: 26, lineHeight: 34 }, // the Locator being keyed in
   locatorInput: { fontFamily: fonts.mono, fontSize: 18, lineHeight: 24 }, // the same typed freely
   key: { fontFamily: fonts.mono, fontSize: 21, lineHeight: 28 }, // a key of the Locator pad
