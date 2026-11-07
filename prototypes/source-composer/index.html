@@ -1,0 +1,365 @@
+<!doctype html>
+<!--
+  PROTOTYPE, throwaway. Never merged.
+  Question: Kaynak sayfasının altındaki yazma kutusu sohbet kutusu gibi duruyor ve uzun bir
+  Alıntı'ya dar geliyor. Yerine ne koyalım?
+  Four variants side by side (?variant=all) or one at a time (?variant=now|A|B|C):
+  Mevcut (bugünkü kutu), A "Not al" çubuğu + tam boy yazma sayfası, B ince kutu,
+  C Konum çubuğu + yarım panel. Each shows the page while reading and while writing.
+  Open in a browser; no build step. Static: nothing is saved.
+  Karar (Enes): A, ama yazma sayfasında son not gösterilmez.
+-->
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yazma kutusu varyantları</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Charis+SIL&family=EB+Garamond:wght@400;500&family=Reddit+Mono:wght@500&family=Reddit+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --page: #f6f2ea;
+        --surface: #fffefb;
+        --line: #eae3d5;
+        --lineSoft: #f0e9dc;
+        --lineStrong: #8f8572;
+        --fg: #2a2520;
+        --ink3: #3f3a33;
+        --ink2: #6a6358;
+        --muted: #756c60;
+        --muted2: #a99f8e;
+        --faint: #c2baaa;
+        --accent: #a65a40;
+        --accentFg: #fff6ee;
+        --accentSoft: #f4e4da;
+        --chipBg: #efe7d7;
+        --chipInk: #6c5e3f;
+        --quoteBar: #dcc9b0;
+        --quoteInk: #4a443b;
+        --serif: 'EB Garamond', Georgia, serif;
+        --quote: 'Charis SIL', Georgia, serif;
+        --sans: 'Reddit Sans', system-ui, sans-serif;
+        --mono: 'Reddit Mono', ui-monospace, monospace;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #e4ddd0; color: var(--fg); font-family: var(--sans); }
+      .top { padding: 18px 24px 4px; max-width: 1100px; }
+      .top h1 { font: 500 24px/1.2 var(--serif); margin: 0 0 6px; }
+      .top p { margin: 0 0 8px; font-size: 14px; color: var(--ink2); line-height: 1.45; }
+      .grid { display: flex; gap: 32px; padding: 14px 24px 100px; overflow-x: auto; align-items: flex-start; }
+      .col { flex: 0 0 auto; width: 330px; }
+      .single .col { width: auto; }
+      .single .phones { flex-direction: row; }
+      .col h2 { font: 600 15px/1.3 var(--sans); margin: 0 0 4px; }
+      .col .why { font-size: 12.5px; line-height: 1.45; color: var(--ink2); margin: 0 0 6px; min-height: 72px; max-width: 330px; }
+      .col .pm { font-size: 12px; line-height: 1.45; color: var(--ink3); margin: 0 0 12px; padding-left: 0; list-style: none; max-width: 330px; min-height: 70px; }
+      .col .pm li::before { content: attr(data-s) ' '; font-weight: 600; color: var(--muted); }
+      .phones { display: flex; flex-direction: column; gap: 22px; }
+      .cap { font: 500 10.5px/1 var(--mono); letter-spacing: 1.4px; color: var(--muted); margin: 0 0 7px; text-transform: uppercase; }
+
+      /* Phone */
+      .phone {
+        width: 330px; height: 690px; border-radius: 26px; border: 7px solid #2a2520;
+        background: var(--page); overflow: hidden; display: flex; flex-direction: column;
+        position: relative; box-shadow: 0 8px 22px rgba(42, 37, 32, 0.18);
+      }
+      .status { height: 24px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; font: 600 11px/1 var(--sans); color: var(--ink3); }
+      .hdr { height: 46px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; border-bottom: 1px solid var(--line); }
+      .hdr .ic { width: 36px; height: 36px; display: grid; place-items: center; }
+      .body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+      .body.end { justify-content: flex-end; }
+      .navbar { height: 18px; flex: none; display: grid; place-items: center; }
+      .navbar::after, .kb .handle::after { content: ''; width: 108px; height: 4px; border-radius: 2px; background: var(--ink2); opacity: 0.7; }
+
+      /* Source header */
+      .src { padding: 14px 18px 0; }
+      .src .row1 { display: flex; gap: 14px; }
+      .cover { width: 50px; height: 72px; flex: none; border-radius: 3px; background: repeating-linear-gradient(135deg, #b9826b 0 6px, #a65a40 6px 12px); }
+      .kind { display: flex; gap: 8px; align-items: center; }
+      .kind b { font: 500 10.5px/1 var(--mono); letter-spacing: 1.6px; color: var(--accent); }
+      .status-chip { font-size: 12px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink2); }
+      .title { font: 500 21px/28px var(--serif); margin: 5px 0 1px; }
+      .meta { font-size: 13px; color: var(--ink2); }
+      .tags { display: flex; gap: 8px; margin: 12px 0 10px; }
+      .chip { font-size: 13px; padding: 4px 10px; border-radius: 6px; background: var(--chipBg); color: var(--chipInk); }
+      .chip.dash { background: none; border: 1px dashed var(--line); color: var(--accent); padding: 3px 9px; }
+      .btn-o { display: inline-block; font: 600 13.5px/1 var(--sans); color: var(--accent); padding: 10px 13px; border: 1px solid var(--line); border-radius: 8px; }
+      .rule { height: 1px; background: var(--line); margin: 14px 0 0; }
+      .sec { font: 500 11px/1 var(--mono); letter-spacing: 1.8px; color: var(--muted); padding: 16px 18px 6px; }
+
+      /* Notes */
+      .note { display: flex; gap: 10px; padding: 12px 18px 12px 0; border-bottom: 1px solid var(--line); margin-left: 18px; }
+      .note:last-child { border-bottom: 0; }
+      .note .loc { width: 44px; flex: none; font: 500 12px/27px var(--mono); color: var(--muted); }
+      .note .c { flex: 1; min-width: 0; }
+      .note.last { margin-left: 0; padding-left: 16px; border-left: 2px solid var(--accent); background: linear-gradient(90deg, var(--accentSoft), transparent 70%); }
+      .ex { font: 15px/25px var(--quote); color: var(--quoteInk); border-left: 2px solid var(--quoteBar); padding-left: 11px; }
+      .cm { font: 14px/22px var(--sans); color: var(--ink3); margin-top: 6px; }
+      .cm::before { content: '↳ '; color: var(--muted2); }
+      .nt { font-size: 12.5px; color: var(--muted2); margin-top: 4px; }
+      .nt.has { color: var(--chipInk); }
+
+      /* Keyboard */
+      .kb { flex: none; background: #dcd6cc; padding: 7px 3px 0; }
+      .kb .r { display: flex; gap: 4px; margin-bottom: 7px; padding: 0 2px; }
+      .kb .r.s { padding: 0 14px; }
+      .kb .k { flex: 1; height: 38px; border-radius: 5px; background: #fbf9f5; display: grid; place-items: center; font: 15px/1 var(--sans); color: var(--fg); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+      .kb .k.f { background: #c9c2b6; font-size: 12px; }
+      .kb .k.w { flex: 4.5; font-size: 12px; color: var(--ink2); }
+      .kb .handle { height: 18px; display: grid; place-items: center; }
+
+      /* Shared bits */
+      .caret { display: inline-block; width: 1.5px; height: 19px; background: var(--accent); vertical-align: -4px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+      .ph { color: var(--muted2); }
+      .iconbtn { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; flex: none; }
+      .send { width: 44px; height: 44px; flex: none; border-radius: 8px; background: var(--accent); display: grid; place-items: center; }
+      .send.off { opacity: 0.35; }
+      .seg { display: inline-flex; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--page); }
+      .seg span { font: 500 13px/1 var(--sans); padding: 6px 10px; border-radius: 6px; color: var(--ink3); }
+      .seg span.on { background: var(--accent); color: var(--accentFg); }
+      .tabs { display: flex; gap: 16px; }
+      .tabs span { font: 600 13.5px/1 var(--sans); color: var(--muted); padding: 6px 0 7px; border-bottom: 2px solid transparent; }
+      .tabs span.on { color: var(--accent); border-bottom-color: var(--accent); }
+      .btn { font: 600 14px/1 var(--sans); padding: 10px 14px; border-radius: 8px; background: var(--accent); color: var(--accentFg); }
+      .btn.o { background: none; color: var(--accent); border: 1px solid var(--accent); }
+      .lbl { font: 500 10px/1 var(--mono); letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+
+      /* Now: the box today */
+      .now { background: var(--surface); border-top: 1px solid var(--line); padding: 10px 12px 10px; display: flex; flex-direction: column; gap: 9px; flex: none; }
+      .now .ctl { display: flex; gap: 7px; align-items: center; }
+      .now .locchip { font: 500 12px/1 var(--mono); padding: 6px 9px; border-radius: 6px; background: var(--accentSoft); color: var(--accent); }
+      .now .chip.dash { font-size: 12.5px; }
+      .now .ctl .seg { margin-left: auto; }
+      .now .in { display: flex; gap: 8px; align-items: flex-end; }
+      .now .field { flex: 1; min-height: 46px; border: 1px solid var(--line); border-left: 2px solid var(--quoteBar); border-radius: 8px; background: var(--lineSoft); padding: 9px 12px; font: 15px/25px var(--quote); color: var(--quoteInk); }
+      .now .field.focus { border-color: var(--accent); border-left-color: var(--quoteBar); }
+
+      /* A: the bar and the writing sheet */
+      .a-bar { flex: none; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 18px; height: 54px; }
+      .a-bar .go { display: flex; gap: 9px; align-items: center; font: 600 15.5px/1 var(--sans); color: var(--accent); }
+      .a-bar .at { font: 500 12px/1 var(--mono); color: var(--ink2); }
+      .scrim { position: absolute; inset: 0; background: rgba(42, 37, 32, 0.38); }
+      .sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 40px; background: var(--surface); border-radius: 12px 12px 0 0; display: flex; flex-direction: column; }
+      .sheet .grab { height: 14px; display: grid; place-items: center; flex: none; }
+      .sheet .grab::after { content: ''; width: 36px; height: 4px; border-radius: 2px; background: var(--faint); }
+      .sheet .sh { display: flex; align-items: center; justify-content: space-between; padding: 2px 14px 10px; flex: none; }
+      .sheet .sh .x { font: 500 14px/1 var(--sans); color: var(--ink2); }
+      .sheet .sh .t { font: 500 17px/1 var(--serif); }
+      .sheet .ctx { margin: 0 18px; padding: 8px 0 10px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); flex: none; }
+      .sheet .ctx .q { font: 13.5px/20px var(--quote); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 5px; }
+      .sheet .locrow { display: flex; align-items: baseline; gap: 10px; padding: 12px 18px 4px; flex: none; }
+      .sheet .locrow .v { font: 500 22px/1 var(--serif); }
+      .sheet .locrow .ch { font: 600 13px/1 var(--sans); color: var(--accent); margin-left: auto; }
+      .sheet .write { flex: 1; min-height: 0; padding: 10px 18px 0; display: flex; flex-direction: column; gap: 12px; }
+      .sheet .wx { font: 16px/27px var(--quote); color: var(--quoteInk); border-left: 2px solid var(--quoteBar); padding-left: 12px; }
+      .sheet .wc { font: 14.5px/22px var(--sans); color: var(--muted2); display: flex; gap: 6px; align-items: center; }
+      .sheet .tb { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-top: 1px solid var(--line); }
+
+      /* B: the slim box */
+      .b-box { flex: none; border-top: 1px solid var(--line); padding: 9px 12px 9px; display: flex; flex-direction: column; gap: 8px; }
+      .b-box .ctl { display: flex; align-items: center; gap: 10px; }
+      .b-box .ctl .sp { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+      .b-box .in { display: flex; gap: 8px; align-items: flex-end; }
+      .b-box .field { flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; display: flex; gap: 10px; align-items: flex-start; }
+      .b-box .field.focus { border-color: var(--accent); }
+      .b-box .pre { font: 500 12px/25px var(--mono); color: var(--accent); flex: none; padding-right: 10px; border-right: 1px solid var(--line); }
+      .b-box .txt { font: 15px/25px var(--quote); color: var(--quoteInk); min-width: 0; }
+      .b-box .field.stack { flex-direction: column; gap: 2px; }
+      .b-box .field.stack .pre { line-height: 18px; border-right: 0; padding-right: 0; }
+
+      /* C: the Locator bar and its panel */
+      .c-bar { flex: none; border-top: 1px solid var(--line); padding: 10px 14px 10px 18px; display: flex; align-items: center; gap: 10px; }
+      .c-bar .where { display: flex; flex-direction: column; gap: 6px; }
+      .c-bar .step { display: flex; align-items: center; gap: 2px; }
+      .c-bar .step .v { font: 500 21px/1 var(--serif); padding: 0 6px; min-width: 52px; text-align: center; }
+      .c-bar .step .b { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 8px; display: grid; place-items: center; }
+      .c-bar .acts { margin-left: auto; display: flex; gap: 8px; }
+      .c-panel { flex: none; border-top: 1px solid var(--accent); background: var(--surface); display: flex; flex-direction: column; }
+      .c-panel .ph1 { display: flex; align-items: center; gap: 8px; padding: 8px 10px 4px 18px; }
+      .c-panel .ph1 .k { font: 600 13.5px/1 var(--sans); color: var(--accent); }
+      .c-panel .ph1 .l { font: 500 12px/1 var(--mono); color: var(--ink2); }
+      .c-panel .w { padding: 6px 18px 10px; font: 16px/27px var(--quote); color: var(--quoteInk); }
+      .c-panel .w > div { border-left: 2px solid var(--quoteBar); padding-left: 12px; }
+      .c-panel .pf { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px 8px 18px; border-top: 1px solid var(--line); }
+
+      /* Switcher: not part of the design */
+      .switch { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; background: #111; color: #fff; border-radius: 999px; padding: 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); font: 600 13px/1 system-ui, sans-serif; z-index: 10; }
+      .switch button { all: unset; cursor: pointer; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 999px; font-size: 16px; }
+      .switch button:hover { background: #333; }
+      .switch .name { padding: 0 12px; min-width: 210px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <h1>Kaynak sayfası: yazma kutusu yerine ne?</h1>
+      <p>
+        Kutu sohbet kutusu gibi duruyor ve uzun bir Alıntı'ya dar geliyor. Dört varyant var, her biri okurken ve yazarken hâliyle.
+        Liste ve kaynak bilgileri hepsinde aynı, yalnızca kutu değişiyor. Notlardaki sözler örnek olarak uyduruldu.
+        <b>←</b> / <b>→</b> ya da alttaki çubukla tek tek bakabilirsin.
+      </p>
+    </div>
+    <div id="root"></div>
+    <div class="switch">
+      <button id="prev" aria-label="Önceki">‹</button>
+      <span class="name" id="name"></span>
+      <button id="next" aria-label="Sonraki">›</button>
+    </div>
+
+    <script>
+      const I = {
+        back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2a2520" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+        pencil: (c = '#a65a40', s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+        max: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6a6358" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>',
+        up: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff6ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+        x: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6a6358" stroke-width="1.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+        chevL: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6a6358" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+        chevR: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6a6358" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+        plus: (c = '#a65a40') => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
+      };
+
+      const typed = 'Rüyadaki kadın figürü, kişinin henüz tanımadığı yanını taşır; onunla konuşmak, kendiyle konuşmaktır.';
+      const lastLine = 'Anima, ruhun kendine dönük yüzüdür; dışarıda aranırsa yitirilir.';
+
+      const status = '<div class="status"><span>14:32</span><span>▾ ▴ ▮</span></div>';
+      const header = `<div class="hdr"><span class="ic">${I.back}</span><span class="ic">${I.pencil()}</span></div>`;
+      const source = `
+        <div class="src">
+          <div class="row1">
+            <div class="cover"></div>
+            <div>
+              <div class="kind"><b>KİTAP</b><span class="status-chip">okunuyor</span></div>
+              <div class="title">Feminen</div>
+              <div class="meta">Carl Gustav Jung · 2015 · 3 not</div>
+            </div>
+          </div>
+          <div class="tags"><span class="chip">bvv</span><span class="chip dash">+ etiket</span></div>
+          <span class="btn-o">Bu kaynakta ara</span>
+          <div class="rule"></div>
+        </div>
+        <div class="sec">NOTLAR</div>`;
+      const notes = `
+        <div class="note"><div class="loc">s. 12</div><div class="c">
+          <div class="ex">Bilinçdışı, bilincin bıraktığı boşluğu kendi imgeleriyle doldurur.</div>
+          <div class="cm">Girişteki tezin özeti; 3. bölümle karşılaştır.</div>
+          <div class="nt has">kuram</div></div></div>
+        <div class="note"><div class="loc">s. 34</div><div class="c">
+          <div class="ex">Her kadın imgesi, onu kuran erkeğin de bir portresidir.</div>
+          <div class="nt">etiketsiz</div></div></div>
+        <div class="note last"><div class="loc">s. 52</div><div class="c">
+          <div class="ex">${lastLine}</div>
+          <div class="nt">etiketsiz</div></div></div>`;
+      const kb = `<div class="kb">
+        <div class="r">${'qwertyuıopğü'.split('').map((k) => `<span class="k">${k}</span>`).join('')}</div>
+        <div class="r">${'asdfghjklşi'.split('').map((k) => `<span class="k">${k}</span>`).join('')}</div>
+        <div class="r"><span class="k f">⇧</span>${'zxcvbnmöç'.split('').map((k) => `<span class="k">${k}</span>`).join('')}<span class="k f">⌫</span></div>
+        <div class="r"><span class="k f">?123</span><span class="k">,</span><span class="k w">Türkçe</span><span class="k">.</span><span class="k f">↵</span></div>
+        <div class="handle"></div></div>`;
+      const nav = '<div class="navbar"></div>';
+
+      // reading: the page as it opens, at the top. writing: scrolled to the last Note, keyboard up.
+      const page = (bottom, writing, extra = '') => `
+        <div class="phone">${status}${header}
+          <div class="body ${writing ? 'end' : ''}">${source}${notes}</div>
+          ${bottom}${writing ? kb : nav}${extra}</div>`;
+
+      const V = {
+        now: {
+          name: 'Mevcut: sohbet kutusu',
+          why: 'Bugünkü hâl. Kutu kapalıyken bile iki satır; üç zemin (sayfa, kutu, alan), tek satırda dört ayrı çip biçimi. Uzun Alıntı genişletilmeden sığmıyor.',
+          pm: [['+', 'Her şey tek ekranda, hiç geçiş yok.'], ['−', 'Sohbet uygulaması gibi; Alıntı sıkışıyor.'], ['−', 'Konum, etiketle aynı boyda küçük bir çip.']],
+          reading: () => page(`<div class="now">
+              <div class="ctl"><span class="locchip">s. 52</span><span class="chip dash">+ etiket</span>
+                <span class="seg"><span class="on">Alıntı</span><span>Yorum</span></span><span class="iconbtn">${I.max}</span></div>
+              <div class="in"><div class="field"><span class="ph">Yazarın sözleri, olduğu gibi…</span></div><span class="send off">${I.up}</span></div>
+            </div><div style="height:6px;background:var(--surface)"></div>`, false),
+          writing: () => page(`<div class="now">
+              <div class="ctl"><span class="locchip">s. 52</span><span class="chip dash">+ etiket</span>
+                <span class="seg"><span class="on">Alıntı</span><span>Yorum</span></span><span class="iconbtn">${I.max}</span></div>
+              <div class="in"><div class="field focus">${typed}<span class="caret"></span></div><span class="send">${I.up}</span></div>
+            </div>`, true),
+        },
+        A: {
+          name: 'A: "Not al" çubuğu + yazma sayfası',
+          why: 'Altta yazı alanı değil, tek satırlık bir düğme. Dokununca neredeyse tam boy bir yazma sayfası açılır: Konum başlıkta, Alıntı ile Yorum aynı Notta alt alta. Seçilen varyant.',
+          pm: [['+', 'Uzun Alıntı için en geniş yer; sohbet hissi yok.'], ['+', 'Yorum, Alıntı\'yla aynı anda yazılır; "Yorum ekle" dansı kalkar.'], ['−', 'Yazarken liste görünmez.']],
+          reading: () => page(`<div class="a-bar"><span class="go">${I.pencil('#a65a40', 18)} Not al</span><span class="at">s. 52'den devam</span></div>`, false),
+          writing: () => page('', true, `<div class="scrim"></div>
+            <div class="sheet"><div class="grab"></div>
+              <div class="sh"><span class="x">Vazgeç</span><span class="t">Yeni not</span><span class="btn">Kaydet</span></div>
+              <div class="locrow"><span class="lbl">Konum</span><span class="v">s. 52</span><span class="ch">Değiştir</span></div>
+              <div class="write">
+                <div><div class="lbl" style="margin-bottom:7px">Alıntı</div><div class="wx">${typed}<span class="caret"></span></div></div>
+                <div class="wc">${I.plus('#a99f8e')} Yorum ekle</div>
+              </div>
+              <div class="tb"><span class="chip dash">+ etiket</span><span class="lbl">Kaydedince yenisi açılır</span></div>
+              ${kb}
+            </div>`),
+        },
+        B: {
+          name: 'B: ince kutu',
+          why: 'Aynı yerde kalır ama kapalıyken tek satırdır: Konum alanın içinde önek, ayarlar gizli. Yazmaya başlayınca üstünde sekmeler, etiket ve genişlet açılır. Tek zemin.',
+          pm: [['+', 'En az değişiklik; bugünkü davranışlar korunur.'], ['+', 'Konum her an gözünün önünde, metnin başında.'], ['−', 'Hâlâ altta bir yazı alanı; metafor sohbet.']],
+          reading: () => page(`<div class="b-box">
+              <div class="in"><div class="field"><span class="pre">s. 52</span><span class="txt ph">Yazarın sözleri, olduğu gibi…</span></div></div>
+            </div>`, false),
+          writing: () => page(`<div class="b-box">
+              <div class="ctl"><span class="tabs"><span class="on">Alıntı</span><span>Yorum</span></span>
+                <span class="sp"><span class="chip dash">+ etiket</span><span class="iconbtn">${I.max}</span></span></div>
+              <div class="in"><div class="field focus stack"><span class="pre">s. 52</span><span class="txt">${typed}<span class="caret"></span></span></div><span class="send">${I.up}</span></div>
+            </div>`, true),
+        },
+        C: {
+          name: 'C: Konum çubuğu + yarım panel',
+          why: 'Altta okuduğun yer durur: s. 52, ‹ › ile bir sayfa ileri geri. Yanında "Alıntı" ve "Yorum" düğmeleri. Dokununca liste üstte kalarak yarım bir panel açılır.',
+          pm: [['+', 'Konum en baştaki şey; yanlış sayfaya not düşmek zorlaşır.'], ['+', 'Yazarken son notlar hâlâ görünür.'], ['−', 'Kitap dışı kaynaklarda (dakika, folyo) ‹ › anlamını yitirir.']],
+          reading: () => page(`<div class="c-bar">
+              <div class="where"><span class="lbl">Okuduğun yer</span>
+                <span class="step"><span class="b">${I.chevL}</span><span class="v">s. 52</span><span class="b">${I.chevR}</span></span></div>
+              <div class="acts"><span class="btn">Alıntı</span><span class="btn o">Yorum</span></div>
+            </div>`, false),
+          writing: () => page(`<div class="c-panel">
+              <div class="ph1"><span class="k">Alıntı</span><span class="l">· s. 52</span><span style="margin-left:auto" class="iconbtn">${I.x}</span></div>
+              <div class="w"><div>${typed}<span class="caret"></span></div></div>
+              <div class="pf"><span class="chip dash">+ etiket</span><span class="btn">Kaydet</span></div>
+            </div>`, true),
+        },
+      };
+
+      const keys = ['all', 'now', 'A', 'B', 'C'];
+      const label = (k) => (k === 'all' ? 'Hepsi yan yana' : V[k].name);
+      const col = (k) => `<div class="col"><h2>${V[k].name}</h2><p class="why">${V[k].why}</p>
+        <ul class="pm">${V[k].pm.map(([s, t]) => `<li data-s="${s}">${t}</li>`).join('')}</ul>
+        <div class="phones"><div><p class="cap">Okurken</p>${V[k].reading()}</div><div><p class="cap">Yazarken</p>${V[k].writing()}</div></div></div>`;
+
+      function render() {
+        let k = new URLSearchParams(location.search).get('variant') || 'all';
+        if (!keys.includes(k)) k = 'all';
+        const root = document.getElementById('root');
+        root.className = 'grid' + (k === 'all' ? '' : ' single');
+        root.innerHTML = k === 'all' ? ['now', 'A', 'B', 'C'].map(col).join('') : col(k);
+        document.getElementById('name').textContent = label(k);
+        return k;
+      }
+      function go(d) {
+        const k = render();
+        const next = keys[(keys.indexOf(k) + d + keys.length) % keys.length];
+        const u = new URL(location.href);
+        u.searchParams.set('variant', next);
+        history.replaceState(null, '', u);
+        render();
+      }
+      document.getElementById('prev').onclick = () => go(-1);
+      document.getElementById('next').onclick = () => go(1);
+      addEventListener('keydown', (e) => {
+        if (e.target.closest('input, textarea, [contenteditable]')) return;
+        if (e.key === 'ArrowLeft') go(-1);
+        if (e.key === 'ArrowRight') go(1);
+      });
+      render();
+    </script>
+  </body>
+</html>
