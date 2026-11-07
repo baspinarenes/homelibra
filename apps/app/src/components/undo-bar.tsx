@@ -30,21 +30,23 @@ export function UndoBar({ offer, onDismiss }: { offer: UndoOffer | null; onDismi
   if (!offer) return null;
   const { undo } = offer;
   return (
-    <View style={styles.place}>
-      <Toast
-        message={offer.message}
-        action={
-          undo
-            ? {
-                label: t('undo.action'),
-                onPress: () => {
-                  onDismiss();
-                  undo();
-                },
-              }
-            : undefined
-        }
-      />
+    <View pointerEvents="box-none" style={styles.edge}>
+      <View pointerEvents="box-none" style={styles.place}>
+        <Toast
+          message={offer.message}
+          action={
+            undo
+              ? {
+                  label: t('undo.action'),
+                  onPress: () => {
+                    onDismiss();
+                    undo();
+                  },
+                }
+              : undefined
+          }
+        />
+      </View>
     </View>
   );
 }
@@ -62,6 +64,10 @@ export function SharedUndoBar() {
 }
 
 // Just above the top edge of the view that holds it; the Toast keeps 16 from the screen's sides.
+// Not `bottom: '100%'`: React Native takes that against the holder's height
+// less its padding, which sank the bar into Capture's box (behind Konum and
+// Alıntı). A zero-height edge on the holder's top needs no percentage.
 const styles = StyleSheet.create({
-  place: { position: 'absolute', left: 0, right: 0, bottom: '100%', marginBottom: space.md },
+  edge: { position: 'absolute', left: 0, right: 0, top: 0, height: 0 },
+  place: { position: 'absolute', left: 0, right: 0, bottom: 0, marginBottom: space.md },
 });
