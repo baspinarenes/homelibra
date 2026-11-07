@@ -15,7 +15,7 @@ export function SourceSearchButton({ onPress }: { onPress: () => void }) {
  * The open "Bu kaynakta ara" box: the Source's Notes narrow to the ones
  * that match, "2 / 15 not" under it, and over that, while some match, the
  * words too short for a prefix match (#144; with none, the page names them
- * under its empty line). Kapat puts it away and brings the writing box back.
+ * under its empty line). The X puts it away and brings the writing box back.
  */
 export function SourceSearchBar({
   text,
