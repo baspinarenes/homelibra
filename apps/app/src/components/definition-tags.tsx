@@ -27,10 +27,7 @@ export function DefinitionTags({ names, onChange }: { names: string[]; onChange:
         visible={picking}
         title={t('collection.tagsTitle')}
         value={names}
-        onDone={(next) => {
-          setPicking(false);
-          onChange(next);
-        }}
+        onChange={onChange}
         onClose={() => setPicking(false)}
       />
     </ChipRow>

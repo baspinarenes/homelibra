@@ -1,3 +1,4 @@
+import { titleCaseTr } from '@homelibra/core';
 import {
   type Calendar,
   type CalendarDate,
@@ -121,7 +122,8 @@ export function DateInput({
 
       <DatePicker
         visible={picking}
-        title={label}
+        // The field's label, in Title Case like every sheet's heading.
+        title={titleCaseTr(label)}
         date={date ?? (today ? todayDate() : null)}
         today={today}
         onClose={() => setPicking(false)}

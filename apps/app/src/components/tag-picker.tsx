@@ -16,19 +16,22 @@ const suggestionCount = 12;
  * The Tag picker (#3, story 75): the chosen Tags, suggestions from the most
  * used, a search that ignores circumflexes, ı/i, case and punctuation
  * ("hilafet" finds "Hilâfet"), and a new Tag spelled as typed. A sheet over
- * the screen; Tamam hands back the names, Kapat leaves them as they were.
+ * the screen with no save button: what is chosen holds, and closing the sheet
+ * (its X, a swipe, the backdrop, Android's back) hands the names to `onChange`
+ * if they changed.
+ * A name typed but never entered is not added.
  */
 export function TagPicker({
   visible,
   title,
   value,
-  onDone,
+  onChange,
   onClose,
 }: {
   visible: boolean;
   title: string;
   value: string[];
-  onDone: (names: string[]) => void;
+  onChange: (names: string[]) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -40,14 +43,15 @@ export function TagPicker({
     if (visible) setChosen(value);
   }
 
+  const close = () => {
+    // A Tag taken out and put back is no change, though it now stands last.
+    const changed = chosen.length !== value.length || chosen.some((name) => !value.includes(name));
+    if (changed) onChange(chosen);
+    onClose();
+  };
+
   return (
-    <Sheet
-      visible={visible}
-      title={title}
-      closeLabel={t('tags.close')}
-      onClose={onClose}
-      primary={{ label: t('tags.done'), onPress: () => onDone(chosen) }}
-    >
+    <Sheet visible={visible} title={title} closeLabel={t('tags.close')} onClose={close}>
       {/* Mounted afresh each time, so the search starts empty. */}
       {visible && <TagEditor chosen={chosen} onChange={setChosen} />}
     </Sheet>

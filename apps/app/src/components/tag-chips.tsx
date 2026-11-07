@@ -7,7 +7,7 @@ import { TagPicker } from '@/components/tag-picker';
 
 /**
  * A Note's or a Source's Tags as chips, then "+ etiket", which opens the Tag
- * picker on them; the picker's Tamam hands the names to `onChange`.
+ * picker on them; closing the picker hands changed names to `onChange`.
  */
 export function TagChips({
   names,
@@ -31,10 +31,7 @@ export function TagChips({
         visible={picking}
         title={pickerTitle}
         value={names}
-        onDone={(next) => {
-          setPicking(false);
-          onChange(next);
-        }}
+        onChange={onChange}
         onClose={() => setPicking(false)}
       />
     </ChipRow>
