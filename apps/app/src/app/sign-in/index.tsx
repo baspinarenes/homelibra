@@ -1,12 +1,13 @@
 import { NOT_INVITED } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
 import { AppLogo, GoogleLogo } from '@homelibra/ui/logo';
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, useThemedStyles } from '@homelibra/ui/theme';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { InviteNotice } from '@/components/invite-notice';
@@ -55,10 +56,12 @@ export default function SignInScreen() {
         <View style={styles.brand}>
           <AppLogo size={64} label={t('signIn.logo')} />
           <View style={styles.words}>
-            <Text role="heading" style={styles.title}>
+            <Text variant="display" style={styles.title}>
               {t('signIn.title')}
             </Text>
-            <Text style={styles.tagline}>{t('signIn.tagline')}</Text>
+            <Text variant="body" style={styles.tagline}>
+              {t('signIn.tagline')}
+            </Text>
           </View>
         </View>
 
@@ -77,14 +80,22 @@ export default function SignInScreen() {
             busy={googleBusy}
             onPress={continueWithGoogle}
           />
-          {message?.kind === 'error' ? <Text style={styles.error}>{message.text}</Text> : null}
+          {message?.kind === 'error' ? (
+            <Text variant="label" color="danger" style={styles.error}>
+              {message.text}
+            </Text>
+          ) : null}
           {message?.kind === 'notInvited' ? <InviteNotice /> : null}
-          <Text style={styles.legal}>
+          <Text variant="caption" style={styles.legal}>
             <Trans
               i18nKey="signIn.legalNote"
               components={{
-                notice: <Text role="link" style={styles.link} onPress={() => router.push('/privacy/notice')} />,
-                terms: <Text role="link" style={styles.link} onPress={() => router.push('/privacy/terms')} />,
+                notice: (
+                  <Text variant="strong" color="accent" role="link" onPress={() => router.push('/privacy/notice')} />
+                ),
+                terms: (
+                  <Text variant="strong" color="accent" role="link" onPress={() => router.push('/privacy/terms')} />
+                ),
               }}
             />
           </Text>
@@ -108,10 +119,9 @@ const makeStyles = (c: Colors) =>
     },
     brand: { alignItems: 'center', gap: 20 },
     words: { gap: 8 },
-    title: { ...typeScale.display, color: c.fg, textAlign: 'center' },
-    tagline: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    title: { textAlign: 'center' },
+    tagline: { textAlign: 'center' },
     actions: { gap: 12, paddingTop: 40 },
-    error: { ...typeScale.label, color: c.danger, textAlign: 'center' },
-    legal: { ...typeScale.caption, color: c.muted, textAlign: 'center', paddingTop: 8 },
-    link: { ...typeScale.strong, color: c.accent },
+    error: { textAlign: 'center' },
+    legal: { textAlign: 'center', paddingTop: 8 },
   });

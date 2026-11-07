@@ -1,10 +1,11 @@
 import { HeaderTextAction, ScreenHeader } from '@homelibra/ui/screen-header';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type NativeStackHeaderProps, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
 import { narrowView, SearchField, ShortWords, useSearchText, useTagSearch } from '@/components/note-search';
@@ -46,7 +47,7 @@ export default function TagScreen() {
       <View style={styles.center}>
         <Stack.Screen options={{ title: '' }} />
         {view.isError ? (
-          <Text style={styles.lead}>
+          <Text variant="body" style={styles.lead}>
             {view.error.data?.code === 'NOT_FOUND' ? t('collection.tagMissing') : t('collection.loadFailed')}
           </Text>
         ) : (
@@ -70,8 +71,16 @@ export default function TagScreen() {
       {/* With no match, the words stand under "Eşleşen not yok." instead. */}
       {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
       <ViewCount view={shown} of={view.data} />
-      {searched.failed && <Text style={styles.error}>{t('noteSearch.failed')}</Text>}
-      {save.isError && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
+      {searched.failed && (
+        <Text variant="caption" color="danger">
+          {t('noteSearch.failed')}
+        </Text>
+      )}
+      {save.isError && (
+        <Text variant="caption" color="danger">
+          {t('collection.saveFailed')}
+        </Text>
+      )}
     </>
   );
 
@@ -111,7 +120,6 @@ export default function TagScreen() {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    lead: { textAlign: 'center' },
     spinner: { color: c.accent },
-    error: { ...typeScale.caption, color: c.danger },
   });

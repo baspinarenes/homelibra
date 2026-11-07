@@ -1,7 +1,8 @@
 import { Button } from '@homelibra/ui/button';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { space } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { type Matches, SearchField, ShortWords } from '@/components/note-search';
 
@@ -35,7 +36,6 @@ export function SourceSearchBar({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.bar}>
       <SearchField
@@ -46,12 +46,14 @@ export function SourceSearchBar({
         onClose={onClose}
       />
       {failed ? (
-        <Text style={styles.failed}>{t('noteSearch.failed')}</Text>
+        <Text variant="caption" color="danger">
+          {t('noteSearch.failed')}
+        </Text>
       ) : (
         matches && (
           <>
             {matches.size > 0 && <ShortWords words={shortWords} />}
-            <Text style={styles.count}>{t('noteSearch.matchCount', { shown: matches.size, count: total })}</Text>
+            <Text variant="collectionCount">{t('noteSearch.matchCount', { shown: matches.size, count: total })}</Text>
           </>
         )
       )}
@@ -59,9 +61,6 @@ export function SourceSearchBar({
   );
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    bar: { gap: space.sm },
-    count: { ...typeScale.heading, letterSpacing: 0, color: c.muted },
-    failed: { ...typeScale.caption, color: c.danger },
-  });
+const styles = StyleSheet.create({
+  bar: { gap: space.sm },
+});

@@ -3,10 +3,11 @@ import House from 'lucide-react-native/icons/house';
 import Library from 'lucide-react-native/icons/library';
 import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 // Lucide line icons; one import per icon keeps the bundle small.
@@ -42,7 +43,7 @@ export function TabBar({
       {tabs.map((tab) => {
         const open = tab.key === active;
         const Icon = icons[tab.icon];
-        const color = open ? colors.accent : colors.muted;
+        const color = open ? 'accent' : 'muted';
         return (
           <Pressable
             key={tab.key}
@@ -55,8 +56,8 @@ export function TabBar({
             {({ pressed }) => (
               <>
                 {pressed && <View style={styles.pressed} />}
-                <Icon color={color} size={22} strokeWidth={1.6} />
-                <Text style={[styles.label, { color }]} numberOfLines={1}>
+                <Icon color={colors[color]} size={22} strokeWidth={1.6} />
+                <Text variant="tab" color={color} numberOfLines={1}>
                   {tab.label}
                 </Text>
               </>
@@ -82,5 +83,4 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.control,
       backgroundColor: c.accentSoft,
     },
-    label: { ...typeScale.tab },
   });

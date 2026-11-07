@@ -1,10 +1,11 @@
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IconComponent } from './icon';
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 /**
@@ -49,8 +50,8 @@ export function ScreenHeader({
         )}
         {typeof title === 'string' ? (
           <View style={styles.head}>
-            <Text role="heading" style={styles.title} numberOfLines={1}>
-              {title.toLocaleUpperCase('tr')}
+            <Text variant="screenTitle" numberOfLines={1} style={styles.title}>
+              {title}
             </Text>
             {titleAccessory}
           </View>
@@ -95,7 +96,7 @@ export function HeaderTextAction({
       {busy ? (
         <ActivityIndicator size={20} color={colors.accent} style={styles.busy} />
       ) : (
-        <Text style={styles.textActionLabel}>{label}</Text>
+        <Text variant="action">{label}</Text>
       )}
     </Pressable>
   );
@@ -149,14 +150,13 @@ const makeStyles = (c: Colors) =>
     // The right edge puts a tab root's 24px icons on the 22 gutter.
     bar: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 6, paddingRight: 12 },
     head: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 2 },
-    title: { ...typeScale.screenTitle, color: c.fg, flexShrink: 1, paddingLeft: 2 },
+    title: { flexShrink: 1, paddingLeft: 2 },
     slot: { flex: 1, minWidth: 0 },
     // Without an arrow the title stands on the 22 gutter.
     noBack: { width: 12 },
     actions: { flexDirection: 'row', alignItems: 'center' },
     icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control },
     textAction: { height: 44, paddingHorizontal: 12, justifyContent: 'center' },
-    textActionLabel: { ...typeScale.action, color: c.accent },
     // As wide as Kaydet, so the title does not shift while saving.
     busy: { width: 32 },
     off: { opacity: 0.45 },

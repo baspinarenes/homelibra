@@ -1,6 +1,7 @@
 import type { AppRouter } from '@homelibra/api';
 import { Button } from '@homelibra/ui/button';
 import { ScreenHeader } from '@homelibra/ui/screen-header';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
 import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,7 +9,7 @@ import type { inferRouterOutputs } from '@trpc/server';
 import { type NativeStackHeaderProps, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { CopyMarkdownAction, DeleteCollectionAction } from '@/components/collection-actions';
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
@@ -41,7 +42,9 @@ export default function CollectionScreen() {
     <View style={styles.center}>
       <Stack.Screen options={{ title: '' }} />
       {view.isError ? (
-        <Text style={styles.lead}>{t('collection.loadFailed')}</Text>
+        <Text variant="body" style={styles.lead}>
+          {t('collection.loadFailed')}
+        </Text>
       ) : (
         <ActivityIndicator color={styles.spinner.color} />
       )}
@@ -112,8 +115,16 @@ function CollectionPage({ collection }: { collection: Collection }) {
       {/* With no match, the words stand under "Eşleşen not yok." instead. */}
       {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
       <ViewCount view={shown} of={collection} />
-      {searched.failed && <Text style={styles.error}>{t('noteSearch.failed')}</Text>}
-      {failed && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
+      {searched.failed && (
+        <Text variant="caption" color="danger">
+          {t('noteSearch.failed')}
+        </Text>
+      )}
+      {failed && (
+        <Text variant="caption" color="danger">
+          {t('collection.saveFailed')}
+        </Text>
+      )}
     </>
   );
 
@@ -202,7 +213,7 @@ function RenameField({
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    lead: { textAlign: 'center' },
     spinner: { color: c.accent },
     page: { flex: 1 },
     renaming: { opacity: 0.45 },
@@ -211,5 +222,4 @@ const makeStyles = (c: Colors) =>
     renameActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: space.md },
     // "Kopyalandı · n not" and failures float above this zero-height edge.
     foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-    error: { ...typeScale.caption, color: c.danger },
   });

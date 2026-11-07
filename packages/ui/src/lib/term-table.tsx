@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { type Colors, type as typeScale } from './tokens';
+import { Text } from './text';
+import type { Colors } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 export type TermRow = { term: string; description: string };
@@ -15,10 +16,10 @@ export function TermTable({ rows }: { rows: readonly TermRow[] }) {
     <View role="table">
       {rows.map((row, index) => (
         <View key={row.term} role="row" style={[styles.row, index > 0 && styles.ruled]}>
-          <Text role="rowheader" style={styles.term}>
+          <Text variant="term" role="rowheader" style={styles.term}>
             {row.term}
           </Text>
-          <Text role="cell" style={styles.description}>
+          <Text variant="body" role="cell" style={styles.description}>
             {row.description}
           </Text>
         </View>
@@ -32,6 +33,6 @@ const makeStyles = (c: Colors) =>
     row: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, paddingBottom: 10 },
     ruled: { borderTopWidth: 1, borderTopColor: c.lineSoft, paddingTop: 10 },
     // On the body's line, so the two columns' first lines share a baseline.
-    term: { ...typeScale.term, color: c.fg, width: 120 },
-    description: { ...typeScale.body, color: c.ink2, flex: 1 },
+    term: { width: 120 },
+    description: { flex: 1 },
   });

@@ -6,11 +6,11 @@ import {
   ScrollView,
   type ScrollViewInstance,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 // A wheel turns through numbers (a day, a month, a year); null is "—".
@@ -54,10 +54,11 @@ export function Wheels({ columns }: { columns: readonly WheelColumn[] }) {
         {columns.map((column) => (
           <Text
             key={column.label}
+            variant="fieldLabel"
             aria-hidden
-            style={[styles.head, place(column), column.align === 'start' ? styles.headStart : styles.headCenter]}
+            style={[place(column), column.align === 'start' ? styles.headStart : styles.headCenter]}
           >
-            {column.label.toLocaleUpperCase('tr')}
+            {column.label}
           </Text>
         ))}
       </View>
@@ -175,14 +176,16 @@ const Row = memo(function Row({
   start: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
-  const look = off
-    ? distance === 0
-      ? styles.offCentre
-      : styles.off
-    : [styles.centre, styles.near, styles.far][distance];
+  const centre = !off && distance === 0;
+  const color = off ? (distance === 0 ? 'muted2' : 'faint') : (['fg', 'ink2', 'muted2'] as const)[distance];
   return (
     <View style={[styles.option, start && styles.optionStart]}>
-      <Text numberOfLines={1} style={[styles.text, look]}>
+      <Text
+        variant={centre ? 'wheelCentre' : 'wheel'}
+        color={color}
+        numberOfLines={1}
+        style={!off && distance === 2 && styles.far}
+      >
         {label}
       </Text>
     </View>
@@ -193,7 +196,6 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     wheels: { gap: 6 },
     heads: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
-    head: { ...typeScale.fieldLabel, color: c.muted },
     headCenter: { textAlign: 'center' },
     headStart: { paddingLeft: 12 },
     row: { flexDirection: 'row', gap: 8, paddingHorizontal: 4, height: (2 * around + 1) * rowHeight },
@@ -211,10 +213,5 @@ const makeStyles = (c: Colors) =>
     wheel: { height: (2 * around + 1) * rowHeight },
     option: { height: rowHeight, alignItems: 'center', justifyContent: 'center' },
     optionStart: { alignItems: 'flex-start', paddingLeft: 12 },
-    text: { ...typeScale.wheel, color: c.muted2 },
-    centre: { ...typeScale.wheelCentre, color: c.fg },
-    near: { color: c.ink2 },
     far: { opacity: 0.55 },
-    off: { color: c.faint },
-    offCentre: { color: c.muted2 },
   });

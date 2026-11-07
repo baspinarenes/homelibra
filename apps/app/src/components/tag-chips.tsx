@@ -1,8 +1,7 @@
 import { Chip, ChipRow } from '@homelibra/ui/chip';
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text } from 'react-native';
 
 import { TagPicker } from '@/components/tag-picker';
 
@@ -45,16 +44,13 @@ export function TagChips({
 /** A Note's own Tags in a line, or "etiketsiz": never its Source's (ADR-0003). */
 export function NoteTagsLine({ names }: { names: string[] }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return names.length > 0 ? (
-    <Text style={styles.line}>{names.join(' · ')}</Text>
+    <Text variant="caption" color="chipInk">
+      {names.join(' · ')}
+    </Text>
   ) : (
-    <Text style={styles.untagged}>{t('tags.untagged')}</Text>
+    <Text variant="caption" color="muted2">
+      {t('tags.untagged')}
+    </Text>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    line: { ...typeScale.caption, color: c.chipInk },
-    untagged: { ...typeScale.caption, color: c.muted2 },
-  });

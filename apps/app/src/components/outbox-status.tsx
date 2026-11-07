@@ -1,6 +1,5 @@
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useOutbox } from '@/lib/outbox';
@@ -12,7 +11,6 @@ import { useOutbox } from '@/lib/outbox';
  */
 export function OutboxStatus() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const offline = useOffline();
   const { waiting } = useOutbox().state;
   if (!offline) return null;
@@ -20,13 +18,8 @@ export function OutboxStatus() {
     .filter(Boolean)
     .join(' · ');
   return (
-    <Text role="status" style={styles.text} numberOfLines={1}>
+    <Text variant="label" color="warn" role="status" numberOfLines={1}>
       {text}
     </Text>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    text: { ...typeScale.label, color: c.warn },
-  });

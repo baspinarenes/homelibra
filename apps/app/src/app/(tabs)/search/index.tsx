@@ -6,6 +6,7 @@ import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet, SheetField } from '@homelibra/ui/sheet';
+import { Text } from '@homelibra/ui/text';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
@@ -15,7 +16,7 @@ import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import {
   emptyYearRange,
@@ -159,12 +160,14 @@ export default function SearchScreen() {
               />
             )}
           </ChipRow>
-          {hidden && <Text style={styles.hidden}>{hidden}</Text>}
+          {hidden && <Text variant="caption">{hidden}</Text>}
         </View>
       )}
       {offline ? (
         <View style={styles.center}>
-          <Text style={styles.lead}>{t('outbox.searchNeedsConnection')}</Text>
+          <Text variant="body" style={styles.lead}>
+            {t('outbox.searchNeedsConnection')}
+          </Text>
         </View>
       ) : query === '' ? (
         <View style={styles.screen} />
@@ -174,12 +177,16 @@ export default function SearchScreen() {
         </View>
       ) : results.isError ? (
         <View style={styles.center}>
-          <Text style={styles.lead}>{t('search.failed')}</Text>
+          <Text variant="body" style={styles.lead}>
+            {t('search.failed')}
+          </Text>
           <Button variant="text" label={t('search.retry')} onPress={() => void results.refetch()} />
         </View>
       ) : sources.length === 0 && notes.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.lead}>{t('search.empty')}</Text>
+          <Text variant="body" style={styles.lead}>
+            {t('search.empty')}
+          </Text>
           <ShortWords words={first?.shortWords} centered />
         </View>
       ) : (
@@ -208,7 +215,7 @@ export default function SearchScreen() {
                       onPress={() => setChoices({ ...choices, kind: 'sources' })}
                       style={({ pressed }) => [styles.allSources, pressed && styles.pressed]}
                     >
-                      <Text style={styles.allSourcesText}>{t('search.allSources', { count: sources.length })}</Text>
+                      <Text variant="button">{t('search.allSources', { count: sources.length })}</Text>
                     </Pressable>
                   )}
                 </View>
@@ -393,12 +400,12 @@ function SourceRow({ source, divided }: { source: SourceResult; divided: boolean
     >
       <SourceCover type={source.type} cover={source.cover} />
       <View style={styles.sourceText}>
-        <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-        <Text style={styles.sourceTitle} numberOfLines={2}>
+        <Text variant="micro">{t(`sourceTypes.${source.type}.label`)}</Text>
+        <Text variant="sourceTitleSm" numberOfLines={2}>
           {source.title}
         </Text>
         {byline !== '' && (
-          <Text style={styles.meta} numberOfLines={1}>
+          <Text variant="caption" numberOfLines={1}>
             {byline}
           </Text>
         )}
@@ -419,17 +426,18 @@ function NoteRow({ note, divided }: { note: NoteResult; divided: boolean }) {
   ]
     .filter(Boolean)
     .join(' · ');
+  const variant = note.fromComment ? 'comment' : 'excerpt';
   return (
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/source/[id]', params: { id: note.sourceId, note: note.id } })}
       style={({ pressed }) => [styles.noteRow, divided && styles.divided, pressed && styles.pressed]}
     >
-      <Text style={note.fromComment ? styles.comment : styles.excerpt}>
+      <Text variant={variant} style={note.fromComment ? undefined : styles.excerpt}>
         {note.fromComment && '↳ '}
         {note.snippet.map((segment, i) =>
           segment.hit ? (
-            <Text key={i} style={styles.hit}>
+            <Text key={i} variant={variant} color="fg" style={styles.hit}>
               {segment.text}
             </Text>
           ) : (
@@ -437,7 +445,7 @@ function NoteRow({ note, divided }: { note: NoteResult; divided: boolean }) {
           ),
         )}
       </Text>
-      <Text style={styles.meta}>{meta}</Text>
+      <Text variant="caption">{meta}</Text>
     </Pressable>
   );
 }
@@ -448,7 +456,6 @@ const makeStyles = (c: Colors) =>
     content: { paddingHorizontal: space.gutter, paddingBottom: space.xxl },
     group: { paddingTop: space.md, paddingBottom: space.xs },
     filters: { gap: space.sm, paddingHorizontal: space.gutter, paddingTop: 2 },
-    hidden: { ...typeScale.caption, color: c.muted },
     center: {
       flex: 1,
       alignItems: 'center',
@@ -457,7 +464,7 @@ const makeStyles = (c: Colors) =>
       padding: space.xl,
       backgroundColor: c.page,
     },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    lead: { textAlign: 'center' },
     short: { paddingTop: space.md },
     spinner: { color: c.accent },
     pressed: { opacity: 0.7 },
@@ -492,20 +499,13 @@ const makeStyles = (c: Colors) =>
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
     sourceText: { flex: 1, gap: 2 },
-    type: { ...typeScale.micro, color: c.muted },
-    sourceTitle: { ...typeScale.sourceTitleSm, color: c.fg },
     allSources: { alignSelf: 'flex-start', paddingVertical: space.sm },
-    allSourcesText: { ...typeScale.button, color: c.accent },
     noteRow: { gap: 6, paddingVertical: space.md },
     excerpt: {
-      ...typeScale.excerpt,
-      color: c.quoteInk,
       borderLeftWidth: 2,
       borderLeftColor: c.quoteBar,
       paddingLeft: 11,
     },
-    comment: { ...typeScale.comment, color: c.ink3 },
-    hit: { backgroundColor: c.mark, color: c.fg },
-    meta: { ...typeScale.caption, color: c.muted },
+    hit: { backgroundColor: c.mark },
     more: { paddingVertical: space.md },
   });

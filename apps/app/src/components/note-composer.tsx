@@ -1,6 +1,7 @@
 import type { SourceType } from '@homelibra/core/source';
 import { OperationRefused } from '@homelibra/outbox/trpc';
 import { Segment } from '@homelibra/ui/segment';
+import { Text } from '@homelibra/ui/text';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import ArrowUp from 'lucide-react-native/icons/arrow-up';
 import CornerDownRight from 'lucide-react-native/icons/corner-down-right';
@@ -16,7 +17,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   type TextInputInstance,
   View,
@@ -281,10 +281,10 @@ export function NoteComposer({
         <View style={styles.reply}>
           <CornerDownRight color={colors.accent} size={18} strokeWidth={1.6} style={styles.replyIcon} />
           <View style={styles.replyText}>
-            <Text style={styles.replyLabel} numberOfLines={1}>
+            <Text variant="label" color="accent" numberOfLines={1}>
               {replyTo.locator ? t('capture.commentOn', { locator: replyTo.locator }) : t('capture.commentOnNoLocator')}
             </Text>
-            <Text style={styles.replyExcerpt} numberOfLines={1}>
+            <Text variant="excerptSm" numberOfLines={1}>
               {replyTo.excerpt.trim().split('\n')[0]}
             </Text>
           </View>
@@ -307,7 +307,8 @@ export function NoteComposer({
               style={({ pressed }) => [styles.locatorChip, stale && styles.locatorStale, pressed && styles.pressed]}
             >
               <Text
-                style={[locator.trim() ? styles.locatorText : styles.locatorNone, stale && styles.locatorStaleText]}
+                variant={locator.trim() ? 'locatorSm' : 'label'}
+                color={stale ? 'warn' : 'accent'}
                 numberOfLines={1}
               >
                 {stale ? `${shownLocator} · ${t('capture.stillHere')}` : shownLocator}
@@ -321,7 +322,9 @@ export function NoteComposer({
                 hitSlop={6}
                 style={({ pressed }) => [styles.confirm, pressed && styles.pressed]}
               >
-                <Text style={styles.confirmText}>{t('capture.stillHereConfirm')}</Text>
+                <Text variant="label" color="warn">
+                  {t('capture.stillHereConfirm')}
+                </Text>
               </Pressable>
             )}
           </View>
@@ -332,7 +335,7 @@ export function NoteComposer({
             hitSlop={6}
             style={({ pressed }) => [styles.tags, tags.length > 0 && styles.tagsChosen, pressed && styles.pressed]}
           >
-            <Text style={tags.length > 0 ? styles.tagsChosenText : styles.tagsText} numberOfLines={1}>
+            <Text variant="labelSm" color={tags.length > 0 ? 'chipInk' : 'accent'} numberOfLines={1}>
               {tags.length > 0 ? tags.join(', ') : t('tags.add')}
             </Text>
           </Pressable>
@@ -427,7 +430,7 @@ export function NoteComposer({
         </Pressable>
       </View>
       {failure && (
-        <Text style={styles.error}>
+        <Text variant="caption" color="danger">
           {t(
             failure === 'attach'
               ? 'capture.attachFailed'
@@ -473,7 +476,7 @@ export function AddCommentButton({ onPress }: { onPress: () => void }) {
       style={({ pressed }) => [styles.addComment, pressed && styles.pressed]}
     >
       <MessageSquarePlus color={colors.accent} size={16} strokeWidth={1.6} />
-      <Text style={styles.addCommentText}>{t('capture.addComment')}</Text>
+      <Text variant="link">{t('capture.addComment')}</Text>
     </Pressable>
   );
 }
@@ -494,8 +497,6 @@ const makeStyles = (c: Colors) =>
     reply: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
     replyIcon: { marginTop: 1 },
     replyText: { flex: 1, minWidth: 0, gap: 2, borderLeftWidth: 2, borderLeftColor: c.accent, paddingLeft: 10 },
-    replyLabel: { ...typeScale.label, color: c.accent },
-    replyExcerpt: { ...typeScale.excerptSm, color: c.quoteInk },
     replyClose: { marginTop: -6 },
     controls: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     locator: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -506,10 +507,7 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
       backgroundColor: c.accentSoft,
     },
-    locatorText: { ...typeScale.locatorSm, color: c.accent },
-    locatorNone: { ...typeScale.label, color: c.accent },
     locatorStale: { backgroundColor: c.warnSoft },
-    locatorStaleText: { color: c.warn },
     confirm: {
       paddingVertical: 4,
       paddingHorizontal: 9,
@@ -517,7 +515,6 @@ const makeStyles = (c: Colors) =>
       borderColor: c.warn,
       borderRadius: radius.chip,
     },
-    confirmText: { ...typeScale.label, color: c.warn },
     // "+ etiket" beside the Locator; once Tags are chosen, their names.
     tags: {
       flexShrink: 1,
@@ -529,8 +526,6 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
     },
     tagsChosen: { borderStyle: 'solid', borderColor: c.chipBg, backgroundColor: c.chipBg },
-    tagsText: { ...typeScale.labelSm, color: c.accent },
-    tagsChosenText: { ...typeScale.labelSm, color: c.chipInk },
     mode: { marginLeft: 'auto' },
     // Genişlet / Küçült at the end of the controls, and × on the strip: an icon, no frame.
     iconAction: {
@@ -580,7 +575,5 @@ const makeStyles = (c: Colors) =>
     },
     inactive: { opacity: 0.35 },
     pressed: { opacity: 0.7 },
-    error: { ...typeScale.caption, color: c.danger },
     addComment: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
-    addCommentText: { ...typeScale.link, color: c.accent },
   });

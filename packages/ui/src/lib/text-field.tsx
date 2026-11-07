@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, type TextInputProps, View } from 'react-native';
+import { StyleSheet, TextInput, type TextInputProps, View } from 'react-native';
 
+import { Text } from './text';
 import { type Colors, radius, type as typeScale } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
@@ -41,10 +42,14 @@ export function TextField({
   return (
     <View style={styles.field}>
       {!labelHidden && (
-        <Text style={styles.label}>
-          {label.toLocaleUpperCase('tr')}
-          {required && <Text style={styles.required}> *</Text>}
-        </Text>
+        <View style={styles.label}>
+          <Text variant="fieldLabel">{label}</Text>
+          {required && (
+            <Text variant="fieldLabel" color="accent">
+              {' *'}
+            </Text>
+          )}
+        </View>
       )}
       <TextInput
         aria-label={label}
@@ -74,7 +79,11 @@ export function TextField({
         ]}
         {...input}
       />
-      {invalid && <Text style={styles.error}>{error}</Text>}
+      {invalid && (
+        <Text variant="caption" color="danger">
+          {error}
+        </Text>
+      )}
     </View>
   );
 }
@@ -90,8 +99,8 @@ const codeInput: TextInputProps = {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     field: { gap: 6 },
-    label: { ...typeScale.fieldLabel, color: c.muted },
-    required: { color: c.accent },
+    // The label and, when required, its star on one line.
+    label: { flexDirection: 'row' },
     input: {
       ...typeScale.body,
       color: c.fg,
@@ -120,5 +129,4 @@ const makeStyles = (c: Colors) =>
     invalid: { borderColor: c.danger },
     // An accent border and a 3px accent-soft ring.
     focused: { borderColor: c.accent, outlineColor: c.accentSoft },
-    error: { ...typeScale.caption, color: c.danger },
   });

@@ -1,10 +1,11 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
@@ -33,16 +34,16 @@ export function SourceListRow({ source, divided }: { source: ListedSource; divid
     >
       <SourceCover type={source.type} cover={source.cover} />
       <View style={styles.text}>
-        <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text variant="micro">{t(`sourceTypes.${source.type}.label`)}</Text>
+        <Text variant="sourceTitleSm" numberOfLines={2}>
           {source.title}
         </Text>
         {byline !== '' && (
-          <Text style={styles.byline} numberOfLines={1}>
+          <Text variant="caption" numberOfLines={1}>
             {byline}
           </Text>
         )}
-        <Text style={styles.byline}>{notes}</Text>
+        <Text variant="caption">{notes}</Text>
       </View>
     </Pressable>
   );
@@ -54,7 +55,4 @@ const makeStyles = (c: Colors) =>
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     pressed: { opacity: 0.7 },
     text: { flex: 1, gap: 2 },
-    type: { ...typeScale.micro, color: c.muted },
-    title: { ...typeScale.sourceTitleSm, color: c.fg },
-    byline: { ...typeScale.caption, color: c.muted },
   });

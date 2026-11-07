@@ -1,6 +1,7 @@
 import type { SourceType } from '@homelibra/core/source';
 import { Sheet, SheetAction } from '@homelibra/ui/sheet';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, radius, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import Camera from 'lucide-react-native/icons/camera';
@@ -8,7 +9,7 @@ import ImageIcon from 'lucide-react-native/icons/image';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { CoverImage, SourceCover } from '@/components/source-cover';
 import { type Cover, coverFiles } from '@/lib/cover';
@@ -143,7 +144,7 @@ function SheetBody({
       {web && (
         <View ref={drop.ref} style={[styles.dropZone, drop.over && styles.dropping]}>
           {cover && <CoverImage file={cover.large} style={styles.preview} />}
-          <Text style={styles.hint}>{t('cover.dropHint')}</Text>
+          <Text variant="caption">{t('cover.dropHint')}</Text>
         </View>
       )}
       {!web && cover && <CoverImage file={cover.large} style={styles.previewAlone} />}
@@ -178,5 +179,4 @@ const makeStyles = (c: Colors) =>
       borderColor: c.line,
       borderRadius: radius.control,
     },
-    hint: { ...typeScale.caption, color: c.muted },
   });

@@ -7,7 +7,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -16,7 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from './button';
 import type { IconComponent } from './icon';
 import { useKeyboardTop } from './keyboard';
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 type Action = { label: string; onPress: () => void; disabled?: boolean };
@@ -134,7 +134,7 @@ export function Sheet({
           <View {...pan.panHandlers} style={styles.top}>
             <View style={styles.handle} />
             <View style={styles.head}>
-              <Text style={styles.title} numberOfLines={2}>
+              <Text variant="sourceTitle" style={styles.title} numberOfLines={2}>
                 {title}
               </Text>
               <View style={styles.close}>
@@ -200,7 +200,7 @@ export function SheetAction({
 }) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
-  const ink = destructive ? colors.danger : colors.fg;
+  const ink = destructive ? 'danger' : 'fg';
   return (
     <Pressable
       role="button"
@@ -210,8 +210,10 @@ export function SheetAction({
       onPress={onPress}
       style={({ pressed }) => [styles.action, disabled && styles.off, pressed && styles.pressed]}
     >
-      <Icon color={ink} size={20} strokeWidth={1.6} />
-      <Text style={[styles.actionLabel, { color: ink }]}>{label}</Text>
+      <Icon color={colors[ink]} size={20} strokeWidth={1.6} />
+      <Text variant="body" color={ink}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -237,7 +239,7 @@ const makeStyles = (c: Colors) =>
     head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
     // One line of title stands in the middle of Kapat's 44pt touch area; a
     // second line goes below, Kapat staying on the first one's baseline.
-    title: { ...typeScale.sourceTitle, color: c.fg, flex: 1, paddingTop: 10, paddingBottom: 9 },
+    title: { flex: 1, paddingTop: 10, paddingBottom: 9 },
     close: { marginTop: 2, marginBottom: -2 },
     // The scroll clips what it holds: it reaches 4 past the body on every side, so a field at the
     // body's edge keeps its border and its 3px focus ring.
@@ -257,7 +259,6 @@ const makeStyles = (c: Colors) =>
       borderTopWidth: 1,
       borderTopColor: c.lineSoft,
     },
-    actionLabel: { ...typeScale.body },
     off: { opacity: 0.45 },
     pressed: { opacity: 0.7 },
   });

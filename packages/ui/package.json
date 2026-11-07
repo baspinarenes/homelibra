@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./theme": "./src/theme.ts",
+    "./text": "./src/text.ts",
     "./text-field": "./src/text-field.ts",
     "./button": "./src/button.ts",
     "./chip": "./src/chip.ts",

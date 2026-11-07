@@ -1,7 +1,8 @@
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, fonts, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 /**
@@ -16,9 +17,11 @@ export function Strip({ title, detail, onPress }: { title: string; detail?: stri
   return (
     <Pressable role="link" onPress={onPress} style={({ pressed }) => [styles.strip, pressed && styles.pressed]}>
       <View style={styles.text}>
-        <Text style={styles.title}>{title}</Text>
+        <Text variant="bodyStrong" color="warn">
+          {title}
+        </Text>
         {detail !== undefined && (
-          <Text style={styles.detail} numberOfLines={1}>
+          <Text variant="caption" color="ink2" numberOfLines={1}>
             {detail}
           </Text>
         )}
@@ -44,6 +47,4 @@ const makeStyles = (c: Colors) =>
     },
     pressed: { opacity: 0.7 },
     text: { flex: 1, minWidth: 0, gap: 2 },
-    title: { ...typeScale.body, fontFamily: fonts.sansSemiBold, color: c.warn },
-    detail: { ...typeScale.caption, color: c.ink2 },
   });

@@ -1,7 +1,8 @@
 import { Button, type IconComponent } from '@homelibra/ui/button';
+import { Text } from '@homelibra/ui/text';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
 /**
  * The Source form's identifier card: the ISBN (Kitap) or the DOI (Makale) on
@@ -33,7 +34,9 @@ export function IdentifierCard({
   const { colors } = useTheme();
   return (
     <View style={styles.card}>
-      <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
+      <Text variant="fieldLabel" color="accentFg">
+        {label}
+      </Text>
       <View style={styles.row}>
         <TextInput
           aria-label={label}
@@ -50,8 +53,8 @@ export function IdentifierCard({
         </View>
       </View>
       {hint && (
-        <Text role={alert ? 'alert' : 'status'} style={[styles.hint, alert && styles.alert]}>
-          {hint}
+        <Text variant="caption" color="accentFg" role={alert ? 'alert' : 'status'}>
+          {alert ? <Text variant="strong">{hint}</Text> : hint}
         </Text>
       )}
       {children && <View style={styles.foot}>{children}</View>}
@@ -68,7 +71,6 @@ const makeStyles = (c: Colors) =>
       backgroundColor: c.accent,
       borderRadius: radius.control,
     },
-    label: { ...typeScale.fieldLabel, color: c.accentFg },
     row: { flexDirection: 'row', gap: space.sm },
     input: {
       ...typeScale.identifier,
@@ -86,8 +88,6 @@ const makeStyles = (c: Colors) =>
     },
     // The button keeps its own height, centred on the input's.
     action: { justifyContent: 'center' },
-    hint: { ...typeScale.caption, color: c.accentFg },
-    alert: typeScale.strong,
     foot: {
       flexDirection: 'row',
       alignItems: 'center',

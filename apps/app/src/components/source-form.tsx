@@ -17,23 +17,16 @@ import {
   sourceTypes,
 } from '@homelibra/core/source';
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import {
-  type Colors,
-  radius,
-  space,
-  type as typeScale,
-  useTheme,
-  useThemedStyles,
-  wideMinWidth,
-} from '@homelibra/ui/theme';
+import { type Colors, radius, space, useTheme, useThemedStyles, wideMinWidth } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import Link from 'lucide-react-native/icons/link';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/components/date-input';
 import { IdentifierCard } from '@/components/identifier-card';
@@ -288,7 +281,7 @@ export function SourceForm({
       />
       <View style={[styles.form, wide && styles.formWide]}>
         <View style={styles.field}>
-          <Text style={styles.label}>{t('sourceForm.type').toLocaleUpperCase('tr')}</Text>
+          <Text variant="micro">{t('sourceForm.type')}</Text>
           <View accessibilityRole="radiogroup" accessibilityLabel={t('sourceForm.type')} style={styles.types}>
             {sourceTypes.map((type) => (
               <View key={type} style={[styles.typeCell, { width: wide ? '20%' : '33.333%' }]}>
@@ -356,12 +349,12 @@ export function SourceForm({
 
         {!tuckedOpen && layout.tucked.length > 0 && (
           <Pressable accessibilityRole="button" onPress={() => setTuckedOpen(true)} style={styles.more}>
-            <Text style={styles.moreText}>
+            <Text variant="button">
               {t('sourceForm.showTucked', {
                 fields: layout.tucked.map((key) => t(`sourceFields.${key}`)).join(', '),
               })}
               {tuckedFilled > 0 && (
-                <Text style={styles.moreCount}> {t('sourceForm.tuckedFilled', { count: tuckedFilled })}</Text>
+                <Text variant="caption"> {t('sourceForm.tuckedFilled', { count: tuckedFilled })}</Text>
               )}
             </Text>
           </Pressable>
@@ -376,7 +369,7 @@ export function SourceForm({
         />
 
         {kept.length > 0 && (
-          <Text style={styles.kept}>
+          <Text variant="caption">
             {t('sourceForm.keptHidden', {
               fields: kept
                 .map((key) =>
@@ -403,7 +396,9 @@ function FormScreen({ notice, children }: { notice: string | null; children: Rea
     <View style={styles.screen}>
       {notice && (
         <View role="alert" style={styles.strip}>
-          <Text style={styles.notice}>{notice}</Text>
+          <Text variant="label" color="warn">
+            {notice}
+          </Text>
         </View>
       )}
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -427,9 +422,11 @@ function TypeChip({ type, selected, onPress }: { type: SourceType; selected: boo
       <View style={styles.typeHead}>
         <SourceTypeIcon type={type} color={selected ? colors.accent : colors.ink2} />
         {/* Wraps on a phone rather than cutting "Süreli yayın" short. */}
-        <Text style={[styles.typeLabel, selected && styles.typeLabelSelected]}>{t(`sourceTypes.${type}.label`)}</Text>
+        <Text variant="label" color={selected ? 'accent' : 'fg'} style={styles.typeLabel}>
+          {t(`sourceTypes.${type}.label`)}
+        </Text>
       </View>
-      <Text style={styles.typeScope}>{t(`sourceTypes.${type}.scope`)}</Text>
+      <Text variant="captionSm">{t(`sourceTypes.${type}.scope`)}</Text>
     </Pressable>
   );
 }
@@ -441,7 +438,6 @@ const makeStyles = (c: Colors) =>
     form: { gap: space.lg },
     formWide: { width: '100%', maxWidth: 860, alignSelf: 'center' },
     field: { gap: 6 },
-    label: { ...typeScale.micro, color: c.muted },
     types: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -3 },
     typeCell: { padding: 3 },
     typeChip: {
@@ -456,16 +452,11 @@ const makeStyles = (c: Colors) =>
     },
     typeChipSelected: { borderColor: c.accent, backgroundColor: c.accentSub },
     typeHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
-    typeLabel: { ...typeScale.label, color: c.fg, flexShrink: 1, marginTop: -1 },
-    typeLabelSelected: { color: c.accent },
-    typeScope: { ...typeScale.captionSm, color: c.muted },
+    typeLabel: { flexShrink: 1, marginTop: -1 },
     stack: { gap: space.lg },
     columns: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.lg, marginHorizontal: -space.sm },
     column: { width: '50%', paddingHorizontal: space.sm },
     more: { alignSelf: 'flex-start', paddingVertical: 6 },
-    moreText: { ...typeScale.button, color: c.accent },
-    moreCount: { ...typeScale.caption, color: c.muted },
-    kept: { ...typeScale.caption, color: c.muted },
     // Under the header, the screen's width: a failed save or being offline.
     strip: {
       paddingVertical: 10,
@@ -474,5 +465,4 @@ const makeStyles = (c: Colors) =>
       borderBottomWidth: 1,
       borderBottomColor: c.line,
     },
-    notice: { ...typeScale.label, color: c.warn },
   });

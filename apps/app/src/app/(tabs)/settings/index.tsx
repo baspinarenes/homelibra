@@ -1,19 +1,19 @@
 import { Section, Sections } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
 import { SettingsRow, SettingsRows } from '@homelibra/ui/settings-row';
+import { Text } from '@homelibra/ui/text';
 import {
   type Colors,
   setThemePreference,
   space,
   type ThemePreference,
-  type as typeScale,
   useThemedStyles,
   useThemePreference,
 } from '@homelibra/ui/theme';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ContactSection, PrivacyDocumentsSection } from '@/components/privacy-sections';
 import { SignOutButton } from '@/components/sign-out-button';
@@ -59,7 +59,9 @@ export default function SettingsScreen() {
       <Sections>
         <Section title={t('settings.appearance')}>
           <View style={styles.theme}>
-            <Text style={styles.themeLabel}>{t('settings.themeLabel')}</Text>
+            <Text variant="body" color="fg">
+              {t('settings.themeLabel')}
+            </Text>
             <Segment
               label={t('settings.themeLabel')}
               options={themes}
@@ -68,7 +70,9 @@ export default function SettingsScreen() {
             />
           </View>
           <View style={styles.theme}>
-            <Text style={styles.themeLabel}>{t('settings.lastNotedLabel')}</Text>
+            <Text variant="body" color="fg">
+              {t('settings.lastNotedLabel')}
+            </Text>
             <Segment
               label={t('settings.lastNotedLabel')}
               options={lastNotedLayouts}
@@ -77,7 +81,9 @@ export default function SettingsScreen() {
             />
           </View>
           <View style={styles.theme}>
-            <Text style={styles.themeLabel}>{t('settings.dividerLabel')}</Text>
+            <Text variant="body" color="fg">
+              {t('settings.dividerLabel')}
+            </Text>
             <Segment
               label={t('settings.dividerLabel')}
               options={homeDividers}
@@ -106,7 +112,9 @@ export default function SettingsScreen() {
         </Section>
         <PrivacyDocumentsSection />
         <ContactSection />
-        <Text style={styles.version}>{t('settings.appVersion', { version: Constants.expoConfig?.version ?? '' })}</Text>
+        <Text variant="caption" style={styles.version}>
+          {t('settings.appVersion', { version: Constants.expoConfig?.version ?? '' })}
+        </Text>
       </Sections>
     </ScrollView>
   );
@@ -117,7 +125,6 @@ const makeStyles = (c: Colors) =>
     screen: { flex: 1, backgroundColor: c.page },
     content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
     theme: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-    themeLabel: { ...typeScale.body, color: c.fg },
     signOut: { marginTop: space.lg },
-    version: { ...typeScale.caption, color: c.muted, paddingBottom: 18 },
+    version: { paddingBottom: 18 },
   });
