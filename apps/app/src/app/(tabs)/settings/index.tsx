@@ -1,4 +1,4 @@
-import { Section, Sections } from '@homelibra/ui/section-heading';
+import { Section, Sections, SectionText } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
 import { SettingsRow, SettingsRows } from '@homelibra/ui/settings-row';
 import {
@@ -30,7 +30,7 @@ import {
 /**
  * Ayarlar, on one page (#113): the theme and how Genel Bakış looks, the Account's own pages (address,
  * export, deletion) with sign-out under them (#140), the privacy documents,
- * contact, and the app's version. Every right of #40 (story 14) is one tap away.
+ * contact, and the app's version as a section of its own. Every right of #40 (story 14) is one tap away.
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -106,7 +106,9 @@ export default function SettingsScreen() {
         </Section>
         <PrivacyDocumentsSection />
         <ContactSection />
-        <Text style={styles.version}>{t('settings.appVersion', { version: Constants.expoConfig?.version ?? '' })}</Text>
+        <Section title={t('settings.versionSection')} spacing="text">
+          <SectionText>{Constants.expoConfig?.version}</SectionText>
+        </Section>
       </Sections>
     </ScrollView>
   );
@@ -119,5 +121,4 @@ const makeStyles = (c: Colors) =>
     theme: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
     themeLabel: { ...typeScale.body, color: c.fg },
     signOut: { marginTop: space.lg },
-    version: { ...typeScale.caption, color: c.muted, paddingBottom: 18 },
   });
