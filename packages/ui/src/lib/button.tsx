@@ -12,7 +12,7 @@ export type ButtonVariant = 'primary' | 'danger' | 'secondary' | 'small' | 'text
  * - `primary`: accent ground. `danger`: for the step that cannot be taken back.
  * - `secondary`: a frame, beside a primary one; with a `tone`, frame and word take that colour.
  * - `small`: a framed accent word in a row (Düzenle · 4 etiketsiz).
- * - `text`: a word alone (Kapat, Çıkış yap), in `accent` or `danger`.
+ * - `text`: a word alone (Çıkış yap), in `accent` or `danger`.
  */
 export function Button({
   label,

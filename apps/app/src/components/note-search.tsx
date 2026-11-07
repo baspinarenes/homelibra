@@ -105,7 +105,8 @@ export function narrowView<V extends NarrowableView>(view: V, matches: Matches |
 }
 
 /**
- * The box itself: × empties it, `onClose` (when given) puts it away.
+ * The box itself: the small × inside empties it; the X beside it, named
+ * "Kapat" for screen readers, puts it away (when `onClose` is given).
  * Offline it says a search needs the connection, so no result is taken
  * for "not yok" (#40, story 158).
  */
@@ -155,8 +156,13 @@ export function SearchField({
         )}
       </View>
       {onClose && (
-        <Pressable accessibilityRole="button" onPress={onClose} hitSlop={8}>
-          <Text variant="button">{t('noteSearch.close')}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('noteSearch.close')}
+          onPress={onClose}
+          style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+        >
+          <X color={colors.fg} size={24} strokeWidth={1.6} />
         </Pressable>
       )}
     </View>
@@ -238,6 +244,16 @@ const makeStyles = (c: Colors) =>
       paddingVertical: 8,
     },
     clear: { position: 'absolute', right: 10 },
+    // A 44 touch area, its edges past the X's ink: the X stands `md` from the box and on the gutter.
+    close: {
+      width: 44,
+      height: 44,
+      marginHorizontal: -10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.control,
+    },
+    pressed: { opacity: 0.7 },
     hit: { backgroundColor: c.mark },
     centered: { textAlign: 'center' },
   });

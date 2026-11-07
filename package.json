@@ -10,7 +10,9 @@
     "typecheck": "pnpm -r --parallel typecheck",
     "lint": "eslint .",
     "lint:boundaries": "depcruise apps packages",
-    "test": "pnpm -r test",
+    "test": "pnpm -r test && pnpm test:scripts",
+    "test:scripts": "node --test \"scripts/*.test.mjs\"",
+    "version:bump": "node scripts/version-bump.mjs bump",
     "db:up": "docker compose up -d --build postgres",
     "prepare": "husky"
   },
