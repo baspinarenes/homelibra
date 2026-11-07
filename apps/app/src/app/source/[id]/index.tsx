@@ -2,13 +2,14 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { lastCaptured } from '@homelibra/core/note';
 import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
-import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
+import PenLine from 'lucide-react-native/icons/pen-line';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -164,7 +165,8 @@ function SourcePage({
           title: '',
           headerTitle: () => <OutboxStatus />,
           headerRight: () => (
-            <HeaderTextAction
+            <HeaderIconAction
+              icon={PenLine}
               label={t('sourcePage.edit')}
               onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
             />

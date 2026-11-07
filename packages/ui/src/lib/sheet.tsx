@@ -1,3 +1,4 @@
+import X from 'lucide-react-native/icons/x';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -26,11 +27,12 @@ const dismissDistance = 80;
 
 /**
  * A sheet from the bottom of the screen, the same in every flow: the handle,
- * the title and "Kapat" always in one place. "Kapat", a drag down and a tap on
- * the dimmed screen close it; there is never a second close button. It stops
- * 48 below the top, and what does not fit scrolls inside it. Its foot keeps
- * 14 clear of the phone's navigation bar. With the keyboard up it stands on
- * the keyboard, its field and the action in sight.
+ * the title and its X always in one place. The X (named "Kapat" for screen
+ * readers), a drag down and a tap on the dimmed screen close it; there is
+ * never a second close button. It stops 48 below the top, and what does not
+ * fit scrolls inside it. Its foot keeps 14 clear of the phone's navigation
+ * bar. With the keyboard up it stands on the keyboard, its field and the
+ * action in sight.
  * A sheet that `fill`s is a list to choose from under a field: it stands at
  * its full height while the list narrows, and the list scrolls itself.
  */
@@ -48,7 +50,7 @@ export function Sheet({
   visible: boolean;
   /** Wraps onto a second line when long. */
   title: string;
-  /** "Kapat", from the app's copy. */
+  /** What screen readers call the X: "Kapat", from the app's copy. */
   closeLabel: string;
   onClose: () => void;
   /** Once the sheet has gone (web and iOS): the place to give focus back. */
@@ -65,6 +67,7 @@ export function Sheet({
   children: ReactNode;
 }) {
   const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const keyboardTop = useKeyboardTop();
   const { height } = useWindowDimensions();
@@ -137,9 +140,14 @@ export function Sheet({
               <Text style={styles.title} numberOfLines={2}>
                 {title}
               </Text>
-              <View style={styles.close}>
-                <Button label={closeLabel} variant="text" onPress={onClose} />
-              </View>
+              <Pressable
+                role="button"
+                aria-label={closeLabel}
+                onPress={onClose}
+                style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+              >
+                <X color={colors.fg} size={24} strokeWidth={1.6} />
+              </Pressable>
             </View>
           </View>
           {fill ? (
@@ -235,10 +243,20 @@ const makeStyles = (c: Colors) =>
     top: { gap: 14 },
     handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: c.faint, marginBottom: 2 },
     head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-    // One line of title stands in the middle of Kapat's 44pt touch area; a
-    // second line goes below, Kapat staying on the first one's baseline.
+    // One line of title stands in the middle of the X's 44pt touch area; a
+    // second line goes below, the X staying beside the first one.
     title: { ...typeScale.sourceTitle, color: c.fg, flex: 1, paddingTop: 10, paddingBottom: 9 },
-    close: { marginTop: 2, marginBottom: -2 },
+    // The touch area reaches past the gutter so the X itself stands on it.
+    close: {
+      width: 44,
+      height: 44,
+      marginTop: 2,
+      marginBottom: -2,
+      marginRight: -10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.control,
+    },
     // The scroll clips what it holds: it reaches 4 past the body on every side, so a field at the
     // body's edge keeps its border and its 3px focus ring.
     scroll: { flexGrow: 0, flexShrink: 1, margin: -4 },

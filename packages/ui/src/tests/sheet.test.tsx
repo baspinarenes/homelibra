@@ -20,6 +20,18 @@ describe('Sheet', () => {
     expect(byRole(page, 'button').map(nameOf)).toEqual(['Kapat']);
   });
 
+  it('closes with an X, Kapat only its name for screen readers', () => {
+    const page = render(
+      <Sheet visible title="Konum" closeLabel="Kapat" onClose={noop}>
+        <Text>s. 12</Text>
+      </Sheet>,
+    );
+    const [close] = byRole(page, 'button');
+    expect(nameOf(close!)).toBe('Kapat');
+    expect(text(close!)).toBe('');
+    expect(text(byRole(page, 'dialog')[0]!)).not.toContain('Kapat');
+  });
+
   it('puts the main action last, a secondary one before it', () => {
     const page = render(
       <Sheet
