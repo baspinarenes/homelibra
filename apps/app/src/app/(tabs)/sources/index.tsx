@@ -320,10 +320,11 @@ function HeaderActions({ filter, onAdd }: { filter?: { on: boolean; onPress: () 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    tabs: { paddingHorizontal: space.lg, paddingTop: 2 },
+    // Lines up with the root title.
+    tabs: { paddingHorizontal: space.gutter, paddingTop: 2 },
     list: { flex: 1 },
     // Grows so an empty tab's message can sit in the middle.
-    content: { flexGrow: 1, paddingHorizontal: space.lg, paddingBottom: space.xxl },
+    content: { flexGrow: 1, paddingHorizontal: space.gutter, paddingBottom: space.xxl },
     pending: { flex: 1 },
     spinner: { color: c.accent },
     headerActions: { flexDirection: 'row', alignItems: 'center' },
