@@ -45,7 +45,7 @@ export const tr = {
     dividerRule: 'Çizgi',
     dividerBand: 'Şerit',
     account: 'Hesap',
-    appVersion: 'Homelibra {{version}}',
+    versionSection: 'Sürüm',
   },
   // Hoş geldin: Homelibra in a few lines, once per Account; Başla records the terms accepted at sign-in (#118).
   welcome: {
