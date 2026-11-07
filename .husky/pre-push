@@ -1,0 +1,15 @@
+# CI's `version` check (scripts/version-bump.mjs), run before the push rather
+# than after it: a branch that changes what ships in the app raises
+# apps/app/app.json over main. Main itself is not checked, as in CI; nor is a
+# ref other than the one checked out, or a deleted one.
+head=$(git rev-parse HEAD)
+check=
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$remote_ref" = refs/heads/main ] && continue
+  [ "$local_sha" = "$head" ] && check=1
+done
+[ -z "$check" ] && exit 0
+
+# Against main as it is now, not as this clone last saw it.
+git fetch -q origin main || echo "pre-push: could not fetch main; checking against the last one fetched." >&2
+node scripts/version-bump.mjs check origin/main
