@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 /**
- * The writing box's Locator editor, a sheet over the Source page. Sources cited by page,
+ * The writing sheet's Locator editor, a sheet over it. Sources cited by page,
  * folio or time get a pad of the keys their Locators are written with; the
  * rest, and anything the pad cannot write, take free text. Either way the
  * Locator is stored as the text it shows, and Konum yok | Tamam stand at the foot.
