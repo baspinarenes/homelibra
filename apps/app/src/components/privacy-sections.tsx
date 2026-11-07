@@ -1,10 +1,9 @@
 import { Section, SectionText } from '@homelibra/ui/section-heading';
 import { SettingsRow, SettingsRows } from '@homelibra/ui/settings-row';
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text } from 'react-native';
 
 import { contactEmail } from '@/lib/contact';
 
@@ -37,15 +36,14 @@ export function ContactSection() {
 }
 
 export function ContactLink() {
-  const styles = useThemedStyles(makeStyles);
   return (
-    <Text accessibilityRole="link" style={styles.link} onPress={() => Linking.openURL(`mailto:${contactEmail}`)}>
+    <Text
+      variant="label"
+      color="accent"
+      accessibilityRole="link"
+      onPress={() => Linking.openURL(`mailto:${contactEmail}`)}
+    >
       {contactEmail}
     </Text>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    link: { ...typeScale.label, color: c.accent },
-  });

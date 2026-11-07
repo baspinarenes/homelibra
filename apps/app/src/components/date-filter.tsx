@@ -1,9 +1,10 @@
 import { type Calendar, calendars, formatDate, type YearRange, yearRange } from '@homelibra/core/date';
 import { Segment } from '@homelibra/ui/segment';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 /**
  * The Tarih filter as the scholar types it (#122): one calendar for both
@@ -60,7 +61,7 @@ export function YearRangeFields({
   const year = (side: 'from' | 'to') => (
     <View style={styles.year}>
       {/* Read out by the field itself. */}
-      <Text aria-hidden style={styles.yearLabel}>
+      <Text variant="labelSm" color="ink2" aria-hidden>
         {t(`dateFilter.${side}`)}
       </Text>
       <TextField
@@ -87,15 +88,17 @@ export function YearRangeFields({
       />
       <View style={styles.years}>
         {year('from')}
-        <Text style={styles.dash}>–</Text>
+        <Text variant="body" color="muted" style={styles.dash}>
+          –
+        </Text>
         {year('to')}
       </View>
       {missing ? (
-        <Text style={styles.problem}>
+        <Text variant="caption" color="danger">
           {t('dateFilter.notInCalendar', { year: missing, calendar: t(`date.calendars.${value.calendar}`) })}
         </Text>
       ) : (
-        <Text style={styles.hint}>
+        <Text variant="caption">
           {value.calendar !== 'gregorian' && hasYear(value) && bounds
             ? t('dateFilter.hint', {
                 from: bounds.gregorian.from ?? t('dateFilter.open'),
@@ -108,14 +111,11 @@ export function YearRangeFields({
   );
 }
 
-const makeStyles = (c: Colors) =>
+const makeStyles = () =>
   StyleSheet.create({
     fields: { gap: 6 },
     years: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
     year: { flex: 1, gap: 6 },
-    yearLabel: { ...typeScale.labelSm, color: c.ink2 },
     // Level with the inputs' text, whatever the label above them.
-    dash: { ...typeScale.body, width: 14, paddingBottom: 12, textAlign: 'center', color: c.muted },
-    hint: { ...typeScale.caption, color: c.muted },
-    problem: { ...typeScale.caption, color: c.danger },
+    dash: { width: 14, paddingBottom: 12, textAlign: 'center' },
   });

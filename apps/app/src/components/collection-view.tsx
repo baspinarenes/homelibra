@@ -1,11 +1,12 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, SectionList, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, SectionList, StyleSheet, Switch, View } from 'react-native';
 
 import { MarkedText, type Match, type Matches } from '@/components/note-search';
 
@@ -54,7 +55,9 @@ export function CollectionView({
         stickySectionHeadersEnabled
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            <Text style={styles.empty}>{empty}</Text>
+            <Text variant="body" style={styles.empty}>
+              {empty}
+            </Text>
             {underEmpty}
           </View>
         }
@@ -88,11 +91,13 @@ function SourceHeading({ source, onPress }: { source: Group['source']; onPress: 
       onPress={onPress}
       style={({ pressed }) => [styles.heading, pressed && styles.pressed]}
     >
-      <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-      <Text style={styles.source} numberOfLines={1}>
+      <Text variant="micro" color="accent">
+        {t(`sourceTypes.${source.type}.label`)}
+      </Text>
+      <Text variant="label" style={styles.source} numberOfLines={1}>
         {[source.author, source.title].filter(Boolean).join(', ')}
       </Text>
-      <Text style={styles.date}>{source.date ? formatDate(source.date) : t('collection.undated')}</Text>
+      <Text variant="caption">{source.date ? formatDate(source.date) : t('collection.undated')}</Text>
     </Pressable>
   );
 }
@@ -123,14 +128,20 @@ function NoteRow({
       onPress={onPress}
       style={({ pressed }) => [styles.row, divided && styles.divided, pressed && styles.pressed]}
     >
-      <Text style={styles.locator}>{note.locator ?? '—'}</Text>
+      <Text variant="locator" style={styles.locator}>
+        {note.locator ?? '—'}
+      </Text>
       <View style={styles.texts}>
-        {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} style={styles.excerpt} />}
-        {note.comment && <MarkedText text={note.comment} marks={match?.comment} style={styles.comment} prefix="↳ " />}
+        {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} variant="excerptSm" />}
+        {note.comment && <MarkedText text={note.comment} marks={match?.comment} variant="commentSm" prefix="↳ " />}
         {note.why.via === 'note' ? (
-          <Text style={styles.why}>{names}</Text>
+          <Text variant="caption" color="chipInk">
+            {names}
+          </Text>
         ) : (
-          <Text style={styles.viaSource}>{t('collection.viaSource', { names })}</Text>
+          <Text variant="caption" color="warn">
+            {t('collection.viaSource', { names })}
+          </Text>
         )}
       </View>
     </Pressable>
@@ -145,7 +156,7 @@ function NoteRow({
 export function ViewName({ name, onPress, hint }: { name: string; onPress?: () => void; hint?: string }) {
   const styles = useThemedStyles(makeStyles);
   const heading = (
-    <Text role="heading" style={styles.name}>
+    <Text variant="sourceTitle" style={styles.name}>
       {name}
     </Text>
   );
@@ -187,9 +198,11 @@ export function SourceNotesSwitch({
         // react-native-web colours the thumb of an "on" switch on its own otherwise.
         {...({ activeThumbColor: colors.surface } as object)}
       />
-      <Text style={styles.switchLabel}>
+      <Text variant="label" style={styles.switchLabel}>
         {t('collection.sourceNotes')}{' '}
-        <Text style={styles.switchCount}>{t('collection.sourceNotesCount', { count })}</Text>
+        <Text variant="label" color="muted">
+          {t('collection.sourceNotesCount', { count })}
+        </Text>
       </Text>
     </View>
   );
@@ -198,9 +211,8 @@ export function SourceNotesSwitch({
 /** "N not · M kaynak"; while a search narrows the view, "2 / 15 not · 1 kaynak" against the whole view's `of`. */
 export function ViewCount({ view, of }: { view: ViewData; of?: ViewData }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <Text style={styles.count}>
+    <Text variant="caption">
       {of && of !== view
         ? t('noteSearch.viewMatchCounts', { shown: view.noteCount, notes: of.noteCount, sources: view.sourceCount })
         : t('collection.counts', { notes: view.noteCount, sources: view.sourceCount })}
@@ -221,7 +233,7 @@ const makeStyles = (c: Colors) =>
     },
     content: { paddingBottom: space.xxl },
     emptyBox: { gap: space.sm, padding: space.xl },
-    empty: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    empty: { textAlign: 'center' },
     pressed: { opacity: 0.7 },
     heading: {
       flexDirection: 'row',
@@ -234,21 +246,13 @@ const makeStyles = (c: Colors) =>
       borderBottomColor: c.line,
       backgroundColor: c.page,
     },
-    type: { ...typeScale.micro, color: c.accent },
-    source: { ...typeScale.label, flex: 1, minWidth: 0, color: c.fg },
-    date: { ...typeScale.caption, color: c.muted },
+    source: { flex: 1, minWidth: 0 },
     row: { flexDirection: 'row', gap: space.md, paddingVertical: space.sm + 2, paddingHorizontal: space.lg },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    locator: { ...typeScale.locator, color: c.muted, width: 72, paddingTop: 3 },
+    locator: { width: 72, paddingTop: 3 },
     texts: { flex: 1, gap: 4 },
-    excerpt: { ...typeScale.excerptSm, color: c.quoteInk },
-    comment: { ...typeScale.commentSm, color: c.ink3 },
-    why: { ...typeScale.caption, color: c.chipInk },
-    viaSource: { ...typeScale.caption, color: c.warn },
     // EB Garamond reaches 27 below and above at 21; the padding keeps g, ğ, y of the last line.
-    name: { ...typeScale.sourceTitle, color: c.fg, paddingBottom: 2 },
+    name: { paddingBottom: 2 },
     switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    switchLabel: { ...typeScale.label, flexShrink: 1, color: c.fg },
-    switchCount: { color: c.muted },
-    count: { ...typeScale.caption, color: c.muted },
+    switchLabel: { flexShrink: 1 },
   });

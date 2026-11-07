@@ -1,12 +1,13 @@
 import { Button } from '@homelibra/ui/button';
 import { Section, Sections } from '@homelibra/ui/section-heading';
 import { SettingsRow } from '@homelibra/ui/settings-row';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { CodeInput } from '@/components/code-input';
 import { authClient } from '@/lib/auth-client';
@@ -51,9 +52,11 @@ export default function AccountDeletionScreen() {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Sections>
-          <Text style={[styles.lead, styles.first]}>{t('accountDeletion.lead')}</Text>
+          <Text variant="body" color="fg" style={styles.first}>
+            {t('accountDeletion.lead')}
+          </Text>
           <Section title={t('accountDeletion.exportHeading')}>
-            <Text style={styles.text}>{t('accountDeletion.exportLead')}</Text>
+            <Text variant="body">{t('accountDeletion.exportLead')}</Text>
             <SettingsRow label={t('libraryExport.title')} onPress={() => router.push('/settings/export')} />
           </Section>
           <View style={styles.actions}>
@@ -65,7 +68,11 @@ export default function AccountDeletionScreen() {
               onPress={() => requestCode.mutate()}
             />
             <Button label={t('accountDeletion.cancel')} variant="secondary" block onPress={() => router.back()} />
-            {requestCode.isError ? <Text style={styles.error}>{t('accountDeletion.errors.sendFailed')}</Text> : null}
+            {requestCode.isError ? (
+              <Text variant="label" color="warn">
+                {t('accountDeletion.errors.sendFailed')}
+              </Text>
+            ) : null}
           </View>
         </Sections>
       </ScrollView>
@@ -74,7 +81,9 @@ export default function AccountDeletionScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-      <Text style={styles.lead}>{t('accountDeletion.codeSentTo', { email: session?.user.email ?? '' })}</Text>
+      <Text variant="body" color="fg">
+        {t('accountDeletion.codeSentTo', { email: session?.user.email ?? '' })}
+      </Text>
       <View style={styles.field}>
         <CodeInput
           label={t('accountDeletion.codeLabel')}
@@ -82,7 +91,11 @@ export default function AccountDeletionScreen() {
           onChange={setCode}
           onSubmit={() => confirm.mutate({ code })}
         />
-        {confirm.isError ? <Text style={styles.invalid}>{t('accountDeletion.errors.invalidCode')}</Text> : null}
+        {confirm.isError ? (
+          <Text variant="caption" color="danger">
+            {t('accountDeletion.errors.invalidCode')}
+          </Text>
+        ) : null}
       </View>
       <Button
         label={t('accountDeletion.submit')}
@@ -100,7 +113,11 @@ export default function AccountDeletionScreen() {
           onPress={() => requestCode.mutate()}
         />
       </View>
-      {requestCode.isError ? <Text style={styles.error}>{t('accountDeletion.errors.sendFailed')}</Text> : null}
+      {requestCode.isError ? (
+        <Text variant="label" color="warn">
+          {t('accountDeletion.errors.sendFailed')}
+        </Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -118,13 +135,9 @@ const makeStyles = (c: Colors) =>
       paddingBottom: space.xl,
       gap: space.lg,
     },
-    lead: { ...typeScale.body, color: c.fg },
     first: { paddingTop: space.md, paddingBottom: 18 },
-    text: { ...typeScale.body, color: c.ink2 },
     actions: { gap: 10, paddingVertical: 18 },
     field: { gap: 6 },
-    invalid: { ...typeScale.caption, color: c.danger },
     // The button keeps 4 on each side of its word; this puts the word on the gutter.
     resend: { marginLeft: -4 },
-    error: { ...typeScale.label, color: c.warn },
   });

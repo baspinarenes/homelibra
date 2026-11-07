@@ -1,13 +1,14 @@
 import { Button } from '@homelibra/ui/button';
 import { BookIllustration } from '@homelibra/ui/illustration';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import BookOpen from 'lucide-react-native/icons/book-open';
 import Download from 'lucide-react-native/icons/download';
 import Quote from 'lucide-react-native/icons/quote';
 import Tag from 'lucide-react-native/icons/tag';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authClient } from '@/lib/auth-client';
@@ -45,10 +46,8 @@ export default function WelcomeScreen() {
           <BookIllustration />
         </View>
         <View style={styles.words}>
-          <Text role="heading" style={styles.title}>
-            {t('welcome.title')}
-          </Text>
-          <Text style={styles.lead}>{t('welcome.lead')}</Text>
+          <Text variant="display">{t('welcome.title')}</Text>
+          <Text variant="body">{t('welcome.lead')}</Text>
         </View>
         <View style={styles.features}>
           {features.map(({ icon: Icon, key }) => (
@@ -56,7 +55,9 @@ export default function WelcomeScreen() {
               <View style={styles.icon}>
                 <Icon color={colors.accent} size={20} strokeWidth={1.6} />
               </View>
-              <Text style={styles.featureText}>{t(key)}</Text>
+              <Text variant="body" color="ink3" style={styles.featureText}>
+                {t(key)}
+              </Text>
             </View>
           ))}
         </View>
@@ -67,7 +68,11 @@ export default function WelcomeScreen() {
             busy={accept.isPending}
             onPress={() => accept.mutate({ version: legalVersion })}
           />
-          {accept.isError ? <Text style={styles.error}>{t('welcome.failed')}</Text> : null}
+          {accept.isError ? (
+            <Text variant="label" color="warn">
+              {t('welcome.failed')}
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -89,13 +94,10 @@ const makeStyles = (c: Colors) =>
     // The drawing's left page starts 8px inside it; pull it back to the gutter.
     illustration: { marginLeft: -space.sm },
     words: { gap: space.sm, marginTop: 28 },
-    title: { ...typeScale.display, color: c.fg },
-    lead: { ...typeScale.body, color: c.ink2 },
     features: { gap: 14, marginTop: 28 },
     feature: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
     icon: { marginTop: 1 },
-    featureText: { ...typeScale.body, color: c.ink3, flex: 1 },
+    featureText: { flex: 1 },
     // Pinned to the foot of a tall screen, right after the features on a short one.
     action: { marginTop: 'auto', paddingTop: space.xl, gap: space.md },
-    error: { ...typeScale.label, color: c.warn },
   });

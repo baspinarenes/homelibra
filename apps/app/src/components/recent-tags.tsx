@@ -1,9 +1,10 @@
 import { SectionHeading } from '@homelibra/ui/section-heading';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { HomeDivider } from '@/components/home-divider';
 import { useTRPC } from '@/lib/trpc';
@@ -44,8 +45,10 @@ export function RecentTags() {
             onPress={() => router.push({ pathname: '/tag/[id]', params: { id: tag.id } })}
             style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
           >
-            <Text style={styles.name}>{tag.name}</Text>
-            <Text style={styles.counts}>{t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}</Text>
+            <Text variant="body" color="fg" style={styles.name}>
+              {tag.name}
+            </Text>
+            <Text variant="count">{t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}</Text>
           </Pressable>
         ))}
       </View>
@@ -67,6 +70,5 @@ const makeStyles = (c: Colors) =>
       paddingVertical: 10,
     },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    name: { ...typeScale.body, flexShrink: 1, color: c.fg },
-    counts: { ...typeScale.count, color: c.muted },
+    name: { flexShrink: 1 },
   });

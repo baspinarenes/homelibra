@@ -1,12 +1,11 @@
 import { tagIdentity, tagName, tagSuggestKey } from '@homelibra/core/tag';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { Sheet } from '@homelibra/ui/sheet';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text } from 'react-native';
 
 import { useTRPC } from '@/lib/trpc';
 
@@ -61,7 +60,6 @@ export function TagPicker({
 
 function TagEditor({ chosen, onChange }: { chosen: string[]; onChange: (names: string[]) => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const known = useQuery(trpc.tags.list.queryOptions({ sort: 'usage' }));
   const [query, setQuery] = useState('');
@@ -99,7 +97,7 @@ function TagEditor({ chosen, onChange }: { chosen: string[]; onChange: (names: s
           ))}
         </ChipRow>
       ) : (
-        <Text style={styles.hint}>{t('tags.none')}</Text>
+        <Text variant="caption">{t('tags.none')}</Text>
       )}
       <TextField
         label={t('tags.search')}
@@ -125,8 +123,3 @@ function TagEditor({ chosen, onChange }: { chosen: string[]; onChange: (names: s
     </>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    hint: { ...typeScale.caption, color: c.muted },
-  });

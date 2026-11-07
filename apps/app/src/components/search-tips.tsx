@@ -1,10 +1,11 @@
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Sheet } from '@homelibra/ui/sheet';
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, useThemedStyles } from '@homelibra/ui/theme';
 import Info from 'lucide-react-native/icons/info';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 type Row = { term: string; description: string };
 
@@ -38,16 +39,16 @@ function Terms({ label, rows, mono = false }: { label: string; rows: readonly Ro
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.field}>
-      <Text role="heading" style={styles.label}>
-        {label.toLocaleUpperCase('tr')}
+      <Text variant="fieldLabel" role="heading">
+        {label}
       </Text>
       <View role="table">
         {rows.map((row, index) => (
           <View key={row.term} role="row" style={[styles.row, index > 0 && styles.ruled]}>
-            <Text role="rowheader" style={mono ? styles.code : styles.term}>
+            <Text variant={mono ? 'operator' : 'bodySmStrong'} role="rowheader" style={styles.term}>
               {row.term}
             </Text>
-            <Text role="cell" style={styles.description}>
+            <Text variant="bodySm" color="ink2" role="cell" style={styles.description}>
               {row.description}
             </Text>
           </View>
@@ -61,10 +62,8 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     sheet: { gap: 18 },
     field: { gap: 6 },
-    label: { ...typeScale.fieldLabel, color: c.muted },
     row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingTop: 2, paddingBottom: 10 },
     ruled: { borderTopWidth: 1, borderTopColor: c.lineSoft, paddingTop: 10 },
-    term: { ...typeScale.bodySm, ...typeScale.strong, color: c.fg, width: 96 },
-    code: { ...typeScale.operator, color: c.ink3, width: 96 },
-    description: { ...typeScale.bodySm, color: c.ink2, flex: 1 },
+    term: { width: 96 },
+    description: { flex: 1 },
   });

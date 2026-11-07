@@ -1,7 +1,7 @@
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { TagChips } from '@/components/tag-chips';
 import { useOffline } from '@/lib/network';
@@ -13,7 +13,6 @@ import { useTRPC } from '@/lib/trpc';
  */
 export function SourceTags({ sourceId, names }: { sourceId: string; names: string[] }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   // Online only: the outbox carries Notes, not a Source's Tags (#58).
@@ -37,14 +36,14 @@ export function SourceTags({ sourceId, names }: { sourceId: string; names: strin
         onChange={(next) => setOnSource.mutate({ sourceId, names: next })}
       />
       {setOnSource.isError && (
-        <Text style={styles.error}>{t(offline ? 'outbox.needsConnection' : 'tags.saveFailed')}</Text>
+        <Text variant="caption" color="danger">
+          {t(offline ? 'outbox.needsConnection' : 'tags.saveFailed')}
+        </Text>
       )}
     </View>
   );
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    tags: { gap: 6 },
-    error: { ...typeScale.caption, color: c.danger },
-  });
+const styles = StyleSheet.create({
+  tags: { gap: 6 },
+});

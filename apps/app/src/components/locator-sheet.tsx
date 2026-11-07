@@ -1,12 +1,13 @@
 import { locatorErase, locatorPad, pressLocatorKey } from '@homelibra/core/note';
 import type { SourceType } from '@homelibra/core/source';
 import { Sheet } from '@homelibra/ui/sheet';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
 import { type Colors, radius, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import Delete from 'lucide-react-native/icons/delete';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 /**
  * The writing box's Locator editor, a sheet over the Source page. Sources cited by page,
@@ -91,8 +92,10 @@ export function LocatorSheet({
         />
       ) : (
         <Text
+          variant={locator ? 'locatorKey' : 'keyHint'}
+          color={fresh && locator !== '' ? 'muted2' : undefined}
           accessibilityLabel={`${t('capture.locator')}: ${locator || t('capture.noLocator')}`}
-          style={[styles.display, !locator && styles.displayEmpty, fresh && locator !== '' && styles.displayFresh]}
+          style={styles.display}
           numberOfLines={1}
         >
           {locator || t('capture.wholeSource')}
@@ -111,7 +114,7 @@ export function LocatorSheet({
               {key === locatorErase ? (
                 <Delete color={colors.ink2} size={20} strokeWidth={1.6} />
               ) : (
-                <Text style={styles.keyLabel}>{key}</Text>
+                <Text variant="key">{key}</Text>
               )}
             </Pressable>
           ))}
@@ -119,7 +122,7 @@ export function LocatorSheet({
       )}
       {pad && !freeText && Platform.OS !== 'web' && (
         <Pressable accessibilityRole="button" onPress={() => setFreeText(true)} style={styles.keyboard}>
-          <Text style={styles.keyboardLabel}>{t('capture.locatorKeyboard')}</Text>
+          <Text variant="link">{t('capture.locatorKeyboard')}</Text>
         </Pressable>
       )}
     </Sheet>
@@ -129,13 +132,9 @@ export function LocatorSheet({
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     display: {
-      ...typeScale.locatorKey,
-      color: c.fg,
       textAlign: 'center',
       paddingVertical: 6,
     },
-    displayEmpty: { ...typeScale.keyHint, color: c.muted },
-    displayFresh: { color: c.muted2 },
     input: { ...typeScale.locatorInput },
     pad: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     key: {
@@ -150,7 +149,5 @@ const makeStyles = (c: Colors) =>
       backgroundColor: c.surface,
     },
     keyPressed: { backgroundColor: c.lineSoft },
-    keyLabel: { ...typeScale.key, color: c.fg },
     keyboard: { alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 8 },
-    keyboardLabel: { ...typeScale.link, color: c.accent },
   });

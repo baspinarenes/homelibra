@@ -1,7 +1,8 @@
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, type TextStyle, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { contactEmail } from '@/lib/contact';
 import { type LegalSection, legalVersion } from '@/lib/legal';
@@ -17,28 +18,29 @@ export function LegalDocument({ sections }: { sections: LegalSection[] }) {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {sections.map((section) => (
         <View key={section.heading} style={styles.section}>
-          <Text style={styles.heading}>{section.heading}</Text>
+          <Text variant="sourceTitle">{section.heading}</Text>
           {section.paragraphs.map((paragraph) => (
-            <Text key={paragraph} style={styles.paragraph}>
-              {withContactLinks(paragraph, styles.link)}
+            <Text key={paragraph} variant="body" color="ink3">
+              {withContactLinks(paragraph)}
             </Text>
           ))}
         </View>
       ))}
-      <Text style={styles.version}>{t('privacy.version', { version: legalVersion })}</Text>
+      <Text variant="caption">{t('privacy.version', { version: legalVersion })}</Text>
     </ScrollView>
   );
 }
 
 /** The paragraph, its every mention of the contact address a link that opens a new e-mail. */
-function withContactLinks(paragraph: string, linkStyle: TextStyle) {
+function withContactLinks(paragraph: string) {
   return paragraph.split(contactEmail).flatMap((text, i) => {
     if (i === 0) return [text];
     const link = (
       <Text
         key={i}
+        variant="body"
+        color="accent"
         accessibilityRole="link"
-        style={linkStyle}
         onPress={() => Linking.openURL(`mailto:${contactEmail}`)}
       >
         {contactEmail}
@@ -60,8 +62,4 @@ const makeStyles = (c: Colors) =>
       gap: space.xl,
     },
     section: { gap: space.sm },
-    heading: { ...typeScale.sourceTitle, color: c.fg },
-    paragraph: { ...typeScale.body, color: c.ink3 },
-    link: { color: c.accent },
-    version: { ...typeScale.caption, color: c.muted },
   });

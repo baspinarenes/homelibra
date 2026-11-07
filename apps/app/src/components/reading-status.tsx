@@ -1,9 +1,10 @@
 import type { AppRouter } from '@homelibra/api';
-import { type Colors, radius, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, radius, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useTRPC } from '@/lib/trpc';
@@ -51,7 +52,7 @@ export function ReadingStatusButton({ sourceId, status }: { sourceId: string; st
         (pressed || change.isPending) && styles.pressed,
       ]}
     >
-      <Text style={[styles.buttonLabel, finished && styles.finishedLabel]}>
+      <Text variant="caption" color={finished ? 'accent' : 'ink2'}>
         {finished ? `✓ ${t('readingStatus.finished')}` : t('readingStatus.reading')}
       </Text>
     </Pressable>
@@ -70,6 +71,4 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.chip,
     },
     finished: { borderColor: c.accent, backgroundColor: c.accentSoft },
-    buttonLabel: { ...typeScale.caption, color: c.ink2 },
-    finishedLabel: { color: c.accent },
   });

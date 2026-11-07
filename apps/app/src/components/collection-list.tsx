@@ -1,8 +1,9 @@
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { ListMessage } from '@/components/list-message';
 import type { CollectionSort } from '@/lib/dizin-sort';
@@ -54,12 +55,12 @@ export function CollectionList({ sort }: { sort: CollectionSort }) {
           style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
         >
           <View style={styles.texts}>
-            <Text style={styles.name}>{collection.name}</Text>
-            <Text style={collection.tags.length ? styles.tags : styles.untagged}>
+            <Text variant="sourceTitleSm">{collection.name}</Text>
+            <Text variant="caption" color={collection.tags.length ? 'chipInk' : 'muted2'}>
               {collection.tags.length ? collection.tags.map((tag) => tag.name).join(' · ') : t('collection.noTags')}
             </Text>
           </View>
-          <Text style={styles.count}>{t('collection.noteCount', { count: collection.noteCount })}</Text>
+          <Text variant="collectionCount">{t('collection.noteCount', { count: collection.noteCount })}</Text>
         </Pressable>
       )}
     />
@@ -75,8 +76,4 @@ const makeStyles = (c: Colors) =>
     row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     texts: { flex: 1, minWidth: 0, gap: 3 },
-    name: { ...typeScale.sourceTitleSm, color: c.fg },
-    tags: { ...typeScale.caption, color: c.chipInk },
-    untagged: { ...typeScale.caption, color: c.muted2 },
-    count: { ...typeScale.collectionCount, color: c.muted },
   });

@@ -4,7 +4,8 @@ import { lastCaptured } from '@homelibra/core/note';
 import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/outbox';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,16 +13,7 @@ import { useHeaderHeight } from 'expo-router/react-navigation';
 import PenLine from 'lucide-react-native/icons/pen-line';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { CoverEditor } from '@/components/cover-editor';
 import { AddCommentButton, NoteComposer, type NoteComposerHandle } from '@/components/note-composer';
@@ -79,9 +71,13 @@ export default function SourceScreen() {
     return (
       <View style={styles.center}>
         {source.isError || notes.isError ? (
-          <Text style={styles.lead}>{t('sourcePage.loadFailed')}</Text>
+          <Text variant="body" style={styles.lead}>
+            {t('sourcePage.loadFailed')}
+          </Text>
         ) : waitingForNetwork ? (
-          <Text style={styles.lead}>{t('outbox.needsConnection')}</Text>
+          <Text variant="body" style={styles.lead}>
+            {t('outbox.needsConnection')}
+          </Text>
         ) : (
           <ActivityIndicator color={colors.accent} />
         )}
@@ -200,11 +196,13 @@ function SourcePage({
                   <CoverEditor sourceId={source.id} type={source.type} cover={source.cover} />
                   <View style={styles.identityText}>
                     <View style={styles.typeLine}>
-                      <Text style={styles.type}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
+                      <Text variant="micro" color="accent">
+                        {t(`sourceTypes.${source.type}.label`)}
+                      </Text>
                       <ReadingStatusButton sourceId={source.id} status={source.readingStatus} />
                     </View>
-                    <Text style={styles.title}>{source.title}</Text>
-                    <Text style={styles.byline}>{byline}</Text>
+                    <Text variant="sourceTitle">{source.title}</Text>
+                    <Text variant="caption">{byline}</Text>
                   </View>
                 </View>
                 <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
@@ -232,7 +230,9 @@ function SourcePage({
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Text style={styles.empty}>{t(searched.matches ? 'noteSearch.sourceEmpty' : 'sourcePage.empty')}</Text>
+              <Text variant="body" style={styles.empty}>
+                {t(searched.matches ? 'noteSearch.sourceEmpty' : 'sourcePage.empty')}
+              </Text>
               {searched.matches && <ShortWords words={searched.shortWords} centered />}
             </View>
           }
@@ -339,13 +339,19 @@ function NoteRow({
       ]}
     >
       <View style={styles.locatorColumn}>
-        <Text style={styles.locator}>{note.locator ?? '—'}</Text>
+        <Text variant="locator">{note.locator ?? '—'}</Text>
       </View>
       <View style={styles.texts}>
-        {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} style={styles.excerpt} />}
-        {note.comment && <MarkedText text={note.comment} marks={match?.comment} style={styles.comment} prefix="↳ " />}
+        {note.excerpt && (
+          <MarkedText text={note.excerpt} marks={match?.excerpt} variant="excerpt" style={styles.excerpt} />
+        )}
+        {note.comment && <MarkedText text={note.comment} marks={match?.comment} variant="comment" prefix="↳ " />}
         <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
-        {shown && <Text style={styles.status}>{t(`outbox.${shown}`)}</Text>}
+        {shown && (
+          <Text variant="caption" color="warn">
+            {t(`outbox.${shown}`)}
+          </Text>
+        )}
       </View>
     </Pressable>
   );
@@ -363,7 +369,7 @@ const makeStyles = (c: Colors) =>
     screen: { flex: 1, backgroundColor: c.page },
     content: { paddingHorizontal: space.gutter, paddingBottom: space.lg },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    lead: { textAlign: 'center' },
     pressed: { opacity: 0.7 },
     heading: {
       gap: 10,
@@ -377,28 +383,20 @@ const makeStyles = (c: Colors) =>
     identity: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
     identityText: { flex: 1, gap: space.xs },
     typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    type: { ...typeScale.micro, color: c.accent },
-    title: { ...typeScale.sourceTitle, color: c.fg },
-    byline: { ...typeScale.caption, color: c.muted },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
     hidden: { display: 'none' },
     emptyBox: { gap: space.sm, paddingVertical: space.xl },
-    empty: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    empty: { textAlign: 'center' },
     row: { flexDirection: 'row', gap: 10, paddingVertical: space.md },
     rowAbove: { paddingBottom: 0 },
     // Under the texts, past the Locator's column and the row's gap.
     action: { paddingLeft: 68 + 10, paddingTop: 6, paddingBottom: space.sm },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     locatorColumn: { width: 68, gap: space.xs, paddingTop: 4 },
-    locator: { ...typeScale.locator, color: c.muted },
     texts: { flex: 1, gap: 6 },
     excerpt: {
-      ...typeScale.excerpt,
-      color: c.quoteInk,
       borderLeftWidth: 2,
       borderLeftColor: c.quoteBar,
       paddingLeft: 11,
     },
-    comment: { ...typeScale.comment, color: c.ink3 },
-    status: { ...typeScale.caption, color: c.warn },
   });

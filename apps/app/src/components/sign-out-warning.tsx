@@ -1,8 +1,7 @@
 import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useOutbox } from '@/lib/outbox';
@@ -24,7 +23,6 @@ export function SignOutWarning({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { state, drain } = useOutbox();
   const offline = useOffline();
   const [sending, setSending] = useState(false);
@@ -50,7 +48,7 @@ export function SignOutWarning({
         <>
           <DialogMessage>{t('outbox.signOutWarning', { count: state.waiting })}</DialogMessage>
           {notSent && (
-            <Text role="status" style={styles.notSent}>
+            <Text variant="body" color="warn" role="status">
               {[t('outbox.notSent', { count: state.waiting }), offline && t('outbox.needsConnection')]
                 .filter(Boolean)
                 .join(' · ')}
@@ -67,8 +65,3 @@ export function SignOutWarning({
     />
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    notSent: { ...typeScale.body, color: c.warn },
-  });

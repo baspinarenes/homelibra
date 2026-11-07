@@ -1,5 +1,4 @@
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from '@homelibra/ui/text';
 
 import { useOffline } from '@/lib/network';
 
@@ -9,17 +8,11 @@ import { useOffline } from '@/lib/network';
  * deleting a Source waits for the network. Nothing online.
  */
 export function OfflineNotice({ message }: { message: string }) {
-  const styles = useThemedStyles(makeStyles);
   const offline = useOffline();
   if (!offline) return null;
   return (
-    <Text role="status" style={styles.text}>
+    <Text variant="body" color="warn" role="status">
       {message}
     </Text>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    text: { ...typeScale.body, color: c.warn },
-  });

@@ -127,9 +127,11 @@ export const type = {
   comment: { fontFamily: fonts.sans, fontSize: 14.5, lineHeight: 22 }, // a Note's comment under its excerpt
   commentSm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 22 }, // the same under excerptSm
   choice: { fontFamily: fonts.sans, fontSize: 16, lineHeight: 22 }, // an option in a sheet
-  // Heavier Reddit Sans at the size of the line it sits in: a link or a name inside running text;
-  // with `body` it is the design system's t-strong.
+  choiceStrong: { fontFamily: fonts.sansSemiBold, fontSize: 16, lineHeight: 22 }, // the chosen option
+  // Heavier Reddit Sans at the size of the line it sits in: a link or a name inside running text.
   strong: { fontFamily: fonts.sansSemiBold },
+  bodyStrong: { fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 22 }, // the design system's t-strong: a Strip's title
+  bodySmStrong: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20 }, // a term in Arama ipuçları
   button: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 19 }, // also a small Button, a toast's action
   action: { fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 20 }, // Button, a header's Kaydet
   textTab: { fontFamily: fonts.sansSemiBold, fontSize: 16, lineHeight: 21 }, // TextTabs
@@ -145,14 +147,14 @@ export const type = {
   tab: { fontFamily: fonts.sansSemiBold, fontSize: 10.5, lineHeight: 14 },
   heading: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16, letterSpacing: 1.2 }, // SectionHeading, upper case
   fieldLabel: { fontFamily: fonts.mono, fontSize: 11, lineHeight: 15, letterSpacing: 1.1 }, // TextField's label, upper case
-  micro: { fontFamily: fonts.mono, fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }, // upper-case with toLocaleUpperCase('tr')
+  micro: { fontFamily: fonts.mono, fontSize: 10.5, lineHeight: 14, letterSpacing: 1.4 }, // a Source's type, upper case
   locator: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: 17 }, // also TextTabs' count
   locatorSm: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 18 }, // the composer's Locator
   locatorKey: { fontFamily: fonts.mono, fontSize: 26, lineHeight: 34 }, // the Locator being keyed in
   locatorInput: { fontFamily: fonts.mono, fontSize: 18, lineHeight: 24 }, // the same typed freely
   key: { fontFamily: fonts.mono, fontSize: 21, lineHeight: 28 }, // a key of the Locator pad
   count: { fontFamily: fonts.mono, fontSize: 11.5, lineHeight: 17 }, // a tally or a time after a name in a row
-  collectionCount: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16 }, // a Collection's notes
+  collectionCount: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 16 }, // a Collection's notes, a section heading's count
   term: { fontFamily: fonts.mono, fontSize: 12.5, lineHeight: 22 }, // TermTable's term, on body's line
   operator: { fontFamily: fonts.mono, fontSize: 13, lineHeight: 20 }, // an operator in Arama ipuçları, on bodySm's line
   signInCode: { fontFamily: fonts.mono, fontSize: 24, lineHeight: 32, letterSpacing: 8 }, // a sign-in code

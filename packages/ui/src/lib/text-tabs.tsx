@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, type as typeScale } from './tokens';
+import { Text } from './text';
+import type { Colors } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 /**
@@ -40,8 +41,14 @@ export function TextTabs<T extends string>({
               onPress={() => onChange(option.value)}
               style={[styles.tab, selected && styles.selected]}
             >
-              <Text style={[styles.text, selected && styles.selectedText]}>{option.label}</Text>
-              {counted && <Text style={[styles.count, selected && styles.selectedCount]}>{option.count}</Text>}
+              <Text variant="textTab" color={selected ? 'fg' : 'muted'}>
+                {option.label}
+              </Text>
+              {counted && (
+                <Text variant="locator" color={selected ? 'ink2' : 'muted'}>
+                  {option.count}
+                </Text>
+              )}
             </Pressable>
           );
         })}
@@ -73,8 +80,4 @@ const makeStyles = (c: Colors) =>
       borderBottomColor: 'transparent',
     },
     selected: { borderBottomColor: c.accent },
-    text: { ...typeScale.textTab, color: c.muted },
-    selectedText: { color: c.fg },
-    count: { ...typeScale.locator, color: c.muted },
-    selectedCount: { color: c.ink2 },
   });

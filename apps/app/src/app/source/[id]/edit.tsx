@@ -1,12 +1,13 @@
 import { withPendingNotes } from '@homelibra/outbox';
 import { Button } from '@homelibra/ui/button';
 import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
 import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
@@ -39,7 +40,7 @@ export default function EditSourceScreen() {
         {source.isPending ? (
           <ActivityIndicator color={styles.spinner.color} />
         ) : (
-          <Text style={styles.lead}>{t('sourceForm.loadFailed')}</Text>
+          <Text variant="body">{t('sourceForm.loadFailed')}</Text>
         )}
       </View>
     );
@@ -99,7 +100,11 @@ function DeleteSource({ id, title, saving }: { id: string; title: string; saving
 
   return (
     <View style={styles.foot}>
-      {remove.isError && <Text style={styles.error}>{t('deletion.deleteFailed')}</Text>}
+      {remove.isError && (
+        <Text variant="body" color="danger">
+          {t('deletion.deleteFailed')}
+        </Text>
+      )}
       <Button
         variant="text"
         tone="danger"
@@ -116,7 +121,7 @@ function DeleteSource({ id, title, saving }: { id: string; title: string; saving
             <Trans
               i18nKey="deletion.confirmSource"
               values={{ title, count: noteCount ?? 0 }}
-              components={{ title: <Text style={styles.title} /> }}
+              components={{ title: <Text variant="body" color="fg" style={styles.title} /> }}
             />
           </DialogMessage>
         }
@@ -134,9 +139,7 @@ function DeleteSource({ id, title, saving }: { id: string; title: string; saving
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { ...typeScale.body, color: c.ink2 },
     spinner: { color: c.accent },
     foot: { gap: space.sm, marginTop: space.lg, alignItems: 'center' },
-    error: { ...typeScale.body, color: c.danger },
     title: { fontStyle: 'italic' },
   });

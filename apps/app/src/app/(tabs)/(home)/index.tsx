@@ -2,12 +2,13 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Button } from '@homelibra/ui/button';
 import { SectionHeading } from '@homelibra/ui/section-heading';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { LibrarySummary } from '@/components/library-summary';
 import { LostNotesNotice, useLostNoteCount } from '@/components/lost-notes-notice';
@@ -39,7 +40,9 @@ export default function HomeScreen() {
   if (home.isError || lastNoted.isError) {
     return (
       <View style={styles.center}>
-        <Text style={styles.lead}>{t('home.loadFailed')}</Text>
+        <Text variant="body" style={styles.lead}>
+          {t('home.loadFailed')}
+        </Text>
         {/* The button keeps to its start edge; this box centres it. */}
         <View>
           <Button
@@ -78,7 +81,9 @@ export default function HomeScreen() {
   if (home.data.sourceCount > 0) {
     return (
       <View style={styles.center}>
-        <Text style={styles.lead}>{t('home.takeNoteLead')}</Text>
+        <Text variant="body" style={styles.lead}>
+          {t('home.takeNoteLead')}
+        </Text>
         <View style={styles.action}>
           <Button label={t('home.takeNote')} onPress={() => router.navigate('/sources')} />
         </View>
@@ -88,8 +93,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.center}>
-      <Text style={styles.title}>{t('home.emptyTitle')}</Text>
-      <Text style={styles.lead}>{t('home.emptyLead')}</Text>
+      <Text variant="title" style={styles.title}>
+        {t('home.emptyTitle')}
+      </Text>
+      <Text variant="body" style={styles.lead}>
+        {t('home.emptyLead')}
+      </Text>
       <View style={styles.action}>
         <Button label={t('home.addFirstSource')} onPress={() => router.push('/source/new')} />
       </View>
@@ -119,24 +128,18 @@ function LastNotedSection({
   const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
   const text = note.excerpt ?? note.comment;
   const noteFirst = layout === 'note';
+  // Not önde: the words last written, large and dark, the Source a line under them.
   const noteText = text && (
     <Text
-      style={
-        note.excerpt
-          ? noteFirst
-            ? styles.leadExcerpt
-            : styles.excerpt
-          : noteFirst
-            ? styles.leadComment
-            : styles.comment
-      }
+      variant={note.excerpt ? (noteFirst ? 'excerptLg' : 'excerpt') : noteFirst ? 'bodyLg' : 'body'}
+      style={note.excerpt && !noteFirst ? styles.excerpt : undefined}
       numberOfLines={noteFirst ? 4 : 3}
     >
       {text}
     </Text>
   );
   const bylineText = byline !== '' && (
-    <Text style={styles.byline} numberOfLines={1}>
+    <Text variant="caption" numberOfLines={1}>
       {byline}
     </Text>
   );
@@ -154,7 +157,7 @@ function LastNotedSection({
             <View style={styles.sourceLine}>
               <SourceCover type={source.type} cover={source.cover} />
               <View style={styles.identityText}>
-                <Text style={styles.sourceTitle} numberOfLines={1}>
+                <Text variant="sourceTitleSm" numberOfLines={1}>
                   {source.title}
                 </Text>
                 {bylineText}
@@ -163,11 +166,15 @@ function LastNotedSection({
           </>
         ) : (
           <>
+            {/* Kaynak önde: the Source as the Source page heads it. */}
             <View style={styles.identity}>
               <SourceCover type={source.type} cover={source.cover} size="large" />
               <View style={styles.identityText}>
-                <Text style={styles.typeAccent}>{t(`sourceTypes.${source.type}.label`).toLocaleUpperCase('tr')}</Text>
-                <Text style={styles.sourceTitleLarge} numberOfLines={2}>
+                <Text variant="micro" color="accent">
+                  {t(`sourceTypes.${source.type}.label`)}
+                </Text>
+                {/* The Source Kaldığın yer points to, not a heading: KALDIĞIN YER is the section's. */}
+                <Text variant="sourceTitle" role={undefined} numberOfLines={2}>
                   {source.title}
                 </Text>
                 {bylineText}
@@ -177,9 +184,9 @@ function LastNotedSection({
           </>
         )}
         <View style={styles.goOn}>
-          <Text style={styles.goOnText}>{t('home.goOn')}</Text>
+          <Text variant="button">{t('home.goOn')}</Text>
           {note.locator && (
-            <Text style={styles.goOnLocator} numberOfLines={1}>
+            <Text variant="locator" style={styles.goOnLocator} numberOfLines={1}>
               {note.locator}
             </Text>
           )}
@@ -199,8 +206,8 @@ const makeStyles = (c: Colors) =>
       gap: space.md,
       backgroundColor: c.page,
     },
-    title: { ...typeScale.title, color: c.fg, textAlign: 'center' },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    title: { textAlign: 'center' },
+    lead: { textAlign: 'center' },
     action: { marginTop: space.lg },
     spinner: { color: c.accent },
     screen: { flex: 1, backgroundColor: c.page },
@@ -213,24 +220,12 @@ const makeStyles = (c: Colors) =>
     lastNotedBody: { gap: 14 },
     identity: { flexDirection: 'row', gap: 14 },
     identityText: { flex: 1, minWidth: 0, gap: space.xs },
-    // Kaynak önde: the Source as the Source page heads it.
-    typeAccent: { ...typeScale.micro, letterSpacing: 1.05, color: c.accent },
-    sourceTitleLarge: { ...typeScale.sourceTitle, color: c.fg },
     excerpt: {
-      ...typeScale.excerpt,
-      color: c.quoteInk,
       borderLeftWidth: 2,
       borderLeftColor: c.quoteBar,
       paddingLeft: 11,
     },
-    comment: { ...typeScale.body, color: c.ink2 },
-    // Not önde: the words last written, large and dark, the Source a line under them.
-    leadExcerpt: { ...typeScale.excerptLg, color: c.fg },
-    leadComment: { ...typeScale.bodyLg, color: c.fg },
     sourceLine: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-    sourceTitle: { ...typeScale.sourceTitleSm, color: c.fg },
-    byline: { ...typeScale.caption, color: c.muted },
     goOn: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-    goOnText: { ...typeScale.button, color: c.accent },
-    goOnLocator: { ...typeScale.locator, color: c.muted, flexShrink: 1 },
+    goOnLocator: { flexShrink: 1 },
   });

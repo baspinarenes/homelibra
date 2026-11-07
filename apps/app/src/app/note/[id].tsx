@@ -2,12 +2,13 @@ import { type KnownNote, pendingNote } from '@homelibra/outbox';
 import { Button } from '@homelibra/ui/button';
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, radius, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { TagChips } from '@/components/tag-chips';
 import { type PickedSource, SourcePicker } from '@/components/source-picker';
@@ -57,9 +58,13 @@ export default function EditNoteScreen() {
   return (
     <View style={styles.center}>
       {fetched.isError ? (
-        <Text style={styles.lead}>{t('noteEdit.loadFailed')}</Text>
+        <Text variant="body" style={styles.lead}>
+          {t('noteEdit.loadFailed')}
+        </Text>
       ) : fetched.fetchStatus === 'paused' ? (
-        <Text style={styles.lead}>{t('outbox.noteNotFound')}</Text>
+        <Text variant="body" style={styles.lead}>
+          {t('outbox.noteNotFound')}
+        </Text>
       ) : (
         <ActivityIndicator color={styles.spinner.color} />
       )}
@@ -88,6 +93,8 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
   const [moveTo, setMoveTo] = useState<PickedSource | null>(null);
   const currentSource = useQuery({ ...trpc.sources.get.queryOptions({ id: note.sourceId }), enabled: !sourceGone });
   const shownSource = moveTo ?? (sourceGone ? null : currentSource.data);
+  // Its Source was deleted and none is picked yet: the line asks for a new one, in warn.
+  const sourceLost = !shownSource && sourceGone;
   // Saving or deleting, and which of them failed.
   const [busy, setBusy] = useState<'save' | 'delete' | null>(null);
   const [failed, setFailed] = useState<'save' | 'delete' | null>(null);
@@ -151,9 +158,13 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         }}
       />
       <View style={styles.form}>
-        {refused && <Text style={styles.warning}>{t('outbox.refusedLead')}</Text>}
+        {refused && (
+          <Text variant="body" color="warn">
+            {t('outbox.refusedLead')}
+          </Text>
+        )}
         <View style={styles.sourceField}>
-          <Text style={styles.label}>{t('deletion.source').toLocaleUpperCase('tr')}</Text>
+          <Text variant="fieldLabel">{t('deletion.source')}</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('deletion.chooseSource')}
@@ -162,7 +173,12 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
           >
             {shownSource && <SourceTypeIcon type={shownSource.type} color={colors.ink2} />}
             {/* Kaynağı silinmiş: a new Source sends the Note there. */}
-            <Text style={shownSource || !sourceGone ? styles.sourceTitle : styles.sourceGone} numberOfLines={2}>
+            <Text
+              variant={sourceLost ? 'label' : 'sourceTitleSm'}
+              color={sourceLost ? 'warn' : undefined}
+              style={styles.sourceTitle}
+              numberOfLines={2}
+            >
               {shownSource?.title ?? (sourceGone ? t('outbox.chooseNewSource') : '')}
             </Text>
           </Pressable>
@@ -178,13 +194,25 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         <TextField label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline excerpt />
         <TextField label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
         <View style={styles.tags}>
-          <Text style={styles.label}>{t('tags.field').toLocaleUpperCase('tr')}</Text>
+          <Text variant="fieldLabel">{t('tags.field')}</Text>
           <TagChips names={tags} pickerTitle={t('tags.noteTitle')} onChange={setTags} />
         </View>
-        {!hasText && <Text style={styles.error}>{t('noteEdit.needsText')}</Text>}
-        {failed === 'save' && <Text style={styles.error}>{t('noteEdit.saveFailed')}</Text>}
+        {!hasText && (
+          <Text variant="body" color="danger">
+            {t('noteEdit.needsText')}
+          </Text>
+        )}
+        {failed === 'save' && (
+          <Text variant="body" color="danger">
+            {t('noteEdit.saveFailed')}
+          </Text>
+        )}
         <View style={styles.foot}>
-          {failed === 'delete' && <Text style={styles.error}>{t('deletion.deleteFailed')}</Text>}
+          {failed === 'delete' && (
+            <Text variant="body" color="danger">
+              {t('deletion.deleteFailed')}
+            </Text>
+          )}
           <Button
             label={t('deletion.deleteNote')}
             variant="secondary"
@@ -214,14 +242,11 @@ const makeStyles = (c: Colors) =>
     screen: { flex: 1, backgroundColor: c.page },
     content: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.xxl },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
+    lead: { textAlign: 'center' },
     spinner: { color: c.accent },
     form: { gap: space.lg, width: '100%', maxWidth: 640, alignSelf: 'center' },
     tags: { gap: 8 },
-    error: { ...typeScale.body, color: c.danger },
-    warning: { ...typeScale.body, color: c.warn },
     sourceField: { gap: 6 },
-    label: { ...typeScale.fieldLabel, color: c.muted },
     source: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -234,8 +259,7 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.control,
       backgroundColor: c.surface,
     },
-    sourceTitle: { ...typeScale.sourceTitleSm, flex: 1, color: c.fg },
-    sourceGone: { ...typeScale.label, flex: 1, color: c.warn },
+    sourceTitle: { flex: 1 },
     pressed: { opacity: 0.7 },
     foot: { gap: space.sm, marginTop: space.lg },
   });

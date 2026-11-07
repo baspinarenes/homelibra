@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 /** Two or three options, one chosen; the chosen one is on `accent`, as a chosen Chip is. */
@@ -44,7 +45,7 @@ export function Segment<T extends string>({
               selected && styles.selected,
             ]}
           >
-            <Text style={[styles.text, compact && styles.compactText, selected && styles.selectedText]}>
+            <Text variant={compact ? 'labelSm' : 'label'} color={selected ? 'accentFg' : 'ink2'}>
               {option.label}
             </Text>
           </Pressable>
@@ -70,8 +71,5 @@ const makeStyles = (c: Colors) =>
     blockOption: { flex: 1, alignItems: 'center' },
     compactGroup: { padding: 2, backgroundColor: c.page },
     compactOption: { paddingVertical: 4, paddingHorizontal: 11 },
-    compactText: { ...typeScale.labelSm },
     selected: { backgroundColor: c.accent },
-    text: { ...typeScale.label, color: c.ink2 },
-    selectedText: { color: c.accentFg },
   });
