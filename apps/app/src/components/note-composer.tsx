@@ -450,12 +450,11 @@ export function NoteComposer({
         visible={pickingTags}
         title={t('tags.noteTitle')}
         value={tags}
-        onDone={(next) => {
+        onChange={setTags}
+        onClose={() => {
           setPickingTags(false);
-          setTags(next);
           inputRef.current?.focus();
         }}
-        onClose={() => setPickingTags(false)}
       />
     </View>
   );
