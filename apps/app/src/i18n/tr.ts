@@ -44,6 +44,9 @@ export const tr = {
     dividerLabel: 'Bölüm ayracı',
     dividerRule: 'Çizgi',
     dividerBand: 'Şerit',
+    sourceSearchLabel: 'Kaynakta arama',
+    sourceSearchHeader: 'Üst çubuk',
+    sourceSearchNotes: 'Notlar',
     account: 'Hesap',
     versionSection: 'Sürüm',
   },
@@ -582,6 +585,7 @@ export const tr = {
   // "Bu kaynakta ara", the search box of a Collection or a Tag's page, and Ara's selector (#56).
   noteSearch: {
     inSource: 'Bu kaynakta ara',
+    search: 'Ara',
     inView: 'Bu görünümde ara',
     close: 'Kapat',
     clear: 'Aramayı temizle',

@@ -3,6 +3,7 @@ import { Text, type UpperCaseVariant, type Variant } from '@homelibra/ui/text';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
+import Search from 'lucide-react-native/icons/search';
 import X from 'lucide-react-native/icons/x';
 import { type ComponentProps, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -105,64 +106,60 @@ export function narrowView<V extends NarrowableView>(view: V, matches: Matches |
 }
 
 /**
- * The box itself: the small × inside empties it; the X beside it, named
- * "Kapat" for screen readers, puts it away (when `onClose` is given).
- * Offline it says a search needs the connection, so no result is taken
- * for "not yok" (#40, story 158).
+ * The box itself. `look` is where it stands: `box` over a list, `bar` in the
+ * top bar with no frame of its own, `line` on an accent rule under a
+ * magnifier. The × inside empties it once there is text; given `onClose` it
+ * is always there and puts the box away instead, named "Kapat" for screen
+ * readers. Offline it says a search needs the connection, so no result is
+ * taken for "not yok" (#40, story 158).
  */
 export function SearchField({
   value,
   onChange,
   placeholder,
   autoFocus = false,
+  look = 'box',
   onClose,
 }: {
   value: string;
   onChange: (text: string) => void;
   placeholder: string;
   autoFocus?: boolean;
+  look?: 'box' | 'bar' | 'line';
   onClose?: () => void;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const offline = useOffline();
+  const inputStyle = { box: styles.input, bar: [styles.bareInput, styles.barInput], line: styles.bareInput }[look];
+  const xStyle = { box: styles.clear, bar: styles.barX, line: undefined }[look];
   return (
-    <View style={styles.row}>
-      <View style={styles.box}>
-        <TextInput
-          accessibilityLabel={placeholder}
-          placeholder={offline ? t('outbox.searchNeedsConnection') : placeholder}
-          editable={!offline}
-          placeholderTextColor={colors.muted2}
-          value={value}
-          onChangeText={onChange}
-          autoFocus={autoFocus}
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="search"
-          style={styles.input}
-        />
-        {value !== '' && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('noteSearch.clear')}
-            onPress={() => onChange('')}
-            hitSlop={8}
-            style={styles.clear}
-          >
-            <X color={colors.muted} size={18} strokeWidth={1.8} />
-          </Pressable>
-        )}
-      </View>
-      {onClose && (
+    <View style={[styles.box, look === 'line' && styles.line]}>
+      {look === 'line' && <Search color={colors.muted} size={16} strokeWidth={1.8} />}
+      <TextInput
+        accessibilityLabel={placeholder}
+        placeholder={offline ? t('outbox.searchNeedsConnection') : placeholder}
+        editable={!offline}
+        // Without a box around it, the placeholder alone says this is a field.
+        placeholderTextColor={look === 'box' ? colors.muted2 : colors.muted}
+        value={value}
+        onChangeText={onChange}
+        autoFocus={autoFocus}
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+        style={inputStyle}
+      />
+      {(onClose || value !== '') && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('noteSearch.close')}
-          onPress={onClose}
-          style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+          accessibilityLabel={t(onClose ? 'noteSearch.close' : 'noteSearch.clear')}
+          onPress={onClose ?? (() => onChange(''))}
+          hitSlop={8}
+          style={xStyle}
         >
-          <X color={colors.fg} size={24} strokeWidth={1.6} />
+          <X color={colors.muted} size={18} strokeWidth={1.8} />
         </Pressable>
       )}
     </View>
@@ -228,8 +225,11 @@ export function MarkedText({
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
-    row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-    box: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+    box: { flexDirection: 'row', alignItems: 'center' },
+    line: { gap: space.sm, minHeight: 40, borderBottomWidth: 2, borderBottomColor: c.accent },
+    bareInput: { ...typeScale.body, flex: 1, minWidth: 0, color: c.fg, paddingVertical: 0, paddingHorizontal: 0 },
+    // Where a screen's title starts in the bar.
+    barInput: { paddingLeft: 2 },
     input: {
       ...typeScale.body,
       flex: 1,
@@ -244,16 +244,8 @@ const makeStyles = (c: Colors) =>
       paddingVertical: 8,
     },
     clear: { position: 'absolute', right: 10 },
-    // A 44 touch area, its edges past the X's ink: the X stands `md` from the box and on the gutter.
-    close: {
-      width: 44,
-      height: 44,
-      marginHorizontal: -10,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.control,
-    },
-    pressed: { opacity: 0.7 },
+    // The 44 touch area every icon in the bar has.
+    barX: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     hit: { backgroundColor: c.mark },
     centered: { textAlign: 'center' },
   });

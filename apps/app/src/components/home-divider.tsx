@@ -1,7 +1,7 @@
 import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { StyleSheet, View } from 'react-native';
 
-import { useHomeDivider } from '@/lib/home-appearance';
+import { useHomeDivider } from '@/lib/appearance-choices';
 
 /**
  * What stands above each of Genel Bakış's sections after the first, as
