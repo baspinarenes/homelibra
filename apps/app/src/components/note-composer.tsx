@@ -7,7 +7,7 @@ import { Text } from '@homelibra/ui/text';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import PenLine from 'lucide-react-native/icons/pen-line';
 import Plus from 'lucide-react-native/icons/plus';
-import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type RefObject, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Platform,
@@ -28,16 +28,18 @@ import { SharedUndoBar } from '@/components/undo-bar';
 import { useOutbox } from '@/lib/outbox';
 import { offerReceiptUndo } from '@/lib/undo';
 
-/**
- * After this long with the same Locator, the Konum line asks "hâlâ burada
- * mı?": a Note tied to the wrong page is Capture's costliest mistake. Five
- * minutes until use on Android says otherwise (#11).
- */
-const locatorCheckAfter = 5 * 60_000;
-
 // The fields are a few lines tall before anything is written in them.
-const excerptMinHeight = typeScale.excerpt.lineHeight * 4;
+const excerptMinHeight = typeScale.excerpt.lineHeight * 3;
 const commentMinHeight = typeScale.comment.lineHeight * 2;
+
+const labelGap = 7;
+const fieldsGap = 18;
+const fieldsPaddingTop = 4;
+const fieldHeadHeight = typeScale.fieldLabel.lineHeight + labelGap;
+const excerptFieldMinHeight = fieldHeadHeight + excerptMinHeight;
+const commentFieldMinHeight = fieldHeadHeight + commentMinHeight;
+// Below this the two fields no longer fit, and the sheet's body scrolls after all.
+const fieldsMinHeight = fieldsPaddingTop + excerptFieldMinHeight + fieldsGap + commentFieldMinHeight + space.lg;
 
 /**
  * Capture at the foot of the Source page (#87, #157): one line, "Not al" and
@@ -54,7 +56,6 @@ export function NoteComposer({
   sourceId,
   sourceType,
   carriedLocator,
-  carriedSince,
   openAtStart,
   hidden,
   onSaved,
@@ -62,8 +63,6 @@ export function NoteComposer({
   sourceId: string;
   sourceType: SourceType;
   carriedLocator: string;
-  /** When the carried Locator was first noted at, in ms; its age starts there. */
-  carriedSince: number;
   /** Opens the sheet ready to write, as Genel Bakış's Kaldığın yer does. */
   openAtStart: boolean;
   /** The bar is gone while "Bu kaynakta ara" is open. */
@@ -84,8 +83,6 @@ export function NoteComposer({
   const [comment, setComment] = useState('');
   const [commenting, setCommenting] = useState(false);
   const [locator, setLocator] = useState(carriedLocator);
-  const [locatorSince, setLocatorSince] = useState(carriedSince);
-  const [now, setNow] = useState(Date.now);
   const [editingLocator, setEditingLocator] = useState(false);
   // The Tags for the Note being written; untagged is the default, and each save starts untagged again.
   const [tags, setTags] = useState<string[]>([]);
@@ -95,15 +92,8 @@ export function NoteComposer({
   // The id a failed save used, kept while nothing changes, so sending the
   // same Note again cannot make a second one.
   const attempt = useRef<{ id: string; key: string } | null>(null);
-
-  // A Locator gets old while the sheet stays open.
-  useEffect(() => {
-    if (!open) return;
-    setNow(Date.now());
-    const timer = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(timer);
-  }, [open]);
-  const stale = locator.trim() !== '' && now - locatorSince > locatorCheckAfter;
+  // The height the fields have over the keyboard; 0 until it has been measured.
+  const [fieldsRoom, setFieldsRoom] = useState(0);
 
   const backToExcerpt = () => excerptRef.current?.focus();
 
@@ -163,17 +153,9 @@ export function NoteComposer({
     void save();
   };
 
-  // Looking at the Locator, changed or not, starts its age again.
-  const confirmLocator = () => {
-    const at = Date.now();
-    setLocatorSince(at);
-    setNow(at);
-  };
-
   const setLocatorFromSheet = (next: string) => {
     setEditingLocator(false);
     setLocator(next);
-    confirmLocator();
     backToExcerpt();
   };
 
@@ -230,7 +212,13 @@ export function NoteComposer({
               {t('capture.title')}
             </Text>
             <View style={[styles.headSide, styles.headEnd]}>
-              <Button label={t('capture.save')} onPress={() => void save()} disabled={!hasText} busy={busy} />
+              <Button
+                label={t('capture.save')}
+                variant="small"
+                onPress={() => void save()}
+                disabled={!hasText}
+                busy={busy}
+              />
             </View>
           </View>
         }
@@ -241,30 +229,12 @@ export function NoteComposer({
             variant={trimmedLocator ? 'sourceTitle' : 'body'}
             // A value, not a heading, though it is set in a title's face.
             role={undefined}
-            color={stale ? 'warn' : trimmedLocator ? 'fg' : 'muted'}
+            color={trimmedLocator ? 'fg' : 'muted'}
             numberOfLines={1}
             style={styles.locatorValue}
           >
             {shownLocator}
           </Text>
-          {stale && (
-            <View style={styles.stale}>
-              <Text variant="label" color="warn">
-                {t('capture.stillHere')}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('capture.stillHereConfirmLabel', { locator: shownLocator })}
-                onPress={confirmLocator}
-                hitSlop={6}
-                style={({ pressed }) => [styles.confirm, pressed && styles.pressed]}
-              >
-                <Text variant="label" color="warn">
-                  {t('capture.stillHereConfirm')}
-                </Text>
-              </Pressable>
-            </View>
-          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('capture.changeLocatorLabel', { locator: shownLocator })}
@@ -276,18 +246,22 @@ export function NoteComposer({
           </Pressable>
         </View>
 
+        {/* Held to the height there is: long text scrolls inside its own field, and Alıntı and Yorum stay in sight together. */}
         <ScrollView
           style={styles.fields}
-          contentContainerStyle={styles.fieldsContent}
+          contentContainerStyle={[
+            styles.fieldsContent,
+            fieldsRoom > 0 && { height: Math.max(fieldsRoom, fieldsMinHeight) },
+          ]}
           keyboardShouldPersistTaps="handled"
+          onLayout={(event) => setFieldsRoom(event.nativeEvent.layout.height)}
         >
-          <View style={styles.field}>
+          <View style={[styles.field, styles.excerptField]}>
             <Text variant="fieldLabel">{t('capture.excerpt')}</Text>
             <TextInput
               ref={excerptRef}
               accessibilityLabel={t('capture.excerpt')}
               multiline
-              scrollEnabled={false}
               value={excerpt}
               onChangeText={setExcerpt}
               onKeyPress={saveOnCtrlEnter}
@@ -297,13 +271,12 @@ export function NoteComposer({
             />
           </View>
           {commenting ? (
-            <View style={styles.field}>
+            <View style={[styles.field, styles.commentField]}>
               <Text variant="fieldLabel">{t('capture.comment')}</Text>
               <TextInput
                 ref={commentRef}
                 accessibilityLabel={t('capture.comment')}
                 multiline
-                scrollEnabled={false}
                 autoFocus
                 value={comment}
                 onChangeText={setComment}
@@ -417,22 +390,18 @@ const makeStyles = (c: Colors) =>
     headSide: { flex: 1, flexDirection: 'row' },
     headEnd: { justifyContent: 'flex-end' },
     cancel: { minHeight: 44, justifyContent: 'center' },
-    locatorRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 10, rowGap: 4 },
+    // On one baseline: the label, the value and the link are three sizes of type.
+    locatorRow: { flexDirection: 'row', alignItems: 'baseline', columnGap: 10 },
     locatorValue: { flexShrink: 1 },
-    stale: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    confirm: {
-      paddingVertical: 4,
-      paddingHorizontal: 9,
-      borderWidth: 1,
-      borderColor: c.warn,
-      borderRadius: radius.chip,
-    },
     change: { marginLeft: 'auto', minHeight: 36, justifyContent: 'center' },
     fields: { flex: 1 },
-    fieldsContent: { gap: 18, paddingTop: 4, paddingBottom: space.lg },
-    field: { gap: 7 },
+    fieldsContent: { gap: fieldsGap, paddingTop: fieldsPaddingTop, paddingBottom: space.lg },
+    field: { gap: labelGap, flexShrink: 1 },
+    excerptField: { minHeight: excerptFieldMinHeight },
+    commentField: { minHeight: commentFieldMinHeight },
     // No box: the words on the sheet itself.
     input: {
+      flexShrink: 1,
       padding: 0,
       color: c.fg,
       textAlignVertical: 'top',
