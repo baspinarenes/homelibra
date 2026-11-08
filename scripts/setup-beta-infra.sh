@@ -540,6 +540,10 @@ if [[ -n "${SENTRY_AUTH_TOKEN:-}" ]] && confirm "Give EAS builds the Sentry toke
 else
   SKIPPED+=("SENTRY_AUTH_TOKEN on EAS: preview and production builds will fail")
 fi
+# CI hands it to the web image's build, which uploads its source maps.
+if [[ -n "${SENTRY_AUTH_TOKEN:-}" ]]; then
+  set_secret SENTRY_AUTH_TOKEN "$SENTRY_AUTH_TOKEN"
+fi
 
 # ── 18 ────────────────────────────────────────────────────────────────────
 stage "GitHub: let Coolify pull private images"

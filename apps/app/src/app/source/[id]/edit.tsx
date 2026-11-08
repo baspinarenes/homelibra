@@ -1,10 +1,11 @@
 import { withPendingNotes } from '@homelibra/outbox';
-import { Button } from '@homelibra/ui/button';
 import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
+import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import Trash from 'lucide-react-native/icons/trash';
 import { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -18,7 +19,7 @@ import { refreshLibrary } from '@/lib/refresh-library';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { offerServerUndo } from '@/lib/undo';
 
-/** Kaynağı düzenle, opened from the Source page, with Kaynağı sil at its foot. */
+/** Kaynağı düzenle, opened from the Source page, with Kaynağı sil in its header. */
 export default function EditSourceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
@@ -26,6 +27,7 @@ export default function EditSourceScreen() {
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const giveCover = useGiveSuggestedCover();
+  const [deleteFailed, setDeleteFailed] = useState(false);
   const update = useMutation({
     mutationFn: async (draft: SourceDraft) => {
       await trpcClient.sources.update.mutate({ id, ...draftToInput(draft) });
@@ -53,9 +55,12 @@ export default function EditSourceScreen() {
       initial={sourceToDraft(source.data)}
       saving={update.isPending}
       failed={update.isError}
+      deleteFailed={deleteFailed}
       offlineNotice={t('outbox.editSourceNeedsConnection')}
       onSave={(draft) => update.mutate(draft)}
-      footer={<DeleteSource id={id} title={source.data.title} saving={update.isPending} />}
+      deleteAction={
+        <DeleteSource id={id} title={source.data.title} saving={update.isPending} onFailed={setDeleteFailed} />
+      }
     />
   );
 }
@@ -66,9 +71,19 @@ export default function EditSourceScreen() {
  * offered where the scholar lands: the Source page goes too. Online only:
  * the outbox sends what it still has first, so the count asked about is
  * every Note the Source has (#58). Offline, and while the form saves, it
- * waits; the strip under the header says why offline.
+ * waits; the strip under the header says why offline, and when it failed.
  */
-function DeleteSource({ id, title, saving }: { id: string; title: string; saving: boolean }) {
+function DeleteSource({
+  id,
+  title,
+  saving,
+  onFailed,
+}: {
+  id: string;
+  title: string;
+  saving: boolean;
+  onFailed: (failed: boolean) => void;
+}) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
@@ -81,12 +96,17 @@ function DeleteSource({ id, title, saving }: { id: string; title: string; saving
 
   const remove = useMutation(
     trpc.sources.delete.mutationOptions({
+      onMutate: () => onFailed(false),
       onSuccess: async ({ undoToken }) => {
         setConfirming(false);
         if (router.canDismiss()) router.dismissAll();
         else router.replace('/sources');
         offerServerUndo(t('deletion.sourceDeleted', { title }), undoToken);
         await refreshLibrary(id);
+      },
+      onError: () => {
+        setConfirming(false);
+        onFailed(true);
       },
     }),
   );
@@ -99,14 +119,9 @@ function DeleteSource({ id, title, saving }: { id: string; title: string; saving
   };
 
   return (
-    <View style={styles.foot}>
-      {remove.isError && (
-        <Text variant="body" color="danger">
-          {t('deletion.deleteFailed')}
-        </Text>
-      )}
-      <Button
-        variant="text"
+    <>
+      <HeaderIconAction
+        icon={Trash}
         tone="danger"
         label={t('deletion.deleteSource')}
         onPress={() => void onlineFirst(ask)}
@@ -132,7 +147,7 @@ function DeleteSource({ id, title, saving }: { id: string; title: string; saving
         onConfirm={() => remove.mutate({ id })}
         onCancel={() => setConfirming(false)}
       />
-    </View>
+    </>
   );
 }
 
@@ -140,6 +155,5 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
     spinner: { color: c.accent },
-    foot: { gap: space.sm, marginTop: space.lg, alignItems: 'center' },
     title: { fontStyle: 'italic' },
   });

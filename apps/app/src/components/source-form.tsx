@@ -16,7 +16,7 @@ import {
   type SourceType,
   sourceTypes,
 } from '@homelibra/core/source';
-import { HeaderTextAction } from '@homelibra/ui/screen-header';
+import { HeaderIconAction, HeaderTextAction } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
 import { type Colors, radius, space, useTheme, useThemedStyles, wideMinWidth } from '@homelibra/ui/theme';
@@ -24,9 +24,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import Link from 'lucide-react-native/icons/link';
+import Save from 'lucide-react-native/icons/save';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/components/date-input';
 import { IdentifierCard } from '@/components/identifier-card';
@@ -160,27 +162,31 @@ export function draftToInput({ values, dates, date, suggestedCover: _, ...draft 
  * The Source form, Sade variant (#18): Tür → the ISBN/DOI card → Başlık →
  * Yazar → Tarih → type-specific fields (sparse ones behind a button) → Ek
  * bilgi. Only Tür and Başlık are required. A type change hides fields and
- * never clears them. Kaydet is only in the header (#120); a failed save and
- * being offline are said on a strip under it.
+ * never clears them. Kaydet is only in the header (#120), an icon when
+ * Kaynağı sil stands beside it; a failed save and being offline are said on
+ * a strip under it.
  */
 export function SourceForm({
   screenTitle,
   initial,
   saving,
   failed,
+  deleteFailed = false,
   offlineNotice,
   onSave,
-  footer,
+  deleteAction,
 }: {
   screenTitle: string;
   initial: SourceDraft;
   saving: boolean;
   failed: boolean;
+  /** Kaynağı sil did not go through; said on the same strip. */
+  deleteFailed?: boolean;
   /** Why Kaydet does nothing offline: saving a Source is online only (#58). */
   offlineNotice: string;
   onSave: (draft: SourceDraft) => void;
-  /** At the form's very foot: Kaynağı sil when editing. */
-  footer?: ReactNode;
+  /** In the header, before Kaydet: Kaynağı sil when editing. */
+  deleteAction?: ReactNode;
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
@@ -266,17 +272,30 @@ export function SourceForm({
       />
     );
 
-  // Offline says why Kaydet does nothing; a failed save says to try again.
-  const notice = offline ? offlineNotice : failed ? t('sourceForm.saveFailed') : null;
+  // Offline says why Kaydet does nothing; a failed save or delete says to try again.
+  const notice = offline
+    ? offlineNotice
+    : failed
+      ? t('sourceForm.saveFailed')
+      : deleteFailed
+        ? t('deletion.deleteFailed')
+        : null;
+  const saveAction = { label: t('sourceForm.save'), onPress: save, disabled: !canSave, busy: saving };
 
   return (
     <FormScreen notice={notice}>
       <Stack.Screen
         options={{
           title: screenTitle,
-          headerRight: () => (
-            <HeaderTextAction label={t('sourceForm.save')} onPress={save} disabled={!canSave} busy={saving} />
-          ),
+          headerRight: () =>
+            deleteAction ? (
+              <>
+                {deleteAction}
+                <HeaderIconAction icon={Save} {...saveAction} />
+              </>
+            ) : (
+              <HeaderTextAction {...saveAction} />
+            ),
         }}
       />
       <View style={[styles.form, wide && styles.formWide]}>
@@ -382,8 +401,6 @@ export function SourceForm({
             })}
           </Text>
         )}
-
-        {footer}
       </View>
     </FormScreen>
   );
@@ -392,6 +409,7 @@ export function SourceForm({
 /** The form's screen: the strip under the header, when there is something to say, and the form scrolling below it. */
 function FormScreen({ notice, children }: { notice: string | null; children: ReactNode }) {
   const styles = useThemedStyles(makeStyles);
+  const { bottom } = useSafeAreaInsets();
   return (
     <View style={styles.screen}>
       {notice && (
@@ -401,7 +419,12 @@ function FormScreen({ notice, children }: { notice: string | null; children: Rea
           </Text>
         </View>
       )}
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* The form's end clears the phone's navigation bar. */}
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.content, { paddingBottom: bottom + space.xxl }]}
+        keyboardShouldPersistTaps="handled"
+      >
         {children}
       </ScrollView>
     </View>
@@ -434,7 +457,7 @@ function TypeChip({ type, selected, onPress }: { type: SourceType; selected: boo
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.xxl },
+    content: { paddingHorizontal: space.lg, paddingTop: space.md },
     form: { gap: space.lg },
     formWide: { width: '100%', maxWidth: 860, alignSelf: 'center' },
     field: { gap: 6 },

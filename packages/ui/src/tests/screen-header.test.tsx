@@ -122,4 +122,13 @@ describe('HeaderIconAction', () => {
     const [lit] = byRole(render(<HeaderIconAction icon={Trash} label="Filtrele" dot onPress={noop} />), 'button');
     expect(all(lit!).length).toBe(all(plain!).length + 1);
   });
+
+  it('spins in place of its icon while saving, keeps its name and takes no second press', () => {
+    const page = render(<HeaderIconAction icon={Trash} label="Kaydet" busy onPress={noop} />);
+    const [save] = byRole(page, 'button');
+    expect(nameOf(save!)).toBe('Kaydet');
+    expect(save!.attrs['aria-busy']).toBe('true');
+    expect(save!.attrs['aria-disabled']).toBe('true');
+    expect(byRole(page, 'progressbar')).toHaveLength(1);
+  });
 });
