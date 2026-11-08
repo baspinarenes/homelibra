@@ -523,6 +523,8 @@ export const tr = {
     removeTag: '{{name}} etiketini dosyadan çıkar',
     sourceNotes: 'Etiketli kaynakların tüm notları',
     sourceNotesCount: '+{{count}} not',
+    sourceNotesShort: 'Kaynak notları',
+    sourceNotesShortCount: 'Kaynak notları +{{count}}',
     undated: 'tarihsiz',
     viaSource: 'kaynak: {{names}}',
     emptyNoTags: 'Yukarıdan bir etiket ekle; o etiketi taşıyan notlar burada toplanır.',
