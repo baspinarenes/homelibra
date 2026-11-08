@@ -83,7 +83,7 @@ jobs:
           TEST_DATABASE_URL: postgres://homelibra_app:${{ env.HOMELIBRA_APP_PASSWORD }}@localhost:5432/homelibra_test
           TEST_MIGRATION_DATABASE_URL: postgres://homelibra_owner:${{ env.HOMELIBRA_OWNER_PASSWORD }}@localhost:5432/homelibra_test
 
-  # On main, after the checks: the images Coolify runs (#42), in the private
+  # On main, after the checks: the images Coolify runs (#42), in
   # GHCR under `main` (what Coolify pulls) and `sha-<commit>` (to roll back).
   images:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -123,6 +123,8 @@ jobs:
           platforms: linux/amd64
           push: true
           build-args: SENTRY_RELEASE=${{ github.sha }}
+          # Only the web image mounts it, to upload its source maps (#76).
+          secrets: sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:main
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:sha-${{ github.sha }}
