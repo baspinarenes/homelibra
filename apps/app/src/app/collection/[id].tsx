@@ -26,8 +26,8 @@ type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
  * A Collection (#51): DOSYA in the header, beside it the search's magnifier,
  * the Markdown copy of the Notes shown (only the matches while searching)
  * and Dosyayı sil (#52). Under the header its name in full, its Tags as
- * chips, the source-notes switch and the count in a fixed bar, its Notes by
- * Source under that. Every change in the bar is kept in the definition.
+ * chips and the count with the source-notes switch at its right in a fixed
+ * bar, its Notes by Source under that. Every change in the bar is kept in the definition.
  * Tapping the name opens its renaming in its place. The magnifier makes the
  * header the search's field, as on a Source's page, while the bar folds to
  * the name on one line and the count; the search only narrows what is shown,
@@ -141,16 +141,23 @@ function CollectionPage({ collection }: { collection: Collection }) {
             <ViewName name={collection.name} onPress={() => setRenaming(true)} hint={t('collection.rename')} />
           )}
           <DefinitionTags names={tagNames} onChange={(names) => setTags.mutate({ id: collection.id, names })} />
-          <SourceNotesSwitch
-            value={includeSourceNotes}
-            count={collection.sourceOnlyCount}
-            onChange={(value) => setSwitch.mutate({ id: collection.id, includeSourceNotes: value })}
-          />
         </>
       )}
       {/* With no match, the words stand under "Eşleşen not yok." instead. */}
       {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
-      <ViewCount view={shown} of={collection} />
+      <ViewCount
+        view={shown}
+        of={collection}
+        aside={
+          !searching && (
+            <SourceNotesSwitch
+              value={includeSourceNotes}
+              count={collection.sourceOnlyCount}
+              onChange={(value) => setSwitch.mutate({ id: collection.id, includeSourceNotes: value })}
+            />
+          )
+        }
+      />
       {searched.failed && (
         <Text variant="caption" color="danger">
           {t('noteSearch.failed')}

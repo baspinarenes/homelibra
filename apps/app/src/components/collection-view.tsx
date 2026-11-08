@@ -1,12 +1,13 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { Switch } from '@homelibra/ui/switch';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, SectionList, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, SectionList, StyleSheet, View } from 'react-native';
 
 import { MarkedText, type Match, type Matches } from '@/components/note-search';
 
@@ -183,7 +184,7 @@ export function ViewName({ name, onPress, hint }: { name: string; onPress?: () =
   );
 }
 
-/** "Etiketli kaynakların tüm notları" and how many Notes only a Source's Tag brings ("+5 not"). */
+/** "Kaynak notları" and how many Notes only a Source's Tag brings ("+5"), named in full for screen readers. */
 export function SourceNotesSwitch({
   value,
   count,
@@ -195,37 +196,33 @@ export function SourceNotesSwitch({
 }) {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
-  const { colors } = useTheme();
   return (
     <View style={styles.switchRow}>
-      <Switch
-        accessibilityLabel={t('collection.sourceNotes')}
-        value={value}
-        onValueChange={onChange}
-        trackColor={{ false: colors.line, true: colors.accent }}
-        thumbColor={colors.surface}
-        // react-native-web colours the thumb of an "on" switch on its own otherwise.
-        {...({ activeThumbColor: colors.surface } as object)}
-      />
-      <Text variant="label" style={styles.switchLabel}>
-        {t('collection.sourceNotes')}{' '}
-        <Text variant="label" color="muted">
-          {t('collection.sourceNotesCount', { count })}
-        </Text>
+      <Text variant="caption">
+        {count > 0 ? t('collection.sourceNotesShortCount', { count }) : t('collection.sourceNotesShort')}
       </Text>
+      <Switch label={t('collection.sourceNotes')} value={value} onChange={onChange} />
     </View>
   );
 }
 
-/** "N not · M kaynak"; while a search narrows the view, "2 / 15 not · 1 kaynak" against the whole view's `of`. */
-export function ViewCount({ view, of }: { view: ViewData; of?: ViewData }) {
+/**
+ * "N not · M kaynak"; while a search narrows the view, "2 / 15 not · 1 kaynak"
+ * against the whole view's `of`. `aside` stands at the right of the line: the
+ * source-notes switch, beside the count it changes.
+ */
+export function ViewCount({ view, of, aside }: { view: ViewData; of?: ViewData; aside?: ReactNode }) {
   const { t } = useTranslation();
+  const styles = useThemedStyles(makeStyles);
   return (
-    <Text variant="caption">
-      {of && of !== view
-        ? t('noteSearch.viewMatchCounts', { shown: view.noteCount, notes: of.noteCount, sources: view.sourceCount })
-        : t('collection.counts', { notes: view.noteCount, sources: view.sourceCount })}
-    </Text>
+    <View style={styles.countRow}>
+      <Text variant="caption" style={styles.count}>
+        {of && of !== view
+          ? t('noteSearch.viewMatchCounts', { shown: view.noteCount, notes: of.noteCount, sources: view.sourceCount })
+          : t('collection.counts', { notes: view.noteCount, sources: view.sourceCount })}
+      </Text>
+      {aside}
+    </View>
   );
 }
 
@@ -262,6 +259,7 @@ const makeStyles = (c: Colors) =>
     texts: { flex: 1, gap: 4 },
     // EB Garamond reaches 27 below and above at 21; the padding keeps g, ğ, y of the last line.
     name: { paddingBottom: 2 },
+    countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
+    count: { flexShrink: 1 },
     switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    switchLabel: { flexShrink: 1 },
   });
