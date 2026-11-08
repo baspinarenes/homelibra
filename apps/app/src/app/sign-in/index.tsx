@@ -1,5 +1,6 @@
 import { NOT_INVITED } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
+import { Checkbox } from '@homelibra/ui/checkbox';
 import { AppLogo, GoogleLogo } from '@homelibra/ui/logo';
 import { Text } from '@homelibra/ui/text';
 import { type Colors, useThemedStyles } from '@homelibra/ui/theme';
@@ -16,13 +17,16 @@ import { authClient } from '@/lib/auth-client';
 type Message = { kind: 'notInvited' } | { kind: 'error'; text: string } | null;
 
 /**
- * Giriş's first screen, on the page itself: the logo, two ways in, and the
- * first layer of the notice, which links to the full notice and the terms.
+ * Giriş's first screen, on the page itself: the logo, the first layer of the
+ * notice, which links to the full notice and the terms, and two ways in, shut
+ * until the "okudum" box is ticked (#116). The box is for having read, not a
+ * consent: nothing here rests on consent (docs/research/kvkk-obligations.md).
  */
 export default function SignInScreen() {
   const { t } = useTranslation();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
+  const [hasRead, setHasRead] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
 
@@ -66,27 +70,7 @@ export default function SignInScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Button
-            label={t('signIn.withEmail')}
-            block
-            disabled={googleBusy}
-            onPress={() => router.push('/sign-in/email')}
-          />
-          <Button
-            label={t('signIn.google')}
-            variant="secondary"
-            icon={GoogleLogo}
-            block
-            busy={googleBusy}
-            onPress={continueWithGoogle}
-          />
-          {message?.kind === 'error' ? (
-            <Text variant="label" color="danger" style={styles.error}>
-              {message.text}
-            </Text>
-          ) : null}
-          {message?.kind === 'notInvited' ? <InviteNotice /> : null}
-          <Text variant="caption" style={styles.legal}>
+          <Text variant="caption">
             <Trans
               i18nKey="signIn.legalNote"
               components={{
@@ -99,6 +83,28 @@ export default function SignInScreen() {
               }}
             />
           </Text>
+          <Checkbox label={t('signIn.hasRead')} checked={hasRead} onChange={setHasRead} />
+          <Button
+            label={t('signIn.withEmail')}
+            block
+            disabled={!hasRead || googleBusy}
+            onPress={() => router.push('/sign-in/email')}
+          />
+          <Button
+            label={t('signIn.google')}
+            variant="secondary"
+            icon={GoogleLogo}
+            block
+            disabled={!hasRead}
+            busy={googleBusy}
+            onPress={continueWithGoogle}
+          />
+          {message?.kind === 'error' ? (
+            <Text variant="label" color="danger" style={styles.error}>
+              {message.text}
+            </Text>
+          ) : null}
+          {message?.kind === 'notInvited' ? <InviteNotice /> : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -123,5 +129,4 @@ const makeStyles = (c: Colors) =>
     tagline: { textAlign: 'center' },
     actions: { gap: 12, paddingTop: 40 },
     error: { textAlign: 'center' },
-    legal: { textAlign: 'center', paddingTop: 8 },
   });
