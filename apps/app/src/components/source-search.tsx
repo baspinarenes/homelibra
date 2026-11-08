@@ -1,4 +1,3 @@
-import { Button } from '@homelibra/ui/button';
 import { Text } from '@homelibra/ui/text';
 import { space } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
@@ -6,17 +5,35 @@ import { StyleSheet, View } from 'react-native';
 
 import { type Matches, SearchField, ShortWords } from '@/components/note-search';
 
-/** "Bu kaynakta ara", beside "Düzenle · N etiketsiz" in the Source page's heading. */
-export function SourceSearchButton({ onPress }: { onPress: () => void }) {
+/**
+ * What a search in the Source has to say beyond its count: that it failed,
+ * or, while some match, the words too short for a prefix match (#144; with
+ * none, the page names them under its empty line).
+ */
+export function SourceSearchNotice({
+  matches,
+  shortWords,
+  failed,
+}: {
+  matches: Matches | null;
+  shortWords: readonly string[];
+  failed: boolean;
+}) {
   const { t } = useTranslation();
-  return <Button label={t('noteSearch.inSource')} variant="small" onPress={onPress} />;
+  if (failed) {
+    return (
+      <Text variant="caption" color="danger">
+        {t('noteSearch.failed')}
+      </Text>
+    );
+  }
+  return matches && matches.size > 0 ? <ShortWords words={shortWords} /> : null;
 }
 
 /**
- * The open "Bu kaynakta ara" box: the Source's Notes narrow to the ones
- * that match, "2 / 15 not" under it, and over that, while some match, the
- * words too short for a prefix match (#144; with none, the page names them
- * under its empty line). The X puts it away and brings "Not al" back.
+ * "Bu kaynakta ara" open in place of the Notes' heading, for those who keep
+ * it there in Görünüm: the box on a rule, its notice and "2 / 15 not" under
+ * it. The × puts it away and brings "Not al" back.
  */
 export function SourceSearchBar({
   text,
@@ -24,7 +41,7 @@ export function SourceSearchBar({
   matches,
   shortWords,
   failed,
-  total,
+  count,
   onClose,
 }: {
   text: string;
@@ -32,31 +49,23 @@ export function SourceSearchBar({
   matches: Matches | null;
   shortWords: readonly string[];
   failed: boolean;
-  total: number;
+  /** "2 / 15 not", once there is a result to count. */
+  count: string | undefined;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <View style={styles.bar}>
       <SearchField
+        look="line"
         value={text}
         onChange={onChange}
         placeholder={t('noteSearch.inSource')}
         autoFocus
         onClose={onClose}
       />
-      {failed ? (
-        <Text variant="caption" color="danger">
-          {t('noteSearch.failed')}
-        </Text>
-      ) : (
-        matches && (
-          <>
-            {matches.size > 0 && <ShortWords words={shortWords} />}
-            <Text variant="collectionCount">{t('noteSearch.matchCount', { shown: matches.size, count: total })}</Text>
-          </>
-        )
-      )}
+      <SourceSearchNotice matches={matches} shortWords={shortWords} failed={failed} />
+      {count !== undefined && <Text variant="collectionCount">{count}</Text>}
     </View>
   );
 }

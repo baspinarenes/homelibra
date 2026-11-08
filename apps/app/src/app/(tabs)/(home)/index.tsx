@@ -16,7 +16,7 @@ import { ReadingList } from '@/components/reading-list';
 import { RecentTags } from '@/components/recent-tags';
 import { SourceCover } from '@/components/source-cover';
 import { elapsed } from '@/lib/elapsed';
-import { useLastNotedLayout } from '@/lib/home-appearance';
+import { useLastNotedLayout } from '@/lib/appearance-choices';
 import { useTRPC } from '@/lib/trpc';
 
 type LastNoted = NonNullable<inferRouterOutputs<AppRouter>['sources']['lastNoted']>;

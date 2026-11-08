@@ -9,20 +9,29 @@ import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/the
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useHeaderHeight } from 'expo-router/react-navigation';
+import { useHeaderHeight, usePreventRemove } from 'expo-router/react-navigation';
 import PenLine from 'lucide-react-native/icons/pen-line';
+import Search from 'lucide-react-native/icons/search';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { CoverEditor } from '@/components/cover-editor';
 import { NoteComposer } from '@/components/note-composer';
-import { type Match, MarkedText, ShortWords, useSearchText, useSourceSearch } from '@/components/note-search';
+import {
+  type Match,
+  MarkedText,
+  SearchField,
+  ShortWords,
+  useSearchText,
+  useSourceSearch,
+} from '@/components/note-search';
 import { OutboxStatus } from '@/components/outbox-status';
 import { ReadingStatusButton } from '@/components/reading-status';
-import { SourceSearchBar, SourceSearchButton } from '@/components/source-search';
+import { SourceSearchBar, SourceSearchNotice } from '@/components/source-search';
 import { SourceTags } from '@/components/source-tags';
 import { NoteTagsLine } from '@/components/tag-chips';
+import { useSourceSearchPlace } from '@/lib/appearance-choices';
 import { knownNotes } from '@/lib/known-notes';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
@@ -46,7 +55,10 @@ type Pin = { id: string; at: 'bar' | 'middle' };
  * Kaldığın yer opens the page with the sheet up (`write`), a search result
  * on the Note it found (`note`), every other way in as for reading: the list
  * at the top. "Bu kaynakta ara" narrows the list to the Notes that match and
- * hides "Not al".
+ * hides "Not al". It opens from the magnifier in the top bar, which becomes
+ * the field while the heading folds to one line, or, as Görünüm can set, from
+ * "Ara" on the Notes' heading. Going back puts the search away before it
+ * leaves the page.
  */
 export default function SourceScreen() {
   const { id, write, note } = useLocalSearchParams<{ id: string; write?: string; note?: string }>();
@@ -113,16 +125,33 @@ function SourcePage({
     () => (searched.matches ? notes.filter((note) => searched.matches?.has(note.id)) : notes),
     [notes, searched.matches],
   );
+  const searchPlace = useSourceSearchPlace();
+  const searchInBar = searching && searchPlace === 'header';
+  const searchInNotes = searching && searchPlace === 'notes';
+  const searchCount =
+    searched.matches && !searched.failed
+      ? t('noteSearch.matchCount', { shown: searched.matches.size, count: notes.length })
+      : undefined;
   const closeSearch = () => {
     setSearching(false);
     search.setText('');
   };
+  usePreventRemove(searching, closeSearch);
   const last = useMemo(() => lastCaptured(notes), [notes]);
   const list = useRef<FlatList<ListedNote>>(null);
   const pin = useRef<Pin | null>(
     write && last ? { id: last.id, at: 'bar' } : found ? { id: found, at: 'middle' } : null,
   );
   const retries = useRef(0);
+  const openSearch = () => {
+    pin.current = null;
+    setSearching(true);
+  };
+
+  // The search can open anywhere down the list; what it finds starts at the top.
+  useEffect(() => {
+    if (searched.matches) list.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [searched.matches]);
 
   // Again whenever the list's height or content changes: the keyboard opens or closes, a saved Note comes in.
   const scrollToPin = () => {
@@ -156,14 +185,32 @@ function SourcePage({
       <Stack.Screen
         options={{
           title: '',
-          headerTitle: () => <OutboxStatus />,
-          headerRight: () => (
-            <HeaderIconAction
-              icon={PenLine}
-              label={t('sourcePage.edit')}
-              onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
-            />
-          ),
+          headerTitle: () =>
+            searchInBar ? (
+              <SearchField
+                look="bar"
+                value={search.text}
+                onChange={search.setText}
+                placeholder={t('noteSearch.inSource')}
+                autoFocus
+              />
+            ) : (
+              <OutboxStatus />
+            ),
+          headerRight: searchInBar
+            ? undefined
+            : () => (
+                <>
+                  {searchPlace === 'header' && (
+                    <HeaderIconAction icon={Search} label={t('noteSearch.inSource')} onPress={openSearch} />
+                  )}
+                  <HeaderIconAction
+                    icon={PenLine}
+                    label={t('sourcePage.edit')}
+                    onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
+                  />
+                </>
+              ),
         }}
       />
       <FlatList
@@ -187,7 +234,20 @@ function SourcePage({
         }}
         ListHeaderComponent={
           <>
-            <View style={styles.heading}>
+            {searchInBar && (
+              <View style={styles.fold}>
+                <Text variant="sourceTitleSm" numberOfLines={1} style={styles.foldText}>
+                  {source.title}
+                </Text>
+                {Boolean(source.author) && (
+                  <Text variant="caption" numberOfLines={1} style={styles.foldText}>
+                    {source.author}
+                  </Text>
+                )}
+              </View>
+            )}
+            {/* Hidden rather than gone while folded, so the cover is not loaded again. */}
+            <View style={[styles.heading, searchInBar && styles.hidden]}>
               <View style={styles.identity}>
                 <CoverEditor sourceId={source.id} type={source.type} cover={source.cover} />
                 <View style={styles.identityText}>
@@ -202,25 +262,41 @@ function SourcePage({
                 </View>
               </View>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
-              {!searching && (
-                <View style={styles.actions}>
-                  <SourceSearchButton onPress={() => setSearching(true)} />
-                </View>
-              )}
-              {searching && (
+            </View>
+            <View style={[styles.notesHeading, searchInNotes && styles.notesSearching]}>
+              {searchInNotes ? (
                 <SourceSearchBar
                   text={search.text}
                   onChange={search.setText}
                   matches={searched.matches}
                   shortWords={searched.shortWords}
                   failed={searched.failed}
-                  total={notes.length}
+                  count={searchCount}
                   onClose={closeSearch}
                 />
+              ) : (
+                <SectionHeading
+                  title={t('sourcePage.notes')}
+                  count={searchInBar ? searchCount : undefined}
+                  action={
+                    searchPlace === 'notes'
+                      ? {
+                          label: t('noteSearch.search'),
+                          accessibilityLabel: t('noteSearch.inSource'),
+                          icon: Search,
+                          onPress: openSearch,
+                        }
+                      : undefined
+                  }
+                />
               )}
-            </View>
-            <View style={styles.notesHeading}>
-              <SectionHeading title={t('sourcePage.notes')} />
+              {searchInBar && (
+                <SourceSearchNotice
+                  matches={searched.matches}
+                  shortWords={searched.shortWords}
+                  failed={searched.failed}
+                />
+              )}
             </View>
           </>
         }
@@ -343,11 +419,22 @@ const makeStyles = (c: Colors) =>
       borderBottomColor: c.line,
     },
     // As a Section spaces its heading: 18 under the rule, the first row's own 12 below.
-    notesHeading: { paddingTop: 18 },
+    notesHeading: { paddingTop: 18, gap: space.sm },
+    // The field's own height stands in for the heading's line.
+    notesSearching: { paddingTop: 10 },
+    fold: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 6,
+      paddingVertical: space.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.line,
+    },
+    foldText: { flexShrink: 1 },
     identity: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
     identityText: { flex: 1, gap: space.xs },
     typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+    hidden: { display: 'none' },
     emptyBox: { gap: space.sm, paddingVertical: space.xl },
     empty: { textAlign: 'center' },
     row: { flexDirection: 'row', gap: 10, paddingVertical: space.md },

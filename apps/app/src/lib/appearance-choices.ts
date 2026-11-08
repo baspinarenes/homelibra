@@ -3,9 +3,9 @@ import { useSyncExternalStore } from 'react';
 import { loadDeviceChoice, saveDeviceChoice } from '@/lib/device-choice';
 
 /**
- * A choice for Genel Bakış in Ayarlar' Görünüm, kept on this device only and
- * read from it on first use. A store rather than state: Ayarlar changes it
- * while Genel Bakış stays mounted. Without a choice, the first of `allowed`.
+ * A choice in Ayarlar' Görünüm, kept on this device only and read from it on
+ * first use. A store rather than state: Ayarlar changes it while the screen
+ * it is for stays mounted. Without a choice, the first of `allowed`.
  */
 function keptChoice<T extends string>(key: string, allowed: readonly [T, ...T[]]) {
   let value: T | undefined;
@@ -34,3 +34,10 @@ export const [useLastNotedLayout, setLastNotedLayout] = keptChoice<LastNotedLayo
 /** What stands between Genel Bakış's sections: a rule edge to edge (Çizgi), or an 8px band (Şerit). */
 export type HomeDivider = 'rule' | 'band';
 export const [useHomeDivider, setHomeDivider] = keptChoice<HomeDivider>('homelibra.home.divider', ['rule', 'band']);
+
+/** Where "Bu kaynakta ara" starts on a Source's page: the top bar (Üst çubuk), or the Notes' heading (Notlar). */
+export type SourceSearchPlace = 'header' | 'notes';
+export const [useSourceSearchPlace, setSourceSearchPlace] = keptChoice<SourceSearchPlace>(
+  'homelibra.source.searchPlace',
+  ['header', 'notes'],
+);

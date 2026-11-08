@@ -23,12 +23,15 @@ import {
   type LastNotedLayout,
   setHomeDivider,
   setLastNotedLayout,
+  setSourceSearchPlace,
+  type SourceSearchPlace,
   useHomeDivider,
   useLastNotedLayout,
-} from '@/lib/home-appearance';
+  useSourceSearchPlace,
+} from '@/lib/appearance-choices';
 
 /**
- * Ayarlar, on one page (#113): the theme and how Genel Bakış looks, the Account's own pages (address,
+ * Ayarlar, on one page (#113): the theme, how Genel Bakış looks and where a Source's search starts, the Account's own pages (address,
  * export, deletion) with sign-out under them (#140), the privacy documents,
  * contact, and the app's version as a section of its own. Every right of #40 (story 14) is one tap away.
  */
@@ -52,6 +55,11 @@ export default function SettingsScreen() {
   const homeDividers: { value: HomeDivider; label: string }[] = [
     { value: 'rule', label: t('settings.dividerRule') },
     { value: 'band', label: t('settings.dividerBand') },
+  ];
+  const sourceSearchPlace = useSourceSearchPlace();
+  const sourceSearchPlaces: { value: SourceSearchPlace; label: string }[] = [
+    { value: 'header', label: t('settings.sourceSearchHeader') },
+    { value: 'notes', label: t('settings.sourceSearchNotes') },
   ];
 
   return (
@@ -89,6 +97,17 @@ export default function SettingsScreen() {
               options={homeDividers}
               value={homeDivider}
               onChange={setHomeDivider}
+            />
+          </View>
+          <View style={styles.theme}>
+            <Text variant="body" color="fg">
+              {t('settings.sourceSearchLabel')}
+            </Text>
+            <Segment
+              label={t('settings.sourceSearchLabel')}
+              options={sourceSearchPlaces}
+              value={sourceSearchPlace}
+              onChange={setSourceSearchPlace}
             />
           </View>
         </Section>

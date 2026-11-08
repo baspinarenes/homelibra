@@ -21,6 +21,17 @@ describe('SectionHeading', () => {
     const page = render(<SectionHeading title="Düzenlenecekler" link={{ label: '3 kaynak ›', onPress: noop }} />);
     expect(byRole(page, 'link').map(nameOf)).toEqual(['3 kaynak ›']);
   });
+
+  it('or an action, its word on screen and its full name for screen readers', () => {
+    const page = render(
+      <SectionHeading
+        title="Notlar"
+        action={{ label: 'Ara', accessibilityLabel: 'Bu kaynakta ara', icon: () => null, onPress: noop }}
+      />,
+    );
+    expect(byRole(page, 'button').map(nameOf)).toEqual(['Bu kaynakta ara']);
+    expect(text(page)).toBe('NOTLARAra');
+  });
 });
 
 describe('Section', () => {
