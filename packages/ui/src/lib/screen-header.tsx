@@ -114,6 +114,7 @@ export function HeaderIconAction({
   tone = 'accent',
   size = 20,
   disabled = false,
+  busy = false,
   dot = false,
 }: {
   icon: IconComponent;
@@ -124,20 +125,28 @@ export function HeaderIconAction({
   tone?: 'accent' | 'danger' | 'muted';
   size?: 20 | 24;
   disabled?: boolean;
+  /** Spins in place of the icon (Kaydet while saving) and takes no presses. */
+  busy?: boolean;
   dot?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
+  const inactive = disabled || busy;
   return (
     <Pressable
       role="button"
       aria-label={label}
-      aria-disabled={disabled}
-      disabled={disabled}
+      aria-disabled={inactive}
+      aria-busy={busy || undefined}
+      disabled={inactive}
       onPress={onPress}
-      style={[styles.icon, disabled && styles.off]}
+      style={[styles.icon, disabled && !busy && styles.off]}
     >
-      <Icon color={colors[tone]} size={size} strokeWidth={1.6} />
+      {busy ? (
+        <ActivityIndicator size={size} color={colors[tone]} />
+      ) : (
+        <Icon color={colors[tone]} size={size} strokeWidth={1.6} />
+      )}
       {dot && <View style={styles.dot} />}
     </Pressable>
   );
