@@ -15,7 +15,8 @@ export const undoDuration = 5000;
 /**
  * The one Geri al bar, the package's Toast, for {@link undoDuration} after
  * an action that is taken back rather than confirmed first. It floats just
- * above the top edge of the view that holds it, such as Capture's writing box.
+ * above the top edge of the view that holds it, such as "Not al" or the
+ * writing sheet's "+ etiket" line.
  */
 export function UndoBar({ offer, onDismiss }: { offer: UndoOffer | null; onDismiss: () => void }) {
   const { t } = useTranslation();
@@ -65,8 +66,8 @@ export function SharedUndoBar() {
 
 // Just above the top edge of the view that holds it; the Toast keeps 16 from the screen's sides.
 // Not `bottom: '100%'`: React Native takes that against the holder's height
-// less its padding, which sank the bar into Capture's box (behind Konum and
-// Alıntı). A zero-height edge on the holder's top needs no percentage.
+// less its padding, which sank the bar into the view under it. A zero-height
+// edge on the holder's top needs no percentage.
 const styles = StyleSheet.create({
   edge: { position: 'absolute', left: 0, right: 0, top: 0, height: 0 },
   place: { position: 'absolute', left: 0, right: 0, bottom: 0, marginBottom: space.md },

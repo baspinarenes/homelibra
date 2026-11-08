@@ -1,8 +1,9 @@
 import { type ReactNode, useRef, useState } from 'react';
-import { type LayoutChangeEvent, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { type LayoutChangeEvent, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from './button';
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 const gap = 8;
@@ -72,7 +73,13 @@ export function Dialog({
         {/* Screen readers answer with the buttons; the dimmed screen is for a tap. */}
         <Pressable aria-hidden style={styles.dismiss} onPress={onCancel} />
         <View aria-modal role="alertdialog" style={[styles.dialog, { boxShadow: shadow.lift }]}>
-          {typeof message === 'string' ? <Text style={styles.message}>{message}</Text> : message}
+          {typeof message === 'string' ? (
+            <Text variant="body" color="fg">
+              {message}
+            </Text>
+          ) : (
+            message
+          )}
           <View onLayout={stacking.onRoom} style={block ? styles.stack : styles.row}>
             {block
               ? answers.reverse()
@@ -116,8 +123,11 @@ function useStacking() {
 
 /** The dialog's body text, for a message with parts set apart. */
 export function DialogMessage({ children }: { children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
-  return <Text style={styles.message}>{children}</Text>;
+  return (
+    <Text variant="body" color="fg">
+      {children}
+    </Text>
+  );
 }
 
 const makeStyles = (c: Colors) =>
@@ -133,7 +143,6 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.control,
       backgroundColor: c.page,
     },
-    message: { ...typeScale.body, color: c.fg },
     row: { flexDirection: 'row', justifyContent: 'flex-end', gap },
     stack: { gap },
   });

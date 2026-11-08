@@ -1,8 +1,9 @@
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { Children, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, space, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, space } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 /**
@@ -25,9 +26,11 @@ export function SettingsRow({
   const styles = useThemedStyles(makeStyles);
   return (
     <Pressable role="button" onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      <Text style={[styles.label, tone === 'danger' && styles.danger]}>{label}</Text>
+      <Text variant="body" color={tone} style={styles.label}>
+        {label}
+      </Text>
       {value ? (
-        <Text style={styles.value} numberOfLines={1}>
+        <Text variant="caption" style={styles.value} numberOfLines={1}>
           {value}
         </Text>
       ) : null}
@@ -54,9 +57,8 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48, paddingVertical: space.sm },
     pressed: { opacity: 0.6 },
-    label: { ...typeScale.body, color: c.fg, flexGrow: 1, flexShrink: 0 },
-    danger: { color: c.danger },
-    value: { ...typeScale.caption, color: c.muted, flexShrink: 1 },
+    label: { flexGrow: 1, flexShrink: 0 },
+    value: { flexShrink: 1 },
     chevron: { color: c.muted2 },
     divider: { borderTopWidth: 1, borderTopColor: c.lineSoft },
   });

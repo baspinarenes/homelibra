@@ -1,7 +1,8 @@
 import { Children, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, type as typeScale } from './tokens';
+import { Text } from './text';
+import type { Colors } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 type HeadingProps = {
@@ -17,13 +18,13 @@ export function SectionHeading({ title, count, link }: HeadingProps) {
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.row}>
-      <Text role="heading" style={styles.title}>
-        {title.toLocaleUpperCase('tr')}
+      <Text variant="heading" style={styles.title}>
+        {title}
       </Text>
-      {count !== undefined && <Text style={styles.count}>{count}</Text>}
+      {count !== undefined && <Text variant="collectionCount">{count}</Text>}
       {link && (
         <Pressable role="link" aria-label={link.label} onPress={link.onPress} hitSlop={12}>
-          <Text style={styles.link}>{link.label}</Text>
+          <Text variant="link">{link.label}</Text>
         </Pressable>
       )}
     </View>
@@ -54,8 +55,7 @@ export function Section({
 
 /** Running text inside a section. */
 export function SectionText({ children }: { children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
-  return <Text style={styles.body}>{children}</Text>;
+  return <Text variant="body">{children}</Text>;
 }
 
 /** Sections one under another, a thin `lineSoft` rule between each two. */
@@ -76,13 +76,10 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     // Baseline-aligned, the two ends apart.
     row: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
-    title: { ...typeScale.heading, color: c.muted, flexShrink: 1 },
-    count: { ...typeScale.heading, letterSpacing: 0, color: c.muted },
-    link: { ...typeScale.link, color: c.accent },
+    title: { flexShrink: 1 },
     section: { gap: 12, paddingVertical: 18 },
     text: { gap: 8 },
     rows: { gap: 0 },
     rowsHeading: { marginBottom: 6 },
-    body: { ...typeScale.body, color: c.ink2 },
     divider: { borderTopWidth: 1, borderTopColor: c.lineSoft },
   });

@@ -1,13 +1,14 @@
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Switch } from '@homelibra/ui/switch';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { DefinitionTags } from '@/components/definition-tags';
 import { useTRPC } from '@/lib/trpc';
@@ -70,15 +71,15 @@ export default function NewCollectionScreen() {
           maxLength={200}
         />
         <View style={styles.field}>
-          <Text style={styles.label}>{t('tags.field').toLocaleUpperCase('tr')}</Text>
+          <Text variant="fieldLabel">{t('tags.field')}</Text>
           <DefinitionTags names={tags} onChange={setTags} />
-          <Text style={styles.hint}>{t('collection.tagsHint')}</Text>
+          <Text variant="caption">{t('collection.tagsHint')}</Text>
         </View>
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>
+          <Text variant="label" style={styles.switchLabel}>
             {t('collection.sourceNotes')}
             {includeSourceNotes && !!counts?.sourceOnlyCount && (
-              <Text style={styles.switchCount}>
+              <Text variant="label" color="muted">
                 {' '}
                 {t('collection.sourceNotesCount', { count: counts.sourceOnlyCount })}
               </Text>
@@ -90,13 +91,17 @@ export default function NewCollectionScreen() {
           <View style={styles.preview}>
             <SectionHeading title={t('collection.inCollection')} />
             {counts && (
-              <Text style={styles.counts}>
+              <Text variant="body">
                 {t('collection.counts', { notes: counts.noteCount, sources: counts.sourceCount })}
               </Text>
             )}
           </View>
         )}
-        {create.isError && <Text style={styles.error}>{t('collection.saveFailed')}</Text>}
+        {create.isError && (
+          <Text variant="bodySm" color="danger">
+            {t('collection.saveFailed')}
+          </Text>
+        )}
       </ScrollView>
     </>
   );
@@ -106,12 +111,7 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     form: { gap: 20, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.xxl },
     field: { gap: 6 },
-    label: { ...typeScale.fieldLabel, color: c.muted },
-    hint: { ...typeScale.caption, color: c.muted },
     switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-    switchLabel: { ...typeScale.label, color: c.fg, flexShrink: 1 },
-    switchCount: { color: c.muted },
+    switchLabel: { flexShrink: 1 },
     preview: { gap: 4, paddingTop: 14, borderTopWidth: 1, borderTopColor: c.lineSoft },
-    counts: { ...typeScale.body, color: c.ink2 },
-    error: { ...typeScale.bodySm, color: c.danger },
   });

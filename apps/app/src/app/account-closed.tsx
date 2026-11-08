@@ -1,9 +1,10 @@
 import { deletionDueAt } from '@homelibra/core/account';
 import { Button } from '@homelibra/ui/button';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SignOutButton } from '@/components/sign-out-button';
@@ -34,12 +35,16 @@ export default function AccountClosedScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{t('accountClosed.title')}</Text>
-        <Text style={styles.lead}>{t('accountClosed.lead', { date })}</Text>
+        <Text variant="display">{t('accountClosed.title')}</Text>
+        <Text variant="body">{t('accountClosed.lead', { date })}</Text>
         <View style={styles.action}>
           <Button label={t('accountClosed.restore')} block busy={restore.isPending} onPress={() => restore.mutate()} />
         </View>
-        {restore.isError ? <Text style={styles.error}>{t('accountClosed.failed')}</Text> : null}
+        {restore.isError ? (
+          <Text variant="label" color="warn">
+            {t('accountClosed.failed')}
+          </Text>
+        ) : null}
         <View style={styles.signOut}>
           <SignOutButton />
         </View>
@@ -60,10 +65,7 @@ const makeStyles = (c: Colors) =>
       paddingBottom: space.xl,
       gap: space.lg,
     },
-    title: { ...typeScale.display, color: c.fg },
-    lead: { ...typeScale.body, color: c.ink2 },
     action: { marginTop: space.sm },
-    error: { ...typeScale.label, color: c.warn },
     // The button carries its own padding; pull it back to the gutter.
     signOut: { alignSelf: 'flex-start', marginLeft: -space.xs },
   });

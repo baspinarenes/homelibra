@@ -1,7 +1,8 @@
 import Check from 'lucide-react-native/icons/check';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, fonts, type as typeScale } from './tokens';
+import { Text } from './text';
+import type { Colors } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 /**
@@ -35,7 +36,9 @@ export function SheetChoices<T extends string>({
             onPress={() => onChange(option.value)}
             style={({ pressed }) => [styles.option, index > 0 && styles.divided, pressed && styles.pressed]}
           >
-            <Text style={[styles.text, selected && styles.selectedText]}>{option.label}</Text>
+            <Text variant={selected ? 'choiceStrong' : 'choice'} style={styles.text}>
+              {option.label}
+            </Text>
             {selected && <Check color={colors.accent} size={20} strokeWidth={1.6} />}
           </Pressable>
         );
@@ -49,6 +52,5 @@ const makeStyles = (c: Colors) =>
     option: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 52 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
     pressed: { opacity: 0.7 },
-    text: { ...typeScale.choice, color: c.fg, flexShrink: 1 },
-    selectedText: { fontFamily: fonts.sansSemiBold, color: c.accent },
+    text: { flexShrink: 1 },
   });

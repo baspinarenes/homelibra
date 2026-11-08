@@ -26,6 +26,14 @@ const hermesGaps = [
   },
 ];
 
+// A Note's Sort value is only ever derived (#125): outside core, nothing
+// reads it from a Locator on its own, so it cannot drift from the rule.
+const derivedSortValue = {
+  name: '@homelibra/core/note',
+  importNames: ['locatorSortValue'],
+  message: "A Note's stored fields come from capturedNote / editedNote; the Sort value rule lives in core.",
+};
+
 // The app's screens take every face, colour and corner from @homelibra/ui (#134),
 // so a change to the design system reaches them all. The tokens themselves live
 // in packages/ui, which this does not cover.
@@ -39,10 +47,11 @@ const ownStyle = [
       'Literal[value=/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/], Literal[value=/^(?:rgb|hsl)a?\\(/i], TemplateElement[value.raw=/^(?:rgb|hsl)a?\\(/i]',
     message: 'Colours come from @homelibra/ui/theme (`Colors` from useTheme / useThemedStyles); write none in the app.',
   },
-  // A named colour ('red'); the written values above are caught already.
+  // A named colour ('red'); the written values above are caught already. Text's `color`
+  // (and MarkedText's, which hands it on) names a theme colour, which its type checks (#145).
   {
     selector:
-      "Property[key.name=/[cC]olor$/] > Literal.value:not([value=/^(?:#|rgb|hsl)/i]):not([value='transparent']), JSXAttribute[name.name=/^(?:[a-zA-Z]*[cC]olor|fill|stroke)$/] > Literal:not([value=/^(?:#|rgb|hsl)/i]):not([value='none']):not([value='transparent'])",
+      "Property[key.name=/[cC]olor$/] > Literal.value:not([value=/^(?:#|rgb|hsl)/i]):not([value='transparent']), JSXOpeningElement:not([name.name=/^(?:Text|MarkedText)$/]) > JSXAttribute[name.name=/^(?:[a-zA-Z]*[cC]olor|fill|stroke)$/] > Literal:not([value=/^(?:#|rgb|hsl)/i]):not([value='none']):not([value='transparent'])",
     message: 'Colours come from @homelibra/ui/theme (`Colors` from useTheme / useThemedStyles); write none in the app.',
   },
   {
@@ -87,28 +96,31 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
-  // A Note's Sort value is only ever derived (#125): outside core, nothing
-  // reads it from a Locator on its own, so it cannot drift from the rule.
   {
     files: ['apps/**', 'packages/outbox/**'],
+    rules: { 'no-restricted-imports': ['error', { paths: [derivedSortValue] }] },
+  },
+  {
+    files: ['apps/app/**'],
     rules: {
+      'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownStyle, ...ownSize],
+      // Text from @homelibra/ui/text gives each entry its colour, its heading role and its
+      // Turkish upper case (#145); React Native's own leaves a screen to remember them.
       'no-restricted-imports': [
         'error',
         {
           paths: [
+            // These options replace the block above's, so the Sort value ban comes along.
+            derivedSortValue,
             {
-              name: '@homelibra/core/note',
-              importNames: ['locatorSortValue'],
-              message: "A Note's stored fields come from capturedNote / editedNote; the Sort value rule lives in core.",
+              name: 'react-native',
+              importNames: ['Text'],
+              message: "Write text with Text from '@homelibra/ui/text': its variant brings the colour, role and case.",
             },
           ],
         },
       ],
     },
-  },
-  {
-    files: ['apps/app/**'],
-    rules: { 'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownStyle, ...ownSize] },
   },
   {
     files: ['packages/ui/**'],

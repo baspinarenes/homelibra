@@ -1,11 +1,12 @@
 import { NOT_INVITED } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { type Colors, useThemedStyles } from '@homelibra/ui/theme';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
 import { InviteNotice } from '@/components/invite-notice';
 import { authClient } from '@/lib/auth-client';
@@ -72,10 +73,8 @@ export default function EmailSignInScreen() {
       keyboardVerticalOffset={headerHeight}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text role="heading" style={styles.title}>
-          {t('signIn.emailTitle')}
-        </Text>
-        <Text style={styles.lead}>{sentTo ? t('signIn.codeSentTo', { email: sentTo }) : t('signIn.lead')}</Text>
+        <Text variant="title">{t('signIn.emailTitle')}</Text>
+        <Text variant="body">{sentTo ? t('signIn.codeSentTo', { email: sentTo }) : t('signIn.lead')}</Text>
         <TextField
           label={t('signIn.emailLabel')}
           value={email}
@@ -118,7 +117,11 @@ export default function EmailSignInScreen() {
             onPress={() => sendCode(address)}
           />
         )}
-        {message?.kind === 'sendFailed' ? <Text style={styles.error}>{t('signIn.errors.sendFailed')}</Text> : null}
+        {message?.kind === 'sendFailed' ? (
+          <Text variant="label" color="danger">
+            {t('signIn.errors.sendFailed')}
+          </Text>
+        ) : null}
         {message?.kind === 'notInvited' ? <InviteNotice /> : null}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -137,7 +140,4 @@ const makeStyles = (c: Colors) =>
       paddingTop: 8,
       paddingBottom: 24,
     },
-    title: { ...typeScale.title, color: c.fg },
-    lead: { ...typeScale.body, color: c.ink2 },
-    error: { ...typeScale.label, color: c.danger },
   });

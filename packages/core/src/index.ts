@@ -1,1 +1,1 @@
-export { compareTr, titleCaseTr } from './lib/turkish';
+export { ablativeTr, compareTr, titleCaseTr } from './lib/turkish';

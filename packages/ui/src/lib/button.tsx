@@ -1,7 +1,8 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 
 import type { IconComponent } from './icon';
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 export type ButtonVariant = 'primary' | 'danger' | 'secondary' | 'small' | 'text';
@@ -42,13 +43,15 @@ export function Button({
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const inactive = busy || disabled;
-  const ink = {
-    primary: colors.accentFg,
-    danger: colors.accentFg,
-    secondary: tone ? colors[tone] : colors.fg,
-    small: colors.accent,
-    text: colors[tone ?? 'accent'],
-  }[variant];
+  const ink = (
+    {
+      primary: 'accentFg',
+      danger: 'accentFg',
+      secondary: tone ?? 'fg',
+      small: 'accent',
+      text: tone ?? 'accent',
+    } satisfies Record<ButtonVariant, keyof Colors>
+  )[variant];
   return (
     <Pressable
       role="button"
@@ -68,11 +71,13 @@ export function Button({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={ink} />
+        <ActivityIndicator color={colors[ink]} />
       ) : (
         <>
-          {Icon && <Icon color={ink} size={variant === 'small' ? 16 : 18} strokeWidth={1.6} />}
-          <Text style={[styles.label, variant === 'small' && styles.smallLabel, { color: ink }]}>{label}</Text>
+          {Icon && <Icon color={colors[ink]} size={variant === 'small' ? 16 : 18} strokeWidth={1.6} />}
+          <Text variant={variant === 'small' ? 'button' : 'action'} color={ink}>
+            {label}
+          </Text>
         </>
       )}
     </Pressable>
@@ -101,6 +106,4 @@ const makeStyles = (c: Colors) =>
     onAccent: { backgroundColor: c.accentFg, borderColor: 'transparent' },
     off: { opacity: 0.45 },
     pressed: { opacity: 0.8 },
-    label: { ...typeScale.action },
-    smallLabel: { ...typeScale.button },
   });

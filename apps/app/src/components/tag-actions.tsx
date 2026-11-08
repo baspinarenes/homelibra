@@ -1,15 +1,16 @@
 import { tagName, tagSuggestKey } from '@homelibra/core/tag';
 import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
 import { Sheet, SheetAction } from '@homelibra/ui/sheet';
+import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Merge from 'lucide-react-native/icons/merge';
 import PenLine from 'lucide-react-native/icons/pen-line';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
@@ -28,7 +29,7 @@ export function TagMenuButton({ name, onPress }: { name: string; onPress: () => 
       hitSlop={8}
       style={({ pressed }) => [styles.more, pressed && styles.pressed]}
     >
-      <Text style={styles.moreText}>⋯</Text>
+      <Text variant="more">⋯</Text>
     </Pressable>
   );
 }
@@ -86,7 +87,6 @@ function Menu({ tag, onChoose, onClose }: { tag: TagRef; onChoose: (step: Step) 
 
 function Rename({ tag, onMerge, onClose }: { tag: TagRef; onMerge: (into: TagRef) => void; onClose: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const refreshAll = useRefreshAll();
   const [value, setValue] = useState(tag.name);
@@ -127,8 +127,12 @@ function Rename({ tag, onMerge, onClose }: { tag: TagRef; onMerge: (into: TagRef
         returnKeyType="done"
         placeholder={t('tagActions.newName')}
       />
-      <Text style={styles.hint}>{t('tagActions.renameHint')}</Text>
-      {rename.isError && <Text style={styles.error}>{t('tagActions.failed')}</Text>}
+      <Text variant="caption">{t('tagActions.renameHint')}</Text>
+      {rename.isError && (
+        <Text variant="body" color="danger">
+          {t('tagActions.failed')}
+        </Text>
+      )}
     </Sheet>
   );
 }
@@ -163,9 +167,13 @@ function PickTarget({ tag, onPick, onClose }: { tag: TagRef; onPick: (into: TagR
       {tags.isPending ? (
         <ActivityIndicator color={colors.accent} style={styles.status} />
       ) : tags.isError ? (
-        <Text style={[styles.lead, styles.status]}>{t('tags.loadFailed')}</Text>
+        <Text variant="body" style={[styles.lead, styles.status]}>
+          {t('tags.loadFailed')}
+        </Text>
       ) : shown.length === 0 ? (
-        <Text style={[styles.lead, styles.status]}>{t('tagActions.noMatches')}</Text>
+        <Text variant="body" style={[styles.lead, styles.status]}>
+          {t('tagActions.noMatches')}
+        </Text>
       ) : (
         // The sheet scrolls; a list inside it would be a scroller in a scroller.
         <View>
@@ -176,10 +184,10 @@ function PickTarget({ tag, onPick, onClose }: { tag: TagRef; onPick: (into: TagR
               onPress={() => onPick({ id: other.id, name: other.name })}
               style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
             >
-              <Text style={styles.name}>{other.name}</Text>
-              <Text style={styles.counts}>
-                {t('tags.counts', { notes: other.noteCount, sources: other.sourceCount })}
+              <Text variant="body" color="fg">
+                {other.name}
               </Text>
+              <Text variant="count">{t('tags.counts', { notes: other.noteCount, sources: other.sourceCount })}</Text>
             </Pressable>
           ))}
         </View>
@@ -190,7 +198,6 @@ function PickTarget({ tag, onPick, onClose }: { tag: TagRef; onPick: (into: TagR
 
 function ConfirmMerge({ tag, into, onClose }: { tag: TagRef; into: TagRef; onClose: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const refreshAll = useRefreshAll();
   const merge = useMutation(
@@ -211,9 +218,9 @@ function ConfirmMerge({ tag, into, onClose }: { tag: TagRef; into: TagRef; onClo
           <Trans
             i18nKey="tagActions.confirmMerge"
             values={{ name: tag.name, into: into.name }}
-            components={{ tag: <Text style={styles.strong} /> }}
+            components={{ tag: <Text variant="strong" /> }}
           />
-          {merge.isError && <Text style={styles.error}>{`\n${t('tagActions.failed')}`}</Text>}
+          {merge.isError && <Text variant="body" color="danger">{`\n${t('tagActions.failed')}`}</Text>}
         </DialogMessage>
       }
       confirmLabel={t('tagActions.confirmMergeAction')}
@@ -228,7 +235,6 @@ function ConfirmMerge({ tag, into, onClose }: { tag: TagRef; into: TagRef; onClo
 
 function ConfirmDelete({ tag, onClose }: { tag: TagRef; onClose: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const refreshAll = useRefreshAll();
   const impact = useQuery(trpc.tags.deleteImpact.queryOptions({ id: tag.id }, { gcTime: 0 }));
@@ -255,13 +261,13 @@ function ConfirmDelete({ tag, onClose }: { tag: TagRef; onClose: () => void }) {
     <Trans
       i18nKey="tagActions.confirmDelete"
       values={{ name: tag.name, from: joinTr(counts, t('tagActions.and')) }}
-      components={{ tag: <Text style={styles.strong} /> }}
+      components={{ tag: <Text variant="strong" /> }}
     />
   ) : (
     <Trans
       i18nKey="tagActions.confirmDeleteUnused"
       values={{ name: tag.name }}
-      components={{ tag: <Text style={styles.strong} /> }}
+      components={{ tag: <Text variant="strong" /> }}
     />
   );
 
@@ -271,7 +277,7 @@ function ConfirmDelete({ tag, onClose }: { tag: TagRef; onClose: () => void }) {
       message={
         <DialogMessage>
           {message}
-          {remove.isError && <Text style={styles.error}>{`\n${t('tagActions.failed')}`}</Text>}
+          {remove.isError && <Text variant="body" color="danger">{`\n${t('tagActions.failed')}`}</Text>}
         </DialogMessage>
       }
       confirmLabel={t('tagActions.confirmDeleteAction')}
@@ -293,15 +299,9 @@ function joinTr(parts: string[], and: string) {
 const makeStyles = (c: Colors) =>
   StyleSheet.create({
     more: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-    moreText: { ...typeScale.more, color: c.muted },
     pressed: { opacity: 0.7 },
-    hint: { ...typeScale.caption, color: c.muted },
-    error: { ...typeScale.body, color: c.danger },
     row: { gap: 3, paddingVertical: 12 },
     divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    name: { ...typeScale.body, color: c.fg },
-    counts: { ...typeScale.count, color: c.muted },
     status: { paddingVertical: space.xl },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-    strong: typeScale.strong,
+    lead: { textAlign: 'center' },
   });

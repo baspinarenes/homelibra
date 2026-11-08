@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 /**
@@ -13,7 +14,7 @@ export function Toast({ message, action }: { message: string; action?: { label: 
   const { shadow } = useTheme();
   return (
     <View role="status" style={[styles.toast, !action && styles.plain, { boxShadow: shadow.lift }]}>
-      <Text style={styles.message} numberOfLines={2}>
+      <Text variant="label" color="page" style={styles.message} numberOfLines={2}>
         {message}
       </Text>
       {action && (
@@ -23,7 +24,9 @@ export function Toast({ message, action }: { message: string; action?: { label: 
           onPress={action.onPress}
           style={({ pressed }) => [styles.action, pressed && styles.pressed]}
         >
-          <Text style={styles.actionLabel}>{action.label}</Text>
+          <Text variant="button" color="accentSoft">
+            {action.label}
+          </Text>
         </Pressable>
       )}
     </View>
@@ -48,8 +51,7 @@ const makeStyles = (c: Colors) =>
     },
     // Only a word, no action beside it.
     plain: { paddingRight: 16 },
-    message: { ...typeScale.label, flex: 1, color: c.page },
+    message: { flex: 1 },
     action: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 8 },
-    actionLabel: { ...typeScale.button, color: c.accentSoft },
     pressed: { opacity: 0.7 },
   });

@@ -1,7 +1,8 @@
 import Check from 'lucide-react-native/icons/check';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useTheme, useThemedStyles } from './use-theme';
 
 /** A box and its label; the whole row toggles it. */
@@ -31,7 +32,9 @@ export function Checkbox({
       <View style={[styles.box, checked && styles.checked]}>
         {checked && <Check size={14} strokeWidth={3} color={colors.accentFg} />}
       </View>
-      <Text style={styles.label}>{label}</Text>
+      <Text variant="body" color="fg" style={styles.label}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -49,6 +52,6 @@ const makeStyles = (c: Colors) =>
       justifyContent: 'center',
     },
     checked: { backgroundColor: c.accent, borderColor: c.accent },
-    label: { ...typeScale.body, color: c.fg, flexShrink: 1 },
+    label: { flexShrink: 1 },
     off: { opacity: 0.45 },
   });

@@ -1,11 +1,12 @@
 import type { AppRouter } from '@homelibra/api';
+import { Text, type UpperCaseVariant, type Variant } from '@homelibra/ui/text';
 import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import X from 'lucide-react-native/icons/x';
-import { useMemo, useState } from 'react';
+import { type ComponentProps, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, TextInput, type TextStyle, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/lib/settled';
@@ -180,7 +181,7 @@ export function ShortWords({ words, centered = false }: { words: readonly string
   const styles = useThemedStyles(makeStyles);
   if (!words?.length) return null;
   return (
-    <Text style={[styles.short, centered && styles.centered]}>
+    <Text variant="caption" style={centered && styles.centered}>
       {t('noteSearch.shortWords', { words: words.map((word) => `«${word}»`).join(', ') })}
     </Text>
   );
@@ -193,23 +194,27 @@ export function ShortWords({ words, centered = false }: { words: readonly string
 export function MarkedText({
   text,
   marks,
+  variant,
+  color,
   style,
   prefix = '',
 }: {
   text: string;
   marks: Segment[] | null | undefined;
-  style: TextStyle | TextStyle[];
+  variant: Exclude<Variant, UpperCaseVariant>;
+  color?: ComponentProps<typeof Text>['color'];
+  style?: ComponentProps<typeof Text>['style'];
   prefix?: string;
 }) {
   const styles = useThemedStyles(makeStyles);
   const current = marks && marks.map((segment) => segment.text).join('') === text ? marks : null;
   return (
-    <Text style={style}>
+    <Text variant={variant} color={color} style={style}>
       {prefix}
       {current
         ? current.map((segment, i) =>
             segment.hit ? (
-              <Text key={i} style={styles.hit}>
+              <Text key={i} variant={variant} color="fg" style={styles.hit}>
                 {segment.text}
               </Text>
             ) : (
@@ -249,7 +254,6 @@ const makeStyles = (c: Colors) =>
       borderRadius: radius.control,
     },
     pressed: { opacity: 0.7 },
-    hit: { backgroundColor: c.mark, color: c.fg },
-    short: { ...typeScale.caption, color: c.muted },
+    hit: { backgroundColor: c.mark },
     centered: { textAlign: 'center' },
   });

@@ -1,9 +1,10 @@
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { ListMessage } from '@/components/list-message';
 import { TagActions, TagMenuButton, type TagRef } from '@/components/tag-actions';
@@ -53,10 +54,10 @@ export function TagList({ sort }: { sort: TagSort }) {
                 onPress={() => router.push({ pathname: '/tag/[id]', params: { id: tag.id } })}
                 style={({ pressed }) => [styles.open, pressed && styles.pressed]}
               >
-                <Text style={styles.name}>{tag.name}</Text>
-                <Text style={styles.counts}>
-                  {t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}
+                <Text variant="body" color="fg" style={styles.name}>
+                  {tag.name}
                 </Text>
+                <Text variant="count">{t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}</Text>
               </Pressable>
               <TagMenuButton name={tag.name} onPress={() => setActing({ id: tag.id, name: tag.name })} />
             </View>
@@ -85,6 +86,5 @@ const makeStyles = (c: Colors) =>
     // The Tag's page opens from all of the row but its ⋯; the counts stand right after the name.
     open: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', gap: 10, paddingVertical: space.sm },
     pressed: { opacity: 0.7 },
-    name: { ...typeScale.body, color: c.fg, flexShrink: 1 },
-    counts: { ...typeScale.count, color: c.muted },
+    name: { flexShrink: 1 },
   });

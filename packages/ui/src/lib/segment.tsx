@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { type Colors, radius, type as typeScale } from './tokens';
+import { Text } from './text';
+import { type Colors, radius } from './tokens';
 import { useThemedStyles } from './use-theme';
 
 /** Two or three options, one chosen; the chosen one is on `accent`, as a chosen Chip is. */
@@ -10,7 +11,6 @@ export function Segment<T extends string>({
   value,
   onChange,
   block = false,
-  compact = false,
 }: {
   /** What screen readers call the choice. */
   label: string;
@@ -19,16 +19,10 @@ export function Segment<T extends string>({
   onChange: (value: T) => void;
   /** Full width, the options sharing it equally. */
   block?: boolean;
-  /** In a toolbar row (Not yazma alanı's Alıntı | Yorum): on the page colour, tighter, smaller words. */
-  compact?: boolean;
 }) {
   const styles = useThemedStyles(makeStyles);
   return (
-    <View
-      role="radiogroup"
-      aria-label={label}
-      style={[styles.group, block && styles.block, compact && styles.compactGroup]}
-    >
+    <View role="radiogroup" aria-label={label} style={[styles.group, block && styles.block]}>
       {options.map((option) => {
         const selected = option.value === value;
         return (
@@ -37,14 +31,9 @@ export function Segment<T extends string>({
             role="radio"
             aria-checked={selected}
             onPress={() => onChange(option.value)}
-            style={[
-              styles.option,
-              block && styles.blockOption,
-              compact && styles.compactOption,
-              selected && styles.selected,
-            ]}
+            style={[styles.option, block && styles.blockOption, selected && styles.selected]}
           >
-            <Text style={[styles.text, compact && styles.compactText, selected && styles.selectedText]}>
+            <Text variant="label" color={selected ? 'accentFg' : 'ink2'}>
               {option.label}
             </Text>
           </Pressable>
@@ -68,10 +57,5 @@ const makeStyles = (c: Colors) =>
     block: { alignSelf: 'stretch' },
     option: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.chip },
     blockOption: { flex: 1, alignItems: 'center' },
-    compactGroup: { padding: 2, backgroundColor: c.page },
-    compactOption: { paddingVertical: 4, paddingHorizontal: 11 },
-    compactText: { ...typeScale.labelSm },
     selected: { backgroundColor: c.accent },
-    text: { ...typeScale.label, color: c.ink2 },
-    selectedText: { color: c.accentFg },
   });

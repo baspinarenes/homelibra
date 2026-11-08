@@ -2,7 +2,8 @@
 // The app's version is `expo.version` in apps/app/app.json: what Ayarlar →
 // Sürüm shows, what EAS builds from (appVersionSource "local", native folders
 // generated) and what an EAS Update carries. A PR that changes what ships in
-// the app raises it; CI runs `check` on every PR (.github/workflows/ci.yml).
+// the app raises it; CI runs `check` on every PR (.github/workflows/ci.yml),
+// and .husky/pre-push runs it before a branch is pushed.
 //
 //   node scripts/version-bump.mjs check <base-ref>          fail unless raised over <base-ref>
 //   node scripts/version-bump.mjs bump <patch|minor|major>  raise it in app.json
@@ -83,7 +84,8 @@ function main([command, argument]) {
     const result = checkVersionBump({
       changedFiles: git('diff', '--name-only', `${argument}...HEAD`).split('\n').filter(Boolean),
       baseVersion: versionIn(git('show', `${argument}:${appJson}`)),
-      headVersion: versionIn(readFileSync(appJson, 'utf8')),
+      // As committed: an uncommitted bump does not reach the PR.
+      headVersion: versionIn(git('show', `HEAD:${appJson}`)),
     });
     console[result.ok ? 'log' : 'error'](result.message);
     return result.ok ? 0 : 1;

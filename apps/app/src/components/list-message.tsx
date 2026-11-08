@@ -1,6 +1,7 @@
 import { Button } from '@homelibra/ui/button';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from '@homelibra/ui/text';
+import { space } from '@homelibra/ui/theme';
+import { StyleSheet, View } from 'react-native';
 
 /**
  * What stands in the middle of an empty or failed list (`.center` on the
@@ -16,11 +17,16 @@ export function ListMessage({
   lead: string;
   action?: { label: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'text' };
 }) {
-  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.center}>
-      {title && <Text style={styles.title}>{title}</Text>}
-      <Text style={styles.lead}>{lead}</Text>
+      {title && (
+        <Text variant="title" style={styles.centred}>
+          {title}
+        </Text>
+      )}
+      <Text variant="body" style={styles.centred}>
+        {lead}
+      </Text>
       {action && (
         // Button sits at the start of its row (`alignSelf: 'flex-start'`); the wrapper is what `center` centres.
         <View>
@@ -31,16 +37,14 @@ export function ListMessage({
   );
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: space.md,
-      paddingHorizontal: space.xxl,
-      paddingVertical: space.xl,
-    },
-    title: { ...typeScale.title, color: c.fg, textAlign: 'center' },
-    lead: { ...typeScale.body, color: c.ink2, textAlign: 'center' },
-  });
+const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.md,
+    paddingHorizontal: space.xxl,
+    paddingVertical: space.xl,
+  },
+  centred: { textAlign: 'center' },
+});

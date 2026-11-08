@@ -3,13 +3,14 @@ import { formatDate } from '@homelibra/core/date';
 import { normalizeIsbn } from '@homelibra/core/source';
 import { Checkbox } from '@homelibra/ui/checkbox';
 import { Sheet } from '@homelibra/ui/sheet';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { Text } from '@homelibra/ui/text';
+import { space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import ScanBarcode from 'lucide-react-native/icons/scan-barcode';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { IdentifierCard } from '@/components/identifier-card';
 import { CoverImage } from '@/components/source-cover';
@@ -148,19 +149,19 @@ function SuggestionSheet({
       onClose={onClose}
       primary={{ label: t('isbn.accept'), onPress: () => onAccept(withCover) }}
     >
-      <Text style={styles.lead}>{t('isbn.lead', { isbn: suggestion.isbn })}</Text>
+      <Text variant="caption">{t('isbn.lead', { isbn: suggestion.isbn })}</Text>
       <View style={styles.offer}>
         {cover && (
           <View style={styles.coverColumn}>
             <CoverImage file={cover.large} style={styles.preview} />
-            <Text style={styles.credit}>{t('isbn.coverCredit')}</Text>
+            <Text variant="caption">{t('isbn.coverCredit')}</Text>
           </View>
         )}
         <View style={styles.fields}>
           {rows.map(({ key, label, value }) => (
             <View key={key} style={styles.row}>
-              <Text style={styles.label}>{label.toLocaleUpperCase('tr')}</Text>
-              <Text style={[styles.value, key === 'title' && styles.titleValue, !value && styles.empty]}>
+              <Text variant="micro">{label}</Text>
+              <Text variant={key === 'title' ? 'sourceTitleSm' : 'body'} color={value ? 'fg' : 'muted'}>
                 {value ?? t('isbn.none')}
               </Text>
             </View>
@@ -179,9 +180,13 @@ function AcceptedCover({ suggested, onDrop }: { suggested: SuggestedCover; onDro
   return (
     <>
       <CoverImage file={suggested.cover.small} style={styles.thumb} />
-      <Text style={styles.acceptedText}>{t('isbn.coverOnSave')}</Text>
+      <Text variant="caption" color="accentFg" style={styles.acceptedText}>
+        {t('isbn.coverOnSave')}
+      </Text>
       <Pressable accessibilityRole="button" onPress={onDrop} hitSlop={8}>
-        <Text style={styles.dropCover}>{t('isbn.dropCover')}</Text>
+        <Text variant="link" color="accentFg" style={styles.dropCover}>
+          {t('isbn.dropCover')}
+        </Text>
       </Pressable>
     </>
   );
@@ -205,22 +210,16 @@ export function useGiveSuggestedCover() {
   };
 }
 
-const makeStyles = (c: Colors) =>
+const makeStyles = () =>
   StyleSheet.create({
-    lead: { ...typeScale.caption, color: c.muted },
     offer: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
     coverColumn: { gap: 6, alignItems: 'center' },
     // 2:3, as a Cover is shown everywhere.
     preview: { width: 96, height: 144 },
-    credit: { ...typeScale.caption, color: c.muted },
     fields: { flex: 1, gap: space.md },
     row: { gap: 2 },
-    label: { ...typeScale.micro, color: c.muted },
-    value: { ...typeScale.body, color: c.fg },
-    titleValue: { ...typeScale.sourceTitleSm },
-    empty: { color: c.muted },
     thumb: { width: 40, height: 56 },
     // On the ISBN card's accent ground.
-    acceptedText: { ...typeScale.caption, color: c.accentFg, flex: 1 },
-    dropCover: { ...typeScale.link, color: c.accentFg, textDecorationLine: 'underline' },
+    acceptedText: { flex: 1 },
+    dropCover: { textDecorationLine: 'underline' },
   });

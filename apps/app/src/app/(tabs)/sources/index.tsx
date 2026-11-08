@@ -5,8 +5,9 @@ import { Chip, ChipRow } from '@homelibra/ui/chip';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet, SheetField } from '@homelibra/ui/sheet';
+import { Text } from '@homelibra/ui/text';
 import { TextTabs } from '@homelibra/ui/text-tabs';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { inferRouterInputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,7 +15,7 @@ import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
 import {
   emptyYearRange,
@@ -190,7 +191,7 @@ export default function SourcesScreen() {
                   />
                 )}
               </ChipRow>
-              {undated > 0 && <Text style={styles.hint}>{t('dateFilter.hiddenSources', { count: undated })}</Text>}
+              {undated > 0 && <Text variant="caption">{t('dateFilter.hiddenSources', { count: undated })}</Text>}
             </View>
           ) : undefined
         }
@@ -329,6 +330,5 @@ const makeStyles = (c: Colors) =>
     spinner: { color: c.accent },
     headerActions: { flexDirection: 'row', alignItems: 'center' },
     filters: { gap: space.sm, paddingTop: space.md },
-    hint: { ...typeScale.caption, color: c.muted },
     sheet: { gap: 18 },
   });
