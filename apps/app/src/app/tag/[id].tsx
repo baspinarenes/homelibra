@@ -62,15 +62,20 @@ export default function TagScreen() {
   const bar = (
     <>
       <ViewName name={tag.name} />
-      <SourceNotesSwitch
-        value={includeSourceNotes}
-        count={view.data.sourceOnlyCount}
-        onChange={setIncludeSourceNotes}
-      />
       <SearchField value={search.text} onChange={search.setText} placeholder={t('noteSearch.inView')} />
       {/* With no match, the words stand under "Eşleşen not yok." instead. */}
       {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
-      <ViewCount view={shown} of={view.data} />
+      <ViewCount
+        view={shown}
+        of={view.data}
+        aside={
+          <SourceNotesSwitch
+            value={includeSourceNotes}
+            count={view.data.sourceOnlyCount}
+            onChange={setIncludeSourceNotes}
+          />
+        }
+      />
       {searched.failed && (
         <Text variant="caption" color="danger">
           {t('noteSearch.failed')}
