@@ -120,7 +120,7 @@ function SourcePage({
   const last = useMemo(() => lastCaptured(notes), [notes]);
   const list = useRef<FlatList<ListedNote>>(null);
   const pin = useRef<Pin | null>(
-    write && last ? { id: last.note.id, at: 'bar' } : found ? { id: found, at: 'middle' } : null,
+    write && last ? { id: last.id, at: 'bar' } : found ? { id: found, at: 'middle' } : null,
   );
   const retries = useRef(0);
 
@@ -249,8 +249,7 @@ function SourcePage({
       <NoteComposer
         sourceId={source.id}
         sourceType={source.type}
-        carriedLocator={last?.note.locator ?? ''}
-        carriedSince={last ? last.locatorSince.getTime() : Date.now()}
+        carriedLocator={last?.locator ?? ''}
         openAtStart={write}
         hidden={searching}
         onSaved={pinAboveBar}
