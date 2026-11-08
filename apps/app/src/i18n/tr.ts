@@ -131,9 +131,10 @@ export const tr = {
     logo: 'Homelibra logosu',
     withEmail: 'E-posta ile devam et',
     google: 'Google ile devam et',
-    // The first layer of the KVKK notice; its wording awaits the Operator's decision (#116).
+    // The first layer of the KVKK notice (#116).
     legalNote:
-      'Homelibra hesabını açmak için e-posta adresini işler; verilerin yurt dışındaki sunucularda saklanır. Ayrıntıları <notice>Aydınlatma metninde</notice> görebilirsin. Devam ederek <terms>Kullanım koşullarını</terms> kabul etmiş olursun.',
+      'Homelibra hesabını açmak için e-posta adresini işler; verilerin yurt dışındaki sunucularda saklanır. Ayrıntılar <notice>Aydınlatma metninde</notice>, kurallar <terms>Kullanım koşullarında</terms>.',
+    hasRead: 'Aydınlatma metnini okudum, Kullanım koşullarını kabul ediyorum.',
     emailTitle: 'E-posta ile giriş',
     lead: 'Adresine 6 haneli bir giriş kodu gönderelim.',
     emailLabel: 'E-posta',

@@ -24,11 +24,10 @@ const features = [
 
 /**
  * Hoş geldin: Homelibra in a few lines, shown once per Account, before the
- * Library opens. The terms were accepted at sign-in, by the note under
- * Giriş's buttons ("Devam ederek … kabul etmiş olursun"); Başla records that
- * acceptance with the version of the texts (account.acceptTerms), and the
- * Library opens. There is no consent box: nothing here rests on consent
- * (docs/research/kvkk-obligations.md).
+ * Library opens. The terms were accepted at sign-in, by the "okudum" box above
+ * Giriş's buttons; Başla records that acceptance with the version of the texts
+ * (account.acceptTerms), and the Library opens. There is no consent box:
+ * nothing here rests on consent (docs/research/kvkk-obligations.md).
  */
 export default function WelcomeScreen() {
   const { t } = useTranslation();
