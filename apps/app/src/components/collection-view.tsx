@@ -4,7 +4,7 @@ import { Text } from '@homelibra/ui/text';
 import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, SectionList, StyleSheet, Switch, View } from 'react-native';
 
@@ -24,8 +24,8 @@ type Note = Group['notes'][number];
  * gives, each Source's heading sticking under the bar while its Notes
  * scroll. The same layout on the phone and the desktop. A Source's heading
  * opens the Source page; a Note opens there, in place. While its search
- * box finds Notes, `matches` marks the words they matched. `underEmpty`
- * stands under `empty` when there are none.
+ * finds Notes, `matches` marks the words they matched and the list starts
+ * at the top. `underEmpty` stands under `empty` when there are none.
  */
 export function CollectionView({
   view,
@@ -43,10 +43,19 @@ export function CollectionView({
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const sections = view.groups.map((group) => ({ key: group.source.id, source: group.source, data: group.notes }));
+  const list = useRef<SectionList<Note, (typeof sections)[number]>>(null);
+
+  // The search can open anywhere down the list; what it finds starts at the top.
+  useEffect(() => {
+    if (matches) list.current?.getScrollResponder()?.scrollTo({ y: 0, animated: false });
+  }, [matches]);
+
   return (
     <View style={styles.screen}>
       <View style={styles.bar}>{bar}</View>
       <SectionList
+        ref={list}
+        keyboardShouldPersistTaps="handled"
         style={styles.screen}
         contentContainerStyle={styles.content}
         sections={sections}
