@@ -18,3 +18,14 @@ Under KVKK article 9 (as amended in 2024), keeping Turkish users' personal data 
 - Everything else from the KVKK research still applies and is not deferred: the privacy notice at sign-up names every recipient above and says the data is kept abroad, deletion completes within 30 days including backups, and breaches are reported within 72 hours.
 - Before the public release the risk is reviewed against the checklist in baspinarenes/homelibra#31: for each provider, either a signed and notified SS-2, or a move to a Turkish alternative.
 - Adding any new provider that receives personal data adds a line to that checklist and to the privacy notice.
+
+## Review of 2026-11-15
+
+The risk was looked at again while working through baspinarenes/homelibra#31. The findings are in `docs/research/kvkk-transfer-enforcement.md` and `docs/research/kvkk-provider-paths.md`:
+
+- Naming the providers in the privacy notice, or asking for consent at sign-up, does not make the transfer lawful: article 9/6 allows consent only for incidental transfers, and hosting is not one.
+- None of the providers will sign SS-2. Resend and Sentry say so in writing, Hetzner signs no individual agreements, Expo and Cloudflare publish nothing either way.
+- For the Library and Account data every documented compliant path is a move. The smallest is a restore onto a VPS in Turkey; replacing Sentry, Resend or EAS Update while the server stays in Germany lowers the number of providers, not the transfer.
+- By the Board's practice before the 2024 amendment the exposure is article 18/1-b, 256,357 to 17,092,242 TL in 2026. No published decision applies the amended article 9 yet, so that range is an inference.
+
+The operator decided to stay on Hetzner and to look at this once more **before the app is submitted to a store**. Until then the decision above stands.
