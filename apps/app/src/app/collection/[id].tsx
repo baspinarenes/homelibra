@@ -294,7 +294,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
   const keyHints = [
     { keys: '↑↓', label: t('widePanel.hintRows') },
     { keys: '⌘C', label: t('widePanel.hintCopyNote') },
-    { keys: '⌘⇧C', label: searching ? t('widePanel.hintCopyFound') : t('widePanel.hintCopyAll') },
+    { keys: '⌘⇧C', label: searched.matches ? t('widePanel.hintCopyFound') : t('widePanel.hintCopyAll') },
     ...(searching ? [] : [{ keys: '/', label: t('widePanel.hintSearch') }]),
     { keys: 'Esc', label: t('widePanel.hintClose') },
   ];
