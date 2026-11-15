@@ -176,6 +176,8 @@ export default function SearchScreen() {
   // `byKeys`: ↑↓ chose it, so the focus goes to its row too.
   const [opened, setOpened] = useState<{ focus: NoteFocus; query: string; byKeys?: boolean } | null>(null);
   const focus = opened && opened.query === query && kind !== 'sources' && !offline ? opened.focus : null;
+  // Put away for good: it does not come back with the query, Tümü or the connection.
+  if (opened && !focus) setOpened(null);
   const layout = useFramePanel(focus !== null);
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;

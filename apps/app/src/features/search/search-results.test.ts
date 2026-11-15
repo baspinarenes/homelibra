@@ -63,6 +63,29 @@ describe('stepInResults', () => {
     });
   });
 
+  it('from a Note outside the results, ↑ goes to the result before it in its Source', () => {
+    expect(stepInResults(results, { sourceId: 's1', noteId: 'x' }, 'previous', ['a', 'x', 'c'])).toEqual({
+      sourceId: 's1',
+      noteId: 'a',
+    });
+  });
+
+  it('while its Source’s order is not known, goes to the Source’s first result going down, its last going up', () => {
+    expect(stepInResults(results, { sourceId: 's1', noteId: 'x' }, 'next')).toEqual({ sourceId: 's1', noteId: 'a' });
+    expect(stepInResults(results, { sourceId: 's1', noteId: 'x' }, 'previous')).toEqual({
+      sourceId: 's1',
+      noteId: 'c',
+    });
+  });
+
+  it('from a Note whose Source has no result, goes to the first result going down, the last going up', () => {
+    expect(stepInResults(results, { sourceId: 's9', noteId: 'z' }, 'next')).toEqual({ sourceId: 's1', noteId: 'a' });
+    expect(stepInResults(results, { sourceId: 's9', noteId: 'z' }, 'previous')).toEqual({
+      sourceId: 's1',
+      noteId: 'c',
+    });
+  });
+
   it('gives nothing to step to with no Note found', () => {
     expect(stepInResults([], null, 'next')).toBeNull();
   });
