@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { commandFor, shortcutFor, wideLayout } from '../wide-layout';
+import { commandFor, shortcutFor, sideColumnBeside, wideLayout } from '../wide-layout';
 
 describe('wideLayout', () => {
   it('picks the tier by window width alone', () => {
@@ -38,6 +38,16 @@ describe('wideLayout', () => {
 
   it('keeps full rows below the wide tier, which has no panel', () => {
     expect([390, 900].map((width) => wideLayout({ width, panelOpen: true }).density)).toEqual(['full', 'full']);
+  });
+});
+
+describe('sideColumnBeside', () => {
+  it("keeps a page's side column beside its main column from 1280 px, the width Genel Bakış is drawn at", () => {
+    expect([1024, 1100, 1279, 1280, 1440].map(sideColumnBeside)).toEqual([false, false, false, true, true]);
+  });
+
+  it('puts it under the main column below the wide tier', () => {
+    expect([390, 720, 1023].map(sideColumnBeside)).toEqual([false, false, false]);
   });
 });
 
