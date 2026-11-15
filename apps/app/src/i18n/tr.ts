@@ -277,6 +277,23 @@ export const tr = {
     showSourcesUncounted: 'Kaynakları göster',
     hiddenNotes: 'Tarihsiz kaynaklardan {{count}} not gizli',
   },
+  // The wide tier's ⌘K window, a shortcut to Ara over every screen (#175).
+  quickSearch: {
+    dialog: 'Hızlı arama',
+    field: 'Ara ya da git',
+    placeholder: 'Etiket, kaynak ya da not ara',
+    close: 'Kapat',
+    go: 'Git',
+    notes: 'Notlar',
+    tag: 'Etiket',
+    source: 'Kaynak',
+    openAll: 'Ara’da tüm sonuçlar: «{{query}}» ›',
+    // Before a word is typed the last row opens Ara itself.
+    openAra: 'Ara’yı aç ›',
+    select: 'seç',
+    open: 'aç',
+    openAllHint: 'Ara’da aç',
+  },
   sources: {
     byTitle: 'Başlık',
     byAuthor: 'Yazar',
