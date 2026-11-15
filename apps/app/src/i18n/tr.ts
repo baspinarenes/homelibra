@@ -592,6 +592,9 @@ export const tr = {
     // A Collection's and a Tag's header; the name stands in full under it (#139).
     pageTitle: 'Dosya',
     tagPageTitle: 'Etiket',
+    // Over a Tag's page on a wide screen (#173): back to Dizin's Etiketler.
+    tagCrumb: '‹ Dizin · Etiketler',
+    tagCrumbLabel: 'Dizin, Etiketler',
     noteCount: '{{count}} not',
     counts: '{{notes}} not · {{sources}} kaynak',
     noTags: 'etiketsiz',
