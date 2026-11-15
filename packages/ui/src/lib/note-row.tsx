@@ -21,6 +21,8 @@ type Props = {
   marks?: { excerpt?: readonly MarkSegment[] | null; comment?: readonly MarkSegment[] | null };
   /** Under the texts in `full` only. */
   why?: NoteRowWhy;
+  /** Under the texts in `full` only, in the caption's colour: where a search result is from ("Yazar, Başlık"). */
+  meta?: string;
   /** The Note the panel shows. */
   selected?: boolean;
   /** A line above it, parting it from the Note before it under the same Source. */
@@ -37,7 +39,8 @@ type Props = {
 /**
  * One Note in a list of Notes (a Collection, a Tag's page, Ara, the lost
  * Notes): the Locator on the left (— when it has none), and in `full` the
- * Excerpt and ↳ the Comment whole with why the Note is here under them; in
+ * Excerpt and ↳ the Comment whole with why the Note is here (or, in Ara,
+ * where it is from) under them; in
  * `compact` one line of the Excerpt, or of the Comment when there is no
  * Excerpt. The row the panel shows is framed in the accent; a row under
  * the pointer takes the chip's ground.
@@ -49,6 +52,7 @@ export function NoteRow({
   comment,
   marks,
   why,
+  meta,
   selected = false,
   divided = false,
   onPress,
@@ -108,6 +112,7 @@ export function NoteRow({
                 {why.text}
               </Text>
             )}
+            {meta && <Text variant="caption">{meta}</Text>}
           </View>
         )}
       </Pressable>

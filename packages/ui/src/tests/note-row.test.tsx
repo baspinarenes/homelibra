@@ -39,6 +39,15 @@ describe('NoteRow', () => {
     expect(classes(source!)).toContain('text-warn');
   });
 
+  it('in full names where a search result is from under its texts, in the caption face, and not in compact', () => {
+    const meta = 'Mehmed Ali, Cemiyet-i İttihadiye Tarihçesi · yorumdan';
+    const full = row({ meta });
+    const line = all(full).find((node) => text(node) === meta);
+    expect(line).toBeDefined();
+    expect(classes(line!)).toContain('type-caption');
+    expect(text(row({ meta, density: 'compact' }))).not.toContain(meta);
+  });
+
   it('writes — for a Note with no Locator', () => {
     expect(text(row({ locator: null }))).toMatch(/^—/);
   });
