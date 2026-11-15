@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "scripts/dev.sh",
-    "check": "pnpm typecheck && pnpm lint:boundaries && pnpm lint && pnpm test:unit && pnpm test:scripts",
+    "check": "pnpm gen:theme --check && pnpm typecheck && pnpm lint:boundaries && pnpm lint && pnpm test:unit && pnpm test:scripts",
     "typecheck": "pnpm -r --parallel typecheck",
     "lint": "eslint .",
     "lint:boundaries": "depcruise apps packages",
@@ -21,7 +21,8 @@
     "invite": "pnpm --filter @homelibra/api invite",
     "usage": "pnpm --filter @homelibra/api usage",
     "version:bump": "node scripts/version-bump.mjs bump",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gen:theme": "node scripts/gen-theme.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

@@ -1,5 +1,6 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import { useColorScheme } from 'react-native';
+import { Uniwind } from 'uniwind';
 
 import { type Colors, palette, type Scheme, type Shadows, shadows } from './tokens';
 
@@ -30,6 +31,7 @@ const subscribe = (listener: () => void) => {
 export function keepThemePreferenceIn(next: ThemePreferenceStorage) {
   storage = next;
   preference = next.load();
+  Uniwind.setTheme(preference);
   notify();
 }
 
@@ -41,6 +43,8 @@ export function useThemePreference(): ThemePreference {
 export function setThemePreference(next: ThemePreference) {
   preference = next;
   storage?.save(next);
+  // Classes (`bg-page`, `dark:`) follow Uniwind's theme; keep it on the same choice.
+  Uniwind.setTheme(next);
   notify();
 }
 

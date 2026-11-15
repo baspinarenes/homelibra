@@ -1,10 +1,10 @@
 import X from 'lucide-react-native/icons/x';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import type { Colors } from './tokens';
+import { useTheme } from './use-theme';
 
 export type ChipTone = 'tag' | 'add' | 'warn' | 'done' | 'outline';
 
@@ -15,6 +15,21 @@ const inks = {
   done: 'accent',
   outline: 'ink2',
 } as const satisfies Record<ChipTone, keyof Colors>;
+
+// A bordered chip gives its 1px border back from its padding, so every chip is as tall.
+// Each look names its own padding: two padding classes on one element fight on the web.
+const filled = 'py-0.75 px-2.25';
+const bordered = 'border py-0.5 px-2';
+const looks = {
+  tag: `bg-chip-bg ${filled}`,
+  add: `${bordered} border-dashed border-line-strong`,
+  warn: `bg-warn-soft ${filled}`,
+  done: `bg-accent-soft ${filled}`,
+  outline: `${bordered} border-line`,
+} as const satisfies Record<ChipTone, string>;
+
+const base = 'flex-row items-center self-start rounded-chip';
+const chosen = `bg-accent ${filled}`;
 
 /**
  * A small label: a Tag, a choice that toggles, an add button (+ etiket) or a
@@ -43,14 +58,13 @@ export function Chip({
   /** What screen readers call the ×. */
   removeLabel?: string;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
-  const look = [styles.chip, styles[tone], selected && styles.selected];
+  const look = `${base} ${selected ? chosen : looks[tone]}`;
   const ink = selected ? 'accentFg' : inks[tone];
   const shown = removable ? `${label} ×` : label;
   if (onRemove) {
     return (
-      <View style={[...look, styles.withRemove]}>
+      <View className={`${look} gap-1 pr-1.25`}>
         <Text variant="labelSm" color={ink}>
           {label}
         </Text>
@@ -59,7 +73,7 @@ export function Chip({
           aria-label={removeLabel ?? label}
           onPress={onRemove}
           hitSlop={6}
-          style={({ pressed }) => [styles.remove, pressed && styles.pressed]}
+          className="rounded-chip p-0.5 active:opacity-80"
         >
           <X color={colors.chipInk} size={13} strokeWidth={2} />
         </Pressable>
@@ -68,7 +82,7 @@ export function Chip({
   }
   if (!onPress) {
     return (
-      <View style={look}>
+      <View className={look}>
         <Text variant="labelSm" color={ink}>
           {shown}
         </Text>
@@ -81,7 +95,7 @@ export function Chip({
       aria-label={label}
       aria-pressed={selected}
       onPress={onPress}
-      style={({ pressed }) => [...look, pressed && styles.pressed]}
+      className={`${look} active:opacity-80`}
     >
       <Text variant="labelSm" color={ink}>
         {shown}
@@ -92,28 +106,5 @@ export function Chip({
 
 /** Chips side by side, wrapping onto the next line. */
 export function ChipRow({ children }: { children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
-  return <View style={styles.row}>{children}</View>;
+  return <View className="flex-row flex-wrap gap-1.5">{children}</View>;
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'flex-start',
-      paddingVertical: 3,
-      paddingHorizontal: 9,
-      borderRadius: radius.chip,
-    },
-    tag: { backgroundColor: c.chipBg },
-    add: { borderWidth: 1, borderStyle: 'dashed', borderColor: c.lineStrong, paddingVertical: 2, paddingHorizontal: 8 },
-    warn: { backgroundColor: c.warnSoft },
-    done: { backgroundColor: c.accentSoft },
-    outline: { borderWidth: 1, borderColor: c.line, paddingVertical: 2, paddingHorizontal: 8 },
-    selected: { backgroundColor: c.accent, borderWidth: 0, paddingVertical: 3, paddingHorizontal: 9 },
-    pressed: { opacity: 0.8 },
-    withRemove: { gap: 4, paddingRight: 5 },
-    remove: { padding: 2, borderRadius: radius.chip },
-  });

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./theme.css": "./src/theme.css",
     "./theme": "./src/theme.ts",
     "./text": "./src/text.ts",
     "./text-field": "./src/text-field.ts",
@@ -34,7 +35,8 @@
     "react": "19.3.0",
     "react-native": "0.88.1",
     "react-native-safe-area-context": "~5.10.1",
-    "react-native-svg": "15.16.0"
+    "react-native-svg": "15.16.0",
+    "uniwind": "1.13.2"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
@@ -46,6 +48,7 @@
     "react-native-svg": "15.16.0",
     "react-native-web": "~0.21.4",
     "typescript": "~6.0.3",
+    "uniwind": "1.13.2",
     "vitest": "^5.0.5"
   }
 }

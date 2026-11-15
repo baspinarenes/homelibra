@@ -1,5 +1,6 @@
 import '@/lib/sentry';
 import '@/i18n';
+import '../global.css';
 
 // Per-weight paths: a package's root index requires every weight, which bundles them all.
 import { CharisSIL_400Regular } from '@expo-google-fonts/charis-sil/400Regular';
