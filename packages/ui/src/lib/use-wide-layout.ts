@@ -14,6 +14,12 @@ export type ShortcutState = {
   unsavedChanges?: boolean;
   /** Whether this screen hears keys now: false while another screen is in front of it. */
   active?: boolean;
+  /**
+   * Set by a listener that belongs to a dialog (a Modal: a sheet, a menu,
+   * the ⌘K window). Any other hears nothing while the focus is in one: the
+   * dialog's Esc and arrows are the dialog's, not the screen's under it.
+   */
+  inDialog?: boolean;
 };
 
 /**
@@ -23,7 +29,7 @@ export type ShortcutState = {
  * (a phone), it hears nothing.
  */
 export function useShortcuts(
-  { panelOpen = false, unsavedChanges = false, active = true }: ShortcutState,
+  { panelOpen = false, unsavedChanges = false, active = true, inDialog = false }: ShortcutState,
   onCommand: (command: Command) => boolean | void,
 ): void {
   const { width } = useWindowDimensions();
@@ -34,6 +40,8 @@ export function useShortcuts(
     if (!active || typeof document === 'undefined') return;
     const listener = (event: KeyboardEvent) => {
       if (event.isComposing || event.defaultPrevented) return;
+      // react-native-web marks a Modal aria-modal and keeps the focus inside it while it is open.
+      if (!inDialog && document.activeElement?.closest('[aria-modal="true"]')) return;
       const { onCommand: act, ...state } = latest.current;
       const command = commandFor(event, { ...state, typing: isTextField(document.activeElement) });
       if (!command) return;
@@ -44,7 +52,7 @@ export function useShortcuts(
     };
     document.addEventListener('keydown', listener);
     return () => document.removeEventListener('keydown', listener);
-  }, [active]);
+  }, [active, inDialog]);
 }
 
 const notText = new Set(['button', 'checkbox', 'radio', 'range', 'color', 'file', 'image', 'reset', 'submit']);
