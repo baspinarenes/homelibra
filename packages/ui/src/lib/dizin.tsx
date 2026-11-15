@@ -73,8 +73,10 @@ export function CollectionRow({
   return (
     <Pressable
       ref={ref}
-      role="link"
-      aria-selected={selected}
+      // A button, not a link: react-native-web never presses a focused role="link" div on ↵, taking it for an <a>.
+      role="button"
+      aria-label={`${name}, ${counts}, ${tags.length > 0 ? tags.join(' · ') : noTags}, ${changed}`}
+      aria-current={selected || undefined}
       onPress={onPress}
       onFocus={onFocus}
       onHoverIn={() => setHovered(true)}
@@ -103,7 +105,7 @@ export function CollectionRow({
 /**
  * A Tag in a wide Dizin: its name and "6 not · 1 kaynak"; a press, or ↵
  * once ↑↓ put the focus on it, opens its page. Its ⋯ (Yeniden adlandır,
- * Birleştir…, Sil) stands beside the link, in sight only while the pointer
+ * Birleştir…, Sil) stands beside the row's button, in sight only while the pointer
  * is over the row, the row or the ⋯ has the focus (↑↓ puts it there), or
  * its menu is open;
  * out of sight it keeps its room, and Tab still reaches it.
@@ -128,14 +130,14 @@ export function TagRow({
   ref?: RowRef;
 }) {
   const [hovered, setHovered] = useState(false);
-  // Anything in the row has the focus: the link or the ⋯.
+  // Anything in the row has the focus: its button or the ⋯.
   const [focused, setFocused] = useState(false);
   const lit = selected || hovered;
   // Not for being chosen alone: the choice outlives the focus (a press elsewhere, back from the Tag's page).
   const shown = hovered || focused || menu.open;
   return (
     <View
-      // Heard around the link and the ⋯ alike, so going from one to the other keeps the ⋯ in sight.
+      // Heard around the row's button and the ⋯ alike, so going from one to the other keeps the ⋯ in sight.
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
@@ -144,8 +146,10 @@ export function TagRow({
     >
       <Pressable
         ref={ref}
-        role="link"
-        aria-selected={selected}
+        // A button, not a link: react-native-web never presses a focused role="link" div on ↵, taking it for an <a>.
+        role="button"
+        aria-label={`${name}, ${counts}`}
+        aria-current={selected || undefined}
         onPress={onPress}
         onFocus={onFocus}
         className="min-w-0 flex-1 flex-row items-baseline gap-2.5 py-2.5 pl-5 active:opacity-70"

@@ -58,20 +58,31 @@ describe('CollectionRow', () => {
       />,
     );
 
-  it('is a link with its name, counts, Tags and when it last changed', () => {
-    const [link] = byRole(row(), 'link');
-    expect(text(link!)).toBe('İttihat ve Terakki15 not · 8 kaynakİttihat ve Terakki1908dün');
+  it('shows its name, counts, Tags and when it last changed', () => {
+    const [press] = byRole(row(), 'button');
+    expect(text(press!)).toBe('İttihat ve Terakki15 not · 8 kaynakİttihat ve Terakki1908dün');
+  });
+
+  // react-native-web presses a focused element on ↵ only when it has no native
+  // action: a role="link" div has none, and ↵ would do nothing.
+  it('is a button, which ↵ presses once ↑↓ or Tab put the focus on it, named all it shows', () => {
+    expect(byRole(row(), 'link')).toEqual([]);
+    expect(byRole(row(), 'button').map(nameOf)).toEqual([
+      'İttihat ve Terakki, 15 not · 8 kaynak, İttihat ve Terakki · 1908, dün',
+    ]);
   });
 
   it('says it has no Tags when it has none', () => {
-    expect(text(byRole(row({ tags: [] }), 'link')[0]!)).toBe('İttihat ve Terakki15 not · 8 kaynaketiketsizdün');
+    const [press] = byRole(row({ tags: [] }), 'button');
+    expect(text(press!)).toBe('İttihat ve Terakki15 not · 8 kaynaketiketsizdün');
+    expect(nameOf(press!)).toBe('İttihat ve Terakki, 15 not · 8 kaynak, etiketsiz, dün');
   });
 
   it('stands on the chip’s ground once ↑↓ chose it', () => {
-    const [link] = byRole(row({ selected: true }), 'link');
-    expect(link!.attrs['aria-selected']).toBe('true');
-    expect(classes(link!)).toContain('bg-chip-bg');
-    expect(classes(byRole(row(), 'link')[0]!)).not.toContain('bg-chip-bg');
+    const [press] = byRole(row({ selected: true }), 'button');
+    expect(press!.attrs['aria-current']).toBe('true');
+    expect(classes(press!)).toContain('bg-chip-bg');
+    expect(classes(byRole(row(), 'button')[0]!)).not.toContain('bg-chip-bg');
   });
 });
 
@@ -79,12 +90,13 @@ describe('TagRow', () => {
   const row = (props: Partial<Parameters<typeof TagRow>[0]> = {}) =>
     render(<TagRow name="Selanik" counts="6 not · 1 kaynak" menu={tagMenu()} onPress={noop} {...props} />);
 
-  it('is a link with its name and counts, and a ⋯ beside it, not inside it', () => {
+  it('is a button ↵ presses, with its name and counts, and a ⋯ beside it, not inside it', () => {
     const page = row();
-    const [link] = byRole(page, 'link');
-    expect(text(link!)).toBe('Selanik6 not · 1 kaynak');
-    expect(byRole(link!, 'button')).toEqual([]);
-    expect(byRole(page, 'button').map(nameOf)).toEqual(['Selanik için işlemler']);
+    expect(byRole(page, 'link')).toEqual([]);
+    const [press] = byRole(page, 'button');
+    expect(text(press!)).toBe('Selanik6 not · 1 kaynak');
+    expect(byRole(press!, 'button')).toEqual([]);
+    expect(byRole(page, 'button').map(nameOf)).toEqual(['Selanik, 6 not · 1 kaynak', 'Selanik için işlemler']);
   });
 
   it('keeps the ⋯ out of sight at rest, still there for the keyboard, its room kept', () => {
@@ -98,7 +110,7 @@ describe('TagRow', () => {
 
   it('puts the row ↑↓ chose on the chip’s ground, its ⋯ in sight only with the focus', () => {
     const page = row({ selected: true });
-    expect(byRole(page, 'link')[0]!.attrs['aria-selected']).toBe('true');
+    expect(byRole(page, 'button')[0]!.attrs['aria-current']).toBe('true');
     expect(all(page).some((node) => classes(node).includes('bg-chip-bg'))).toBe(true);
     expect(classes(menuSlot(page))).toContain('opacity-0');
   });
