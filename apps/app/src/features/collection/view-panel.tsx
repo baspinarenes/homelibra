@@ -24,7 +24,7 @@ import { useTRPC } from '@/lib/trpc';
  * the rows of `shown`, the focus going with them, ⌘C copies its Note, ⌘⇧C
  * `copyAll`, E edits it, / `onSearchHere`, Esc takes back the renaming,
  * then the panel, then the search. `view` is the whole view, `shown` what
- * its search leaves of it, `matches` whether the search found Notes.
+ * its search leaves of it, `found` whether the search found Notes.
  *
  * Returns the frame's layout, `wideList` for CollectionView's `wide`, `panel`
  * for PanelLayout and `foot`, the keys along the list's foot while the

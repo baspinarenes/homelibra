@@ -124,6 +124,7 @@ describe('NotePanel', () => {
   it('leaves out the Source line, the walk and the other Notes where the screen has none', () => {
     const page = panel({ source: undefined, place: undefined, siblings: undefined });
     expect(text(panel())).toContain('4 / 5');
+    expect(text(panel())).toContain('BU KAYNAKTAN DİĞER NOTLAR');
     expect(text(page)).not.toContain('4 / 5');
     expect(text(page)).not.toContain('KİTAP');
     expect(text(page)).not.toContain('BU KAYNAKTAN DİĞER NOTLAR');
