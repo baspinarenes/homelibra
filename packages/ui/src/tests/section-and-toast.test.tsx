@@ -94,6 +94,22 @@ describe('Sections, wide', () => {
     expect(rows.map(text)).toEqual(['Kütüphaneni dışa aktar', 'Hesabı sil']);
     expect(rows.every((row) => classes(row).includes('border-b'))).toBe(true);
   });
+
+  it('sets a row’s value under its label, not at the right', () => {
+    const page = render(
+      <Sections wide>
+        <Section title="Hesap" spacing="rows">
+          <SettingsRows>
+            <SettingsRow label="E-posta adresi" value="tarihci@ornek.edu.tr" onPress={noop} />
+          </SettingsRows>
+        </Section>
+      </Sections>,
+    );
+    const [row] = byRole(page, 'button');
+    const stacked = (row!.children as Node[]).find((child) => text(child) === 'E-posta adresitarihci@ornek.edu.tr');
+    expect(stacked).toBeDefined();
+    expect(classes(stacked!)).not.toContain('flex-row');
+  });
 });
 
 describe('SectionText', () => {
