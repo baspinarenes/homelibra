@@ -36,15 +36,27 @@ export function TagMenuButton({ name, onPress }: { name: string; onPress: () => 
 type Step =
   { kind: 'menu' } | { kind: 'rename' } | { kind: 'pick' } | { kind: 'merge'; into: TagRef } | { kind: 'delete' };
 
+/** A step of {@link TagActions} that a menu of its own (a wide Dizin's ⋯) can start at. */
+export type TagActionStart = 'rename' | 'pick' | 'delete';
+
 /**
  * The ⋯ menu of a Tag in Etiketler (#3, #36): Yeniden adlandır, Birleştir
  * and Sil. A rename that only changes the spelling just happens; one onto
  * another Tag's name asks, then merges. A merge cannot be taken back; a
  * delete asks with its counts and offers Geri al. Mount it with the Tag's
- * id as key, so each Tag starts at the menu.
+ * id as key, so each Tag starts at the menu, or at `start` where the
+ * choice was made in a menu of its own (#181).
  */
-export function TagActions({ tag, onClose }: { tag: TagRef | null; onClose: () => void }) {
-  const [step, setStep] = useState<Step>({ kind: 'menu' });
+export function TagActions({
+  tag,
+  start,
+  onClose,
+}: {
+  tag: TagRef | null;
+  start?: TagActionStart;
+  onClose: () => void;
+}) {
+  const [step, setStep] = useState<Step>({ kind: start ?? 'menu' });
   if (!tag) return null;
   switch (step.kind) {
     case 'menu':
