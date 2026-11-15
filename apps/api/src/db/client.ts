@@ -10,6 +10,25 @@ export function createDb(url: string) {
 }
 
 export type Db = ReturnType<typeof createDb>;
+
+/**
+ * Throws an error that says where Postgres was looked for and how to start
+ * it, so the API stops at start instead of listening and failing on the
+ * first sign-in. The URL's credentials stay out of the message.
+ */
+export async function assertDatabaseReachable(db: Db, url: string) {
+  try {
+    await db.execute(sql`select 1`);
+  } catch (e) {
+    const cause = (e as { cause?: { code?: string } }).cause;
+    const reason = cause?.code ?? (e instanceof Error ? e.message : String(e));
+    throw new Error(
+      `Postgres at ${new URL(url).host} is unreachable (${reason}). ` +
+        'Locally, start it with `pnpm db:up` (Docker Desktop must be running), then `pnpm --filter @homelibra/api db:migrate`.',
+      { cause: e },
+    );
+  }
+}
 export type LibraryTx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /**
