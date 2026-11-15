@@ -232,6 +232,19 @@ export const tr = {
     loadFailed: 'Kaynak yüklenemedi.',
     editNote: 'Notu düzenle',
   },
+  // A wide Source page (#177): the one-line künye, the Notes, and the writing column beside them.
+  wideSource: {
+    fullCitation: 'Künyenin tamamı ›',
+    shortCitation: 'Künyeyi kısalt',
+    notes: 'Notlar · {{count}} · Konum sırası',
+    empty: 'Bu kaynaktan henüz not yok. Yandaki sütunda yazmaya başla.',
+    focusHint: 'odak',
+    saveHint: 'kaydet',
+    footnote: 'Kaydedince alanlar boşalır, Konum bir sonraki not için kalır; sütun hep açık.',
+    newNote: '+ Yeni not',
+    writing: 'Yeni not',
+    note: 'Not',
+  },
   noteEdit: {
     title: 'Notu düzenle',
     locator: 'Konum',

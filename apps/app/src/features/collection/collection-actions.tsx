@@ -61,7 +61,16 @@ export function copyNoteMarkdown(
   note: MarkdownNote,
   messages: { done: string; failed: string },
 ) {
-  Clipboard.setStringAsync(sourceToMarkdown(source, [note])).then(
+  copySourceMarkdown(source, [note], messages);
+}
+
+/** "Markdown olarak kopyala" in a wide Source page's ⋯ (⌘⇧C): the Source's Notes the page lists, in its order. */
+export function copySourceMarkdown(
+  source: MarkdownSource,
+  notes: MarkdownNote[],
+  messages: { done: string; failed: string },
+) {
+  Clipboard.setStringAsync(sourceToMarkdown(source, notes)).then(
     () => offerUndo({ message: messages.done }),
     () => offerUndo({ message: messages.failed }),
   );
