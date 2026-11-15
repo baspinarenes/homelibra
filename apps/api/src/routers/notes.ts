@@ -1,7 +1,7 @@
 import { SOURCE_NOT_FOUND } from '@homelibra/core/errors';
 import { capturedNote, compareNotes, editedNote } from '@homelibra/core/note';
 import { TRPCError } from '@trpc/server';
-import { and, eq, isNull, ne, or } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 import type { LibraryTx } from '../db/client';
@@ -26,6 +26,9 @@ const noteColumns = {
   excerpt: note.excerpt,
   comment: note.comment,
 };
+
+/** How many Notes Son notlar shows. */
+const recentCount = 5;
 
 /** What capturedNote and editedNote mean by null: the Note would be left without text. */
 const needsText = () => new TRPCError({ code: 'BAD_REQUEST', message: 'An Excerpt or a Comment is needed' });
@@ -164,6 +167,31 @@ export const notesRouter = router({
     );
     // Only each Note's own Tags; the Source's stay on the Source (ADR-0003).
     return rows.sort(compareNotes).map((row) => ({ ...row, tags: tags.get(row.id) ?? [] }));
+  }),
+
+  /**
+   * Genel Bakış's Son notlar on a wide screen (#182): the Library's last
+   * five Notes, the newest first whatever their Source's Reading status,
+   * each with what names its Source on one line.
+   */
+  recent: libraryProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.tx
+      .select({
+        id: note.id,
+        sourceId: note.sourceId,
+        locator: note.locator,
+        excerpt: note.excerpt,
+        comment: note.comment,
+        capturedAt: note.createdAt,
+        source: { title: source.title, author: source.author },
+      })
+      .from(note)
+      .innerJoin(source, and(eq(source.id, note.sourceId), eq(source.accountId, ctx.accountId)))
+      .where(eq(note.accountId, ctx.accountId))
+      .orderBy(desc(note.id))
+      .limit(recentCount);
+    // A string, as the app receives it over JSON.
+    return rows.map((row) => ({ ...row, capturedAt: row.capturedAt.toISOString() }));
   }),
 
   get: libraryProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
