@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 
-import { type Command, commandFor, type Layout, wideLayout } from './wide-layout';
+import { type Command, type Layout, shortcutFor, wideLayout } from './wide-layout';
 
 /** The layout for the window as it is now; it follows the window as it is resized. */
 export function useWideLayout({ panelOpen = false }: { panelOpen?: boolean } = {}): Layout {
@@ -18,9 +18,15 @@ export type ShortcutState = {
 
 /**
  * Hears the wide tier's shortcuts while `active` and hands each command to
- * `onCommand`, which returns true when it acted on it; only then is the
- * browser's own response to the key held back. Where there is no document
- * (a phone), it hears nothing.
+ * `onCommand`. It hears a key before the element it was pressed in, so
+ * ⌘K, ⌘↵ and Esc reach it from a text field too (react-native-web's
+ * TextInput stops every keydown it gets), while the rest of a field's
+ * typing stays the field's (`commandFor`). `onCommand` returns true only
+ * for a command this screen handles: then the key goes no further, neither
+ * to the field nor to the browser. Any other answer leaves the key as it
+ * was, so a field that handles ⌘↵ itself (the composer) still gets it. A
+ * key pressed in a dialog is the dialog's; ⌘C over selected text is the
+ * browser's. Where there is no document (a phone), it hears nothing.
  */
 export function useShortcuts(
   { panelOpen = false, unsavedChanges = false, active = true }: ShortcutState,
@@ -33,24 +39,27 @@ export function useShortcuts(
   useEffect(() => {
     if (!active || typeof document === 'undefined') return;
     const listener = (event: KeyboardEvent) => {
-      if (event.isComposing || event.defaultPrevented) return;
       const { onCommand: act, ...state } = latest.current;
-      const command = commandFor(event, { ...state, typing: isTextField(document.activeElement) });
-      if (!command) return;
-      // Text selected on the page is copied as the browser copies it, not as a note.
-      const selected = document.getSelection()?.isCollapsed === false;
-      if ((command === 'copyNote' || command === 'copyAll') && selected) return;
-      // A focused button, tab or row presses itself on ↵: `open` is for ↵ with nothing focused.
-      if (command === 'open' && !nothingFocused(document.activeElement)) return;
-      if (act(command) === true) event.preventDefault();
+      const command = shortcutFor(event, {
+        ...state,
+        typing: isTextField(document.activeElement),
+        focused: !nothingFocused(document.activeElement),
+        inDialog: event.target instanceof Element && event.target.closest('[aria-modal="true"]') !== null,
+        textSelected: document.getSelection()?.isCollapsed === false,
+      });
+      if (!command || act(command) !== true) return;
+      event.preventDefault();
+      event.stopPropagation();
     };
-    document.addEventListener('keydown', listener);
-    return () => document.removeEventListener('keydown', listener);
+    // In the capture phase: before the field, which would stop the key on its way up.
+    document.addEventListener('keydown', listener, true);
+    return () => document.removeEventListener('keydown', listener, true);
   }, [active]);
 }
 
 const notText = new Set(['button', 'checkbox', 'radio', 'range', 'color', 'file', 'image', 'reset', 'submit']);
 
+/** The page itself has the focus: no button, tab, row or field that would take ↵. */
 function nothingFocused(element: Element | null): boolean {
   return !element || element === document.body || element === document.documentElement;
 }

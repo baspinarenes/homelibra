@@ -86,6 +86,40 @@ export type CommandState = LayoutState & {
   unsavedChanges?: boolean;
 };
 
+/** A keydown as the page hears it, before any field has acted on it. */
+export type HeardKey = KeyPress & {
+  /** An input method is still composing the character. */
+  isComposing?: boolean;
+  /** Something heard the key first and took it. */
+  defaultPrevented?: boolean;
+};
+
+export type HeardState = CommandState & {
+  /** The key was pressed inside a dialog (`aria-modal`): its keys are its own, as the quick search window's box. */
+  inDialog: boolean;
+  /** Text on the page is selected, which ⌘C copies as the browser copies it. */
+  textSelected: boolean;
+  /** An element has the focus (a button, a tab, a row), which presses itself on ↵. */
+  focused?: boolean;
+};
+
+/**
+ * Whether a key heard on the page is a shortcut, and which: the command
+ * `commandFor` gives, unless the key is still being composed, was already
+ * taken, came from a dialog, is ⌘C / ⌘⇧C over selected text, or is ↵
+ * while an element has the focus and presses itself on it.
+ */
+export function shortcutFor(
+  key: HeardKey,
+  { inDialog, textSelected, focused = false, ...state }: HeardState,
+): Command | null {
+  if (key.isComposing || key.defaultPrevented || inDialog) return null;
+  const command = commandFor(key, state);
+  if ((command === 'copyNote' || command === 'copyAll') && textSelected) return null;
+  if (command === 'open' && focused) return null;
+  return command;
+}
+
 /** The command a key gives; null when it is no shortcut here. Shortcuts belong to the wide tier only. */
 export function commandFor(press: KeyPress, state: CommandState): Command | null {
   const { panelOpen = false, typing = false, unsavedChanges = false } = state;
