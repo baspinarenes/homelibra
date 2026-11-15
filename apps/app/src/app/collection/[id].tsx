@@ -9,7 +9,7 @@ import { cx, type as typeScale, useTheme } from '@homelibra/ui/theme';
 import { useShortcuts } from '@homelibra/ui/wide-layout';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
-import { type NativeStackHeaderProps, Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { type NativeStackHeaderProps, Stack, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import Search from 'lucide-react-native/icons/search';
 import { type ReactNode, useState } from 'react';
@@ -23,7 +23,7 @@ import {
   useCopyMarkdown,
   useDeleteCollection,
 } from '@/features/collection/collection-actions';
-import { focusedNote, ViewNotePanel } from '@/features/collection/collection-note-panel';
+import { focusedNote, useNoteEditing, ViewNotePanel } from '@/features/collection/collection-note-panel';
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
 import { DefinitionTags } from '@/features/collection/definition-tags';
 import { type NoteFocus, stepInView } from '@/features/collection/note-focus';
@@ -108,19 +108,20 @@ function CollectionPage({ collection }: { collection: Collection }) {
   usePreventRemove(searching, closeSearch);
 
   // The wide tier's panel: which Note it shows, null while it is closed (as it is on entry).
-  const router = useRouter();
   const [focus, setFocus] = useState<NoteFocus | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const layout = useFramePanel(focus !== null);
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
+  // While its Note is edited in the panel, the edit hears the keys.
+  const { editing, setEditing } = useNoteEditing(focus);
   const inFront = useIsFocused();
   const copyAll = useCopyMarkdown(shown);
   const deletion = useDeleteCollection(collection);
   // The focused Source's Notes as the panel fetched them: a key acts on them at once, the clipboard allows no wait.
   const sourceNotes = (sourceId: string) => queryClient.getQueryData(trpc.notes.list.queryKey({ sourceId }));
 
-  useShortcuts({ panelOpen, active: wide && inFront && !menuOpen }, (command) => {
+  useShortcuts({ panelOpen, active: wide && inFront && !menuOpen && !editing }, (command) => {
     const action = viewAction(command, { panelOpen, renaming, searching, notes: shown.noteCount });
     switch (action) {
       case 'previous':
@@ -145,7 +146,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
         return true;
       case 'edit':
         if (!focus) return false;
-        router.push({ pathname: '/note/[id]', params: { id: focus.noteId } });
+        setEditing(true);
         return true;
       case 'searchHere':
         setSearching(true);
@@ -334,7 +335,16 @@ function CollectionPage({ collection }: { collection: Collection }) {
       <PanelLayout
         narrow={layout.sidebar === 'iconRail'}
         panel={
-          focus && <ViewNotePanel view={collection} focus={focus} onFocus={setFocus} onClose={() => setFocus(null)} />
+          focus && (
+            <ViewNotePanel
+              view={collection}
+              focus={focus}
+              editing={editing}
+              onEditingChange={setEditing}
+              onFocus={setFocus}
+              onClose={() => setFocus(null)}
+            />
+          )
         }
       >
         {page(wideBar)}
@@ -377,7 +387,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
                   : t('collection.emptyNoNotes')
             }
             wide={wide ? { density: layout.density, focus, onOpen: setFocus } : undefined}
-            foot={panelOpen && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
+            foot={panelOpen && !editing && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
           />
         </View>
       </>

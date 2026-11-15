@@ -242,6 +242,14 @@ export const tr = {
     saveFailed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     loadFailed: 'Not yüklenemedi.',
   },
+  // A Note edited where it is open on a wide screen (#176); the rest of its words are noteEdit's.
+  wideNoteEdit: {
+    cancel: 'Vazgeç',
+    ask: 'Değişiklikler atılsın mı?',
+    discard: 'At',
+    keepEditing: 'Düzenlemeye dön',
+    tagsDone: 'Tamam',
+  },
   // Ara: Library search (#55, ADR-0005).
   search: {
     placeholder: 'Notlarda ve kaynaklarda ara',

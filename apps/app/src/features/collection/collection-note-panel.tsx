@@ -2,12 +2,13 @@ import { formatDate } from '@homelibra/core/date';
 import { NotePanel } from '@homelibra/ui/note-panel';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { copyNoteMarkdown } from '@/features/collection/collection-actions';
 import type { ViewData } from '@/features/collection/collection-view';
 import { type NoteFocus, placeInSource, siblingsOf } from '@/features/collection/note-focus';
+import { NoteEditInPlace } from '@/features/note/note-edit-in-place';
 import { useTRPC } from '@/lib/trpc';
 
 type SourceNotes = { id: string; locator: string | null; excerpt: string | null; comment: string | null }[];
@@ -21,19 +22,39 @@ export function focusedNote(view: ViewData, focus: NoteFocus, sourceNotes: Sourc
 }
 
 /**
+ * Whether the panel's Note is being edited in place (#176): only ever the
+ * Note in `focus`, so moving the focus elsewhere ends the edit. While it is
+ * `editing`, the screen hears no keys of its own: the edit hears ⌘↵ and Esc.
+ */
+export function useNoteEditing(focus: NoteFocus | null) {
+  const [noteId, setNoteId] = useState<string | null>(null);
+  if (noteId !== null && noteId !== focus?.noteId) setNoteId(null);
+  return {
+    editing: noteId !== null,
+    setEditing: (on: boolean) => setNoteId(on && focus ? focus.noteId : null),
+  };
+}
+
+/**
  * The note panel of a wide view of Notes (a Collection, later a Tag's
  * page): the Note `focus` names, walked through its Source's Notes from
  * notes.list, and the Source's other Notes, those not in `view` faded.
- * `onEdit` is today's Notu düzenle page until editing moves into the panel.
+ * While `editing` (`useNoteEditing`), the Note is edited in the panel in
+ * place of its detail: saved, the panel shows it again, at its new Source
+ * if it moved; deleted, the panel closes.
  */
 export function ViewNotePanel({
   view,
   focus,
+  editing,
+  onEditingChange,
   onFocus,
   onClose,
 }: {
   view: ViewData;
   focus: NoteFocus;
+  editing: boolean;
+  onEditingChange: (editing: boolean) => void;
   onFocus: (focus: NoteFocus) => void;
   onClose: () => void;
 }) {
@@ -60,8 +81,9 @@ export function ViewNotePanel({
         title: [source.author, source.title].filter(Boolean).join(', '),
         date: source.date ? formatDate(source.date) : t('collection.undated'),
       }}
-      place={notes.data ? (placeInSource(notes.data, note.id) ?? undefined) : undefined}
-      siblings={notes.data && siblingsOf(notes.data, note.id, (id) => inView.has(id))}
+      // While it is edited, only the Note: nothing to walk away to.
+      place={notes.data && !editing ? (placeInSource(notes.data, note.id) ?? undefined) : undefined}
+      siblings={notes.data && !editing ? siblingsOf(notes.data, note.id, (id) => inView.has(id)) : undefined}
       labels={{
         panel: t('widePanel.panel'),
         close: t('widePanel.close'),
@@ -81,9 +103,22 @@ export function ViewNotePanel({
           failed: t('collectionActions.copyFailed'),
         })
       }
-      onEdit={() => router.push({ pathname: '/note/[id]', params: { id: note.id } })}
+      onEdit={() => onEditingChange(true)}
       onOpenSource={() => router.push({ pathname: '/source/[id]', params: { id: source.id, note: note.id } })}
       onClose={onClose}
-    />
+    >
+      {/* Undefined, not false, while not editing: then the panel shows the Note's detail. */}
+      {editing ? (
+        <NoteEditInPlace
+          id={note.id}
+          onEnd={(end) => {
+            onEditingChange(false);
+            if (end && 'deleted' in end) onClose();
+            else if (end && end.saved.sourceId !== focus.sourceId)
+              onFocus({ sourceId: end.saved.sourceId, noteId: focus.noteId });
+          }}
+        />
+      ) : undefined}
+    </NotePanel>
   );
 }

@@ -1,22 +1,18 @@
-import { type KnownNote, pendingNote } from '@homelibra/outbox';
+import type { KnownNote } from '@homelibra/outbox';
 import { Button } from '@homelibra/ui/button';
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
 import { TextField } from '@homelibra/ui/text-field';
 import { Text } from '@homelibra/ui/text';
 import { useTheme } from '@homelibra/ui/theme';
-import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
+import { useEditedNote, useNoteDraft } from '@/features/note/note-edit';
 import { TagChips } from '@/features/tag/tag-chips';
-import { type PickedSource, SourcePicker } from '@/features/source/source-picker';
+import { SourcePicker } from '@/features/source/source-picker';
 import { SourceTypeIcon } from '@/features/source/source-type-icon';
-import { knownNotes } from '@/features/note/known-notes';
-import { useOutbox } from '@/lib/outbox';
-import { useTRPC } from '@/lib/trpc';
-import { offerReceiptUndo } from '@/lib/undo';
 
 /**
  * Notu düzenle, opened from a Note on the Source page. Its Kaynak field
@@ -29,39 +25,16 @@ export default function EditNoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const trpc = useTRPC();
-  const { state } = useOutbox();
-  // A Note never sent is not on the server yet: the phone has it.
-  const unsent = state.pending.some((operation) => operation.type === 'createNote' && operation.note.id === id);
-  const fetched = useQuery({ ...trpc.notes.get.queryOptions({ id }), enabled: !unsent });
-  const deletedElsewhere = fetched.error?.data?.code === 'NOT_FOUND';
-  // The server's Note or the phone's, with what waits in the outbox laid over
-  // it; none when the server says it is not there (deleted elsewhere).
-  const note = useMemo(
-    () => (deletedElsewhere ? null : pendingNote(id, state.pending, knownNotes())),
-    // fetched.data is in the cache knownNotes reads: when it comes, look again.
-    [id, state.pending, fetched.data, deletedElsewhere],
-  );
-  // Deleted from here: the form stays up while the screen goes.
-  const shown = useRef(note);
-  if (note) shown.current = note;
+  const { note, sourceGone, refused, unavailable } = useEditedNote(id);
 
-  if (shown.current)
-    return (
-      <NoteForm
-        key={id}
-        note={shown.current}
-        sourceGone={state.status.get(id) === 'sourceGone'}
-        refused={state.status.get(id) === 'refused'}
-      />
-    );
+  if (note) return <NoteForm key={id} note={note} sourceGone={sourceGone} refused={refused} />;
   return (
     <View className="flex-1 items-center justify-center bg-page p-xl">
-      {fetched.isError ? (
+      {unavailable === 'failed' ? (
         <Text variant="body" className="text-center">
           {t('noteEdit.loadFailed')}
         </Text>
-      ) : fetched.fetchStatus === 'paused' ? (
+      ) : unavailable === 'offline' ? (
         <Text variant="body" className="text-center">
           {t('outbox.noteNotFound')}
         </Text>
@@ -78,73 +51,18 @@ export default function EditNoteScreen() {
  */
 function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: boolean; refused: boolean }) {
   const { t } = useTranslation();
-  const trpc = useTRPC();
   const router = useRouter();
-  const { apply } = useOutbox();
-  const [locator, setLocator] = useState(note.locator ?? '');
-  const [excerpt, setExcerpt] = useState(note.excerpt ?? '');
-  const [comment, setComment] = useState(note.comment ?? '');
-  const [tags, setTags] = useState(() => note.tags.map((tag) => tag.name));
-
   const { colors } = useTheme();
   const [pickingSource, setPickingSource] = useState(false);
-  // The Source chosen in the Kaynak field; the Note moves there on save.
-  const [moveTo, setMoveTo] = useState<PickedSource | null>(null);
-  const currentSource = useQuery({ ...trpc.sources.get.queryOptions({ id: note.sourceId }), enabled: !sourceGone });
-  const shownSource = moveTo ?? (sourceGone ? null : currentSource.data);
-  // Its Source was deleted and none is picked yet: the line asks for a new one, in warn.
-  const sourceLost = !shownSource && sourceGone;
-  // Saving or deleting, and which of them failed.
-  const [busy, setBusy] = useState<'save' | 'delete' | null>(null);
-  const [failed, setFailed] = useState<'save' | 'delete' | null>(null);
 
   // Back to the Source page the Note was opened from.
   const leave = () => {
     if (router.canGoBack()) router.back();
     else router.replace({ pathname: '/source/[id]', params: { id: note.sourceId } });
   };
-
-  // Through the outbox: sent now, or kept until the connection returns.
-  const update = async () => {
-    setBusy('save');
-    setFailed(null);
-    try {
-      await apply({
-        type: 'updateNote',
-        id: note.id,
-        locator,
-        excerpt,
-        comment,
-        tags,
-      });
-      const moved = moveTo && (await apply({ type: 'moveNote', id: note.id, sourceId: moveTo.id }));
-      leave();
-      if (moveTo && moved) offerReceiptUndo(t('deletion.noteMoved', { title: moveTo.title }), moved.undo);
-    } catch {
-      setFailed('save');
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  // Notu sil: no question asked, Geri al instead.
-  const remove = async () => {
-    setBusy('delete');
-    setFailed(null);
-    try {
-      const { undo } = await apply({ type: 'deleteNote', id: note.id });
-      leave();
-      offerReceiptUndo(t('deletion.noteDeleted'), undo);
-    } catch {
-      setFailed('delete');
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const hasText = excerpt.trim() !== '' || comment.trim() !== '';
-  const canSave = hasText && busy === null;
-  const save = () => canSave && void update();
+  const draft = useNoteDraft(note, sourceGone, leave);
+  const { text, shownSource, sourceLost, hasText, canSave, busy, failed, save } = draft;
+  const setField = (field: keyof typeof text) => (value: string) => draft.setText({ ...text, [field]: value });
 
   return (
     <ScrollView
@@ -188,17 +106,23 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         </View>
         <TextField
           label={t('noteEdit.locator')}
-          value={locator}
-          onChangeText={setLocator}
+          value={text.locator}
+          onChangeText={setField('locator')}
           placeholder={t('capture.locatorPlaceholder')}
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <TextField label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline excerpt />
-        <TextField label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
+        <TextField
+          label={t('noteEdit.excerpt')}
+          value={text.excerpt}
+          onChangeText={setField('excerpt')}
+          multiline
+          excerpt
+        />
+        <TextField label={t('noteEdit.comment')} value={text.comment} onChangeText={setField('comment')} multiline />
         <View className="gap-2">
           <Text variant="fieldLabel">{t('tags.field')}</Text>
-          <TagChips names={tags} pickerTitle={t('tags.noteTitle')} onChange={setTags} />
+          <TagChips names={draft.tags} pickerTitle={t('tags.noteTitle')} onChange={draft.setTags} />
         </View>
         {!hasText && (
           <Text variant="body" color="danger">
@@ -221,7 +145,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
             variant="secondary"
             tone="danger"
             block
-            onPress={() => void remove()}
+            onPress={draft.remove}
             busy={busy === 'delete'}
             disabled={busy === 'save'}
           />
@@ -231,7 +155,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         visible={pickingSource}
         currentId={note.sourceId}
         onPick={(picked) => {
-          setMoveTo(picked.id === note.sourceId && !sourceGone ? null : picked);
+          draft.chooseSource(picked);
           setPickingSource(false);
         }}
         onClose={() => setPickingSource(false)}

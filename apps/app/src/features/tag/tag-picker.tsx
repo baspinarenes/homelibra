@@ -58,7 +58,13 @@ export function TagPicker({
   );
 }
 
-function TagEditor({ chosen, onChange }: { chosen: string[]; onChange: (names: string[]) => void }) {
+/**
+ * The picker's body: the chosen Tags, the search with the focus, and the
+ * suggestions. A wide screen puts it in place, where there is no sheet
+ * (ADR-0012); each change goes to `onChange` at once. Mounted afresh, the
+ * search starts empty.
+ */
+export function TagEditor({ chosen, onChange }: { chosen: string[]; onChange: (names: string[]) => void }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const known = useQuery(trpc.tags.list.queryOptions({ sort: 'usage' }));
