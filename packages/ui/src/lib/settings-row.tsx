@@ -2,6 +2,7 @@ import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { Children, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { useWideColumn } from './section-heading';
 import { Text } from './text';
 import { useTheme } from './use-theme';
 
@@ -42,12 +43,19 @@ export function SettingsRow({
   );
 }
 
-/** `SettingsRow`s one under another, a thin `lineSoft` rule between each two. */
+/**
+ * `SettingsRow`s one under another, a thin `lineSoft` rule between each two;
+ * in a wide column (`<Sections wide>`), under each, the last one too.
+ */
 export function SettingsRows({ children }: { children: ReactNode }) {
+  const wide = useWideColumn();
   return (
     <View>
       {Children.toArray(children).map((child, index) => (
-        <View key={index} className={index > 0 ? 'border-t border-line-soft' : undefined}>
+        <View
+          key={index}
+          className={wide ? 'border-b border-line-soft' : index > 0 ? 'border-t border-line-soft' : undefined}
+        >
           {child}
         </View>
       ))}
