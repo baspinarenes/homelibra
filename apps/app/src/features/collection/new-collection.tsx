@@ -141,21 +141,27 @@ export function NewCollectionPanel({
 }) {
   const { t } = useTranslation();
   const form = useNewCollection({ onSaved });
-  const [asking, setAsking] = useState(false);
-  // Half filled, the form holds Not al: neither N nor its sidebar button puts it away unasked (#178).
-  useUnsavedWork(form.changed);
+  // "Değişiklikler atılsın mı?" in the foot, and the way out taken once the changes are thrown away.
+  const [asking, setAsking] = useState<{ then: () => void } | null>(null);
+  const ask = (then: () => void) => setAsking({ then });
+  const discard = () => {
+    onClose();
+    asking?.then();
+  };
+  // Half filled, the form holds every way out of it: N, the sidebar's Not al and places ask first (#178).
+  useUnsavedWork(form.changed, ask);
 
-  useShortcuts({ panelOpen: true, unsavedChanges: form.changed && !asking, active }, (command) => {
+  useShortcuts({ panelOpen: true, unsavedChanges: form.changed && asking === null, active }, (command) => {
     switch (command) {
       case 'submit':
         form.save();
         return true;
       case 'askDiscard':
-        setAsking(true);
+        ask(() => {});
         return true;
       case 'closePanel':
         // Esc again over the question takes it back, as "Düzenlemeye dön" does.
-        if (asking) setAsking(false);
+        if (asking) setAsking(null);
         else onClose();
         return true;
       default:
@@ -168,8 +174,8 @@ export function NewCollectionPanel({
       <Text variant="label" className="mr-auto">
         {t('newCollectionPanel.discard')}
       </Text>
-      <Button label={t('newCollectionPanel.keepEditing')} variant="secondary" onPress={() => setAsking(false)} />
-      <Button label={t('newCollectionPanel.discardConfirm')} variant="danger" onPress={onClose} />
+      <Button label={t('newCollectionPanel.keepEditing')} variant="secondary" onPress={() => setAsking(null)} />
+      <Button label={t('newCollectionPanel.discardConfirm')} variant="danger" onPress={discard} />
     </View>
   ) : (
     <View className="flex-row flex-wrap items-center justify-end gap-sm">

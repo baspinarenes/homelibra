@@ -144,29 +144,38 @@ function SourceFormPanel({
   const { t } = useTranslation();
   const form = useSourceForm({ initial, saving, onSave });
   const { draft, setDraft, layout, typeFields, typeText } = form;
-  const [asking, setAsking] = useState(false);
+  // "Değişiklikler atılsın mı?" in the foot, and the way out taken once the changes are thrown away.
+  const [asking, setAsking] = useState<{ then: () => void } | null>(null);
+  const ask = (then: () => void) => setAsking({ then });
+  const discard = () => {
+    onClose();
+    asking?.then();
+  };
   const confirmingDelete = deletion?.confirming ?? false;
-  // Changed, the form holds Not al: neither N nor its sidebar button puts it away unasked (#178).
-  useUnsavedWork(form.changed);
+  // Changed, the form holds every way out of it: N, the sidebar's Not al and places ask first (#178).
+  useUnsavedWork(form.changed, ask);
 
-  useShortcuts({ panelOpen: true, unsavedChanges: form.changed && !asking && !confirmingDelete, active }, (command) => {
-    switch (command) {
-      case 'submit':
-        form.save();
-        return true;
-      case 'askDiscard':
-        setAsking(true);
-        return true;
-      case 'closePanel':
-        // Esc again over a question takes it back, as its own button does.
-        if (asking) setAsking(false);
-        else if (confirmingDelete) deletion?.cancel();
-        else onClose();
-        return true;
-      default:
-        return false;
-    }
-  });
+  useShortcuts(
+    { panelOpen: true, unsavedChanges: form.changed && asking === null && !confirmingDelete, active },
+    (command) => {
+      switch (command) {
+        case 'submit':
+          form.save();
+          return true;
+        case 'askDiscard':
+          ask(() => {});
+          return true;
+        case 'closePanel':
+          // Esc again over a question takes it back, as its own button does.
+          if (asking) setAsking(null);
+          else if (confirmingDelete) deletion?.cancel();
+          else onClose();
+          return true;
+        default:
+          return false;
+      }
+    },
+  );
 
   // Offline says why Kaydet does nothing; a failed save or delete says to try again.
   const notice = form.offline
@@ -195,8 +204,8 @@ function SourceFormPanel({
       <Text variant="label" className="mr-auto">
         {t('sourcePanel.discard')}
       </Text>
-      <Button label={t('sourcePanel.keepEditing')} variant="secondary" onPress={() => setAsking(false)} />
-      <Button label={t('sourcePanel.discardConfirm')} variant="danger" onPress={onClose} />
+      <Button label={t('sourcePanel.keepEditing')} variant="secondary" onPress={() => setAsking(null)} />
+      <Button label={t('sourcePanel.discardConfirm')} variant="danger" onPress={discard} />
     </View>
   ) : (
     <View className="flex-row flex-wrap items-center justify-end gap-sm">

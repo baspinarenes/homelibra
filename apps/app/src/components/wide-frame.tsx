@@ -23,6 +23,7 @@ import { View } from 'react-native';
 
 import { openPanels, type OpenPanels } from '@/components/open-panels';
 import { sidebarMove, sidebarPlace } from '@/components/sidebar-place';
+import { type AskDiscard, unsavedWork, type UnsavedWork as UnsavedWorks } from '@/components/unsaved-work';
 import { useCollections } from '@/features/collection/collection-list';
 import { captureAction } from '@/features/note/capture-keys';
 import { CapturePanel, useWideCapture } from '@/features/note/wide-capture';
@@ -36,8 +37,8 @@ const Capturing = createContext(false);
 // The writing of the page in front that writes on its own (a Source page), which takes Not al.
 type PageWriting = { current: (() => void) | null };
 const PageWritings = createContext<PageWriting | null>(null);
-// How many pieces of unsaved work stand in front (an edit in place, a form): Not al waits on them.
-const UnsavedWork = createContext<{ current: number } | null>(null);
+// The unsaved work in front (an edit in place, a form): every way out asks it first.
+const UnsavedWork = createContext<UnsavedWorks | null>(null);
 
 /**
  * The frame around every screen of the open Library (ADR-0012): in the wide
@@ -59,7 +60,7 @@ export function WideFrame({ library, children }: { library: boolean; children: R
   const [focusAsk, setFocusAsk] = useState(0);
   const capture = useWideCapture();
   const [pageWriting] = useState<PageWriting>(() => ({ current: null }));
-  const [unsaved] = useState(() => ({ current: 0 }));
+  const [unsaved] = useState(unsavedWork);
   // A Library closed (signed out) takes its half-written Note with it.
   const [open, setOpen] = useState(library);
   if (open !== library) {
@@ -85,8 +86,6 @@ export function WideFrame({ library, children }: { library: boolean; children: R
 
   const home = useQuery({ ...trpc.sources.home.queryOptions(), enabled: framed });
   const openWriting = () => {
-    // Work not yet saved in front is never put away unasked: finish or leave it first.
-    if (unsaved.current > 0) return;
     // With no Source yet, the first one is made before any Note: in Yeni kaynak's panel beside Kaynaklar.
     if (home.data?.sourceCount === 0) {
       const href = { pathname: '/sources', params: { add: '1' } } as const;
@@ -99,12 +98,13 @@ export function WideFrame({ library, children }: { library: boolean; children: R
     setWriting(true);
     setFocusAsk((asked) => asked + 1);
   };
-  // The sidebar's Not al: a page writing on its own brings its writing forward.
-  const notAl = () => {
-    if (unsaved.current > 0) return;
-    if (pageWriting.current) pageWriting.current();
-    else openWriting();
-  };
+  // The sidebar's Not al: a page writing on its own brings its writing forward. Work not yet
+  // saved in front is never put away unasked: it asks first (#178).
+  const notAl = () =>
+    unsaved.leave(() => {
+      if (pageWriting.current) pageWriting.current();
+      else openWriting();
+    });
 
   useShortcuts({ active: framed }, (command) => {
     if (command !== 'quickSearch') return false;
@@ -115,7 +115,7 @@ export function WideFrame({ library, children }: { library: boolean; children: R
   useShortcuts({ active: framed && !writing, last: true }, (command) => {
     const state = { writing: false, pageWrites: pageWriting.current !== null, choosing: false, canSave: false };
     if (captureAction(command, state) !== 'open') return false;
-    openWriting();
+    unsaved.leave(openWriting);
     return true;
   });
   const capturing = framed && writing;
@@ -195,20 +195,28 @@ export function usePageWriting(toWriting: () => void): void {
 
 /**
  * Work not yet saved (a Note edited in place with changes, a form being
- * filled) holds Not al while `changed`: neither N nor the sidebar's Not al
- * puts it away unasked (#178).
+ * filled) holds every way out of it while `changed` and in front: N, the
+ * sidebar, its panel's ✕, another row (`useLeave`). None puts it away
+ * unasked: `ask` puts "Değişiklikler atılsın mı?" in the work, and the way
+ * out is taken once its changes are thrown away (Q51, #178).
  */
-export function useUnsavedWork(changed: boolean): void {
+export function useUnsavedWork(changed: boolean, ask: AskDiscard): void {
   const unsaved = useContext(UnsavedWork);
   const focused = useIsFocused();
   const held = changed && focused;
-  useEffect(() => {
-    if (!held || !unsaved) return;
-    unsaved.current += 1;
-    return () => {
-      unsaved.current -= 1;
-    };
-  }, [held, unsaved]);
+  const latest = useRef(ask);
+  latest.current = ask;
+  useEffect(() => (held && unsaved ? unsaved.hold((then) => latest.current(then)) : undefined), [held, unsaved]);
+}
+
+/**
+ * A way out of the unsaved work in front (`useUnsavedWork`): `leave` runs
+ * at once with none, otherwise once the work has asked and its changes are
+ * thrown away. Outside the frame it runs at once.
+ */
+export function useLeave(): (leave: () => void) => void {
+  const unsaved = useContext(UnsavedWork);
+  return unsaved ? unsaved.leave : (leave) => leave();
 }
 
 /**
@@ -233,17 +241,20 @@ function FrameQuickSearch({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const { place } = sidebarPlace(usePathname());
   const segments = useSegments();
+  const leave = useLeave();
   return (
     <QuickSearchWindow
       onClose={onClose}
-      onSearchAll={(query) => {
-        const params = query === '' ? undefined : { q: query };
-        // On Ara already, the box takes the query in place.
-        if (place === 'search') router.setParams({ q: params?.q });
-        else if (sidebarMove({ segments, place, to: 'search' }) === 'switchTab')
-          router.navigate({ pathname: '/search', params });
-        else router.dismissTo({ pathname: '/search', params });
-      }}
+      onSearchAll={(query) =>
+        leave(() => {
+          const params = query === '' ? undefined : { q: query };
+          // On Ara already, the box takes the query in place.
+          if (place === 'search') router.setParams({ q: params?.q });
+          else if (sidebarMove({ segments, place, to: 'search' }) === 'switchTab')
+            router.navigate({ pathname: '/search', params });
+          else router.dismissTo({ pathname: '/search', params });
+        })
+      }
     />
   );
 }
@@ -266,10 +277,13 @@ function FrameSidebar({
   const collections = useCollections('recent');
   const home = useQuery(trpc.sources.home.queryOptions());
 
-  const go = (to: SidebarPlace) => {
-    if (sidebarMove({ segments, place, to }) === 'switchTab') router.navigate(tabHref[to]);
-    else router.dismissTo(tabHref[to]);
-  };
+  const leave = useLeave();
+  // Away from the work in front: asked first while it holds changes.
+  const go = (to: SidebarPlace) =>
+    leave(() => {
+      if (sidebarMove({ segments, place, to }) === 'switchTab') router.navigate(tabHref[to]);
+      else router.dismissTo(tabHref[to]);
+    });
 
   return (
     <Sidebar
@@ -296,8 +310,7 @@ function FrameSidebar({
         if (id === file) return;
         const href = { pathname: '/collection/[id]', params: { id } } as const;
         // One Collection in place of another, so going from file to file does not pile them up.
-        if (file) router.replace(href);
-        else router.push(href);
+        leave(() => (file ? router.replace(href) : router.push(href)));
       }}
       onCapture={onCapture}
       onSearch={onSearch}

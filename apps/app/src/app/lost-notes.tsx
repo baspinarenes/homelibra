@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 
 import { SharedUndoBar } from '@/components/undo-bar';
-import { useFramePanel } from '@/components/wide-frame';
+import { useFramePanel, useLeave } from '@/components/wide-frame';
 import { knownNotes } from '@/features/note/known-notes';
 import { lostNotes, shownLostNote } from '@/features/note/lost-notes';
 import { NoteEditInPlace } from '@/features/note/note-edit-in-place';
@@ -48,6 +48,8 @@ export default function LostNotesScreen() {
   const shown = shownLostNote(focusId, notes);
   // Not al takes the panel's place (#178).
   const layout = useFramePanel(shown !== null, () => setFocusId(null));
+  // The ✕ or another row over an edit with changes asks first.
+  const leave = useLeave();
 
   if (layout.tier === 'wide')
     return (
@@ -61,7 +63,7 @@ export default function LostNotesScreen() {
               <Panel
                 label={t('widePanel.panel')}
                 closeLabel={t('widePanel.close')}
-                onClose={() => setFocusId(null)}
+                onClose={() => leave(() => setFocusId(null))}
                 head={
                   <Text variant="micro" color="warn" numberOfLines={1}>
                     {t('outbox.sourceGone')}
@@ -74,7 +76,12 @@ export default function LostNotesScreen() {
             )
           }
         >
-          <WideLostList notes={notes} density={layout.density} focusId={shown?.id ?? null} onOpen={setFocusId} />
+          <WideLostList
+            notes={notes}
+            density={layout.density}
+            focusId={shown?.id ?? null}
+            onOpen={(id) => leave(() => setFocusId(id))}
+          />
         </PanelLayout>
         {/* Geri al after Notu sil floats above this zero-height edge. */}
         <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0">

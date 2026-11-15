@@ -51,7 +51,7 @@ import { resultMeta, resultRow, stepInResults } from '@/features/search/search-r
 import { SearchTipsPopover } from '@/features/search/search-tips';
 import { SourceCover } from '@/features/source/source-cover';
 import type { CoverSize } from '@/features/source/template-cover';
-import { useFramePanel } from '@/components/wide-frame';
+import { useFramePanel, useLeave } from '@/components/wide-frame';
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/features/search/settled';
 import { useTRPC } from '@/lib/trpc';
@@ -181,6 +181,8 @@ export default function SearchScreen() {
   if (opened && !focus) setOpened(null);
   // Not al takes the panel's place (#178).
   const layout = useFramePanel(focus !== null, () => setOpened(null));
+  // Another row pressed over an edit with changes asks first.
+  const leave = useLeave();
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
   // While its Note is edited in the panel, the edit hears the keys.
@@ -385,7 +387,7 @@ export default function SearchScreen() {
                 notes={notes}
                 density={layout.density}
                 focus={focus}
-                onOpen={(to) => openNote(to)}
+                onOpen={(to) => leave(() => openNote(to))}
                 focusRow={opened?.byKeys ?? false}
                 header={<View className="px-lg">{listHeader('table')}</View>}
                 footer={listFooter}

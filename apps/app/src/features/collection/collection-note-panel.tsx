@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { copyNoteMarkdown } from '@/features/collection/collection-actions';
 import type { ViewData } from '@/features/collection/collection-view';
 import { type NoteFocus, placeInSource, siblingsOf } from '@/features/collection/note-focus';
+import { useLeave } from '@/components/wide-frame';
 import { NoteEditInPlace } from '@/features/note/note-edit-in-place';
 import { useTRPC } from '@/lib/trpc';
 
@@ -61,6 +62,7 @@ export function ViewNotePanel({
   const { t } = useTranslation();
   const router = useRouter();
   const trpc = useTRPC();
+  const leave = useLeave();
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: focus.sourceId }));
   const { source, note } = focusedNote(view, focus, notes.data);
   const gone = !notes.isPending && (!source || !note);
@@ -105,7 +107,8 @@ export function ViewNotePanel({
       }
       onEdit={() => onEditingChange(true)}
       onOpenSource={() => router.push({ pathname: '/source/[id]', params: { id: source.id, note: note.id } })}
-      onClose={onClose}
+      // ✕ over an edit with changes asks first.
+      onClose={() => leave(onClose)}
     >
       {/* Undefined, not false, while not editing: then the panel shows the Note's detail. */}
       {editing ? (

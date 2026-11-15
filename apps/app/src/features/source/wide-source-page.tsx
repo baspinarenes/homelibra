@@ -31,7 +31,7 @@ import { SourceSearchBar } from '@/features/source/source-search';
 import { SourceTags } from '@/features/source/source-tags';
 import { TagEditor } from '@/features/tag/tag-picker';
 import { SharedUndoBar } from '@/components/undo-bar';
-import { usePageWriting } from '@/components/wide-frame';
+import { useLeave, usePageWriting } from '@/components/wide-frame';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 
@@ -126,6 +126,8 @@ export function WideSourcePage({
   };
   // The sidebar's Not al writes here, in the column, as N does (#178).
   usePageWriting(toWriting);
+  // + Yeni not or another row over a Note edited with changes asks first.
+  const leave = useLeave();
 
   // The Note just saved, lit from when the list has it.
   const [flash, setFlash] = useState<string | null>(null);
@@ -217,7 +219,7 @@ export function WideSourcePage({
   });
 
   const newNote = (
-    <Pressable role="button" onPress={toWriting} hitSlop={6} className="active:opacity-70">
+    <Pressable role="button" onPress={() => leave(toWriting)} hitSlop={6} className="active:opacity-70">
       <Text variant="link">{t('wideSource.newNote')}</Text>
     </Pressable>
   );
@@ -379,10 +381,12 @@ export function WideSourcePage({
                 if (row) rows.current.set(note.id, row);
                 else rows.current.delete(note.id);
               }}
-              onPress={() => {
-                setShown(note.id);
-                setEditing(false);
-              }}
+              onPress={() =>
+                leave(() => {
+                  setShown(note.id);
+                  setEditing(false);
+                })
+              }
               // A Note just come in is placed by estimate until its row is measured: place it again then.
               onLayout={() => {
                 if (pin.current !== note.id) return;

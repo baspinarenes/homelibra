@@ -23,7 +23,8 @@ import { useUnsavedWork } from '@/components/wide-frame';
  * closes an open choice, then the edit, asking "Değişiklikler atılsın mı?"
  * first when it holds changes. The Kaynak field moves the Note on save,
  * Notu sil deletes it, both with Geri al, all through the outbox, as on the
- * phone's Notu düzenle (#36, #58).
+ * phone's Notu düzenle (#36, #58). With changes, every way out of it (the
+ * host's ✕ and rows through `useLeave`, the sidebar) asks the same first.
  *
  * `onEnd` takes the edit away: saved (and where the Note is now), deleted,
  * or null, put away unsaved. It hears ⌘↵ and Esc itself while its screen
@@ -99,21 +100,28 @@ function EditForm({
   const draft = useNoteDraft(note, sourceGone, onEnd);
   // The Kaynak list or the Tag search, open in place.
   const [choosing, setChoosing] = useState<'source' | 'tags' | null>(null);
-  const [asking, setAsking] = useState(false);
+  // "Değişiklikler atılsın mı?", and the way out taken once At throws the changes away.
+  const [asking, setAsking] = useState<{ then: () => void } | null>(null);
+  const ask = (then: () => void) => setAsking({ then });
   const putAway = () => onEnd(null);
+  const discard = () => {
+    putAway();
+    asking?.then();
+  };
 
-  // Changed, the edit holds Not al: its sidebar button puts nothing away unasked (#178).
-  useUnsavedWork(draft.changed);
+  // Changed, the edit holds every way out of it: Vazgeç and Esc here, the panel's ✕, another
+  // row, the sidebar, Not al. Each asks first (Q51, #178).
+  useUnsavedWork(draft.changed, ask);
   useShortcuts({ panelOpen: true, unsavedChanges: draft.changed, active }, (command) => {
-    switch (noteEditAction(command, { choosing: choosing !== null, asking, canSave: draft.canSave })) {
+    switch (noteEditAction(command, { choosing: choosing !== null, asking: asking !== null, canSave: draft.canSave })) {
       case 'save':
         draft.save();
         return true;
       case 'ask':
-        setAsking(true);
+        ask(() => {});
         return true;
       case 'keepEditing':
-        setAsking(false);
+        setAsking(null);
         return true;
       case 'closeChoice':
         setChoosing(null);
@@ -195,14 +203,14 @@ function EditForm({
       aside={aside}
       lead={refused ? t('outbox.refusedLead') : undefined}
       error={error}
-      asking={asking}
+      asking={asking !== null}
       canSave={draft.canSave}
       saving={draft.busy === 'save'}
       deleting={draft.busy === 'delete'}
       onSave={draft.save}
-      onCancel={() => (draft.changed ? setAsking(true) : putAway())}
-      onDiscard={putAway}
-      onKeepEditing={() => setAsking(false)}
+      onCancel={() => (draft.changed ? ask(() => {}) : putAway())}
+      onDiscard={discard}
+      onKeepEditing={() => setAsking(null)}
       onDelete={draft.remove}
       labels={{
         title: t('noteEdit.title'),

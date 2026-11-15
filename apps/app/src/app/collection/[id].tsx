@@ -30,7 +30,7 @@ import { DefinitionTags } from '@/features/collection/definition-tags';
 import { type NoteFocus, stepInView } from '@/features/collection/note-focus';
 import { viewAction } from '@/features/collection/view-keys';
 import { narrowView, SearchField, ShortWords, useCollectionSearch, useSearchText } from '@/features/search/note-search';
-import { useFramePanel } from '@/components/wide-frame';
+import { useFramePanel, useLeave } from '@/components/wide-frame';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
 
@@ -122,6 +122,8 @@ function CollectionPage({ collection }: { collection: Collection }) {
   const [menuOpen, setMenuOpen] = useState(false);
   // Not al takes the panel's place (#178).
   const layout = useFramePanel(focus !== null, () => setFocus(null));
+  // Another row pressed over an edit with changes asks first.
+  const leave = useLeave();
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
   // While its Note is edited in the panel, the edit hears the keys.
@@ -435,7 +437,11 @@ function CollectionPage({ collection }: { collection: Collection }) {
                   ? t('collection.emptyNoTags')
                   : t('collection.emptyNoNotes')
             }
-            wide={wide ? { density: layout.density, focus, onOpen: focusBy(false), focusRow: byKeys } : undefined}
+            wide={
+              wide
+                ? { density: layout.density, focus, onOpen: (to) => leave(() => focusBy(false)(to)), focusRow: byKeys }
+                : undefined
+            }
             foot={panelOpen && !editing && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
           />
         </View>
