@@ -65,6 +65,8 @@ type Props = {
   onOpenFile: (id: string) => void;
   /** Not al. */
   onCapture: () => void;
+  /** Ara ⌘K: the quick search window, as ⌘K opens it. Selected while Ara is the place. */
+  onSearch: () => void;
 };
 
 /**
@@ -78,7 +80,7 @@ export function Sidebar(props: Props) {
   return props.shape === 'iconRail' ? <IconRail {...props} /> : <FullSidebar {...props} />;
 }
 
-function FullSidebar({ place, file, files, sourceCount, labels, onGo, onOpenFile, onCapture }: Props) {
+function FullSidebar({ place, file, files, sourceCount, labels, onGo, onOpenFile, onCapture, onSearch }: Props) {
   const { colors } = useTheme();
   const searching = place === 'search';
   const inFile = place === 'index' && !!file;
@@ -109,7 +111,7 @@ function FullSidebar({ place, file, files, sourceCount, labels, onGo, onOpenFile
           role="tab"
           aria-selected={searching}
           aria-label={labels.search}
-          onPress={() => onGo('search')}
+          onPress={onSearch}
           className={cx(
             'mt-1.5 mb-md flex-row items-center gap-2 rounded-control border bg-surface px-2.5 py-1.75 active:opacity-70',
             searching ? 'border-accent' : 'border-line',
@@ -223,7 +225,7 @@ function PlaceRow({
   );
 }
 
-function IconRail({ place, labels, onGo, onCapture }: Props) {
+function IconRail({ place, labels, onGo, onCapture, onSearch }: Props) {
   const { colors } = useTheme();
   const rail = ['search', ...places] as const;
   return (
@@ -246,7 +248,13 @@ function IconRail({ place, labels, onGo, onCapture }: Props) {
         className="flex-1 items-center gap-1.5"
       >
         {rail.map((key) => (
-          <RailIcon key={key} place={key} label={labels[key]} selected={place === key} onPress={() => onGo(key)} />
+          <RailIcon
+            key={key}
+            place={key}
+            label={labels[key]}
+            selected={place === key}
+            onPress={key === 'search' ? onSearch : () => onGo(key)}
+          />
         ))}
         <View className="flex-1" />
         <RailIcon

@@ -35,6 +35,7 @@ function sidebar(props: Partial<Parameters<typeof Sidebar>[0]> = {}) {
       onGo={noop}
       onOpenFile={noop}
       onCapture={noop}
+      onSearch={noop}
       {...props}
     />,
   );
