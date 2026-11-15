@@ -110,6 +110,8 @@ describe('QuickSearch', () => {
   it('is a dialog with the box, named for screen readers', () => {
     const page = quickSearch();
     expect(byRole(page, 'dialog').map(nameOf)).toEqual(['Hızlı arama']);
+    // Modal: the wide shortcuts leave the keys pressed in it to its box.
+    expect(byRole(page, 'dialog')[0]?.attrs['aria-modal']).toBe('true');
     const field = all(page).find((node) => node.tag === 'input');
     expect(field?.attrs['aria-label']).toBe('Ara ya da git');
     expect(field?.attrs.value).toBe('selan');

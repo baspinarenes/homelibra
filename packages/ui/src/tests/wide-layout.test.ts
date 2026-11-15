@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { commandFor, wideLayout } from '../wide-layout';
+import { commandFor, shortcutFor, wideLayout } from '../wide-layout';
 
 describe('wideLayout', () => {
   it('picks the tier by window width alone', () => {
@@ -146,5 +146,41 @@ describe('commandFor', () => {
     for (const width of [390, 720, 1023]) {
       expect(keys.map((key) => commandFor(key, { width, panelOpen: true }))).toEqual([null, null, null, null]);
     }
+  });
+});
+
+describe('shortcutFor', () => {
+  const quiet = { ...wide, typing: false, inDialog: false, textSelected: false };
+
+  it('gives the command of a key pressed on the page', () => {
+    expect(shortcutFor(press('k', { metaKey: true }), quiet)).toBe('quickSearch');
+    expect(shortcutFor(press('n'), quiet)).toBe('capture');
+  });
+
+  it('hears ⌘K, ⌘↵ and Esc from a text field, and nothing else of its typing', () => {
+    const typing = { ...quiet, typing: true };
+    expect(shortcutFor(press('k', { metaKey: true }), typing)).toBe('quickSearch');
+    expect(shortcutFor(press('Enter', { metaKey: true }), typing)).toBe('submit');
+    expect(shortcutFor(press('Escape'), typing)).toBe('back');
+    expect(shortcutFor(press('n'), typing)).toBeNull();
+    expect(shortcutFor(press('c', { metaKey: true }), typing)).toBeNull();
+  });
+
+  it('leaves a key pressed in a dialog to the dialog: the quick search window keeps ⌘K and Esc', () => {
+    const inDialog = { ...quiet, typing: true, inDialog: true };
+    expect(shortcutFor(press('k', { metaKey: true }), inDialog)).toBeNull();
+    expect(shortcutFor(press('Escape'), inDialog)).toBeNull();
+  });
+
+  it('leaves ⌘C and ⌘⇧C to the browser while text on the page is selected', () => {
+    const selected = { ...quiet, textSelected: true };
+    expect(shortcutFor(press('c', { metaKey: true }), selected)).toBeNull();
+    expect(shortcutFor(press('c', { metaKey: true, shiftKey: true }), selected)).toBeNull();
+    expect(shortcutFor(press('k', { metaKey: true }), selected)).toBe('quickSearch');
+  });
+
+  it('skips a key still being composed, or one something before it already took', () => {
+    expect(shortcutFor({ ...press('k', { metaKey: true }), isComposing: true }, quiet)).toBeNull();
+    expect(shortcutFor({ ...press('n'), defaultPrevented: true }, quiet)).toBeNull();
   });
 });
