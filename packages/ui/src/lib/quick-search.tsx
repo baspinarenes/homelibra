@@ -131,9 +131,15 @@ export function QuickSearch({
 
   const onKeyPress = (event: TextInputKeyPressEvent) => {
     // On the web the event is the browser's keydown, as note-composer reads it.
-    const press = event as unknown as KeyPress & { preventDefault: () => void; nativeEvent: { isComposing?: boolean } };
-    if (press.nativeEvent?.isComposing) return;
-    const step = quickSearchKey(press, { selected, count });
+    const press = event as unknown as Omit<KeyPress, 'key'> & {
+      key?: string;
+      preventDefault: () => void;
+      nativeEvent?: { isComposing?: boolean };
+    };
+    // A tablet's event has its key only under nativeEvent: there the box's typing is all there is.
+    if (press.key === undefined || press.nativeEvent?.isComposing) return;
+    const { key, metaKey, ctrlKey, shiftKey, altKey } = press;
+    const step = quickSearchKey({ key, metaKey, ctrlKey, shiftKey, altKey }, { selected, count });
     if (!step) return;
     press.preventDefault();
     if (step === 'close') onClose();
@@ -180,7 +186,14 @@ export function QuickSearch({
               autoCorrect={false}
               className="type-body-lg min-w-0 flex-1 text-fg outline-none"
             />
-            <Pressable role="button" aria-label={labels.close} onPress={onClose} className="active:opacity-70">
+            {/* Out of the Tab order, as the rows are: the keys stay the box's, which keeps them from the screen behind. */}
+            <Pressable
+              role="button"
+              aria-label={labels.close}
+              focusable={false}
+              onPress={onClose}
+              className="active:opacity-70"
+            >
               <Key>Esc</Key>
             </Pressable>
           </View>
@@ -197,6 +210,7 @@ export function QuickSearch({
             <Pressable
               role="option"
               aria-selected={selected === count - 1}
+              focusable={false}
               onHoverIn={() => setSelected(count - 1)}
               onPress={onOpenAll}
               className={cx(
@@ -241,6 +255,7 @@ function ResultRow({
     <Pressable
       role="option"
       aria-selected={selected}
+      focusable={false}
       onHoverIn={onHover}
       onPress={onPress}
       className={cx(
