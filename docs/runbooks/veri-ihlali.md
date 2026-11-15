@@ -123,7 +123,7 @@ incelemesine hazır tutulur. Kayıt, yanlış alarm olsa bile silinmez.
 
 | Kategori | İçerik | Nerede durur |
 |---|---|---|
-| Hesap | E-posta adresi, koşulları kabul anı; Google ile girenlerde ayrıca ad, profil görseli, Google hesap kimliği ve Google'ın verdiği token'lar | PostgreSQL (Hetzner sunucu) ve günlük yedekler (sunucuda ve Hetzner Object Storage'da, 14 gün) |
+| Hesap | E-posta adresi, koşulları kabul anı; Google ile girenlerde ayrıca ad, profil görseli, Google hesap kimliği ve Google'ın verdiği token'lar (Better Auth'un varsayılanı; üretim veritabanında bakılmadı) | PostgreSQL (Hetzner sunucu) ve günlük yedekler (sunucuda ve Hetzner Object Storage'da, 14 gün) |
 | Oturum | IP adresi, cihaz/tarayıcı bilgisi | PostgreSQL ve yedekler |
 | Library | Source, Note, Excerpt, Comment, Tag, Collection | PostgreSQL ve yedekler |
 | Kapaklar | Kapak görselleri | Hetzner Object Storage (yedeksiz, ADR-0011) |
