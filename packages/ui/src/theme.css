@@ -113,6 +113,12 @@
   line-height: 42px;
 }
 
+@utility type-hero {
+  font-family: 'EBGaramond_400Regular';
+  font-size: 52px;
+  line-height: 68px;
+}
+
 @utility type-title {
   font-family: 'EBGaramond_400Regular';
   font-size: 26px;

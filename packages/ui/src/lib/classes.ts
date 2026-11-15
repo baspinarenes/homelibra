@@ -94,6 +94,7 @@ export const borderColor = {
 
 export const typeClass = {
   display: 'type-display',
+  hero: 'type-hero',
   title: 'type-title',
   screenTitle: 'type-screen-title',
   sourceTitle: 'type-source-title',

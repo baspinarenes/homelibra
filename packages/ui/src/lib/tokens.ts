@@ -108,6 +108,7 @@ export const fonts = {
 // The app writes no size of its own, so a size a screen needs is an entry here.
 export const type = {
   display: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 42 }, // welcome and sign-in title
+  hero: { fontFamily: fonts.serif, fontSize: 52, lineHeight: 68 }, // Giriş's headline on a wide screen
   title: { fontFamily: fonts.serif, fontSize: 26, lineHeight: 34 }, // Collection name
   screenTitle: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 2.2 }, // every screen's header, upper case
   sourceTitle: { fontFamily: fonts.serifMedium, fontSize: 21, lineHeight: 28 }, // also a sheet's title
