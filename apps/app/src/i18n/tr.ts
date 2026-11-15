@@ -58,6 +58,8 @@ export const tr = {
     sourceSearchNotes: 'Notlar',
     account: 'Hesap',
     versionSection: 'Sürüm',
+    // Above E-posta adresi, Dışa aktar and Hesabı sil on a wide screen, back to Ayarlar (#183).
+    back: '‹ Ayarlar',
   },
   // Hoş geldin: Homelibra in a few lines, once per Account; Başla records the terms accepted at sign-in (#118).
   welcome: {
