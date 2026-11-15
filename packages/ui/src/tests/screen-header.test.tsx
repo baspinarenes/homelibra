@@ -2,7 +2,7 @@ import Trash from 'lucide-react-native/icons/trash';
 import { describe, expect, it } from 'vitest';
 
 import { HeaderIconAction, HeaderTextAction, ScreenHeader } from '../screen-header';
-import { all, byRole, css, type Node, nameOf, render, text } from './render';
+import { all, byRole, classes, css, type Node, nameOf, render, text } from './render';
 
 const noop = () => {};
 
@@ -40,9 +40,7 @@ describe('ScreenHeader', () => {
   it('sets the title in mono 15/20 with a 1px rule underneath', () => {
     const page = render(<ScreenHeader title="Kaynaklar" />);
     const [heading] = byRole(page, 'heading');
-    expect(css(heading!, 'fontSize')).toBe('15px');
-    expect(css(heading!, 'lineHeight')).toBe('20px');
-    expect(css(heading!, 'letterSpacing')).toBe('2.2px');
+    expect(classes(heading!)).toContain('type-screen-title');
     const ruled = all(page).filter((n) => all(n).includes(heading!) && css(n, 'borderBottomWidth') === '1px');
     expect(ruled).toHaveLength(1);
   });

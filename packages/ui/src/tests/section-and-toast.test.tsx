@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Section, SectionHeading, SectionText } from '../section-heading';
 import { Toast } from '../toast';
-import { byRole, css, nameOf, type Node, render, text } from './render';
+import { byRole, classes, css, nameOf, type Node, render, text } from './render';
 
 const noop = () => {};
 
@@ -68,7 +68,7 @@ describe('SectionText', () => {
     const page = render(<SectionText>Sorular, destek ve KVKK başvuruları için:</SectionText>);
     const paragraph = drawn(page);
     expect(text(paragraph)).toBe('Sorular, destek ve KVKK başvuruları için:');
-    expect(css(paragraph, 'fontSize')).toBe('15px');
+    expect(classes(paragraph)).toContain('type-body');
   });
 });
 

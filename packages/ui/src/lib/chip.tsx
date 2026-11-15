@@ -2,6 +2,7 @@ import X from 'lucide-react-native/icons/x';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
 import type { Colors } from './tokens';
 import { useTheme } from './use-theme';
@@ -59,12 +60,12 @@ export function Chip({
   removeLabel?: string;
 }) {
   const { colors } = useTheme();
-  const look = `${base} ${selected ? chosen : looks[tone]}`;
+  const look = cx(base, selected ? chosen : looks[tone]);
   const ink = selected ? 'accentFg' : inks[tone];
   const shown = removable ? `${label} ×` : label;
   if (onRemove) {
     return (
-      <View className={`${look} gap-1 pr-1.25`}>
+      <View className={cx(look, 'gap-1 pr-1.25')}>
         <Text variant="labelSm" color={ink}>
           {label}
         </Text>
@@ -95,7 +96,7 @@ export function Chip({
       aria-label={label}
       aria-pressed={selected}
       onPress={onPress}
-      className={`${look} active:opacity-80`}
+      className={cx(look, 'active:opacity-80')}
     >
       <Text variant="labelSm" color={ink}>
         {shown}

@@ -29,6 +29,14 @@ export function nameOf(node: Node): string {
 }
 
 /**
+ * The Tailwind classes on `node` (`type-body`, `text-ink2`): what a component chose
+ * from the design system. Uniwind turns them into styles; tests check the choice.
+ */
+export function classes(node: Node): string[] {
+  return (node.attrs['data-class'] ?? '').split(' ').filter(Boolean);
+}
+
+/**
  * The value react-native-web drew for one style property of `node` (`paddingBlock`,
  * `fontSize`), read from the CSS rule behind its atomic class; undefined if unset.
  */

@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Text as NativeText, type StyleProp, StyleSheet, type TextProps, type TextStyle } from 'react-native';
+import { Text as NativeText, type StyleProp, type TextProps, type TextStyle } from 'react-native';
 
+import { textColor, typeClass } from './classes';
+import { cx } from './cx';
 import { type Colors, type as typeScale } from './tokens';
-import { useThemedStyles } from './use-theme';
 
 export type Variant = keyof typeof typeScale;
 
@@ -60,27 +61,6 @@ const defaultColor: { [V in Variant]: keyof Colors | undefined } = {
   identifier: 'fg',
 };
 
-const variants = Object.keys(typeScale) as Variant[];
-
-// One sheet per theme, so a Text is classes on web, not an inline style:
-// each entry with its colour, and each colour on its own for `color`.
-const makeStyles = (c: Colors) => ({
-  variants: StyleSheet.create(
-    Object.fromEntries(
-      variants.map((variant) => {
-        const color = defaultColor[variant];
-        return [variant, color ? { ...typeScale[variant], color: c[color] } : typeScale[variant]];
-      }),
-    ) as Record<Variant, TextStyle>,
-  ),
-  colors: StyleSheet.create(
-    Object.fromEntries(Object.entries(c).map(([name, value]) => [name, { color: value }])) as Record<
-      keyof Colors,
-      TextStyle
-    >,
-  ),
-});
-
 /**
  * What a screen may set on a Text: where it stands, never its face, size, line,
  * colour or case (textTransform's upper case is locale-blind: i becomes I, not İ).
@@ -102,6 +82,8 @@ type Props = Omit<TextProps, 'style' | 'children'> & {
   /** A colour of the theme other than the entry's own. */
   color?: keyof Colors;
   style?: StyleProp<TextLayout>;
+  /** Where it stands (margins, alignment, flex), as classes. Never a face, size or colour: those are the variant's. */
+  className?: string;
 } & (
     | { variant: Exclude<Variant, UpperCaseVariant>; children?: ReactNode }
     | { variant: UpperCaseVariant; children: string }
@@ -113,11 +95,12 @@ type Props = Omit<TextProps, 'style' | 'children'> & {
  * labels upper-case their words with `toLocaleUpperCase('tr')`.
  */
 export function Text(props: Props) {
-  const { variant, color, style, children, ...rest } = props;
-  const styles = useThemedStyles(makeStyles);
+  const { variant, color, style, className, children, ...rest } = props;
   const role = 'role' in props ? props.role : headings.has(variant) ? 'heading' : undefined;
+  const ink = color ?? defaultColor[variant];
+  const look = cx(typeClass[variant], ink && textColor[ink], className);
   return (
-    <NativeText {...rest} role={role} style={[styles.variants[variant], color && styles.colors[color], style]}>
+    <NativeText {...rest} role={role} className={look} style={style}>
       {upperCase.has(variant) && typeof children === 'string' ? children.toLocaleUpperCase('tr') : children}
     </NativeText>
   );
