@@ -321,15 +321,73 @@ describe('Dosyalar', () => {
           { id: expect.any(String), name: 'Ermeni meselesi' },
         ],
         noteCount: 2,
+        sourceCount: 1,
+        updatedAt: expect.any(String),
       },
-      { id: expect.any(String), name: 'Çalışma', tags: [], noteCount: 0 },
+      {
+        id: expect.any(String),
+        name: 'Çalışma',
+        tags: [],
+        noteCount: 0,
+        sourceCount: 0,
+        updatedAt: expect.any(String),
+      },
       {
         id: closed,
         name: 'Ermeni meselesi (yalnız etiketli)',
         tags: [{ id: expect.any(String), name: 'Ermeni meselesi' }],
         noteCount: 0,
+        sourceCount: 0,
+        updatedAt: expect.any(String),
       },
     ]);
+  });
+
+  it('counts the Sources a Collection’s Notes come from, as its view does, switch on or off (#181)', async () => {
+    const api = await scholar();
+    const { id: fond } = await api.sources.create({ type: 'archive', author: 'BOA', title: 'DH.MKT' });
+    const { id: book } = await api.sources.create({ type: 'book', title: 'Jön Türkler' });
+    const { id: paper } = await api.sources.create({ type: 'article', title: 'Tanin' });
+    await api.tags.setOnSource({ sourceId: fond, names: ['ordu'] });
+    await capture(api, fond, { excerpt: 'Tahrirat.' });
+    await capture(api, fond, { excerpt: 'Telgraf.' });
+    await capture(api, book, { excerpt: 'Cemiyet.', tags: ['ordu'] });
+    await capture(api, book, { excerpt: 'Selanik.', tags: ['ordu'] });
+    await capture(api, paper, { excerpt: 'Sansür.', tags: ['basın'] });
+    const { id: open } = await api.collections.create({ name: 'Ordu', tags: ['ordu'] });
+    const { id: closed } = await api.collections.create({
+      name: 'Ordu (yalnız etiketli)',
+      tags: ['ordu'],
+      includeSourceNotes: false,
+    });
+    const { id: none } = await api.collections.create({ name: 'Boş', tags: [] });
+
+    const listed = new Map((await api.collections.list()).map((row) => [row.id, row]));
+
+    expect([listed.get(open)?.noteCount, listed.get(open)?.sourceCount]).toEqual([4, 2]);
+    expect([listed.get(closed)?.noteCount, listed.get(closed)?.sourceCount]).toEqual([2, 1]);
+    expect([listed.get(none)?.noteCount, listed.get(none)?.sourceCount]).toEqual([0, 0]);
+    for (const id of [open, closed]) {
+      const { noteCount, sourceCount } = await api.collections.view({ id });
+      expect([listed.get(id)?.noteCount, listed.get(id)?.sourceCount]).toEqual([noteCount, sourceCount]);
+    }
+  });
+
+  it('dates each Collection by its last change of name, Tags or switch, not by a Note that came in (#181)', async () => {
+    const api = await scholar();
+    const { id: sourceId } = await api.sources.create({ type: 'book', title: 'Jön Türkler' });
+    const { id } = await api.collections.create({ name: 'Taslak', tags: ['kadı'] });
+    const made = (await api.collections.list())[0]?.updatedAt;
+    t.passTime(60 * 1000);
+    await capture(api, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });
+    expect((await api.collections.list())[0]?.updatedAt).toBe(made);
+    t.passTime(60 * 1000);
+    await api.collections.rename({ id, name: 'Makale' });
+
+    const renamed = (await api.collections.list())[0]?.updatedAt;
+
+    // The API's clock runs on between calls; only the two minutes passed matter.
+    expect(new Date(renamed!).getTime() - new Date(made!).getTime()).toBeGreaterThanOrEqual(2 * 60 * 1000);
   });
 });
 
@@ -399,6 +457,18 @@ describe('Dosyalar · Sırala (#124)', () => {
 
     for (const sort of ['recent', 'name', 'notes'] as const)
       expect(await theirs.collections.list({ sort })).toEqual([]);
+  });
+
+  it('counts no other Library’s Notes or Sources in a Collection of the same Tag (#181)', async () => {
+    const mine = await scholar();
+    const theirs = await scholar();
+    const { id: sourceId } = await theirs.sources.create({ type: 'book', title: 'Jön Türkler' });
+    await capture(theirs, sourceId, { excerpt: 'Kadı azli.', tags: ['kadı'] });
+    await mine.collections.create({ name: 'Kadılar', tags: ['kadı'] });
+
+    const [row] = await mine.collections.list();
+
+    expect([row?.noteCount, row?.sourceCount]).toEqual([0, 0]);
   });
 });
 

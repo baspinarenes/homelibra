@@ -44,3 +44,33 @@ describe('MoreMenu', () => {
     expect(copy!.attrs['aria-disabled']).toBe('true');
   });
 });
+
+describe('MoreMenu with a choice', () => {
+  const orders: MenuItem[] = [
+    { label: 'Son değişen', checked: true, onPress: noop },
+    { label: 'Ada göre', checked: false, onPress: noop },
+  ];
+  const choice = (open: boolean) =>
+    render(
+      <MoreMenu
+        label="Dosyaları sırala: son değişen"
+        trigger="Son değişen"
+        items={orders}
+        open={open}
+        onOpenChange={noop}
+      />,
+    );
+
+  it('shows the choice in force on its button, with ▾, in place of ⋯', () => {
+    const [button] = byRole(choice(false), 'button');
+    expect(nameOf(button!)).toBe('Dosyaları sırala: son değişen');
+    expect(text(button!)).toBe('Son değişen ▾');
+  });
+
+  it('marks the choice in force among its options', () => {
+    const options = byRole(choice(true), 'menuitemradio');
+    expect(options.map(nameOf)).toEqual(['Son değişen', 'Ada göre']);
+    expect(options.map((option) => option.attrs['aria-checked'])).toEqual(['true', 'false']);
+    expect(byRole(choice(true), 'menuitem')).toEqual([]);
+  });
+});

@@ -97,20 +97,23 @@ export async function viewNoteIds(
   return groups.flatMap((group) => group.notes.map((n) => n.id));
 }
 
-/**
- * How many Notes a Collection's view shows now, for a query over
- * `collection`: the same membership as {@link collectionView}, counted in SQL.
- */
-// Spelled out with aliases: drizzle leaves a one-table select's columns unqualified.
-export const memberCount = sql<number>`(
-  select count(*) from ${note} n
+// The Notes a Collection's view shows, as `n`: the same membership as
+// {@link collectionView}, for a query over `collection`. Spelled out with
+// aliases: drizzle leaves a one-table select's columns unqualified.
+const members = sql`from ${note} n
    where n.account_id = ${collection}.account_id
      and (exists (
            select from ${noteTag} nt join ${collectionTag} ct on ct.tag_id = nt.tag_id
             where nt.note_id = n.id and ct.collection_id = ${collection}.id)
        or (${collection}.include_source_notes and exists (
            select from ${sourceTag} st join ${collectionTag} ct on ct.tag_id = st.tag_id
-            where st.source_id = n.source_id and ct.collection_id = ${collection}.id))))::int`;
+            where st.source_id = n.source_id and ct.collection_id = ${collection}.id)))`;
+
+/** How many Notes a Collection's view shows now, for a query over `collection`. */
+export const memberCount = sql<number>`(select count(*) ${members})::int`;
+
+/** How many Sources the Notes of a Collection's view come from: its view's `sourceCount`. */
+export const memberSourceCount = sql<number>`(select count(distinct n.source_id) ${members})::int`;
 
 type Ordered = { title: string; author: string | null; dateSort: number | null };
 

@@ -35,6 +35,7 @@
     "./note-panel": "./src/note-panel.ts",
     "./menu": "./src/menu.ts",
     "./note-editor": "./src/note-editor.ts",
+    "./dizin": "./src/dizin.ts",
     "./note-writer": "./src/note-writer.ts"
   },
   "scripts": {

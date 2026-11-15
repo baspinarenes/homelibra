@@ -5,7 +5,7 @@ import { uuidv7 } from 'uuidv7';
 import { z } from 'zod';
 
 import { collectionDefinition, tagsOfCollection, tagsOfCollections } from '../collections/definition';
-import { collectionView, memberCount } from '../collections/view';
+import { collectionView, memberCount, memberSourceCount } from '../collections/view';
 import { account, collection, collectionTag, tag } from '../db/schema';
 import { findTags, resolveTags, setTags, tagNames } from '../tags/tags';
 import { libraryProcedure, router } from '../trpc/init';
@@ -40,8 +40,9 @@ export const collectionsRouter = router({
     }),
 
   /**
-   * Dosyalar: every Collection with its Tags and how many Notes its view
-   * shows now. Sırala: Son değişen (its name, Tags or switch, not a Note
+   * Dosyalar: every Collection with its Tags, how many Notes its view
+   * shows now and from how many Sources, and when it last changed (its
+   * name, Tags or switch; a wide Dizin's "dün"). Sırala: Son değişen (its name, Tags or switch, not a Note
    * that came into its view), Ada göre (A–Z, unless said otherwise), or Not
    * sayısı (most first); a tie A–Z.
    */
@@ -49,7 +50,13 @@ export const collectionsRouter = router({
     .input(z.object({ sort: z.enum(['recent', 'name', 'notes']) }).optional())
     .query(async ({ ctx, input }) => {
       const rows = await ctx.tx
-        .select({ id: collection.id, name: collection.name, updatedAt: collection.updatedAt, noteCount: memberCount })
+        .select({
+          id: collection.id,
+          name: collection.name,
+          updatedAt: collection.updatedAt,
+          noteCount: memberCount,
+          sourceCount: memberSourceCount,
+        })
         .from(collection)
         .where(eq(collection.accountId, ctx.accountId));
       type Row = (typeof rows)[number];
@@ -60,9 +67,13 @@ export const collectionsRouter = router({
         notes: (a, b) => b.noteCount - a.noteCount || byName(a, b),
       };
       const tags = await tagsOfCollections(ctx.tx, ctx.accountId);
-      return rows
-        .sort(order[input?.sort ?? 'name'])
-        .map(({ updatedAt: _, noteCount, ...row }) => ({ ...row, tags: tags.get(row.id) ?? [], noteCount }));
+      return rows.sort(order[input?.sort ?? 'name']).map(({ updatedAt, noteCount, sourceCount, ...row }) => ({
+        ...row,
+        tags: tags.get(row.id) ?? [],
+        noteCount,
+        sourceCount,
+        updatedAt: updatedAt.toISOString(),
+      }));
     }),
 
   rename: libraryProcedure.input(z.object({ id: z.uuid(), name: collectionName })).mutation(async ({ ctx, input }) => {
