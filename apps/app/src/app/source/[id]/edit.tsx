@@ -10,8 +10,14 @@ import { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
-import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
+import { useGiveSuggestedCover } from '@/features/source/isbn-suggestion';
+import {
+  draftToInput,
+  type SourceDraft,
+  SourceForm,
+  sourceToDraft,
+  useLeaveAfterSave,
+} from '@/features/source/source-form';
 import { useOffline } from '@/lib/network';
 import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';

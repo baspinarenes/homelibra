@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { knownNotes } from '@/lib/known-notes';
+import { knownNotes } from '@/features/note/known-notes';
 import { useOutbox } from '@/lib/outbox';
 
 /**

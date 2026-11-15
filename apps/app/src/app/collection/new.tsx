@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { DefinitionTags } from '@/components/definition-tags';
+import { DefinitionTags } from '@/features/collection/definition-tags';
 import { useTRPC } from '@/lib/trpc';
 
 /**

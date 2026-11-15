@@ -12,7 +12,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authClient } from '@/lib/auth-client';
-import { legalVersion } from '@/lib/legal';
+import { legalVersion } from '@/features/privacy/legal';
 import { useTRPC } from '@/lib/trpc';
 
 const features = [

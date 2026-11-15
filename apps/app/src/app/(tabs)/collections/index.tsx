@@ -9,9 +9,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
-import { CollectionList, useCollections } from '@/components/collection-list';
-import { TagList, useTags } from '@/components/tag-list';
-import { type CollectionSort, type TagSort, useCollectionSort, useTagSort } from '@/lib/dizin-sort';
+import { CollectionList, useCollections } from '@/features/collection/collection-list';
+import { TagList, useTags } from '@/features/tag/tag-list';
+import { type CollectionSort, type TagSort, useCollectionSort, useTagSort } from '@/features/collection/dizin-sort';
 
 type DizinView = 'collections' | 'tags';
 

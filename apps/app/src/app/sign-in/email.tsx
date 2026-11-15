@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
-import { InviteNotice } from '@/components/invite-notice';
+import { InviteNotice } from '@/features/account/invite-notice';
 import { authClient } from '@/lib/auth-client';
 
 type Message = { kind: 'notInvited' } | { kind: 'sendFailed' } | { kind: 'invalidCode' } | null;

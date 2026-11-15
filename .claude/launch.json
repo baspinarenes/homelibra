@@ -23,6 +23,23 @@
       "port": 3001
     },
     {
+      "name": "refactor-native",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "EXPO_PUBLIC_API_URL=http://localhost:3001",
+        "pnpm",
+        "--filter",
+        "@homelibra/app",
+        "exec",
+        "expo",
+        "start",
+        "--dev-client",
+        "--port",
+        "8092"
+      ],
+      "port": 8092
+    },
+    {
       "name": "refactor-web",
       "runtimeExecutable": "env",
       "runtimeArgs": [

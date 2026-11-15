@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
-import { narrowView, SearchField, ShortWords, useSearchText, useTagSearch } from '@/components/note-search';
+import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
+import { narrowView, SearchField, ShortWords, useSearchText, useTagSearch } from '@/features/search/note-search';
 import { useTRPC } from '@/lib/trpc';
 
 /**

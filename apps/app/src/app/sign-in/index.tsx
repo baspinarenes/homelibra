@@ -11,7 +11,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { InviteNotice } from '@/components/invite-notice';
+import { InviteNotice } from '@/features/account/invite-notice';
 import { authClient } from '@/lib/auth-client';
 
 type Message = { kind: 'notInvited' } | { kind: 'error'; text: string } | null;

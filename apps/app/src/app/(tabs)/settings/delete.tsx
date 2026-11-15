@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { CodeInput } from '@/components/code-input';
+import { CodeInput } from '@/features/account/code-input';
 import { authClient } from '@/lib/auth-client';
 import { forgetQueries } from '@/lib/query-provider';
 import { useTRPC } from '@/lib/trpc';

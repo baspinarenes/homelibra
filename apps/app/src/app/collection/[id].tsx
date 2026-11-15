@@ -13,10 +13,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { CopyMarkdownAction, DeleteCollectionAction } from '@/components/collection-actions';
-import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/components/collection-view';
-import { DefinitionTags } from '@/components/definition-tags';
-import { narrowView, SearchField, ShortWords, useCollectionSearch, useSearchText } from '@/components/note-search';
+import { CopyMarkdownAction, DeleteCollectionAction } from '@/features/collection/collection-actions';
+import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
+import { DefinitionTags } from '@/features/collection/definition-tags';
+import { narrowView, SearchField, ShortWords, useCollectionSearch, useSearchText } from '@/features/search/note-search';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
 

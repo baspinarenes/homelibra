@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { SignOutButton } from '@/components/sign-out-button';
+import { SignOutButton } from '@/features/account/sign-out-button';
 import { authClient } from '@/lib/auth-client';
 import { useTRPC } from '@/lib/trpc';
 

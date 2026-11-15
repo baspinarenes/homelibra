@@ -15,8 +15,8 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { ContactSection, PrivacyDocumentsSection } from '@/components/privacy-sections';
-import { SignOutButton } from '@/components/sign-out-button';
+import { ContactSection, PrivacyDocumentsSection } from '@/features/privacy/privacy-sections';
+import { SignOutButton } from '@/features/account/sign-out-button';
 import { authClient } from '@/lib/auth-client';
 import {
   type HomeDivider,

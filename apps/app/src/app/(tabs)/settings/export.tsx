@@ -4,7 +4,7 @@ import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { LibraryExportDownload } from '@/components/library-export';
+import { LibraryExportDownload } from '@/features/library/library-export';
 
 /**
  * Kütüphaneni dışa aktar (#40, stories 16-18; ADR-0004): what the ZIP

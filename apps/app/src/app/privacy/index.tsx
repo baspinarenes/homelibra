@@ -3,7 +3,7 @@ import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet } from 'react-native';
 
-import { ContactLink, ContactSection, PrivacyDocumentsSection } from '@/components/privacy-sections';
+import { ContactLink, ContactSection, PrivacyDocumentsSection } from '@/features/privacy/privacy-sections';
 
 /**
  * Gizlilik without signing in, so a scholar who cannot get into the app

@@ -10,10 +10,10 @@ import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { TagChips } from '@/components/tag-chips';
-import { type PickedSource, SourcePicker } from '@/components/source-picker';
-import { SourceTypeIcon } from '@/components/source-type-icon';
-import { knownNotes } from '@/lib/known-notes';
+import { TagChips } from '@/features/tag/tag-chips';
+import { type PickedSource, SourcePicker } from '@/features/source/source-picker';
+import { SourceTypeIcon } from '@/features/source/source-type-icon';
+import { knownNotes } from '@/features/note/known-notes';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 import { offerReceiptUndo } from '@/lib/undo';

@@ -24,10 +24,10 @@ import {
   YearRangeFields,
   yearRangeLabel,
   yearRangeOf,
-} from '@/components/date-filter';
+} from '@/features/search/date-filter';
 import { ListMessage } from '@/components/list-message';
-import type { ReadingStatus } from '@/components/reading-status';
-import { SourceListRow } from '@/components/source-list-row';
+import type { ReadingStatus } from '@/features/source/reading-status';
+import { SourceListRow } from '@/features/source/source-list-row';
 import { useTRPC } from '@/lib/trpc';
 
 type Sort = inferRouterInputs<AppRouter>['sources']['list']['sort'];

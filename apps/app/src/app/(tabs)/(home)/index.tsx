@@ -10,12 +10,12 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { LibrarySummary } from '@/components/library-summary';
-import { LostNotesNotice, useLostNoteCount } from '@/components/lost-notes-notice';
-import { ReadingList } from '@/components/reading-list';
-import { RecentTags } from '@/components/recent-tags';
-import { SourceCover } from '@/components/source-cover';
-import { elapsed } from '@/lib/elapsed';
+import { LibrarySummary } from '@/features/library/library-summary';
+import { LostNotesNotice, useLostNoteCount } from '@/features/library/lost-notes-notice';
+import { ReadingList } from '@/features/library/reading-list';
+import { RecentTags } from '@/features/library/recent-tags';
+import { SourceCover } from '@/features/source/source-cover';
+import { elapsed } from '@/features/library/elapsed';
 import { useLastNotedLayout } from '@/lib/appearance-choices';
 import { useTRPC } from '@/lib/trpc';
 

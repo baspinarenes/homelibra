@@ -25,11 +25,11 @@ import {
   YearRangeFields,
   yearRangeLabel,
   yearRangeOf,
-} from '@/components/date-filter';
-import { ShortWords } from '@/components/note-search';
-import { SourceCover } from '@/components/source-cover';
+} from '@/features/search/date-filter';
+import { ShortWords } from '@/features/search/note-search';
+import { SourceCover } from '@/features/source/source-cover';
 import { useOffline } from '@/lib/network';
-import { useSettled } from '@/lib/settled';
+import { useSettled } from '@/features/search/settled';
 import { useTRPC } from '@/lib/trpc';
 
 type Results = inferRouterOutputs<AppRouter>['search']['library'];

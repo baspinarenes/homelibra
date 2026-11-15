@@ -16,8 +16,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { CoverEditor } from '@/components/cover-editor';
-import { NoteComposer } from '@/components/note-composer';
+import { CoverEditor } from '@/features/source/cover-editor';
+import { NoteComposer } from '@/features/note/note-composer';
 import {
   type Match,
   MarkedText,
@@ -25,14 +25,14 @@ import {
   ShortWords,
   useSearchText,
   useSourceSearch,
-} from '@/components/note-search';
-import { OutboxStatus } from '@/components/outbox-status';
-import { ReadingStatusButton } from '@/components/reading-status';
-import { SourceSearchBar, SourceSearchNotice } from '@/components/source-search';
-import { SourceTags } from '@/components/source-tags';
-import { NoteTagsLine } from '@/components/tag-chips';
+} from '@/features/search/note-search';
+import { OutboxStatus } from '@/features/note/outbox-status';
+import { ReadingStatusButton } from '@/features/source/reading-status';
+import { SourceSearchBar, SourceSearchNotice } from '@/features/source/source-search';
+import { SourceTags } from '@/features/source/source-tags';
+import { NoteTagsLine } from '@/features/tag/tag-chips';
 import { useSourceSearchPlace } from '@/lib/appearance-choices';
-import { knownNotes } from '@/lib/known-notes';
+import { knownNotes } from '@/features/note/known-notes';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 
