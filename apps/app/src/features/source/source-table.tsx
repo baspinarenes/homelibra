@@ -2,6 +2,7 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Table, type TableColumn, TableHead, TableRow } from '@homelibra/ui/table';
 import { Text } from '@homelibra/ui/text';
+import type { Density } from '@homelibra/ui/wide-layout';
 import type { inferRouterOutputs } from '@trpc/server';
 import { type ComponentRef, type ReactElement, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -60,7 +61,10 @@ export function SourceTable({
   onOpen,
   header,
   empty,
+  density = 'full',
 }: {
+  /** `compact` beside a panel (#180): Tür, Başlık, Yazar and Not only, as R6-Final-F has it. */
+  density?: Density;
   /** In `order`. */
   sources: readonly ListedSource[];
   order: SourceOrder;
@@ -74,7 +78,7 @@ export function SourceTable({
 }) {
   const { t } = useTranslation();
   const sortBy = (sort: SourceSort) => () => onOrder(orderAfterPress(order, sort));
-  const columns: TableColumn<Column>[] = [
+  const all: TableColumn<Column>[] = [
     { key: 'type', label: t('sourceTable.type'), width: 110 },
     { key: 'title', label: t('sources.byTitle'), onSort: sortBy('title') },
     { key: 'author', label: t('sources.byAuthor'), width: 150, onSort: sortBy('author') },
@@ -82,6 +86,7 @@ export function SourceTable({
     { key: 'notes', label: t('sourceTable.notes'), width: 56, align: 'end' },
     { key: 'last', label: t('sourceList.byLast'), width: 120, onSort: sortBy('last') },
   ];
+  const columns = density === 'compact' ? all.filter(({ key }) => key !== 'date' && key !== 'last') : all;
   const sort = { column: order.sort, direction: order.direction };
 
   return (

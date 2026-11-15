@@ -11,7 +11,7 @@ import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { useShortcuts } from '@homelibra/ui/wide-layout';
 import type { inferRouterOutputs } from '@trpc/server';
-import { Stack, useIsFocused, useRouter } from 'expo-router';
+import { Stack, useIsFocused } from 'expo-router';
 import Search from 'lucide-react-native/icons/search';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,7 @@ import { type Match, ShortWords, useSearchText, useSourceSearch } from '@/featur
 import { citation } from '@/features/source/citation';
 import { CoverEditor } from '@/features/source/cover-editor';
 import { ReadingStatusButton } from '@/features/source/reading-status';
+import { EditSourcePanel } from '@/features/source/source-form-panel';
 import { sourceAction } from '@/features/source/source-keys';
 import { SourceSearchBar } from '@/features/source/source-search';
 import { SourceTags } from '@/features/source/source-tags';
@@ -50,7 +51,9 @@ const scrollRetryAfter = 50;
  * goes back to Alıntı and the new Note is lit for a moment where it landed.
  * A Note pressed in the list takes the column (Kopyala ⌘C, Düzenle E, and
  * the edit in place), "+ Yeni not" above it; Esc or N bring the writing back
- * as it was left. `write` opens with the cursor in Alıntı (Kaldığın yer),
+ * as it was left. Düzenle opens the Source form in place of the column
+ * (#180); closed or saved, the column comes back as it was left. `write`
+ * opens with the cursor in Alıntı (Kaldığın yer),
  * `found` with that Note in the column and in view (a Note opened elsewhere).
  */
 export function WideSourcePage({
@@ -67,13 +70,14 @@ export function WideSourcePage({
   found: string | undefined;
 }) {
   const { t } = useTranslation();
-  const router = useRouter();
   const inFront = useIsFocused();
   // The Note the column shows; null while it is the writing.
   const [shown, setShown] = useState<string | null>(() =>
     found && notes.some((note) => note.id === found) ? found : null,
   );
   const [editing, setEditing] = useState(false);
+  // Kaynağı düzenle in place of the column (#180); the writing, and the Note shown, wait under it.
+  const [editingSource, setEditingSource] = useState(false);
   const [choosingTags, setChoosingTags] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -166,8 +170,8 @@ export function WideSourcePage({
     requestAnimationFrame(() => rows.current.get(to.id)?.focus());
   };
 
-  // While a Note is edited in the column, the edit hears the keys.
-  useShortcuts({ panelOpen: shown !== null, active: inFront && !menuOpen && !editing }, (command) => {
+  // While a Note is edited in the column, or the Source in its place, the edit hears the keys.
+  useShortcuts({ panelOpen: shown !== null, active: inFront && !menuOpen && !editing && !editingSource }, (command) => {
     // The Tag choice is the writing's: out of sight while a Note is shown.
     const state = {
       showing: shownNote !== null,
@@ -312,10 +316,12 @@ export function WideSourcePage({
                 <HeaderIconAction icon={Search} label={t('noteSearch.inSource')} onPress={() => setSearching(true)} />
               )}
               <ReadingStatusButton sourceId={source.id} status={source.readingStatus} />
+              {/* Not over a Note being edited in the column: its changes would go unasked. */}
               <Button
                 label={t('sourcePage.edit')}
                 variant="small"
-                onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
+                onPress={() => setEditingSource(true)}
+                disabled={editing}
               />
               <MoreMenu label={t('widePanel.more')} items={menuItems} open={menuOpen} onOpenChange={setMenuOpen} />
             </>
@@ -393,15 +399,21 @@ export function WideSourcePage({
           <SharedUndoBar />
         </View>
       </View>
-      <View
-        role="region"
-        aria-label={shownNote ? t('wideSource.note') : t('wideSource.writing')}
-        className="w-[360px] border-l border-line bg-surface"
-      >
-        <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-          {column}
-        </ScrollView>
-      </View>
+      {editingSource ? (
+        <View className="w-[520px] border-l border-line">
+          <EditSourcePanel source={source} active={inFront} onClose={() => setEditingSource(false)} />
+        </View>
+      ) : (
+        <View
+          role="region"
+          aria-label={shownNote ? t('wideSource.note') : t('wideSource.writing')}
+          className="w-[360px] border-l border-line bg-surface"
+        >
+          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+            {column}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 }
