@@ -165,7 +165,8 @@ export function ReadingColumn({
       <ScrollView
         ref={scrollRef}
         className="flex-1"
-        contentContainerClassName="w-[680px] pt-7 pb-xxl"
+        // 680 px of text where there is room; narrower beside the sidebar below about 1240 px, never cut off.
+        contentContainerClassName="w-full max-w-[720px] pt-7 pr-10 pb-xxl"
         onScroll={onScroll}
         scrollEventThrottle={32}
       >
