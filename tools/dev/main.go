@@ -60,6 +60,7 @@ func run() error {
 	db := flag.String("db", "", "local")
 	flag.IntVar(&apiPort, "api-port", apiPort, "the API's port")
 	flag.IntVar(&metroPort, "metro-port", metroPort, "Metro's port")
+	e2e := flag.Bool("e2e", false, "let the API sign e2e@homelibra.test in with a fixed code, for pnpm e2e")
 	rebuild := flag.Bool("rebuild", false, "reinstall the dev build (after a native dependency changes)")
 	flag.Parse()
 
@@ -108,7 +109,7 @@ func run() error {
 	}
 	saveLast(root, choice)
 
-	s := &Stack{Root: root, Interactive: interactive}
+	s := &Stack{Root: root, Interactive: interactive, E2E: *e2e}
 	defer s.Stop()
 	s.TrapSignals()
 	return s.Up(choice.Platform, target, *rebuild)

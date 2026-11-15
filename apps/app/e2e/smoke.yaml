@@ -1,5 +1,5 @@
 # The smoke flow: sign in, add a Source, capture a Note, on the dev build.
-# `pnpm e2e` runs it (scripts/e2e.sh) against the stack `pnpm dev` brought up,
+# `pnpm e2e` runs it (scripts/e2e.sh) against the stack `pnpm dev --e2e` brought up,
 # whose API signs e2e@homelibra.test in with the fixed E2E_SIGN_IN_CODE.
 appId: app.homelibra
 env:

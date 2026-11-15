@@ -45,6 +45,7 @@ func detach(cmd *exec.Cmd) {
 type Stack struct {
 	Root        string
 	Interactive bool
+	E2E         bool // the API accepts the fixed e2e sign-in code
 
 	mu       sync.Mutex
 	children []*exec.Cmd // each in its own process group, killed as a group
@@ -241,7 +242,7 @@ func (s *Stack) api() (<-chan error, error) {
 	step(fmt.Sprintf("API on :%d (sign-in codes appear here as [api] lines)", apiPort))
 	cmd := s.pnpm("--filter", "@homelibra/api", "dev")
 	cmd.Env = os.Environ()
-	if os.Getenv("E2E_SIGN_IN_CODE") == "" {
+	if s.E2E && os.Getenv("E2E_SIGN_IN_CODE") == "" {
 		// `pnpm e2e` signs e2e@homelibra.test in with it (scripts/e2e.sh); the API
 		// ignores it beside a real mailer and refuses it in production.
 		cmd.Env = append(cmd.Env, "E2E_SIGN_IN_CODE="+e2eCode)
@@ -259,10 +260,12 @@ func (s *Stack) api() (<-chan error, error) {
 	if err := s.start(cmd); err != nil {
 		return nil, err
 	}
-	go prefix(out, "[api] ")
-
 	exited := make(chan error, 1)
-	go func() { exited <- cmd.Wait() }()
+	go func() {
+		// Read to the end before Wait, which closes the pipe: a crash's last lines matter.
+		prefix(out, "[api] ")
+		exited <- cmd.Wait()
+	}()
 	ok := fmt.Sprintf("http://localhost:%d/api/auth/ok", apiPort)
 	for {
 		select {

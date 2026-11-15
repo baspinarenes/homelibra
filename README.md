@@ -42,7 +42,7 @@ pnpm dev --rebuild   # reinstall the dev build after a native dependency changes
 | `pnpm invite add <email>` | invite an address to the closed beta, locally |
 | `pnpm gen component <area> <name>` | a new component in `apps/app/src/features/<area>` ([apps/app/README.md](apps/app/README.md)); `pnpm gen ui <name>` for `@homelibra/ui` |
 | `pnpm gen:theme` | regenerate the Tailwind theme after changing `packages/ui/src/lib/tokens.ts` |
-| `pnpm e2e` | the Maestro smoke flow (sign in, add a Source, capture a Note) on the device `pnpm dev` opened ([apps/app/e2e](apps/app/e2e)) |
+| `pnpm e2e` | the Maestro smoke flow (sign in, add a Source, capture a Note) on an emulator or simulator, after `pnpm dev --e2e` ([apps/app/e2e](apps/app/e2e)) |
 | `pnpm version:bump patch` | raise `expo.version` (a PR that changes the app needs it) |
 
 In development the web app calls the API on `localhost:3000`; set `EXPO_PUBLIC_API_URL` to reach it elsewhere.
