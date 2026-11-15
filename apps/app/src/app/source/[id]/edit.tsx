@@ -11,13 +11,8 @@ import { Trans, useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useGiveSuggestedCover } from '@/features/source/isbn-suggestion';
-import {
-  draftToInput,
-  type SourceDraft,
-  SourceForm,
-  sourceToDraft,
-  useLeaveAfterSave,
-} from '@/features/source/source-form';
+import { draftToInput, type SourceDraft, sourceToDraft } from '@/features/source/source-draft';
+import { SourceForm, useLeaveAfterSave } from '@/features/source/source-form';
 import { useOffline } from '@/lib/network';
 import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';

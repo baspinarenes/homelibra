@@ -1,5 +1,4 @@
-import type { AppRouter } from '@homelibra/api';
-import { type CalendarDate, formatDate } from '@homelibra/core/date';
+import { formatDate } from '@homelibra/core/date';
 import {
   isFilled,
   isSourceDateField,
@@ -7,9 +6,7 @@ import {
   normalizeDoi,
   normalizeIsbn,
   type SourceDateField,
-  sourceDateFields,
   type SourceField,
-  sourceFields,
   type SourceIdentifier,
   sourceLayout,
   type SourceTextField,
@@ -22,7 +19,6 @@ import { TextField } from '@homelibra/ui/text-field';
 import { cx, space, useTheme } from '@homelibra/ui/theme';
 import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
 import Link from 'lucide-react-native/icons/link';
 import Save from 'lucide-react-native/icons/save';
@@ -31,102 +27,15 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/features/source/date-input';
+import { type DateDraft, readDateDraft } from '@/features/source/date-draft';
+import { DateInput } from '@/features/source/date-input';
 import { IdentifierCard } from '@/features/source/identifier-card';
-import { IsbnCard, type IsbnSuggestion, type SuggestedCover } from '@/features/source/isbn-suggestion';
+import { IsbnCard } from '@/features/source/isbn-suggestion';
+import { filledDates, type SourceDraft, withDoiFill, withIsbnSuggestion } from '@/features/source/source-draft';
 import { SourceTypeIcon } from '@/features/source/source-type-icon';
 import { useOffline } from '@/lib/network';
 import { refreshLibrary } from '@/lib/refresh-library';
 import { useTRPC } from '@/lib/trpc';
-
-type TextValues = Partial<Record<SourceIdentifier | SourceTextField, string>>;
-
-export type SourceDraft = {
-  type: SourceType;
-  title: string;
-  author: string;
-  date: DateDraft;
-  bibliographicNote: string;
-  /** ISBN, DOI and the type-specific text fields, including the ones the current type hides. */
-  values: TextValues;
-  /** The type-specific Date fields, hidden ones included. */
-  dates: Record<SourceDateField, DateDraft>;
-  /** Open Library's cover accepted from ISBN ile öner; the Source gets a copy of it on save. */
-  suggestedCover?: SuggestedCover | null;
-};
-
-const draftDates = (stored: Partial<Record<SourceDateField, CalendarDate>>) =>
-  Object.fromEntries(sourceDateFields.map((key) => [key, dateToDraft(stored[key])])) as SourceDraft['dates'];
-
-export const emptyDraft: SourceDraft = {
-  type: 'book',
-  title: '',
-  author: '',
-  date: emptyDateDraft,
-  bibliographicNote: '',
-  values: {},
-  dates: draftDates({}),
-};
-
-type StoredSource = inferRouterOutputs<AppRouter>['sources']['get'];
-type DoiFill = NonNullable<inferRouterOutputs<AppRouter>['lookups']['doi']>;
-
-export function sourceToDraft(source: StoredSource): SourceDraft {
-  const textFields = Object.fromEntries(Object.entries(source.fields).filter(([key]) => !isSourceDateField(key)));
-  return {
-    type: source.type,
-    title: source.title,
-    author: source.author ?? '',
-    date: dateToDraft(source.date),
-    bibliographicNote: source.bibliographicNote ?? '',
-    values: { ...textFields, isbn: source.isbn ?? '', doi: source.doi ?? '' },
-    dates: draftDates(source.fields),
-  };
-}
-
-/**
- * DOI ile doldur: what Crossref gave replaces what the form held, the rest
- * stays. The Date comes Milâdî; the scholar may change its calendar after.
- * Whatever the scholar corrects is saved in their Source only.
- */
-function withDoiFill(draft: SourceDraft, { doi, title, author, date, fields }: DoiFill): SourceDraft {
-  return {
-    ...draft,
-    title: title ?? draft.title,
-    author: author ?? draft.author,
-    date: date ? dateToDraft(date) : draft.date,
-    values: { ...draft.values, ...fields, doi },
-  };
-}
-
-/**
- * ISBN ile öner, accepted: what Open Library gave replaces what the form
- * held, the rest stays, as with DOI ile doldur. The ISBN stays as typed.
- */
-function withIsbnSuggestion(
-  draft: SourceDraft,
-  { title, author, date, fields }: IsbnSuggestion,
-  suggestedCover: SuggestedCover | null,
-): SourceDraft {
-  return {
-    ...draft,
-    title: title ?? draft.title,
-    author: author ?? draft.author,
-    date: date ? dateToDraft(date) : draft.date,
-    values: { ...draft.values, ...fields },
-    suggestedCover: suggestedCover ?? draft.suggestedCover,
-  };
-}
-
-/** The Dates a draft's Date fields hold; a field still being typed holds none. */
-function filledDates(dates: SourceDraft['dates']): Partial<Record<SourceDateField, CalendarDate>> {
-  return Object.fromEntries(
-    sourceDateFields.flatMap((key) => {
-      const read = readDateDraft(dates[key]);
-      return read.date ? [[key, read.date]] : [];
-    }),
-  );
-}
 
 /** After a save: refresh wherever the Source shows and go back to where the form was opened. */
 export function useLeaveAfterSave() {
@@ -135,27 +44,6 @@ export function useLeaveAfterSave() {
     await refreshLibrary();
     if (router.canGoBack()) router.back();
     else router.replace('/sources');
-  };
-}
-
-/**
- * Every value the form holds, hidden ones included; a blank one empties its
- * field. A hidden Date field still being typed is left as it is stored.
- */
-export function draftToInput({ values, dates, date, suggestedCover: _, ...draft }: SourceDraft) {
-  const read = readDateDraft(date);
-  return {
-    ...draft,
-    isbn: values.isbn ?? '',
-    doi: values.doi ?? '',
-    date: read.problem ? undefined : read.date,
-    fields: Object.fromEntries(
-      sourceFields.flatMap((key): [SourceField, string | CalendarDate | null][] => {
-        if (!isSourceDateField(key)) return [[key, values[key] ?? '']];
-        const field = readDateDraft(dates[key]);
-        return field.problem ? [] : [[key, field.date]];
-      }),
-    ) as Partial<Record<SourceTextField, string> & Record<SourceDateField, CalendarDate | null>>,
   };
 }
 

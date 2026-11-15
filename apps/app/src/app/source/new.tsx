@@ -2,13 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { useGiveSuggestedCover } from '@/features/source/isbn-suggestion';
-import {
-  draftToInput,
-  emptyDraft,
-  type SourceDraft,
-  SourceForm,
-  useLeaveAfterSave,
-} from '@/features/source/source-form';
+import { draftToInput, emptyDraft, type SourceDraft } from '@/features/source/source-draft';
+import { SourceForm, useLeaveAfterSave } from '@/features/source/source-form';
 import { trpcClient } from '@/lib/trpc';
 
 /**
