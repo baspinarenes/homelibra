@@ -64,7 +64,7 @@ export function MoreMenu({
         <Ellipsis color={colors.ink2} size={18} strokeWidth={1.8} />
       </Pressable>
       <Modal visible={open} transparent onRequestClose={close}>
-        <Pressable aria-hidden onPress={close} className="absolute inset-0" />
+        <Pressable aria-hidden focusable={false} onPress={close} className="absolute inset-0" />
         <View
           role="menu"
           aria-label={label}

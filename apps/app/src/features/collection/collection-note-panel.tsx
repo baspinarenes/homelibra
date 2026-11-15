@@ -2,6 +2,7 @@ import { formatDate } from '@homelibra/core/date';
 import { NotePanel } from '@homelibra/ui/note-panel';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { copyNoteMarkdown } from '@/features/collection/collection-actions';
@@ -41,6 +42,11 @@ export function ViewNotePanel({
   const trpc = useTRPC();
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: focus.sourceId }));
   const { source, note } = focusedNote(view, focus, notes.data);
+  const gone = !notes.isPending && (!source || !note);
+  // The Note was deleted, or its Source left the view (Kaynak notları off): the panel closes, the list widens.
+  useEffect(() => {
+    if (gone) onClose();
+  }, [gone, onClose]);
   if (!source || !note) return null;
   const inView = new Set(view.groups.flatMap((group) => group.notes.map((n) => n.id)));
   const tags = notes.data?.find((n) => n.id === note.id)?.tags.map((tag) => tag.name) ?? [];
@@ -71,7 +77,7 @@ export function ViewNotePanel({
       onGo={go}
       onCopy={() =>
         copyNoteMarkdown(source, note, {
-          done: t('widePanel.noteCopied'),
+          done: t('collectionActions.copied', { count: 1 }),
           failed: t('collectionActions.copyFailed'),
         })
       }

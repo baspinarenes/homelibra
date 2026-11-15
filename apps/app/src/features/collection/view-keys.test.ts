@@ -21,9 +21,14 @@ const press = (key: keyof typeof keys | 'Escape', state: ViewKeyState) =>
   viewAction(key === 'Escape' ? (state.panelOpen ? 'closePanel' : 'back') : keys[key], state);
 
 describe('viewAction', () => {
-  it('↑↓ move through the rows, panel open or not', () => {
-    expect(press('ArrowDown', idle)).toBe('next');
+  it('↑↓ move the panel through the rows', () => {
+    expect(press('ArrowDown', open)).toBe('next');
     expect(press('ArrowUp', open)).toBe('previous');
+  });
+
+  it('↑↓ with the panel closed leave the page to scroll as the browser scrolls it', () => {
+    expect(press('ArrowDown', idle)).toBeNull();
+    expect(press('ArrowUp', idle)).toBeNull();
   });
 
   it('⌘C copies the Note the panel shows; with no panel it leaves the key to the browser', () => {

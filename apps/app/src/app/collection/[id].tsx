@@ -134,7 +134,10 @@ function CollectionPage({ collection }: { collection: Collection }) {
         if (!focus) return false;
         const { source, note } = focusedNote(collection, focus, sourceNotes(focus.sourceId));
         if (!source || !note) return false;
-        copyNoteMarkdown(source, note, { done: t('widePanel.noteCopied'), failed: t('collectionActions.copyFailed') });
+        copyNoteMarkdown(source, note, {
+          done: t('collectionActions.copied', { count: 1 }),
+          failed: t('collectionActions.copyFailed'),
+        });
         return true;
       }
       case 'copyAll':

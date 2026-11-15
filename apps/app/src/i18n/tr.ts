@@ -711,7 +711,6 @@ export const tr = {
     notInView: 'bu dosyada değil',
     withComment: '+ yorum',
     more: 'Diğer',
-    noteCopied: 'Kopyalandı · not',
     // Along the list's foot, after each key: "↑↓ not", "⌘C notu"…
     hintRows: 'not',
     hintCopyNote: 'notu',
