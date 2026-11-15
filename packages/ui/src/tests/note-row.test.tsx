@@ -118,4 +118,12 @@ describe('NoteRow', () => {
     expect(classes(shown)).toContain('bg-accent-soft');
     expect(classes(shown)).not.toContain('border-transparent');
   });
+
+  it("lights a Note just saved for a moment, on the accent's ground but not framed as the one shown", () => {
+    const lit = byRole(row({ flash: true }), 'button')[0]!;
+    expect(classes(lit)).toContain('bg-accent-soft');
+    expect(classes(lit)).toContain('border-transparent');
+    expect(lit.attrs['aria-current']).toBeUndefined();
+    expect(classes(byRole(row(), 'button')[0]!)).not.toContain('bg-accent-soft');
+  });
 });

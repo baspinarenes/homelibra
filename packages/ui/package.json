@@ -34,7 +34,8 @@
     "./panel": "./src/panel.ts",
     "./note-panel": "./src/note-panel.ts",
     "./menu": "./src/menu.ts",
-    "./note-editor": "./src/note-editor.ts"
+    "./note-editor": "./src/note-editor.ts",
+    "./note-writer": "./src/note-writer.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

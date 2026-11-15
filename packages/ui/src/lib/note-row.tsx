@@ -25,6 +25,8 @@ type Props = {
   meta?: string;
   /** The Note the panel shows. */
   selected?: boolean;
+  /** A Note just saved, lit for a moment where it landed in the list. */
+  flash?: boolean;
   /** A line above it, parting it from the Note before it under the same Source. */
   divided?: boolean;
   onPress: () => void;
@@ -45,8 +47,9 @@ type Props = {
  * where it is from) under them; in
  * `compact` one line of the Excerpt, or of the Comment when there is no
  * Excerpt, + yorum marked when the search matched the Comment hidden
- * behind it. The row the panel shows is framed in the accent; a row under
- * the pointer takes the chip's ground.
+ * behind it. The row the panel shows is framed in the accent; a Note just
+ * saved takes the accent's ground for a moment; a row under the pointer
+ * takes the chip's ground.
  */
 export function NoteRow({
   density,
@@ -57,6 +60,7 @@ export function NoteRow({
   why,
   meta,
   selected = false,
+  flash = false,
   divided = false,
   onPress,
   hint,
@@ -68,9 +72,11 @@ export function NoteRow({
   // Both states have a 2px frame, so choosing a row never moves the rows under it.
   const frame = selected
     ? 'border-2 border-accent bg-accent-soft'
-    : hovered
-      ? 'border-2 border-transparent bg-chip-bg'
-      : 'border-2 border-transparent';
+    : flash
+      ? 'border-2 border-transparent bg-accent-soft'
+      : hovered
+        ? 'border-2 border-transparent bg-chip-bg'
+        : 'border-2 border-transparent';
   return (
     <View className={cx(divided && 'border-t border-line-soft')}>
       <Pressable
