@@ -1,4 +1,10 @@
-import { collectionToMarkdown, type MarkdownCollection } from '@homelibra/core/markdown';
+import {
+  collectionToMarkdown,
+  type MarkdownCollection,
+  type MarkdownNote,
+  type MarkdownSource,
+  sourceToMarkdown,
+} from '@homelibra/core/markdown';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
@@ -16,14 +22,14 @@ import { offerServerUndo, offerUndo } from '@/lib/undo';
 const COPIED_MS = 2000;
 
 /**
- * "Markdown olarak kopyala" in a Collection's header (#12): the Notes the
- * screen shows, in its order, in the one format, no options and no preview.
- * The text is made here from what is on screen and goes to the clipboard
- * within the tap (#7: the web allows it only then), then "Kopyalandı · n
- * not" and a tick for a moment. Faded when there is nothing to copy. The
- * server only counts the copy, on the side, unawaited.
+ * "Markdown olarak kopyala" (#12): the Notes the screen shows, in its
+ * order, in the one format, no options and no preview. The text is made
+ * here from what is on screen and goes to the clipboard within the press or
+ * the key (#7: the web allows it only then), then "Kopyalandı · n not".
+ * The server only counts the copy, on the side, unawaited. `done` is true
+ * for a moment after a copy; `count` is how many Notes it copies.
  */
-export function CopyMarkdownAction({ view }: { view: MarkdownCollection }) {
+export function useCopyMarkdown(view: MarkdownCollection) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const copied = useMutation(trpc.collections.copied.mutationOptions());
@@ -46,7 +52,25 @@ export function CopyMarkdownAction({ view }: { view: MarkdownCollection }) {
       () => offerUndo({ message: t('collectionActions.copyFailed') }),
     );
   };
+  return { copy, done, count };
+}
 
+/** Kopyala ⌘C in a wide screen's panel: the one Note, under its Source's line, as Markdown. */
+export function copyNoteMarkdown(
+  source: MarkdownSource,
+  note: MarkdownNote,
+  messages: { done: string; failed: string },
+) {
+  Clipboard.setStringAsync(sourceToMarkdown(source, [note])).then(
+    () => offerUndo({ message: messages.done }),
+    () => offerUndo({ message: messages.failed }),
+  );
+}
+
+/** The copy in a Collection's header on the phone: a tick for a moment after it, faded when there is nothing to copy. */
+export function CopyMarkdownAction({ view }: { view: MarkdownCollection }) {
+  const { t } = useTranslation();
+  const { copy, done, count } = useCopyMarkdown(view);
   return (
     <HeaderIconAction
       icon={done ? Check : Copy}
@@ -58,12 +82,11 @@ export function CopyMarkdownAction({ view }: { view: MarkdownCollection }) {
 }
 
 /**
- * "Dosyayı sil" in a Collection's header: without asking, with Geri al
- * (#36). Notes and Tags stay; Geri al also brings back a Tag only this
- * Collection kept. The scholar goes back to Dizin, where the Geri al bar
- * shows.
+ * "Dosyayı sil": without asking, with Geri al (#36). Notes and Tags stay;
+ * Geri al also brings back a Tag only this Collection kept. The scholar
+ * goes back to Dizin, where the Geri al bar shows.
  */
-export function DeleteCollectionAction({ collection }: { collection: { id: string; name: string } }) {
+export function useDeleteCollection(collection: { id: string; name: string }) {
   const { t } = useTranslation();
   const router = useRouter();
   const trpc = useTRPC();
@@ -83,14 +106,20 @@ export function DeleteCollectionAction({ collection }: { collection: { id: strin
       onError: () => offerUndo({ message: t('collectionActions.deleteFailed') }),
     }),
   );
+  return { remove: () => remove.mutate({ id: collection.id }), busy: remove.isPending };
+}
 
+/** "Dosyayı sil" in a Collection's header on the phone. */
+export function DeleteCollectionAction({ collection }: { collection: { id: string; name: string } }) {
+  const { t } = useTranslation();
+  const { remove, busy } = useDeleteCollection(collection);
   return (
     <HeaderIconAction
       icon={Trash}
       tone="danger"
       label={t('collectionActions.delete')}
-      onPress={() => remove.mutate({ id: collection.id })}
-      disabled={remove.isPending}
+      onPress={remove}
+      disabled={busy}
     />
   );
 }
