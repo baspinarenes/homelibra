@@ -59,6 +59,7 @@ describe('lostNotes', () => {
 
   it('lets a Note go once it is deleted, down to none', async () => {
     const outbox = await withLostNotes();
+    expect(lostNotes(outbox.state(), []).map((note) => note.id)).toEqual([N1, N2]);
     await outbox.apply({ type: 'deleteNote', id: N1 });
     expect(lostNotes(outbox.state(), []).map((note) => note.id)).toEqual([N2]);
     await outbox.apply({ type: 'deleteNote', id: N2 });
