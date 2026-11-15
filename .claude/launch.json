@@ -4,8 +4,8 @@
     {
       "name": "dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "runtimeArgs": ["run", "dev:web"],
+      "port": 8081
     },
     {
       "name": "refactor-api",
