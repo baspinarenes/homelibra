@@ -5,7 +5,7 @@
 > "Çıkarım" diye işaretlenen cümleler kaynağın söylediği değil, kaynaktan bu belgede varılan
 > sonuçtur. Karar vermeden önce bir hukukçuya doğrulatılmalıdır.
 
-Tarih: 2026-11-15 · Önceki çalışmalar: `docs/research/kvkk-obligations.md` (2026-10-29),
+Tarih: 2026-11-15 · Ticket: baspinarenes/homelibra#31 · Önceki çalışmalar: `docs/research/kvkk-obligations.md` (2026-10-29),
 `docs/research/kvkk-hosting-providers.md` (2026-10-29)
 
 ## Soru
@@ -536,6 +536,47 @@ Kaynakların **söylemedikleri** (belirsiz):
 - Islak imzalı aslın fiziken gönderilmesinin gerekip gerekmediği: modül taranmış PDF kabul ediyor;
   aslın saklanması veya ibrazı hakkında hüküm okunmadı.
 
+## Sonuç (bilgi, görüş değil)
+
+**(i) Aydınlatma veya rıza ceza riskini kaldırır mı?** Hayır. m.9, 1/9/2024'ten beri sürekli
+aktarım için yalnızca yeterlilik kararını (yok) veya uygun güvenceyi (pratikte imzalanıp
+bildirilmiş standart sözleşme) tanıyor; açık rıza ve "sözleşmenin ifası" Kanun'un kendi
+ifadesiyle "arızi olmak kaydıyla sadece" geçerli [1][2][6]. Aydınlatma metninde sağlayıcıları ve
+ülkeleri saymak m.10'u karşılar, m.9'u karşılamaz; Kurul eski rejimde bile gizlilik bildirimindeki
+aktarım açıklamasını aktarımın kanıtı olarak kullandı [26]. Metni silmek de çözüm değildir, çünkü
+bu kez m.10 aykırılığı eklenir.
+
+**(ii) Gerçekçi ceza aralığı ve tetikleyiciler.** Güvencesiz aktarımı yaptırıma bağlayan
+yayımlanmış kararların hepsinde m.12/1 → m.18/1-b uygulanmıştır [26][27][28][29][31]; bu bendin 2026 aralığı
+256.357–17.092.242 TL'dir [12]. m.18/1-d (90.308–1.806.177 TL) yalnızca imzalanmış bir sözleşmenin
+bildirilmemesi içindir. Bu, 7499 sonrası için bir **çıkarımdır**: değişik m.9'u güvencesiz
+barındırmaya uygulayan yayımlanmış bir karar bulunamadı; 2025'te Kurum 105 "hukuka aykırı yurt dışı
+aktarım" başvurusu aldı ve standart sözleşme bildirimlerinden yalnızca üç ceza (toplam 150.000 TL)
+çıktı [13]. Yayımlanmış aktarım cezalarının muhataplarının hepsi şirkettir ve dosyalar bir
+şikâyet, ihbar, başka bir konudaki şikâyetin savunmasında aktarımın ortaya çıkması veya resen
+inceleme ile başlamıştır [26][27][28][29][30][31]; 2025'te cezaların kaynağı ihbar/şikâyet (140),
+veri ihlali bildirimi (142) ve VERBİS (594) idi [13]. **Çıkarım:** VERBİS'ten muaf, onlarca
+kullanıcılı bir beta için fiilî tetikleyiciler bir kullanıcının veya üçüncü kişinin şikâyeti/ihbarı
+ile bir veri ihlali bildirimidir; gerçek kişi olmak cezayı engellemez, yalnızca miktarı alt sınıra
+yaklaştırabilir (ekonomik durum ölçütü, süresinde ödemede %25 indirim, taksit) [3][35][36]. Kurul
+cezayı ve düzeltme talimatını genellikle aynı kararda verir [28][31].
+
+**(iii) Riski gerçekten kaldıran seçenekler.** Kaynaklara göre yalnızca şunlar:
+
+- Kişisel veriyi Türkiye'de barındırmak (o veri için m.9 devreye girmez); yurt dışında kalan her
+  araç (e-posta, hata izleme, OTA) ayrıca değerlendirilir.
+- Yurt dışındaki her veri işleyenle Kurul'un SS-2 metnini değiştirmeden, Türkçe metin üzerinde
+  imzalamak ve imzaların tamamlanmasından itibaren beş iş günü içinde bildirmek [2][8].
+- Bir yurt dışı aracı kaldırmak veya ona hiç kişisel veri göndermemek (**çıkarım**: kişisel veri
+  yoksa aktarım da yoktur; IP adresi gibi sınır durumlar belirsiz).
+- Taahhütname + Kurul izni (m.9/4-ç): mümkün ama 2025'te 90 başvurunun 13'üne izin verildi [13].
+- Yeterlilik kararı: bugün hiçbir ülke için yok [7].
+
+Riski **kaldırmayanlar**: aydınlatma metnine uyarı eklemek, kayıt ekranında aktarım rızası almak,
+"veri cihazdan doğrudan gidiyor" savunması (Rehber'de dayanağı yok) ve veri sorumlusunu yurt
+dışında kurulu bir şirkete taşımak (veri işleyene iletim yine aktarımdır; üstüne istisnasız VERBİS
+kaydı ve temsilci atama yükümlülüğü gelir) [5][6][15].
+
 ## Açık sorular
 
 1. Kurul, 7499 sonrası rejimde "hiç güvence yok" durumuna m.12/1 → m.18/1-b'yi uygulamayı
@@ -682,44 +723,3 @@ Resmî Gazete:
 44. TBMM, Sıra Sayısı 259 (2/3560, Bazı Kanunlarda Değişiklik Yapılmasına Dair Kanun Teklifi; 6698'e
     değinmediği görüldü):
     https://cdn.tbmm.gov.tr/KKBSPublicFile/D28/Y4/T2/DosyaKomisyonRaporunuVerdi/a25edce8-fb1b-44d2-876f-ac639732b44f.pdf
-
-## Sonuç (bilgi, görüş değil)
-
-**(i) Aydınlatma veya rıza ceza riskini kaldırır mı?** Hayır. m.9, 1/9/2024'ten beri sürekli
-aktarım için yalnızca yeterlilik kararını (yok) veya uygun güvenceyi (pratikte imzalanıp
-bildirilmiş standart sözleşme) tanıyor; açık rıza ve "sözleşmenin ifası" Kanun'un kendi
-ifadesiyle "arızi olmak kaydıyla sadece" geçerli [1][2][6]. Aydınlatma metninde sağlayıcıları ve
-ülkeleri saymak m.10'u karşılar, m.9'u karşılamaz; Kurul eski rejimde bile gizlilik bildirimindeki
-aktarım açıklamasını aktarımın kanıtı olarak kullandı [26]. Metni silmek de çözüm değildir, çünkü
-bu kez m.10 aykırılığı eklenir.
-
-**(ii) Gerçekçi ceza aralığı ve tetikleyiciler.** Güvencesiz aktarımı yaptırıma bağlayan
-yayımlanmış kararların hepsinde m.12/1 → m.18/1-b uygulanmıştır [26][27][28][29][31]; bu bendin 2026 aralığı
-256.357–17.092.242 TL'dir [12]. m.18/1-d (90.308–1.806.177 TL) yalnızca imzalanmış bir sözleşmenin
-bildirilmemesi içindir. Bu, 7499 sonrası için bir **çıkarımdır**: değişik m.9'u güvencesiz
-barındırmaya uygulayan yayımlanmış bir karar bulunamadı; 2025'te Kurum 105 "hukuka aykırı yurt dışı
-aktarım" başvurusu aldı ve standart sözleşme bildirimlerinden yalnızca üç ceza (toplam 150.000 TL)
-çıktı [13]. Yayımlanmış aktarım cezalarının muhataplarının hepsi şirkettir ve dosyalar bir
-şikâyet, ihbar, başka bir konudaki şikâyetin savunmasında aktarımın ortaya çıkması veya resen
-inceleme ile başlamıştır [26][27][28][29][30][31]; 2025'te cezaların kaynağı ihbar/şikâyet (140),
-veri ihlali bildirimi (142) ve VERBİS (594) idi [13]. **Çıkarım:** VERBİS'ten muaf, onlarca
-kullanıcılı bir beta için fiilî tetikleyiciler bir kullanıcının veya üçüncü kişinin şikâyeti/ihbarı
-ile bir veri ihlali bildirimidir; gerçek kişi olmak cezayı engellemez, yalnızca miktarı alt sınıra
-yaklaştırabilir (ekonomik durum ölçütü, süresinde ödemede %25 indirim, taksit) [3][35][36]. Kurul
-cezayı ve düzeltme talimatını genellikle aynı kararda verir [28][31].
-
-**(iii) Riski gerçekten kaldıran seçenekler.** Kaynaklara göre yalnızca şunlar:
-
-- Kişisel veriyi Türkiye'de barındırmak (o veri için m.9 devreye girmez); yurt dışında kalan her
-  araç (e-posta, hata izleme, OTA) ayrıca değerlendirilir.
-- Yurt dışındaki her veri işleyenle Kurul'un SS-2 metnini değiştirmeden, Türkçe metin üzerinde
-  imzalamak ve imzaların tamamlanmasından itibaren beş iş günü içinde bildirmek [2][8].
-- Bir yurt dışı aracı kaldırmak veya ona hiç kişisel veri göndermemek (**çıkarım**: kişisel veri
-  yoksa aktarım da yoktur; IP adresi gibi sınır durumlar belirsiz).
-- Taahhütname + Kurul izni (m.9/4-ç): mümkün ama 2025'te 90 başvurunun 13'üne izin verildi [13].
-- Yeterlilik kararı: bugün hiçbir ülke için yok [7].
-
-Riski **kaldırmayanlar**: aydınlatma metnine uyarı eklemek, kayıt ekranında aktarım rızası almak,
-"veri cihazdan doğrudan gidiyor" savunması (Rehber'de dayanağı yok) ve veri sorumlusunu yurt
-dışında kurulu bir şirkete taşımak (veri işleyene iletim yine aktarımdır; üstüne istisnasız VERBİS
-kaydı ve temsilci atama yükümlülüğü gelir) [5][6][15].

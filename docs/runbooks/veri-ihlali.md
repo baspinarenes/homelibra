@@ -23,7 +23,7 @@ Homelibra'da akla gelen örnekler:
 - Bir Account'un başka bir Account'un Library'sini görebilmesi (yetkilendirme hatası).
 - Bir e-postanın yanlış adrese gitmesi; giriş kodunun başkasına ulaşması.
 - İşleticinin dizüstü bilgisayarının ya da `.env` dosyasının çalınması, kaybolması.
-- Bir sağlayıcının (Hetzner, Resend, Sentry, Expo, Cloudflare, Google) kendi ihlalini bildirmesi.
+- Bir sağlayıcının (Hetzner, Resend, Sentry, Expo, Cloudflare) kendi ihlalini bildirmesi.
 - Yedekten geri dönülemeyen veri kaybı.
 
 Emin değilsen ihlal say ve saati başlat; yanlış alarm kaydı düşmek bildirimi kaçırmaktan ucuzdur.
@@ -53,8 +53,8 @@ Kanıtı silmeden sızıntıyı kes. Duruma göre:
 - **Sunucu ya da panel erişimi:** SSH anahtarını ve Coolify parolasını değiştir; Coolify API
   token'ını (`COOLIFY_TOKEN`) iptal et; Hetzner Cloud Console'da güvenlik duvarını daralt.
   Sunucuyu silme: disk, incelemenin kanıtıdır. Gerekirse snapshot al, sonra yeniden kur.
-- **Sızan bir anahtar:** ilgili sağlayıcıda iptal edip yenisini üret, Coolify ortam
-  değişkenlerine yaz, yeniden dağıt. Sırlar: `BETTER_AUTH_SECRET`, `BACKUP_S3_*`, `COVERS_S3_*`,
+- **Sızan bir anahtar:** ilgili sağlayıcıda iptal edip yenisini üret, Coolify'da kullanıldığı yere
+  (ortam değişkenleri; yedek anahtarı için S3 depolama ayarı) yaz, yeniden dağıt. Sırlar: `BETTER_AUTH_SECRET`, `BACKUP_S3_*`, `COVERS_S3_*`,
   `RESEND_API_KEY`, `SENTRY_AUTH_TOKEN`, `GOOGLE_CLIENT_SECRET`, veritabanı parolaları, EAS ve
   GitHub token'ları. Hetzner Object Storage anahtarı projedeki **bütün** bucket'lara erişir
   (yedekler dahil); biri sızdıysa hepsi sızmış sayılır.
@@ -123,11 +123,12 @@ incelemesine hazır tutulur. Kayıt, yanlış alarm olsa bile silinmez.
 
 | Kategori | İçerik | Nerede durur |
 |---|---|---|
-| Hesap | E-posta adresi, koşulları kabul anı | PostgreSQL (Hetzner sunucu) ve günlük yedekler (Hetzner Object Storage, 14 gün) |
+| Hesap | E-posta adresi, koşulları kabul anı; Google ile girenlerde ayrıca ad, profil görseli, Google hesap kimliği ve Google'ın verdiği token'lar | PostgreSQL (Hetzner sunucu) ve günlük yedekler (sunucuda ve Hetzner Object Storage'da, 14 gün) |
 | Oturum | IP adresi, cihaz/tarayıcı bilgisi | PostgreSQL ve yedekler |
 | Library | Source, Note, Excerpt, Comment, Tag, Collection | PostgreSQL ve yedekler |
 | Kapaklar | Kapak görselleri | Hetzner Object Storage (yedeksiz, ADR-0011) |
 | Davet listesi | Davet edilenlerin e-posta adresleri | PostgreSQL ve yedekler |
+| Bekleyen kodlar | Giriş, e-posta değiştirme ve hesap silme kodları (10 dakika geçerli) | PostgreSQL ve yedekler |
 | Giriş ve hesap e-postaları | E-posta adresi, tek kullanımlık kod | Resend (gönderim kayıtları) |
 | Hata ve performans kayıtları | Cihaz bilgisi, hata bağlamı; Library içeriği kesilir | Sentry |
 | Güncelleme istekleri | IP adresi, cihaz bilgisi | Expo |
