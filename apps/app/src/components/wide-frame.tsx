@@ -141,7 +141,7 @@ export function WideFrame({ library, children }: { library: boolean; children: R
           </SidebarShown>
         </UnsavedWork>
       </PageWritings>
-      {framed && searching && <FrameQuickSearch onClose={() => setSearching(false)} />}
+      {framed && searching && <FrameQuickSearch leave={unsaved.leave} onClose={() => setSearching(false)} />}
     </Panels>
   );
 }
@@ -237,11 +237,10 @@ const tabHref = {
 } as const satisfies Record<SidebarPlace, Href>;
 
 /** The quick search window; "Ara'da tüm sonuçlar" opens Ara with the query, as the sidebar goes to a place. */
-function FrameQuickSearch({ onClose }: { onClose: () => void }) {
+function FrameQuickSearch({ leave, onClose }: { leave: (leave: () => void) => void; onClose: () => void }) {
   const router = useRouter();
   const { place } = sidebarPlace(usePathname());
   const segments = useSegments();
-  const leave = useLeave();
   return (
     <QuickSearchWindow
       onClose={onClose}
