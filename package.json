@@ -23,6 +23,7 @@
     "e2e": "scripts/e2e.sh",
     "db:up": "docker compose up -d --build postgres",
     "db:migrate": "pnpm --filter @homelibra/api db:migrate",
+    "db:prod": "scripts/db-prod.sh",
     "db:generate": "pnpm --filter @homelibra/api db:generate",
     "invite": "pnpm --filter @homelibra/api invite",
     "usage": "pnpm --filter @homelibra/api usage",

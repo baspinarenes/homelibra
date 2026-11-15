@@ -41,6 +41,7 @@ The dev build is its own app, "Homelibra Dev" (`app.homelibra.dev`, scheme `home
 | `pnpm test:api` | API integration tests (needs `pnpm db:up`) |
 | `pnpm db:up` / `pnpm db:migrate` | start Postgres / apply migrations |
 | `pnpm db:generate` | write a migration from `apps/api/src/db/schema.ts` |
+| `pnpm db:prod` | psql on production as a read-only role, over SSH; `--setup` creates the role or refreshes it after a migration ([ADR-0015](docs/adr/0015-production-is-read-through-a-read-only-role-over-ssh.md)) |
 | `pnpm invite add <email>` | invite an address to the closed beta, locally |
 | `pnpm gen component <area> <name>` | a new component in `apps/app/src/features/<area>` ([apps/app/README.md](apps/app/README.md)); `pnpm gen ui <name>` for `@homelibra/ui` |
 | `pnpm gen:theme` | regenerate the Tailwind theme after changing `packages/ui/src/lib/tokens.ts` |
