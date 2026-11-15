@@ -208,6 +208,7 @@ function TagPage({
   ];
 
   // The wide head (R4-Tag): back to Dizin's Etiketler, and the magnifier, Dosya yap and ⋯ beside it.
+  // While searching the field stands in the crumb's place and Dosya yap waits: the open search holds the page.
   const menuItems: MenuItem[] = [
     { label: t('collectionActions.copy'), keys: '⌘⇧C', onPress: copyAll.copy, disabled: copyAll.count === 0 },
   ];
@@ -216,7 +217,14 @@ function TagPage({
       {!searching && (
         <HeaderIconAction icon={Search} label={t('noteSearch.inView')} onPress={() => setSearching(true)} />
       )}
-      <Button label={t('collection.saveAsCollection')} variant="small" onPress={makeCollection} busy={save.isPending} />
+      {!searching && (
+        <Button
+          label={t('collection.saveAsCollection')}
+          variant="small"
+          onPress={makeCollection}
+          busy={save.isPending}
+        />
+      )}
       <MoreMenu label={t('widePanel.more')} items={menuItems} open={menuOpen} onOpenChange={setMenuOpen} />
     </View>
   );
@@ -235,18 +243,23 @@ function TagPage({
   const wideBar = (
     <>
       <View className="flex-row items-center gap-sm">
-        {crumb}
+        {searching ? (
+          <View className="min-w-0 flex-1">
+            <SearchField
+              value={search.text}
+              onChange={search.setText}
+              placeholder={t('noteSearch.inView')}
+              autoFocus
+              onClose={closeSearch}
+            />
+          </View>
+        ) : (
+          crumb
+        )}
         {actions}
       </View>
       {searching ? (
         <>
-          <SearchField
-            value={search.text}
-            onChange={search.setText}
-            placeholder={t('noteSearch.inView')}
-            autoFocus
-            onClose={closeSearch}
-          />
           <Text variant="sourceTitleSm" numberOfLines={1}>
             {tag.name}
           </Text>
