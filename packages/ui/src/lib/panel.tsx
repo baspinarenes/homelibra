@@ -41,8 +41,9 @@ export function PanelLayout({
 /**
  * The panel itself, on the surface's ground: `head` along its top (what it
  * shows), `actions` after it, then the ✕ that closes it; under them its
- * content, scrolling on its own. Screen readers find it as a region named
- * `label`.
+ * content, scrolling on its own, and a form's `foot` (Vazgeç, Kaydet ⌘↵)
+ * under that, on a rule, always in sight. Screen readers find it as a
+ * region named `label`.
  */
 export function Panel({
   label,
@@ -50,11 +51,13 @@ export function Panel({
   actions,
   onClose,
   closeLabel,
+  foot,
   children,
 }: {
   label: string;
   head: ReactNode;
   actions?: ReactNode;
+  foot?: ReactNode;
   onClose: () => void;
   closeLabel: string;
   children: ReactNode;
@@ -80,6 +83,7 @@ export function Panel({
       <ScrollView className="flex-1" contentContainerClassName="pb-xxl">
         {children}
       </ScrollView>
+      {foot && <View className="border-t border-line px-xl py-md">{foot}</View>}
     </View>
   );
 }

@@ -67,6 +67,25 @@ describe('Panel', () => {
     );
     expect(text(page)).toBe('Kitap4 / 5Ayrıntı');
   });
+
+  it('keeps a form’s foot under what scrolls, on a rule (#181)', () => {
+    const page = render(
+      <Panel
+        label="Yeni dosya"
+        closeLabel="Paneli kapat"
+        onClose={noop}
+        head={<Text variant="body">Yeni dosya</Text>}
+        foot={<Text variant="body">Kaydet</Text>}
+      >
+        <Text variant="body">Ad</Text>
+      </Panel>,
+    );
+    expect(text(page)).toBe('Yeni dosyaAdKaydet');
+    const foot = all(page).find((node) =>
+      node.children.some((child) => typeof child !== 'string' && child.children.includes('Kaydet')),
+    )!;
+    expect(classes(foot)).toContain('border-t');
+  });
 });
 
 describe('KeyHints', () => {
