@@ -14,7 +14,7 @@ Under KVKK article 9 (as amended in 2024), keeping Turkish users' personal data 
 
 ## Consequences
 
-- The providers that receive personal data are: Hetzner (server and backups, Germany), Resend (sign-in and account emails), Sentry (error and performance monitoring), Expo (EAS Update requests), Cloudflare (Email Routing for mail sent to the contact address). Google sign-in is the scholar's own relationship with Google; we only verify the token it returns. GitHub and GHCR receive code, not personal data.
+- The providers that receive personal data are: Hetzner (server and backups, Germany), Resend (sign-in and account emails), Sentry (error and performance records), Expo (EAS Update requests), Cloudflare (Email Routing for mail sent to the contact address). Google sign-in is the scholar's own relationship with Google; we only verify the token it returns. GitHub and GHCR receive code, not personal data.
 - Everything else from the KVKK research still applies and is not deferred: the privacy notice at sign-up names every recipient above and says the data is kept abroad, deletion completes within 30 days including backups, and breaches are reported within 72 hours (a draft plan is in `docs/runbooks/veri-ihlali.md`; the Operator has not approved it yet).
 - Before the app is submitted to a store the risk is reviewed against the checklist in baspinarenes/homelibra#31: for each provider, either a signed and notified SS-2, or a move to a Turkish alternative.
 - Adding any new provider that receives personal data adds a line to that checklist and to the privacy notice.
