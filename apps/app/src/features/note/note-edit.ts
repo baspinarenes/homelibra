@@ -35,19 +35,15 @@ export function useEditedNote(id: string): {
     // fetched.data is in the cache knownNotes reads: when it comes, look again.
     [id, state.pending, fetched.data, deletedElsewhere],
   );
-  const shown = useRef(note);
-  if (note) shown.current = note;
+  const kept = useRef(note);
+  if (note) kept.current = note;
+  // Only this Note's last sight: a new `id` never shows the one before.
+  const shown = kept.current?.id === id ? kept.current : null;
   return {
-    note: shown.current,
+    note: shown,
     sourceGone: state.status.get(id) === 'sourceGone',
     refused: state.status.get(id) === 'refused',
-    unavailable: shown.current
-      ? null
-      : fetched.isError
-        ? 'failed'
-        : fetched.fetchStatus === 'paused'
-          ? 'offline'
-          : 'loading',
+    unavailable: shown ? null : fetched.isError ? 'failed' : fetched.fetchStatus === 'paused' ? 'offline' : 'loading',
   };
 }
 
