@@ -24,7 +24,8 @@
     "./strip": "./src/strip.ts",
     "./logo": "./src/logo.ts",
     "./wheels": "./src/wheels.ts",
-    "./illustration": "./src/illustration.ts"
+    "./illustration": "./src/illustration.ts",
+    "./wide-layout": "./src/wide-layout.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
