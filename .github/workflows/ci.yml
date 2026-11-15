@@ -21,6 +21,17 @@ jobs:
           go-version-file: tools/dev/go.mod
           cache-dependency-path: tools/dev/go.sum
       - run: pnpm install --frozen-lockfile
+      # The app's native dependencies stay on the versions the installed expo
+      # expects, with no duplicate native modules. EXPO_OFFLINE checks them
+      # against expo's own bundledNativeModules.json, which the lockfile pins,
+      # not Expo's live list: a new SDK patch upstream does not turn every PR
+      # and main's deploys red. Run `npx expo install --check` to see upstream
+      # patches. expo-doctor is pinned for the same reason; raise it by hand.
+      - name: expo-doctor
+        working-directory: apps/app
+        env:
+          EXPO_OFFLINE: '1'
+        run: npx --yes expo-doctor@1.21.8
       # The same command as on a laptop, so the two cannot drift: the theme
       # is fresh, types, boundaries, lint, unit tests, script tests, dev CLI.
       - run: pnpm check
