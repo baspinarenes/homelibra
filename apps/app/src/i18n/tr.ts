@@ -41,6 +41,20 @@ export const tr = {
     tagsEmptyTitle: 'Henüz etiketin yok',
     tagsEmptyLead: 'Bir nota ya da kaynağa “+ etiket” ile ekleyebilirsin.',
   },
+  // A wide Dizin (#181): Dosyalar and Etiketler side by side, each with its own order.
+  wideDizin: {
+    sortCollections: 'Dosyaları sırala: {{sort}}',
+    sortTags: 'Etiketleri sırala: {{sort}}',
+    emptyLead: 'Bir yazının etiketlerini bir araya getirmek için “Yeni dosya” ile bir dosya aç.',
+  },
+  // Yeni dosya in the panel beside a wide Dizin (#181).
+  newCollectionPanel: {
+    hintCancel: 'vazgeç',
+    hintSave: 'kaydet',
+    discard: 'Değişiklikler atılsın mı?',
+    keepEditing: 'Düzenlemeye dön',
+    discardConfirm: 'At',
+  },
   settings: {
     appearance: 'Görünüm',
     themeLabel: 'Tema',

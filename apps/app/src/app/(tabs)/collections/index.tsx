@@ -1,6 +1,7 @@
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Sheet, SheetChoices } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
@@ -11,6 +12,7 @@ import { View } from 'react-native';
 import { CollectionList, useCollections } from '@/features/collection/collection-list';
 import { TagList, useTags } from '@/features/tag/tag-list';
 import { type CollectionSort, type TagSort, useCollectionSort, useTagSort } from '@/features/collection/dizin-sort';
+import { WideDizin } from '@/features/collection/wide-dizin';
 
 type DizinView = 'collections' | 'tags';
 
@@ -19,7 +21,8 @@ type DizinView = 'collections' | 'tags';
  * has Sırala and, on Dosyalar, + for a Yeni dosya (#140). Etiketler lives
  * here, not in its own tab, because a Tag's page is already a temporary
  * Collection. The view is a search param, so a link can open Etiketler
- * directly; each view's order is kept on the device.
+ * directly; each view's order is kept on the device. On a wide screen
+ * (#181) the two stand side by side instead, each with its own order.
  */
 export default function DizinScreen() {
   const { t } = useTranslation();
@@ -48,6 +51,7 @@ export default function DizinScreen() {
       : collectionSorts.find((option) => option.value === collectionSort)?.label;
   const shown = view === 'tags' ? tags : collections;
   const sortable = !shown.isError && (shown.data?.length ?? 0) > 0;
+  const wide = useWideLayout().tier === 'wide';
 
   // A press is the whole answer: the order applies, is kept, and the sheet closes.
   const closingWith =
@@ -57,10 +61,23 @@ export default function DizinScreen() {
       keep(next);
     };
 
+  if (wide) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <WideDizin
+          collectionSort={{ value: collectionSort, options: collectionSorts, onChange: keepCollectionSort }}
+          tagSort={{ value: tagSort, options: tagSorts, onChange: keepTagSort }}
+        />
+      </>
+    );
+  }
+
   return (
     <View className="flex-1 bg-page">
       <Stack.Screen
         options={{
+          headerShown: true,
           headerRight: () => (
             <HeaderActions
               sort={
