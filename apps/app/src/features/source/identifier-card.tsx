@@ -63,3 +63,54 @@ export function IdentifierCard({
     </View>
   );
 }
+
+/**
+ * The identifier as a wide screen's Source form panel has it (#180): its
+ * name over the field like every other field, the field framed as they
+ * are, its action beside it and what came of asking below, no accent card.
+ */
+export function IdentifierField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  action,
+  hint,
+  alert = false,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  action: { label: string; icon: IconComponent; onPress: () => void; disabled: boolean; busy: boolean };
+  hint?: string | null;
+  alert?: boolean;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View className="gap-1.5">
+      <Text variant="fieldLabel">{label}</Text>
+      <View className="flex-row gap-sm">
+        <TextInput
+          aria-label={label}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.muted2}
+          autoCapitalize="none"
+          autoCorrect={false}
+          className="type-identifier min-h-11.5 min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 py-3 text-fg"
+          style={{ includeFontPadding: false, textAlignVertical: 'center' }}
+        />
+        <View className="justify-center">
+          <Button variant="small" {...action} />
+        </View>
+      </View>
+      {hint && (
+        <Text variant="caption" role={alert ? 'alert' : 'status'}>
+          {alert ? <Text variant="strong">{hint}</Text> : hint}
+        </Text>
+      )}
+    </View>
+  );
+}

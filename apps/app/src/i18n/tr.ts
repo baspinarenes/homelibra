@@ -509,6 +509,18 @@ export const tr = {
     saveFailed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     loadFailed: 'Kaynak yüklenemedi.',
   },
+  // The Source form in a wide screen's panel (#180).
+  sourcePanel: {
+    cover: 'Kapak',
+    isbnFrom: 'Open Library',
+    isbnCheck: 'Doğru kitap mı, kontrol et; aktardıktan sonra düzeltebilirsin.',
+    cancel: 'Vazgeç',
+    hintCancel: 'vazgeç',
+    hintSave: 'kaydet',
+    discard: 'Değişiklikler atılsın mı?',
+    keepEditing: 'Düzenlemeye dön',
+    discardConfirm: 'At',
+  },
   capture: {
     open: 'Not al',
     // `from` is the Locator with its ablative: "s. 52'den".
