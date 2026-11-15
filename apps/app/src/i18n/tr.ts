@@ -677,6 +677,8 @@ export const tr = {
     shortWords: '{{words}} 3 harften kısa, yalnızca tam kelime olarak aranır.',
     matchCount: '{{shown}} / {{count}} not',
     viewMatchCounts: '{{shown}} / {{notes}} not · {{sources}} kaynak',
+    // Beside a wide view's search box (#172): the Markdown copy of the Notes found, only them.
+    copyFound: 'Bulunanları kopyala',
     failed: 'Arama yapılamadı. Bağlantını kontrol edip yeniden dene.',
     kindLabel: 'Sonuçlar',
     all: 'Tümü',
@@ -730,6 +732,7 @@ export const tr = {
     hintRows: 'not',
     hintCopyNote: 'notu',
     hintCopyAll: 'dosyayı',
+    hintCopyFound: 'bulunanları',
     hintSearch: 'ara',
     hintClose: 'paneli kapat',
   },
