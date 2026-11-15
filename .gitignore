@@ -8,3 +8,5 @@ node_modules/
 .env.production
 .covers/
 .zvec-grep
+# The Play service account key `eas submit` uses (apps/app/eas.json)
+play-service-account.json
