@@ -46,9 +46,10 @@ describe('viewAction', () => {
     expect(press('e', idle)).toBeNull();
   });
 
-  it('/ opens the search of this view, once', () => {
+  it('/ opens the search of this view, and with it open puts the cursor back in its field', () => {
     expect(press('/', idle)).toBe('searchHere');
-    expect(press('/', { ...idle, searching: true })).toBeNull();
+    expect(press('/', { ...idle, searching: true })).toBe('searchHere');
+    expect(press('/', { ...open, searching: true })).toBe('searchHere');
   });
 
   it('Esc takes back one thing at a time: the renaming, then the panel, then the search', () => {
