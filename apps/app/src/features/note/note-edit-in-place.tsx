@@ -14,6 +14,7 @@ import { type EditEnd, useEditedNote, useNoteDraft } from '@/features/note/note-
 import { SourceChoice } from '@/features/source/source-picker';
 import { SourceTypeIcon } from '@/features/source/source-type-icon';
 import { TagEditor } from '@/features/tag/tag-picker';
+import { useUnsavedWork } from '@/components/wide-frame';
 
 /**
  * The Note `id` edited where it is open on a wide screen (#176, ADR-0012):
@@ -101,6 +102,8 @@ function EditForm({
   const [asking, setAsking] = useState(false);
   const putAway = () => onEnd(null);
 
+  // Changed, the edit holds Not al: its sidebar button puts nothing away unasked (#178).
+  useUnsavedWork(draft.changed);
   useShortcuts({ panelOpen: true, unsavedChanges: draft.changed, active }, (command) => {
     switch (noteEditAction(command, { choosing: choosing !== null, asking, canSave: draft.canSave })) {
       case 'save':

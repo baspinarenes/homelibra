@@ -36,6 +36,8 @@ const Capturing = createContext(false);
 // The writing of the page in front that writes on its own (a Source page), which takes Not al.
 type PageWriting = { current: (() => void) | null };
 const PageWritings = createContext<PageWriting | null>(null);
+// How many pieces of unsaved work stand in front (an edit in place, a form): Not al waits on them.
+const UnsavedWork = createContext<{ current: number } | null>(null);
 
 /**
  * The frame around every screen of the open Library (ADR-0012): in the wide
@@ -57,6 +59,13 @@ export function WideFrame({ library, children }: { library: boolean; children: R
   const [focusAsk, setFocusAsk] = useState(0);
   const capture = useWideCapture();
   const [pageWriting] = useState<PageWriting>(() => ({ current: null }));
+  const [unsaved] = useState(() => ({ current: 0 }));
+  // A Library closed (signed out) takes its half-written Note with it.
+  const [open, setOpen] = useState(library);
+  if (open !== library) {
+    setOpen(library);
+    if (!library) capture.reset();
+  }
   const { sidebar } = useWideLayout({ panelOpen: screenPanel || writing });
   // The quick search window (#175): ⌘K from any screen of the open Library, or Ara ⌘K in the sidebar.
   const [searching, setSearching] = useState(false);
@@ -75,6 +84,8 @@ export function WideFrame({ library, children }: { library: boolean; children: R
 
   const home = useQuery({ ...trpc.sources.home.queryOptions(), enabled: framed });
   const openWriting = () => {
+    // Work not yet saved in front is never put away unasked: finish or leave it first.
+    if (unsaved.current > 0) return;
     // With no Source yet, the first one is made before any Note.
     if (home.data?.sourceCount === 0) {
       router.push('/source/new');
@@ -85,7 +96,11 @@ export function WideFrame({ library, children }: { library: boolean; children: R
     setFocusAsk((asked) => asked + 1);
   };
   // The sidebar's Not al: a page writing on its own brings its writing forward.
-  const notAl = () => (pageWriting.current ? pageWriting.current() : openWriting());
+  const notAl = () => {
+    if (unsaved.current > 0) return;
+    if (pageWriting.current) pageWriting.current();
+    else openWriting();
+  };
 
   useShortcuts({ active: framed }, (command) => {
     if (command !== 'quickSearch') return false;
@@ -103,22 +118,24 @@ export function WideFrame({ library, children }: { library: boolean; children: R
   return (
     <Panels value={panels}>
       <PageWritings value={pageWriting}>
-        <SidebarShown value={framed}>
-          <Capturing value={capturing}>
-            <View className="flex-1 flex-row bg-page">
-              {framed && <FrameSidebar shape={sidebar} onSearch={() => setSearching(true)} onCapture={notAl} />}
-              {/* While the writing is open the screen's keys are held: they are the panel's. */}
-              <HoldShortcuts held={capturing}>
-                <View className="flex-1">{children}</View>
-              </HoldShortcuts>
-              {capturing && (
-                <View className="w-[520px] border-l border-line">
-                  <CapturePanel capture={capture} focusAsk={focusAsk} onClose={() => setWriting(false)} />
-                </View>
-              )}
-            </View>
-          </Capturing>
-        </SidebarShown>
+        <UnsavedWork value={unsaved}>
+          <SidebarShown value={framed}>
+            <Capturing value={capturing}>
+              <View className="flex-1 flex-row bg-page">
+                {framed && <FrameSidebar shape={sidebar} onSearch={() => setSearching(true)} onCapture={notAl} />}
+                {/* While the writing is open the screen's keys are held: they are the panel's. */}
+                <HoldShortcuts held={capturing}>
+                  <View className="flex-1">{children}</View>
+                </HoldShortcuts>
+                {capturing && (
+                  <View className="w-[520px] border-l border-line">
+                    <CapturePanel capture={capture} focusAsk={focusAsk} onClose={() => setWriting(false)} />
+                  </View>
+                )}
+              </View>
+            </Capturing>
+          </SidebarShown>
+        </UnsavedWork>
       </PageWritings>
       {framed && searching && <FrameQuickSearch onClose={() => setSearching(false)} />}
     </Panels>
@@ -170,6 +187,24 @@ export function usePageWriting(toWriting: () => void): void {
       if (writings.current === take) writings.current = null;
     };
   }, [focused, writings]);
+}
+
+/**
+ * Work not yet saved (a Note edited in place with changes, a form being
+ * filled) holds Not al while `changed`: neither N nor the sidebar's Not al
+ * puts it away unasked (#178).
+ */
+export function useUnsavedWork(changed: boolean): void {
+  const unsaved = useContext(UnsavedWork);
+  const focused = useIsFocused();
+  const held = changed && focused;
+  useEffect(() => {
+    if (!held || !unsaved) return;
+    unsaved.current += 1;
+    return () => {
+      unsaved.current -= 1;
+    };
+  }, [held, unsaved]);
 }
 
 /**

@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
+import { useUnsavedWork } from '@/components/wide-frame';
 import { DefinitionTags } from '@/features/collection/definition-tags';
 import { useTRPC } from '@/lib/trpc';
 
@@ -141,6 +142,8 @@ export function NewCollectionPanel({
   const { t } = useTranslation();
   const form = useNewCollection({ onSaved });
   const [asking, setAsking] = useState(false);
+  // Half filled, the form holds Not al: neither N nor its sidebar button puts it away unasked (#178).
+  useUnsavedWork(form.changed);
 
   useShortcuts({ panelOpen: true, unsavedChanges: form.changed && !asking, active }, (command) => {
     switch (command) {

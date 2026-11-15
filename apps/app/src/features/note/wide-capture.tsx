@@ -62,6 +62,14 @@ export function useWideCapture() {
       setLooked(true);
     },
     save: async () => id !== null && (await capture.save()),
+    /** Forgets the Note and its Source, as a Library closed (signed out) must. */
+    reset: () => {
+      capture.discard();
+      capture.setLocator('');
+      setSource(null);
+      setLooked(false);
+      setCarriedFor(null);
+    },
   };
 }
 
