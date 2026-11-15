@@ -3,9 +3,9 @@ import { Sheet } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { cx } from '@homelibra/ui/theme';
 import Info from 'lucide-react-native/icons/info';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { Modal, Pressable, type PressableInstance, useWindowDimensions, View } from 'react-native';
 
 type Row = { term: string; description: string };
 
@@ -24,12 +24,74 @@ export function SearchTips() {
     <>
       <HeaderIconAction icon={Info} tone="muted" label={t('search.tips')} onPress={() => setOpen(true)} />
       <Sheet visible={open} title={t('search.tips')} closeLabel={t('search.close')} onClose={close}>
-        <View className="gap-4.5">
-          <Terms label={t('search.tipsWhere')} rows={t('search.tipsWhereRows', { returnObjects: true })} />
-          <Terms label={t('search.tipsSyntax')} rows={t('search.tipsSyntaxRows', { returnObjects: true })} mono />
-        </View>
+        <TipsTerms />
       </Sheet>
     </>
+  );
+}
+
+/**
+ * A wide Ara's ? at the right of its box (#174) and Arama ipuçları under it,
+ * right-aligned to it, over the list rather than in a sheet: the same two
+ * lists. The screen holds `open`, so its keys wait while the tips are in
+ * front. A press outside or Esc closes them.
+ */
+export function SearchTipsPopover({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation();
+  const { width } = useWindowDimensions();
+  const button = useRef<PressableInstance>(null);
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
+  const show = () => {
+    const at = button.current;
+    if (!at) return onOpenChange(true);
+    at.measureInWindow((x, y, w, h) => {
+      setAnchor({ top: y + h + 6, right: Math.max(0, width - x - w) });
+      onOpenChange(true);
+    });
+  };
+  const close = () => onOpenChange(false);
+  return (
+    <>
+      <Pressable
+        ref={button}
+        role="button"
+        aria-label={t('search.tips')}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onPress={open ? close : show}
+        className={cx('h-11 w-9 items-center justify-center active:opacity-70', open && 'opacity-70')}
+      >
+        <Text variant="button" color="muted">
+          ?
+        </Text>
+      </Pressable>
+      <Modal visible={open} transparent onRequestClose={close}>
+        <Pressable aria-hidden focusable={false} onPress={close} className="absolute inset-0" />
+        <View
+          role="dialog"
+          aria-label={t('search.tips')}
+          className="absolute w-[380px] gap-md rounded-control border border-line bg-surface p-lg shadow-lift"
+          // Where the ? was measured to stand: known only once it is pressed.
+          style={anchor ?? { top: 0, right: 0 }}
+        >
+          <Text variant="label" role="heading">
+            {t('search.tips')}
+          </Text>
+          <TipsTerms />
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+/** Nerede arar and Yazım. */
+function TipsTerms() {
+  const { t } = useTranslation();
+  return (
+    <View className="gap-4.5">
+      <Terms label={t('search.tipsWhere')} rows={t('search.tipsWhereRows', { returnObjects: true })} />
+      <Terms label={t('search.tipsSyntax')} rows={t('search.tipsSyntaxRows', { returnObjects: true })} mono />
+    </View>
   );
 }
 
