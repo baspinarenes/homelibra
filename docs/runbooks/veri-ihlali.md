@@ -116,7 +116,7 @@ incelemesine hazır tutulur. Kayıt, yanlış alarm olsa bile silinmez.
 ### 7. Sonrası (iki hafta içinde)
 
 - Kök neden ve kalıcı düzeltme için bir issue aç.
-- Aydınlatma metni (`apps/app/src/lib/legal.ts`) hâlâ doğru mu?
+- Aydınlatma metni (`apps/app/src/features/privacy/legal.ts`) hâlâ doğru mu?
 - Bu planda eksik kalan bir adım varsa ekle.
 
 ## Hangi veri nerede

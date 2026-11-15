@@ -768,8 +768,8 @@ olan günde 5.000 iletinin çok altında.
 
 - **Bu depodaki kullanım açısından (Çıkarım).** Uygulama hata, trace, log ve mobil replay
   gönderiyor (`apps/app/src/lib/sentry.ts`, `apps/api/src/instrument.ts`). (Replay ve log
-  gönderimini kapatan değişiklik #31 kapsamında `claude/kvkk-sentry-replay` dalında bekliyor; merge
-  edilince aşağıdaki replay notları eskir.)
+  gönderimi bu belgeyle aynı değişiklikte, #31 kapsamında kapatıldı; aşağıdaki replay notları ondan
+  önceki hâli anlatır.)
   - **GlitchTip:** hata + trace + log karşılanıyor; replay ve release health karşılanmıyor.
     `replaysOnErrorSampleRate` / `replaysSessionSampleRate` ve `mobileReplayIntegration` kaldırılmalı,
     `autoSessionTracking: false` eklenmeli. Mevcut Coolify sunucusunda bir konteyner + mevcut

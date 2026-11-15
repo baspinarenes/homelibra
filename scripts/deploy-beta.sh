@@ -482,7 +482,7 @@ pause
 # ── 11 ────────────────────────────────────────────────────────────────────
 stage "Cloudflare: mail to iletisim@$DOMAIN"
 say "The app shows iletisim@$DOMAIN as its contact address; Resend only sends."
-note "The privacy notice names Cloudflare for this (apps/app/src/lib/legal.ts, ADR-0009)."
+note "The privacy notice names Cloudflare for this (apps/app/src/features/privacy/legal.ts, ADR-0009)."
 say "Done on an earlier run? Press Enter through this stage."
 open_url "https://dash.cloudflare.com/?to=/:account/:zone/email/routing/overview"
 step "Email Routing → 'Get started' / 'Enable'. Let it add its MX and TXT records."
