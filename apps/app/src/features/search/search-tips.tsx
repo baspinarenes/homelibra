@@ -1,11 +1,12 @@
+import { AnchoredPopover } from '@homelibra/ui/popover';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Sheet } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { cx } from '@homelibra/ui/theme';
 import Info from 'lucide-react-native/icons/info';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Pressable, type PressableInstance, useWindowDimensions, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 type Row = { term: string; description: string };
 
@@ -38,49 +39,35 @@ export function SearchTips() {
  */
 export function SearchTipsPopover({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
-  const button = useRef<PressableInstance>(null);
-  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
-  const show = () => {
-    const at = button.current;
-    if (!at) return onOpenChange(true);
-    at.measureInWindow((x, y, w, h) => {
-      setAnchor({ top: y + h + 6, right: Math.max(0, width - x - w) });
-      onOpenChange(true);
-    });
-  };
-  const close = () => onOpenChange(false);
   return (
-    <>
-      <Pressable
-        ref={button}
-        role="button"
-        aria-label={t('search.tips')}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onPress={open ? close : show}
-        className={cx('h-11 w-9 items-center justify-center active:opacity-70', open && 'opacity-70')}
-      >
-        <Text variant="button" color="muted">
-          ?
-        </Text>
-      </Pressable>
-      <Modal visible={open} transparent onRequestClose={close}>
-        <Pressable aria-hidden focusable={false} onPress={close} className="absolute inset-0" />
-        <View
-          role="dialog"
+    <AnchoredPopover
+      open={open}
+      onOpenChange={onOpenChange}
+      role="dialog"
+      label={t('search.tips')}
+      gap={6}
+      className="w-[380px] gap-md p-lg"
+      trigger={({ ref, onPress }) => (
+        <Pressable
+          ref={ref}
+          role="button"
           aria-label={t('search.tips')}
-          className="absolute w-[380px] gap-md rounded-control border border-line bg-surface p-lg shadow-lift"
-          // Where the ? was measured to stand: known only once it is pressed.
-          style={anchor ?? { top: 0, right: 0 }}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onPress={onPress}
+          className={cx('h-11 w-9 items-center justify-center active:opacity-70', open && 'opacity-70')}
         >
-          <Text variant="label" role="heading">
-            {t('search.tips')}
+          <Text variant="button" color="muted">
+            ?
           </Text>
-          <TipsTerms />
-        </View>
-      </Modal>
-    </>
+        </Pressable>
+      )}
+    >
+      <Text variant="label" role="heading">
+        {t('search.tips')}
+      </Text>
+      <TipsTerms />
+    </AnchoredPopover>
   );
 }
 

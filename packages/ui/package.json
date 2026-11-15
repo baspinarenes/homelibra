@@ -34,6 +34,7 @@
     "./panel": "./src/panel.ts",
     "./note-panel": "./src/note-panel.ts",
     "./menu": "./src/menu.ts",
+    "./popover": "./src/popover.ts",
     "./note-editor": "./src/note-editor.ts",
     "./dizin": "./src/dizin.ts",
     "./note-writer": "./src/note-writer.ts"
