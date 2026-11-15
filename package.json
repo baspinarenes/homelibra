@@ -22,7 +22,8 @@
     "usage": "pnpm --filter @homelibra/api usage",
     "version:bump": "node scripts/version-bump.mjs bump",
     "prepare": "husky",
-    "gen:theme": "node scripts/gen-theme.mjs"
+    "gen:theme": "node scripts/gen-theme.mjs",
+    "gen": "node scripts/gen.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
