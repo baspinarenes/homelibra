@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server';
 import * as Sentry from '@sentry/node';
 
 import { createApi } from './app';
-import { createDb } from './db/client';
+import { assertDatabaseReachable, createDb } from './db/client';
 import { env } from './env';
 import { crossrefClient } from './lookups/crossref';
 import { openLibraryClient } from './lookups/openlibrary';
@@ -10,8 +10,17 @@ import { consoleMailer, resendMailer } from './mail/mailer';
 import { localDirectoryStorage } from './storage/local-directory';
 import { s3Storage } from './storage/s3';
 
+const db = createDb(env.DATABASE_URL);
+// Postgres first: without it the API would listen and only fail on the first sign-in.
+try {
+  await assertDatabaseReachable(db, env.DATABASE_URL);
+} catch (e) {
+  console.error((e as Error).message);
+  process.exit(1);
+}
+
 const api = createApi({
-  db: createDb(env.DATABASE_URL),
+  db,
   mailer: env.RESEND_API_KEY ? resendMailer({ apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM }) : consoleMailer(),
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
