@@ -1,7 +1,7 @@
 import { Panel, PanelLayout } from '@homelibra/ui/panel';
 import { Text } from '@homelibra/ui/text';
 import { useTheme } from '@homelibra/ui/theme';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useIsFocused, useRouter } from 'expo-router';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,8 @@ import { useOutbox } from '@/lib/outbox';
  * editing (the Kaynak field, Notu sil), as the phone's row opens Notu
  * düzenle. Saved, deleted or put away (Esc), the panel closes; a Note no
  * longer lost leaves the list, and with the last one "kalmadı" stands.
+ * ↑↓ choose a row and ↵ opens it, as in a Collection, the keys along the
+ * list's foot.
  */
 export default function LostNotesScreen() {
   const { t } = useTranslation();
@@ -41,6 +43,7 @@ export default function LostNotesScreen() {
   const layout = useFramePanel(shown !== null, () => setFocusId(null));
   // The ✕ or another row over an edit with changes asks first.
   const leave = useLeave();
+  const inFront = useIsFocused();
 
   if (layout.tier === 'wide')
     return (
@@ -72,6 +75,8 @@ export default function LostNotesScreen() {
             density={layout.density}
             focusId={shown?.id ?? null}
             onOpen={(id) => leave(() => setFocusId(id))}
+            keys={inFront}
+            hints={layout.sidebar === 'full'}
           />
         </PanelLayout>
         {/* Geri al after Notu sil floats above this zero-height edge. */}

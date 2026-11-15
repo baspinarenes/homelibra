@@ -794,6 +794,7 @@ export const tr = {
     more: 'Diğer',
     // Along the list's foot, after each key: "↑↓ not", "⌘C notu"…
     hintRows: 'not',
+    hintOpen: 'aç',
     hintCopyNote: 'notu',
     hintCopyAll: 'dosyayı',
     hintCopyFound: 'bulunanları',

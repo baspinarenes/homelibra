@@ -95,6 +95,8 @@ export function usePressedRowAnchor({
       if (target) targets.current.set(id, target);
       else targets.current.delete(id);
     },
+    /** Puts the focus on the row `id`, when it is drawn. */
+    focus: (id: string) => targets.current.get(id)?.focus(),
     /** The row `id` pressed: `open` opens it, the row kept where it stands. */
     press: (id: string, open: () => void) => {
       const row = rows.current.get(id);

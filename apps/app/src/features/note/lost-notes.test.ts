@@ -2,7 +2,7 @@ import { type Operation, openOutbox, type Reply, type Transport } from '@homelib
 import { memoryStorage } from '@homelibra/outbox/memory';
 import { describe, expect, it } from 'vitest';
 
-import { lostNotes, shownLostNote } from './lost-notes';
+import { lostNoteAction, lostNotes, shownLostNote } from './lost-notes';
 
 const GONE = '01900000-0000-7000-8000-00000000000a';
 const LIVE = '01900000-0000-7000-8000-00000000000b';
@@ -86,5 +86,47 @@ describe('shownLostNote', () => {
     expect(shownLostNote(N2, lostNotes(outbox.state(), []))).toMatchObject({ id: N2 });
     await outbox.apply({ type: 'deleteNote', id: N2 });
     expect(shownLostNote(N2, lostNotes(outbox.state(), []))).toBeNull();
+  });
+});
+
+describe('lostNoteAction', () => {
+  const rows = [{ id: N1 }, { id: N2 }, { id: N3 }];
+  const closed = { notes: rows, chosen: null, panelOpen: false };
+
+  it('starts at the first row going down, at the last going up', () => {
+    expect(lostNoteAction('next', closed)).toEqual({ choose: N1 });
+    expect(lostNoteAction('previous', closed)).toEqual({ choose: N3 });
+  });
+
+  it('moves the choice one row with ↑↓, staying on the first and the last', () => {
+    expect(lostNoteAction('next', { ...closed, chosen: N1 })).toEqual({ choose: N2 });
+    expect(lostNoteAction('previous', { ...closed, chosen: N2 })).toEqual({ choose: N1 });
+    expect(lostNoteAction('next', { ...closed, chosen: N3 })).toEqual({ choose: N3 });
+    expect(lostNoteAction('previous', { ...closed, chosen: N1 })).toEqual({ choose: N1 });
+  });
+
+  it('opens the chosen row on ↵, and nothing with none chosen', () => {
+    expect(lostNoteAction('open', { ...closed, chosen: N2 })).toEqual({ open: N2 });
+    expect(lostNoteAction('open', closed)).toBeNull();
+  });
+
+  it('starts again from the end once the chosen Note has left the list', () => {
+    const left = { ...closed, notes: [{ id: N1 }, { id: N3 }], chosen: N2 };
+    expect(lostNoteAction('next', left)).toEqual({ choose: N1 });
+    expect(lostNoteAction('open', left)).toBeNull();
+  });
+
+  it('leaves every key to the edit while the panel is open', () => {
+    const open = { ...closed, chosen: N2, panelOpen: true };
+    for (const command of ['next', 'previous', 'open', 'closePanel', 'back'] as const) {
+      expect(lostNoteAction(command, open)).toBeNull();
+    }
+  });
+
+  it('has nothing to choose in an empty list, and leaves the other keys alone', () => {
+    expect(lostNoteAction('next', { ...closed, notes: [] })).toBeNull();
+    for (const command of ['copyNote', 'edit', 'searchHere', 'capture', 'back'] as const) {
+      expect(lostNoteAction(command, { ...closed, chosen: N1 })).toBeNull();
+    }
   });
 });
