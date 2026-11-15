@@ -230,6 +230,10 @@ export const tr = {
     libraryTypes: 'Kaynak dağılımı',
     libraryStatus: 'Okuma durumu',
   },
+  // A wide Genel Bakış (#182): its two columns.
+  wideHome: {
+    recentNotes: 'Son notlar',
+  },
   // How long ago a Note was captured.
   elapsed: {
     now: 'az önce',
