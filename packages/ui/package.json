@@ -27,6 +27,8 @@
     "./illustration": "./src/illustration.ts",
     "./wide-layout": "./src/wide-layout.ts",
     "./sidebar": "./src/sidebar.ts",
+    "./quick-search": "./src/quick-search.ts",
+    "./inline-choices": "./src/inline-choices.ts",
     "./note-row": "./src/note-row.ts",
     "./panel": "./src/panel.ts",
     "./note-panel": "./src/note-panel.ts",

@@ -10,11 +10,11 @@ import { Text } from '@homelibra/ui/text';
 import { cx, useTheme } from '@homelibra/ui/theme';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import Search from 'lucide-react-native/icons/search';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, TextInput, View } from 'react-native';
 
@@ -91,13 +91,26 @@ function hiddenLine(
  * icon has a dot and a chip under the box names it, × taking it off. The
  * info icon beside the title, set by the tab's layout, opens Arama ipuçları.
  * Words too short for a prefix match are named in a line over the results,
- * or under "Sonuç yok." (#144).
+ * or under "Sonuç yok." (#144). The quick search window's "Ara'da tüm
+ * sonuçlar" opens Ara with its query in the box (`q`, #175).
  */
 export default function SearchScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const trpc = useTRPC();
-  const [text, setText] = useState('');
+  const router = useRouter();
+  // `q`: a query handed over, by the quick search window's "Ara'da tüm sonuçlar" (#175).
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [text, setText] = useState(q ?? '');
+  const [taken, setTaken] = useState(q);
+  if (q !== taken) {
+    setTaken(q);
+    if (q !== undefined) setText(q);
+  }
+  // Once in the box the query is the box's: the same one handed over again replaces what was typed since.
+  useEffect(() => {
+    if (q !== undefined) router.setParams({ q: undefined });
+  }, [q, router]);
   const query = useSettled(text.trim());
   const offline = useOffline();
   const [choices, setChoices] = useState(initial);

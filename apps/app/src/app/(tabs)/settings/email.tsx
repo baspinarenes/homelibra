@@ -5,9 +5,10 @@ import { TextField } from '@homelibra/ui/text-field';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { CodeInput } from '@/features/account/code-input';
+import { SettingsPage } from '@/features/account/settings-page';
 import { authClient } from '@/lib/auth-client';
 import { offerUndo } from '@/lib/undo';
 
@@ -69,9 +70,11 @@ export default function EmailChangeScreen() {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-page"
-      contentContainerClassName="w-full max-w-[480px] gap-sm self-center p-lg"
+    <SettingsPage
+      title={t('emailChange.title')}
+      back
+      phone="w-full max-w-[480px] gap-sm self-center p-lg"
+      gap="sm"
       keyboardShouldPersistTaps="handled"
     >
       {step.kind === 'address' ? (
@@ -145,6 +148,6 @@ export default function EmailChangeScreen() {
           {error}
         </Text>
       ) : null}
-    </ScrollView>
+    </SettingsPage>
   );
 }

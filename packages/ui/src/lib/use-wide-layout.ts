@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 
-import { type Command, commandFor, type Layout, wideLayout } from './wide-layout';
+import { type Command, type Layout, shortcutFor, wideLayout } from './wide-layout';
 
 /** The layout for the window as it is now; it follows the window as it is resized. */
 export function useWideLayout({ panelOpen = false }: { panelOpen?: boolean } = {}): Layout {
@@ -14,22 +14,22 @@ export type ShortcutState = {
   unsavedChanges?: boolean;
   /** Whether this screen hears keys now: false while another screen is in front of it. */
   active?: boolean;
-  /**
-   * Set by a listener that belongs to a dialog (a Modal: a sheet, a menu,
-   * the ⌘K window). Any other hears nothing while the focus is in one: the
-   * dialog's Esc and arrows are the dialog's, not the screen's under it.
-   */
-  inDialog?: boolean;
 };
 
 /**
  * Hears the wide tier's shortcuts while `active` and hands each command to
- * `onCommand`, which returns true when it acted on it; only then is the
- * browser's own response to the key held back. Where there is no document
- * (a phone), it hears nothing.
+ * `onCommand`. It hears a key before the element it was pressed in, so
+ * ⌘K, ⌘↵ and Esc reach it from a text field too (react-native-web's
+ * TextInput stops every keydown it gets), while the rest of a field's
+ * typing stays the field's (`commandFor`). `onCommand` returns true only
+ * for a command this screen handles: then the key goes no further, neither
+ * to the field nor to the browser. Any other answer leaves the key as it
+ * was, so a field that handles ⌘↵ itself (the composer) still gets it. A
+ * key pressed in a dialog is the dialog's; ⌘C over selected text is the
+ * browser's. Where there is no document (a phone), it hears nothing.
  */
 export function useShortcuts(
-  { panelOpen = false, unsavedChanges = false, active = true, inDialog = false }: ShortcutState,
+  { panelOpen = false, unsavedChanges = false, active = true }: ShortcutState,
   onCommand: (command: Command) => boolean | void,
 ): void {
   const { width } = useWindowDimensions();
@@ -39,20 +39,21 @@ export function useShortcuts(
   useEffect(() => {
     if (!active || typeof document === 'undefined') return;
     const listener = (event: KeyboardEvent) => {
-      if (event.isComposing || event.defaultPrevented) return;
-      // react-native-web marks a Modal aria-modal and keeps the focus inside it while it is open.
-      if (!inDialog && document.activeElement?.closest('[aria-modal="true"]')) return;
       const { onCommand: act, ...state } = latest.current;
-      const command = commandFor(event, { ...state, typing: isTextField(document.activeElement) });
-      if (!command) return;
-      // Text selected on the page is copied as the browser copies it, not as a note.
-      const selected = document.getSelection()?.isCollapsed === false;
-      if ((command === 'copyNote' || command === 'copyAll') && selected) return;
-      if (act(command) === true) event.preventDefault();
+      const command = shortcutFor(event, {
+        ...state,
+        typing: isTextField(document.activeElement),
+        inDialog: event.target instanceof Element && event.target.closest('[aria-modal="true"]') !== null,
+        textSelected: document.getSelection()?.isCollapsed === false,
+      });
+      if (!command || act(command) !== true) return;
+      event.preventDefault();
+      event.stopPropagation();
     };
-    document.addEventListener('keydown', listener);
-    return () => document.removeEventListener('keydown', listener);
-  }, [active, inDialog]);
+    // In the capture phase: before the field, which would stop the key on its way up.
+    document.addEventListener('keydown', listener, true);
+    return () => document.removeEventListener('keydown', listener, true);
+  }, [active]);
 }
 
 const notText = new Set(['button', 'checkbox', 'radio', 'range', 'color', 'file', 'image', 'reset', 'submit']);

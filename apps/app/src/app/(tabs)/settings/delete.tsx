@@ -6,9 +6,10 @@ import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { CodeInput } from '@/features/account/code-input';
+import { SettingsPage } from '@/features/account/settings-page';
 import { authClient } from '@/lib/auth-client';
 import { forgetQueries } from '@/lib/query-provider';
 import { useTRPC } from '@/lib/trpc';
@@ -48,7 +49,7 @@ export default function AccountDeletionScreen() {
 
   if (!codeSent) {
     return (
-      <ScrollView className="flex-1 bg-page" contentContainerClassName="w-full max-w-[480px] self-center px-gutter">
+      <SettingsPage title={t('accountDeletion.title')} back phone="w-full max-w-[480px] self-center px-gutter">
         <Sections>
           <Text variant="body" color="fg" className="pt-md pb-4.5">
             {t('accountDeletion.lead')}
@@ -73,14 +74,16 @@ export default function AccountDeletionScreen() {
             ) : null}
           </View>
         </Sections>
-      </ScrollView>
+      </SettingsPage>
     );
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-page"
-      contentContainerClassName="w-full max-w-[480px] gap-lg self-center px-gutter pt-md pb-xl"
+    <SettingsPage
+      title={t('accountDeletion.title')}
+      back
+      phone="w-full max-w-[480px] gap-lg self-center px-gutter pt-md pb-xl"
+      gap="lg"
       keyboardShouldPersistTaps="handled"
     >
       <Text variant="body" color="fg">
@@ -121,6 +124,6 @@ export default function AccountDeletionScreen() {
           {t('accountDeletion.errors.sendFailed')}
         </Text>
       ) : null}
-    </ScrollView>
+    </SettingsPage>
   );
 }

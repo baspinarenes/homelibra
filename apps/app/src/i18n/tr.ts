@@ -58,6 +58,8 @@ export const tr = {
     sourceSearchNotes: 'Notlar',
     account: 'Hesap',
     versionSection: 'Sürüm',
+    // Above E-posta adresi, Dışa aktar and Hesabı sil on a wide screen, back to Ayarlar (#183).
+    back: '‹ Ayarlar',
   },
   // Hoş geldin: Homelibra in a few lines, once per Account; Başla records the terms accepted at sign-in (#118).
   welcome: {
@@ -74,6 +76,9 @@ export const tr = {
   },
   privacy: {
     title: 'Gizlilik',
+    // A privacy page on a wide screen (#185): its way back above the column's left, and a legal text's headings there.
+    back: '‹ Geri',
+    contents: 'Bu metinde',
     privacySection: 'Gizlilik',
     notice: 'Aydınlatma metni',
     terms: 'Kullanım koşulları',
@@ -276,6 +281,23 @@ export const tr = {
     showNotesUncounted: 'Notları göster',
     showSourcesUncounted: 'Kaynakları göster',
     hiddenNotes: 'Tarihsiz kaynaklardan {{count}} not gizli',
+  },
+  // The wide tier's ⌘K window, a shortcut to Ara over every screen (#175).
+  quickSearch: {
+    dialog: 'Hızlı arama',
+    field: 'Ara ya da git',
+    placeholder: 'Etiket, kaynak ya da not ara',
+    close: 'Kapat',
+    go: 'Git',
+    notes: 'Notlar',
+    tag: 'Etiket',
+    source: 'Kaynak',
+    openAll: 'Ara’da tüm sonuçlar: «{{query}}» ›',
+    // Before a word is typed the last row opens Ara itself.
+    openAra: 'Ara’yı aç ›',
+    select: 'seç',
+    open: 'aç',
+    openAllHint: 'Ara’da aç',
   },
   sources: {
     byTitle: 'Başlık',

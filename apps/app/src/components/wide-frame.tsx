@@ -1,5 +1,5 @@
 import { Sidebar, type SidebarPlace } from '@homelibra/ui/sidebar';
-import { type Layout, type Sidebar as SidebarShape, useWideLayout } from '@homelibra/ui/wide-layout';
+import { type Layout, type Sidebar as SidebarShape, useShortcuts, useWideLayout } from '@homelibra/ui/wide-layout';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type Href, useIsFocused, usePathname, useRouter, useSegments } from 'expo-router';
 import { createContext, type ReactNode, useContext, useEffect, useState, useSyncExternalStore } from 'react';
@@ -9,9 +9,11 @@ import { View } from 'react-native';
 import { openPanels, type OpenPanels } from '@/components/open-panels';
 import { sidebarMove, sidebarPlace } from '@/components/sidebar-place';
 import { useCollections } from '@/features/collection/collection-list';
+import { QuickSearchWindow } from '@/features/search/quick-search';
 import { useTRPC } from '@/lib/trpc';
 
 const Panels = createContext<OpenPanels | null>(null);
+const SidebarShown = createContext(false);
 
 /**
  * The frame around every screen of the open Library (ADR-0012): in the wide
@@ -27,12 +29,25 @@ export function WideFrame({ library, children }: { library: boolean; children: R
   const [panels] = useState(openPanels);
   const panelOpen = useSyncExternalStore(panels.subscribe, panels.isOpen, panels.isOpen);
   const { sidebar } = useWideLayout({ panelOpen });
+  // The quick search window (#175): ⌘K from any screen of the open Library, or Ara ⌘K in the sidebar.
+  const [searching, setSearching] = useState(false);
+  const framed = library && sidebar !== null;
+  // Narrowed below the wide tier, or the Library closed, the window goes with the sidebar.
+  if (searching && !framed) setSearching(false);
+  useShortcuts({ active: framed }, (command) => {
+    if (command !== 'quickSearch') return false;
+    setSearching(true);
+    return true;
+  });
   return (
     <Panels value={panels}>
-      <View className="flex-1 flex-row bg-page">
-        {library && sidebar && <FrameSidebar shape={sidebar} />}
-        <View className="flex-1">{children}</View>
-      </View>
+      <SidebarShown value={framed}>
+        <View className="flex-1 flex-row bg-page">
+          {framed && <FrameSidebar shape={sidebar} onSearch={() => setSearching(true)} />}
+          <View className="flex-1">{children}</View>
+        </View>
+      </SidebarShown>
+      {framed && searching && <FrameQuickSearch onClose={() => setSearching(false)} />}
     </Panels>
   );
 }
@@ -50,6 +65,15 @@ export function useFramePanel(open: boolean): Layout {
   return useWideLayout({ panelOpen: open });
 }
 
+/**
+ * Whether the frame draws the sidebar beside the screen: in the wide tier
+ * with the Library open. A screen open with the Library closed too (the
+ * privacy documents) shows the logo in its place.
+ */
+export function useFrameSidebar(): boolean {
+  return useContext(SidebarShown);
+}
+
 const tabHref = {
   search: '/search',
   overview: '/',
@@ -58,7 +82,27 @@ const tabHref = {
   settings: '/settings',
 } as const satisfies Record<SidebarPlace, Href>;
 
-function FrameSidebar({ shape }: { shape: SidebarShape }) {
+/** The quick search window; "Ara'da tüm sonuçlar" opens Ara with the query, as the sidebar goes to a place. */
+function FrameQuickSearch({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const { place } = sidebarPlace(usePathname());
+  const segments = useSegments();
+  return (
+    <QuickSearchWindow
+      onClose={onClose}
+      onSearchAll={(query) => {
+        const params = query === '' ? undefined : { q: query };
+        // On Ara already, the box takes the query in place.
+        if (place === 'search') router.setParams({ q: params?.q });
+        else if (sidebarMove({ segments, place, to: 'search' }) === 'switchTab')
+          router.navigate({ pathname: '/search', params });
+        else router.dismissTo({ pathname: '/search', params });
+      }}
+    />
+  );
+}
+
+function FrameSidebar({ shape, onSearch }: { shape: SidebarShape; onSearch: () => void }) {
   const { t } = useTranslation();
   const router = useRouter();
   const trpc = useTRPC();
@@ -113,6 +157,7 @@ function FrameSidebar({ shape }: { shape: SidebarShape }) {
         else router.push(href);
       }}
       onCapture={() => void capture()}
+      onSearch={onSearch}
     />
   );
 }
