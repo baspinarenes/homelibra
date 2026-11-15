@@ -105,6 +105,10 @@ export default function SourcesScreen() {
       selection.step(command);
       return true;
     }
+    if (command === 'open' && selection.selected) {
+      openSource(selection.selected);
+      return true;
+    }
     if (command === 'capture' && selection.selected) {
       openSource(selection.selected, true);
       return true;

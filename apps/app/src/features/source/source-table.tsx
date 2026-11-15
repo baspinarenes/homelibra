@@ -67,7 +67,7 @@ export function SourceTable({
   onOrder: (order: SourceOrder) => void;
   selection: Selection;
   onOpen: (id: string) => void;
-  /** Above the rows, scrolling with them (the hidden undated). */
+  /** Under the headings, above the rows (the hidden undated). */
   header?: ReactElement;
   /** In place of the rows while there are none. */
   empty: ReactElement;
@@ -87,13 +87,19 @@ export function SourceTable({
   return (
     <View className="min-h-0 flex-1 px-5 pt-sm">
       <Table label={t('sourceTable.label')}>
-        <TableHead columns={columns} sort={sort} />
         <FlatList
           className="flex-1"
           contentContainerClassName="grow pb-xxl"
           data={sources}
           keyExtractor={(source) => source.id}
-          ListHeaderComponent={header}
+          // In the list, so a scrollbar narrows the headings as it narrows the rows; it stays on top.
+          ListHeaderComponent={
+            <View className="bg-page">
+              <TableHead columns={columns} sort={sort} />
+              {header}
+            </View>
+          }
+          stickyHeaderIndices={[0]}
           ListEmptyComponent={empty}
           renderItem={({ item: source }) => (
             <TableRow

@@ -60,12 +60,12 @@ export function inOrder<T extends Ordered>(rows: readonly T[], order: SourceOrde
 
 /**
  * The row ↑ or ↓ chooses: the next one in that direction, stopping at either
- * end. With none chosen, or the chosen one gone from the list, ↓ starts at
- * the first row and ↑ at the last.
+ * end. With none chosen, or the chosen one gone from the list, either
+ * starts at the first row: the one sure to be drawn and in sight.
  */
 export function stepSelection(ids: readonly string[], selected: string | null, step: 'previous' | 'next') {
   if (ids.length === 0) return null;
   const at = selected === null ? -1 : ids.indexOf(selected);
-  if (at === -1) return step === 'next' ? ids[0]! : ids[ids.length - 1]!;
+  if (at === -1) return ids[0]!;
   return ids[Math.max(0, Math.min(ids.length - 1, at + (step === 'next' ? 1 : -1)))]!;
 }

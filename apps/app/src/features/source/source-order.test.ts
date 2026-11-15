@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { inOrder, naturalOrder, orderAfterPress, orderOf, storedOrder, stepSelection } from './source-order';
+import {
+  inOrder,
+  naturalOrder,
+  orderAfterPress,
+  orderOf,
+  storedOrder,
+  storedOrders,
+  stepSelection,
+} from './source-order';
 
 describe('orderAfterPress', () => {
   it('sorts by a new column in its own direction: Son not newest first, the others from A or the oldest', () => {
@@ -25,7 +33,8 @@ describe('storedOrder and orderOf', () => {
   });
 
   it('opens by Son not, newest first, when nothing was kept', () => {
-    expect(orderOf(storedOrder(naturalOrder('last')))).toEqual({ sort: 'last', direction: 'desc' });
+    // What loadDeviceChoice falls back on.
+    expect(orderOf(storedOrders[0])).toEqual({ sort: 'last', direction: 'desc' });
   });
 });
 
@@ -86,9 +95,9 @@ describe('inOrder', () => {
 describe('stepSelection', () => {
   const ids = ['a', 'b', 'c'];
 
-  it('starts at the first row going down and at the last going up', () => {
+  it('starts at the first row, going down or up', () => {
     expect(stepSelection(ids, null, 'next')).toBe('a');
-    expect(stepSelection(ids, null, 'previous')).toBe('c');
+    expect(stepSelection(ids, null, 'previous')).toBe('a');
   });
 
   it('moves one row at a time and stops at either end', () => {
