@@ -31,7 +31,7 @@ export const privacyNotice: LegalSection[] = [
       'Hesap: e-posta adresin ve ilk girişte kullanım koşullarını kabul ettiğin an.',
       'Oturum: giriş yaptığın cihazın tarayıcı ya da uygulama bilgisi ve IP adresi.',
       'Kütüphane: kaynakların, notların, etiketlerin ve dosyaların.',
-      'Hata ve performans kayıtları: uygulama bir hatayla karşılaştığında o anki teknik bilgiler ve işlemlerin ne kadar sürdüğü.',
+      'Hata ve performans kayıtları: cihazının ve uygulamanın teknik bilgileri, karşılaşılan hatalar ve işlemlerin ne kadar sürdüğü.',
     ],
   },
   {
@@ -53,7 +53,7 @@ export const privacyNotice: LegalSection[] = [
     paragraphs: [
       'Hesabın ve kütüphanen, yedekleriyle birlikte Almanya’daki sunucularda durur. Sunucuları sağlayan firma: Hetzner Online GmbH (Almanya).',
       'Giriş kodların ve hesabınla ilgili e-postalar bir e-posta gönderim hizmetiyle gider; bu hizmet e-posta adresini görür. Firma: Resend (ABD).',
-      'Hataları düzeltebilmemiz ve yavaşlığı görebilmemiz için hata ve performans kayıtları bir hata kayıt hizmetine gider. Firma: Sentry (Functional Software, Inc.; kayıtlar Almanya’da tutulur).',
+      'Hataları düzeltebilmemiz ve yavaşlığı görebilmemiz için hata ve performans kayıtları bir hata kayıt hizmetine gider; bu hizmet cihazının bilgisini görür. Firma: Sentry (Functional Software, Inc.; kayıtlar Almanya’da tutulur).',
       'Uygulama güncellemeleri bir güncelleme hizmetinden iner; bu hizmet cihazının bilgisini ve IP adresini görür. Firma: Expo (650 Industries, Inc., ABD).',
       `${contactEmail} adresine yazdığın e-postalar bize bir e-posta yönlendirme hizmetinden geçerek ulaşır; bu hizmet e-postanı görür. Firma: Cloudflare, Inc. (ABD).`,
       'Bu firmaların hepsi Türkiye dışındadır; verilerin Almanya’da ve ABD’de saklanır ve işlenir. ' + placeholder,
