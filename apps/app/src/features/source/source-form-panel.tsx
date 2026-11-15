@@ -109,8 +109,8 @@ export function EditSourcePanel({
  * small column beside Başlık and the fields under it. The form's rules are
  * the phone's (#18, #65): Tür first, the ISBN or DOI before Başlık, the
  * sparse fields behind "+ …", hidden values kept and named. Vazgeç and
- * Kaydet stand at its foot. ⌘↵ saves; Esc closes it, but first asks
- * "Değişiklikler atılsın mı?" in the foot once something is written, and
+ * Kaydet stand at its foot. ⌘↵ saves; Esc, Vazgeç and ✕ close it, but
+ * first ask "Değişiklikler atılsın mı?" in the foot once something is written, and
  * puts a question it asked away again. Being offline and a failed save are
  * said in the foot, over the buttons.
  */
@@ -151,6 +151,8 @@ function SourceFormPanel({
     onClose();
     asking?.then();
   };
+  // Vazgeç and ✕ ask first once something changed, as Esc does.
+  const cancel = () => (form.changed ? ask(() => {}) : onClose());
   const confirmingDelete = deletion?.confirming ?? false;
   // Changed, the form holds every way out of it: N, the sidebar's Not al and places ask first (#178).
   useUnsavedWork(form.changed, ask);
@@ -213,7 +215,7 @@ function SourceFormPanel({
         <KeyHint keys="Esc" label={t('sourcePanel.hintCancel')} />
         <KeyHint keys="⌘↵" label={t('sourcePanel.hintSave')} />
       </View>
-      <Button label={t('sourcePanel.cancel')} variant="secondary" onPress={onClose} />
+      <Button label={t('sourcePanel.cancel')} variant="secondary" onPress={cancel} />
       <Button label={t('sourceForm.save')} onPress={form.save} disabled={!form.canSave} busy={saving} />
     </View>
   );
@@ -246,7 +248,7 @@ function SourceFormPanel({
         )
       }
       closeLabel={t('widePanel.close')}
-      onClose={onClose}
+      onClose={cancel}
       foot={foot}
     >
       <View className="gap-md px-xl pt-lg">
