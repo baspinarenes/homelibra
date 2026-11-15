@@ -25,6 +25,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
+  type PressableInstance,
   TextInput,
   type TextInputInstance,
   View,
@@ -172,12 +173,13 @@ export default function SearchScreen() {
 
   // The wide tier's panel (#174): the Note it shows and the query it was opened from; null while
   // it is closed, as on entry. A new query, Kaynaklar alone or no connection puts it away.
-  const [opened, setOpened] = useState<{ focus: NoteFocus; query: string } | null>(null);
+  // `byKeys`: ↑↓ chose it, so the focus goes to its row too.
+  const [opened, setOpened] = useState<{ focus: NoteFocus; query: string; byKeys?: boolean } | null>(null);
   const focus = opened && opened.query === query && kind !== 'sources' && !offline ? opened.focus : null;
   const layout = useFramePanel(focus !== null);
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
-  const openNote = (to: NoteFocus) => setOpened({ focus: to, query });
+  const openNote = (to: NoteFocus, byKeys = false) => setOpened({ focus: to, query, byKeys });
   const closePanel = () => setOpened(null);
   const [tipsOpen, setTipsOpen] = useState(false);
   const box = useRef<TextInputInstance>(null);
@@ -199,7 +201,7 @@ export default function SearchScreen() {
       case 'next': {
         const order = focus ? sourceNotes(focus.sourceId)?.map((note) => note.id) : undefined;
         const to = stepInResults(notes, focus, action, order);
-        if (to) openNote(to);
+        if (to) openNote(to, true);
         return to !== null;
       }
       case 'copyNote': {
@@ -312,7 +314,7 @@ export default function SearchScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <PanelLayout
           narrow={layout.sidebar === 'iconRail'}
-          panel={focus && <SearchNotePanel focus={focus} onFocus={openNote} onClose={closePanel} />}
+          panel={focus && <SearchNotePanel focus={focus} onFocus={(to) => openNote(to)} onClose={closePanel} />}
         >
           <View className="flex-1 bg-page">
             {/* The status bar's inset, which the tab's header kept, and 16 under it. */}
@@ -366,7 +368,8 @@ export default function SearchScreen() {
                 notes={notes}
                 density={layout.density}
                 focus={focus}
-                onOpen={openNote}
+                onOpen={(to) => openNote(to)}
+                focusRow={opened?.byKeys ?? false}
                 header={<View className="px-lg">{listHeader('table')}</View>}
                 footer={listFooter}
                 onEndReached={nextPage}
@@ -505,6 +508,7 @@ function WideResults({
   density,
   focus,
   onOpen,
+  focusRow,
   header,
   footer,
   onEndReached,
@@ -513,6 +517,8 @@ function WideResults({
   density: Density;
   focus: NoteFocus | null;
   onOpen: (focus: NoteFocus) => void;
+  /** The keys chose `focus` (↑↓): the focus goes to its row too, so the framed row and the focused one agree. */
+  focusRow: boolean;
   header: ReactElement;
   footer: ReactElement | undefined;
   onEndReached: () => void;
@@ -521,6 +527,8 @@ function WideResults({
   const list = useRef<FlatList<NoteResult>>(null);
   const frame = useRef<ViewInstance>(null);
   const rows = useRef(new Map<string, ViewInstance>());
+  // Each drawn row's own press target, to put the focus on.
+  const targets = useRef(new Map<string, PressableInstance>());
   const scrollY = useRef(0);
   // The pressed row and where it stood on the screen, until the rows have changed under it.
   const pressed = useRef<{ id: string; top: number } | null>(null);
@@ -542,15 +550,18 @@ function WideResults({
     // Only a change of density moves the rows; scrollBy reads refs.
   }, [density]);
 
-  // A row the keys moved to comes into view; a pressed one already is.
+  // A row the keys moved to comes into view and takes the focus; a pressed one already has both.
   useEffect(() => {
     if (!focused || pressed.current) return;
     const row = rows.current.get(focused);
+    if (focusRow) targets.current.get(focused)?.focus();
     if (!row) {
-      // Not drawn yet, far down a long list: the list finds it.
+      // Not drawn yet, far down a long list: the list finds it and draws it.
       const index = notes.findIndex((note) => note.id === focused);
       if (index >= 0) list.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false });
-      return;
+      if (!focusRow) return;
+      const frameId = requestAnimationFrame(() => targets.current.get(focused)?.focus());
+      return () => cancelAnimationFrame(frameId);
     }
     frame.current?.measureInWindow((_fx, frameTop, _fw, frameHeight) =>
       row.measureInWindow((_x, top, _w, height) => {
@@ -596,6 +607,10 @@ function WideResults({
             collapsable={false}
           >
             <WideNoteRow
+              ref={(target) => {
+                if (target) targets.current.set(note.id, target);
+                else targets.current.delete(note.id);
+              }}
               density={density}
               locator={note.locator}
               {...resultRow(note)}
