@@ -26,7 +26,8 @@
     "./wheels": "./src/wheels.ts",
     "./illustration": "./src/illustration.ts",
     "./wide-layout": "./src/wide-layout.ts",
-    "./sidebar": "./src/sidebar.ts"
+    "./sidebar": "./src/sidebar.ts",
+    "./quick-search": "./src/quick-search.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
