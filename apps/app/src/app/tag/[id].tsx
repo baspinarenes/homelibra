@@ -248,7 +248,7 @@ function TagPage({
   );
   const crumb = (
     <Pressable
-      role="link"
+      role="button"
       aria-label={t('collection.tagCrumbLabel')}
       onPress={() => router.dismissTo({ pathname: '/collections', params: { view: 'tags' } })}
       className="min-w-0 flex-1 self-center active:opacity-70"

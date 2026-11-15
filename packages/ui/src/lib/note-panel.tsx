@@ -101,7 +101,9 @@ export function NotePanel({
           {siblings.map((sibling) => (
             <Pressable
               key={sibling.id}
-              role="link"
+              // A button, not a link: react-native-web never presses a focused role="link" div on ↵.
+              role="button"
+              aria-label={`${sibling.locator ?? '—'} ${sibling.text}`}
               onPress={() => onGo(sibling.id)}
               className="flex-row gap-2.5 border-t border-line-soft py-1.75 active:opacity-70"
             >

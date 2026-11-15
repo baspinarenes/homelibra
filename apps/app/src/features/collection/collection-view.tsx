@@ -262,7 +262,11 @@ function SourceHeading({ source, wide, onPress }: { source: Group['source']; wid
   const { t } = useTranslation();
   return (
     <Pressable
-      accessibilityRole="link"
+      // A button, not a link, so ↵ opens it on the web (react-native-web never presses role="link").
+      accessibilityRole="button"
+      accessibilityLabel={[t(`sourceTypes.${source.type}.label`), source.author, source.title]
+        .filter(Boolean)
+        .join(', ')}
       accessibilityHint={t('collection.openSource')}
       onPress={onPress}
       className="flex-row items-baseline gap-sm border-b border-line bg-page px-lg pt-md pb-1.5 active:opacity-70"

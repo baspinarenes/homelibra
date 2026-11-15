@@ -111,7 +111,7 @@ describe('NotePanel', () => {
   it('lists the Source’s other Notes, those not in this view faded and named so', () => {
     const page = panel();
     expect(text(page)).toContain('BU KAYNAKTAN DİĞER NOTLAR');
-    const rows = byRole(page, 'link');
+    const rows = byRole(page, 'button').filter((button) => classes(button).includes('border-line-soft'));
     expect(rows.map(text)).toEqual([
       '—Genel değerlendirme: taşra şubelerini merkezden bağımsız ele alan nadir çalışmalardan.',
       's. 45Şubelerin çoğu, merkezden talimat beklemeden kendi nizamnamelerini yazdı.',
@@ -126,7 +126,7 @@ describe('NotePanel', () => {
     expect(text(panel())).toContain('4 / 5');
     expect(text(page)).not.toContain('4 / 5');
     expect(text(page)).not.toContain('KİTAP');
-    expect(byRole(page, 'link')).toEqual([]);
+    expect(text(page)).not.toContain('BU KAYNAKTAN DİĞER NOTLAR');
     expect(text(page)).toContain(note.excerpt);
   });
 

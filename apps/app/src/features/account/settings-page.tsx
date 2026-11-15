@@ -51,7 +51,8 @@ export function SettingsPage({
           <View className={back ? 'gap-3.5 pb-1.5' : undefined}>
             {back && (
               <Pressable
-                role="link"
+                role="button"
+                aria-label={t('settings.back')}
                 // Ayarlar itself, also from Dışa aktar opened in Hesabı sil.
                 onPress={() => router.dismissTo('/settings')}
                 className="self-start active:opacity-70"

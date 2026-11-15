@@ -83,7 +83,9 @@ function WideLegalDocument({ title, sections }: { title: string; sections: Legal
             {contents.map((heading, i) => (
               <Pressable
                 key={heading}
-                role="link"
+                // A button, not a link: react-native-web never presses a focused role="link" div on ↵.
+                role="button"
+                aria-label={heading}
                 aria-current={i === reading ? 'location' : undefined}
                 className={cx('rounded-chip px-2.5 py-1.75', i === reading ? 'bg-accent-soft' : undefined)}
                 onPress={() => scroll.current?.scrollTo({ y: tops.current[i], animated: true })}
@@ -159,7 +161,7 @@ export function ReadingColumn({
       <View className={capturing ? 'px-10 pt-7' : 'mr-12 ml-10 w-[220px] gap-3 pt-7'}>
         <Text
           variant="link"
-          role="link"
+          role="button"
           className="self-start"
           onPress={() => (router.canGoBack() ? router.back() : router.replace(back))}
         >
