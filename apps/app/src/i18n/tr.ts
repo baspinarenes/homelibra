@@ -74,6 +74,9 @@ export const tr = {
   },
   privacy: {
     title: 'Gizlilik',
+    // A privacy page on a wide screen (#185): its way back above the column's left, and a legal text's headings there.
+    back: '‹ Geri',
+    contents: 'Bu metinde',
     privacySection: 'Gizlilik',
     notice: 'Aydınlatma metni',
     terms: 'Kullanım koşulları',
