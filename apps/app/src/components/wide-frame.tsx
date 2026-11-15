@@ -1,0 +1,113 @@
+import { Sidebar } from '@homelibra/ui/sidebar';
+import { type Layout, type Sidebar as SidebarShape, useWideLayout } from '@homelibra/ui/wide-layout';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { type Href, useIsFocused, usePathname, useRouter } from 'expo-router';
+import { createContext, type ReactNode, useContext, useEffect, useState, useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
+import { View } from 'react-native';
+
+import { openPanels, type OpenPanels } from '@/components/open-panels';
+import { sidebarPlace } from '@/components/sidebar-place';
+import { useCollections } from '@/features/collection/collection-list';
+import { useTRPC } from '@/lib/trpc';
+
+const Panels = createContext<OpenPanels | null>(null);
+
+/**
+ * The frame around every screen of the open Library (ADR-0012): in the wide
+ * tier the sidebar stands left of the root Stack, so the tabs and the pages
+ * pushed over them (Collection, Tag, Source, lost notes, the privacy
+ * documents) all have it. `library` is false where the Library is closed
+ * (sign-in, Hoş geldin, Kapalı hesap): no sidebar there. It narrows to the
+ * icon rail while the screen in front has its panel open below 1200 px
+ * (`useFramePanel`). The Stack keeps its place in every state, so crossing
+ * a tier never remounts the screens.
+ */
+export function WideFrame({ library, children }: { library: boolean; children: ReactNode }) {
+  const [panels] = useState(openPanels);
+  const panelOpen = useSyncExternalStore(panels.subscribe, panels.isOpen, panels.isOpen);
+  const { sidebar } = useWideLayout({ panelOpen });
+  return (
+    <Panels value={panels}>
+      <View className="flex-1 flex-row bg-page">
+        {library && sidebar && <FrameSidebar shape={sidebar} />}
+        <View className="flex-1">{children}</View>
+      </View>
+    </Panels>
+  );
+}
+
+/**
+ * How a screen tells the frame its panel is open beside its list. Reported
+ * only while the screen is in front: a screen under a pushed one, or in a
+ * tab not shown, leaves the sidebar as it is. Returns the screen's layout
+ * with its panel: the tier, and `density` for its rows.
+ */
+export function useFramePanel(open: boolean): Layout {
+  const panels = useContext(Panels);
+  const focused = useIsFocused();
+  useEffect(() => (open && focused && panels ? panels.open() : undefined), [open, focused, panels]);
+  return useWideLayout({ panelOpen: open });
+}
+
+const tabHref = {
+  search: '/search',
+  overview: '/',
+  sources: '/sources',
+  index: '/collections',
+  settings: '/settings',
+} as const satisfies Record<string, Href>;
+
+function FrameSidebar({ shape }: { shape: SidebarShape }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { place, file } = sidebarPlace(usePathname());
+  // Dosyalar in Son değişen order, the Collections last written in first.
+  const collections = useCollections('recent');
+  const home = useQuery(trpc.sources.home.queryOptions());
+
+  // Today's way to take a Note (#178 gives Not al its own panel): the last
+  // noted Source, ready to write, as Kaldığın yer opens it; with no Note yet,
+  // Kaynaklar to pick a Source, or the form for the first one.
+  const capture = async () => {
+    const last = await queryClient.fetchQuery(trpc.sources.lastNoted.queryOptions()).catch(() => null);
+    if (last) router.push({ pathname: '/source/[id]', params: { id: last.source.id, write: '1' } });
+    else if (home.data?.sourceCount === 0) router.push('/source/new');
+    else router.dismissTo('/sources');
+  };
+
+  return (
+    <Sidebar
+      shape={shape}
+      place={place}
+      file={file}
+      files={collections.data ?? []}
+      sourceCount={home.data?.sourceCount}
+      labels={{
+        navigation: t('wideSidebar.navigation'),
+        appName: t('wideSidebar.appName'),
+        capture: t('wideSidebar.capture'),
+        search: t('tabs.search'),
+        overview: t('tabs.home'),
+        sources: t('tabs.sources'),
+        index: t('tabs.collections'),
+        files: t('wideSidebar.files'),
+        settings: t('tabs.settings'),
+        fileNotes: (name, count) => t('wideSidebar.fileNotes', { name, count }),
+        sourceCount: (count) => t('wideSidebar.sourceCount', { count }),
+      }}
+      // Back to the tabs, closing the pages pushed over them, as a tab pressed again pops its stack.
+      onGo={(to) => router.dismissTo(tabHref[to])}
+      onOpenFile={(id) => {
+        if (id === file) return;
+        const href = { pathname: '/collection/[id]', params: { id } } as const;
+        // One Collection in place of another, so going from file to file does not pile them up.
+        if (file) router.replace(href);
+        else router.push(href);
+      }}
+      onCapture={() => void capture()}
+    />
+  );
+}

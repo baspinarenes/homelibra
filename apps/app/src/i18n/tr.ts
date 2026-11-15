@@ -8,6 +8,15 @@ export const tr = {
     search: 'Ara',
     settings: 'Ayarlar',
   },
+  // The wide tier's sidebar in place of the tabs (#170); its places take the tabs' names.
+  wideSidebar: {
+    navigation: 'Kenar çubuğu',
+    appName: 'Homelibra',
+    capture: 'Not al',
+    files: 'Dosyalar',
+    fileNotes: '{{name}}, {{count}} not',
+    sourceCount: 'Kaynaklar, {{count}} kaynak',
+  },
   screenHeader: {
     back: 'Geri',
   },

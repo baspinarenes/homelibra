@@ -14,21 +14,27 @@ const tabs = [
   { route: 'settings', key: 'settings', icon: 'settings' },
 ] as const satisfies readonly { route: string; key: string; icon: TabBarIcon }[];
 
+/** The wide tier's tabs have no bar: the frame's sidebar goes to them (components/wide-frame). */
+const noBar = () => null;
+
 /**
- * Five tabs: the package's TabBar in the phone tier, a left rail from the
- * rail tier up. Etiketler is not a tab: it is the second view inside Dizin.
+ * Five tabs: the package's TabBar in the phone tier, a left rail in the rail
+ * tier, the sidebar in the wide tier. Etiketler is not a tab: it is the
+ * second view inside Dizin.
  */
 export default function TabsLayout() {
   const { t } = useTranslation();
-  // The wide tier keeps the rail until the sidebar replaces it.
-  const rail = useWideLayout().tier !== 'phone';
+  const { tier } = useWideLayout();
+  const rail = tier !== 'phone';
   const { colors } = useTheme();
 
   return (
     <Tabs
       tabBar={
         rail
-          ? undefined
+          ? tier === 'wide'
+            ? noBar
+            : undefined
           : ({ state, emitter, navigateToTab }) => {
               const open = state.routes[state.index];
               return (

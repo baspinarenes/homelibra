@@ -22,6 +22,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useHeaderOptions } from '@/components/tab-stack';
+import { WideFrame } from '@/components/wide-frame';
 import { authClient } from '@/lib/auth-client';
 import { OutboxProvider } from '@/lib/outbox';
 import { QueryProvider } from '@/lib/query-provider';
@@ -59,6 +60,7 @@ function RootLayout() {
   const loading = (isPending && !isRefetching) || (!fontsLoaded && !fontError);
   const termsAccepted = !!session?.user.termsAcceptedAt;
   const closed = !!session?.user.deletionRequestedAt;
+  const library = !!session && termsAccepted && !closed;
   // Where a screen the session no longer opens sends the scholar. Said
   // outright: Expo Router's own fallback is the shortest route name.
   const home = !session ? '/sign-in' : closed ? '/account-closed' : !termsAccepted ? '/welcome' : '/';
@@ -80,32 +82,35 @@ function RootLayout() {
                 <ActivityIndicator color={colors.accent} />
               </View>
             ) : (
-              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
-                <Stack.Protected guard={!!session && termsAccepted && !closed} redirectTo={home}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="source/new" options={pushedScreen} />
-                  <Stack.Screen name="source/[id]/index" options={pushedScreen} />
-                  <Stack.Screen name="source/[id]/edit" options={pushedScreen} />
-                  <Stack.Screen name="note/[id]" options={pushedScreen} />
-                  <Stack.Screen name="lost-notes" options={pushedScreen} />
-                  <Stack.Screen name="collection/new" options={pushedScreen} />
-                  <Stack.Screen name="collection/[id]" options={pushedScreen} />
-                  <Stack.Screen name="tag/[id]" options={pushedScreen} />
-                </Stack.Protected>
-                {/* İlk giriş onayı: the Library stays closed until the terms of use are accepted. */}
-                <Stack.Protected guard={!!session && !termsAccepted && !closed} redirectTo={home}>
-                  <Stack.Screen name="welcome" />
-                </Stack.Protected>
-                {/* Hesabı sil was confirmed: only "Silmeyi iptal et" until the Account is deleted. */}
-                <Stack.Protected guard={!!session && closed} redirectTo={home}>
-                  <Stack.Screen name="account-closed" />
-                </Stack.Protected>
-                <Stack.Protected guard={!session} redirectTo={home}>
-                  <Stack.Screen name="sign-in" />
-                </Stack.Protected>
-                {/* The privacy documents and Gizlilik open signed in or not. */}
-                <Stack.Screen name="privacy" />
-              </Stack>
+              // The sidebar in the wide tier, beside every screen of the open Library.
+              <WideFrame library={library}>
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
+                  <Stack.Protected guard={library} redirectTo={home}>
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="source/new" options={pushedScreen} />
+                    <Stack.Screen name="source/[id]/index" options={pushedScreen} />
+                    <Stack.Screen name="source/[id]/edit" options={pushedScreen} />
+                    <Stack.Screen name="note/[id]" options={pushedScreen} />
+                    <Stack.Screen name="lost-notes" options={pushedScreen} />
+                    <Stack.Screen name="collection/new" options={pushedScreen} />
+                    <Stack.Screen name="collection/[id]" options={pushedScreen} />
+                    <Stack.Screen name="tag/[id]" options={pushedScreen} />
+                  </Stack.Protected>
+                  {/* İlk giriş onayı: the Library stays closed until the terms of use are accepted. */}
+                  <Stack.Protected guard={!!session && !termsAccepted && !closed} redirectTo={home}>
+                    <Stack.Screen name="welcome" />
+                  </Stack.Protected>
+                  {/* Hesabı sil was confirmed: only "Silmeyi iptal et" until the Account is deleted. */}
+                  <Stack.Protected guard={!!session && closed} redirectTo={home}>
+                    <Stack.Screen name="account-closed" />
+                  </Stack.Protected>
+                  <Stack.Protected guard={!session} redirectTo={home}>
+                    <Stack.Screen name="sign-in" />
+                  </Stack.Protected>
+                  {/* The privacy documents and Gizlilik open signed in or not. */}
+                  <Stack.Screen name="privacy" />
+                </Stack>
+              </WideFrame>
             )}
           </OutboxProvider>
         </TRPCProvider>
