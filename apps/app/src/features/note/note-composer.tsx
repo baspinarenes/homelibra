@@ -4,7 +4,7 @@ import { Button } from '@homelibra/ui/button';
 import { Dialog } from '@homelibra/ui/dialog';
 import { Sheet } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, space, type as typeScale, useTheme } from '@homelibra/ui/theme';
 import PenLine from 'lucide-react-native/icons/pen-line';
 import Plus from 'lucide-react-native/icons/plus';
 import { type RefObject, useLayoutEffect, useRef, useState } from 'react';
@@ -13,7 +13,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   TextInput,
   type TextInputInstance,
   type TextInputKeyPressEvent,
@@ -29,6 +28,8 @@ import { useOutbox } from '@/lib/outbox';
 import { offerReceiptUndo } from '@/lib/undo';
 
 // The fields are a few lines tall before anything is written in them.
+// The gaps and padding below are the classes `gap-1.75` (labelGap), `gap-4.5` (fieldsGap) and `pt-1`
+// (fieldsPaddingTop) on the fields; change both together.
 const excerptMinHeight = typeScale.excerpt.lineHeight * 3;
 const commentMinHeight = typeScale.comment.lineHeight * 2;
 
@@ -71,7 +72,6 @@ export function NoteComposer({
   onSaved: (id: string) => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { apply } = useOutbox();
@@ -168,20 +168,21 @@ export function NoteComposer({
 
   return (
     <>
-      <View style={[styles.bar, { paddingBottom: insets.bottom }, hidden && styles.hidden]}>
+      {/* One line under a rule at the page's foot: "Not al", and where writing would go on from. */}
+      <View className={cx('border-t border-line bg-page', hidden && 'hidden')} style={{ paddingBottom: insets.bottom }}>
         <SharedUndoBar />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={carriedOn ? `${t('capture.open')}, ${carriedOn}` : t('capture.open')}
           onPress={() => setOpen(true)}
-          style={({ pressed }) => [styles.barButton, pressed && styles.pressed]}
+          className="min-h-13.5 flex-row items-center justify-between gap-md px-4.5 active:opacity-70"
         >
-          <View style={styles.barStart}>
+          <View className="flex-row items-center gap-2.25">
             <PenLine color={colors.accent} size={18} strokeWidth={1.8} />
             <Text variant="action">{t('capture.open')}</Text>
           </View>
           {carriedOn && (
-            <Text variant="locator" color="ink2" numberOfLines={1} style={styles.barLocator}>
+            <Text variant="locator" color="ink2" numberOfLines={1} className="shrink">
               {carriedOn}
             </Text>
           )}
@@ -195,13 +196,14 @@ export function NoteComposer({
         onClose={requestClose}
         onShown={backToExcerpt}
         header={
-          <View style={styles.head}>
-            <View style={styles.headSide}>
+          // Vazgeç · Yeni Not · Kaydet, the title in the middle whatever the sides' widths.
+          <View className="flex-row items-center gap-sm">
+            <View className="flex-1 flex-row">
               <Pressable
                 accessibilityRole="button"
                 onPress={requestClose}
                 hitSlop={8}
-                style={({ pressed }) => [styles.cancel, pressed && styles.pressed]}
+                className="min-h-11 justify-center active:opacity-70"
               >
                 <Text variant="label" color="ink2">
                   {t('capture.cancel')}
@@ -211,7 +213,7 @@ export function NoteComposer({
             <Text variant="sourceTitleSm" role="heading" numberOfLines={1}>
               {t('capture.title')}
             </Text>
-            <View style={[styles.headSide, styles.headEnd]}>
+            <View className="flex-1 flex-row justify-end">
               <Button
                 label={t('capture.save')}
                 variant="small"
@@ -223,7 +225,8 @@ export function NoteComposer({
           </View>
         }
       >
-        <View style={styles.locatorRow}>
+        {/* On one baseline: the label, the value and the link are three sizes of type. */}
+        <View className="flex-row items-baseline gap-x-2.5">
           <Text variant="fieldLabel">{t('capture.locator')}</Text>
           <Text
             variant={trimmedLocator ? 'sourceTitle' : 'body'}
@@ -231,7 +234,7 @@ export function NoteComposer({
             role={undefined}
             color={trimmedLocator ? 'fg' : 'muted'}
             numberOfLines={1}
-            style={styles.locatorValue}
+            className="shrink"
           >
             {shownLocator}
           </Text>
@@ -240,7 +243,7 @@ export function NoteComposer({
             accessibilityLabel={t('capture.changeLocatorLabel', { locator: shownLocator })}
             onPress={() => setEditingLocator(true)}
             hitSlop={8}
-            style={({ pressed }) => [styles.change, pressed && styles.pressed]}
+            className="ml-auto min-h-9 justify-center active:opacity-70"
           >
             <Text variant="link">{t('capture.changeLocator')}</Text>
           </Pressable>
@@ -248,15 +251,13 @@ export function NoteComposer({
 
         {/* Held to the height there is: long text scrolls inside its own field, and Alıntı and Yorum stay in sight together. */}
         <ScrollView
-          style={styles.fields}
-          contentContainerStyle={[
-            styles.fieldsContent,
-            fieldsRoom > 0 && { height: Math.max(fieldsRoom, fieldsMinHeight) },
-          ]}
+          className="flex-1"
+          contentContainerClassName="gap-4.5 pt-1 pb-lg"
+          contentContainerStyle={fieldsRoom > 0 ? { height: Math.max(fieldsRoom, fieldsMinHeight) } : undefined}
           keyboardShouldPersistTaps="handled"
           onLayout={(event) => setFieldsRoom(event.nativeEvent.layout.height)}
         >
-          <View style={[styles.field, styles.excerptField]}>
+          <View className="shrink gap-1.75" style={{ minHeight: excerptFieldMinHeight }}>
             <Text variant="fieldLabel">{t('capture.excerpt')}</Text>
             <TextInput
               ref={excerptRef}
@@ -267,11 +268,12 @@ export function NoteComposer({
               onKeyPress={saveOnCtrlEnter}
               placeholder={t('capture.excerptPlaceholder')}
               placeholderTextColor={colors.muted2}
-              style={[styles.input, styles.excerpt]}
+              className={excerptInput}
+              style={{ minHeight: excerptMinHeight }}
             />
           </View>
           {commenting ? (
-            <View style={[styles.field, styles.commentField]}>
+            <View className="shrink gap-1.75" style={{ minHeight: commentFieldMinHeight }}>
               <Text variant="fieldLabel">{t('capture.comment')}</Text>
               <TextInput
                 ref={commentRef}
@@ -283,7 +285,8 @@ export function NoteComposer({
                 onKeyPress={saveOnCtrlEnter}
                 placeholder={t('capture.commentPlaceholder')}
                 placeholderTextColor={colors.muted2}
-                style={[styles.input, styles.comment]}
+                className={commentInput}
+                style={{ minHeight: commentMinHeight }}
               />
             </View>
           ) : (
@@ -291,7 +294,7 @@ export function NoteComposer({
               accessibilityRole="button"
               onPress={() => setCommenting(true)}
               hitSlop={6}
-              style={({ pressed }) => [styles.addComment, pressed && styles.pressed]}
+              className="min-h-8 flex-row items-center gap-1.5 self-start active:opacity-70"
             >
               <Plus color={colors.accent} size={16} strokeWidth={1.8} />
               <Text variant="link">{t('capture.addComment')}</Text>
@@ -305,14 +308,18 @@ export function NoteComposer({
         </ScrollView>
 
         {/* Just over the keyboard; the Geri al of the Note saved last floats above it. */}
-        <View style={styles.toolbar}>
+        <View className="flex-row items-center border-t border-line pt-sm">
           <SharedUndoBar />
+          {/* "+ etiket"; once Tags are chosen, their names. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={tags.length > 0 ? `${t('tags.field')}: ${tags.join(', ')}` : t('tags.add')}
             onPress={() => setPickingTags(true)}
             hitSlop={6}
-            style={({ pressed }) => [styles.tags, tags.length > 0 && styles.tagsChosen, pressed && styles.pressed]}
+            className={cx(
+              'shrink rounded-chip border px-2.25 py-0.75 active:opacity-70',
+              tags.length > 0 ? 'border-solid border-chip-bg bg-chip-bg' : 'border-dashed border-line',
+            )}
           >
             <Text variant="labelSm" color={tags.length > 0 ? 'chipInk' : 'accent'} numberOfLines={1}>
               {tags.length > 0 ? tags.join(', ') : t('tags.add')}
@@ -369,73 +376,10 @@ function useGrowOnWeb(ref: RefObject<TextInputInstance | null>, text: string, sh
   }, [ref, text, shown]);
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    // One line under a rule at the page's foot: "Not al", and where writing would go on from.
-    bar: { borderTopWidth: 1, borderTopColor: c.line, backgroundColor: c.page },
-    barButton: {
-      minHeight: 54,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: space.md,
-      paddingHorizontal: space.gutter - 4,
-    },
-    barStart: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-    barLocator: { flexShrink: 1 },
-    hidden: { display: 'none' },
-    pressed: { opacity: 0.7 },
-    // Vazgeç · Yeni Not · Kaydet, the title in the middle whatever the sides' widths.
-    head: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    headSide: { flex: 1, flexDirection: 'row' },
-    headEnd: { justifyContent: 'flex-end' },
-    cancel: { minHeight: 44, justifyContent: 'center' },
-    // On one baseline: the label, the value and the link are three sizes of type.
-    locatorRow: { flexDirection: 'row', alignItems: 'baseline', columnGap: 10 },
-    locatorValue: { flexShrink: 1 },
-    change: { marginLeft: 'auto', minHeight: 36, justifyContent: 'center' },
-    fields: { flex: 1 },
-    fieldsContent: { gap: fieldsGap, paddingTop: fieldsPaddingTop, paddingBottom: space.lg },
-    field: { gap: labelGap, flexShrink: 1 },
-    excerptField: { minHeight: excerptFieldMinHeight },
-    commentField: { minHeight: commentFieldMinHeight },
-    // No box: the words on the sheet itself.
-    input: {
-      flexShrink: 1,
-      padding: 0,
-      color: c.fg,
-      textAlignVertical: 'top',
-      // No browser focus ring on web. Set from the start, not on focus: adding an outline to an
-      // Android input redraws its background and drops its padding.
-      outlineWidth: 0,
-    },
-    // The author's words: the quote face and the quote rule.
-    excerpt: {
-      ...typeScale.excerpt,
-      color: c.quoteInk,
-      minHeight: excerptMinHeight,
-      borderLeftWidth: 2,
-      borderLeftColor: c.quoteBar,
-      paddingLeft: 12,
-    },
-    comment: { ...typeScale.comment, color: c.ink3, minHeight: commentMinHeight },
-    addComment: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 32 },
-    toolbar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingTop: space.sm,
-      borderTopWidth: 1,
-      borderTopColor: c.line,
-    },
-    // "+ etiket"; once Tags are chosen, their names.
-    tags: {
-      flexShrink: 1,
-      paddingVertical: 3,
-      paddingHorizontal: 9,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderStyle: 'dashed',
-      borderRadius: radius.chip,
-    },
-    tagsChosen: { borderStyle: 'solid', borderColor: c.chipBg, backgroundColor: c.chipBg },
-  });
+// No box: the words on the sheet itself. No browser focus ring on web (`outline-0`, which native
+// ignores): set from the start, not on focus, as adding an outline to an Android input redraws its
+// background and drops its padding.
+const input = 'shrink p-0 align-top outline-0';
+// The author's words: the quote face and the quote rule.
+const excerptInput = `${input} type-excerpt text-quote-ink border-l-2 border-quote-bar pl-3`;
+const commentInput = `${input} type-comment text-ink3`;

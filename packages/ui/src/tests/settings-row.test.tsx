@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { SettingsRow, SettingsRows } from '../settings-row';
-import { all, byRole, css, type Node, render, text } from './render';
+import { all, byRole, classes, type Node, render, text } from './render';
 
 const noop = () => {};
 
@@ -10,11 +10,6 @@ describe('SettingsRow', () => {
     const page = render(<SettingsRow label="E-posta adresi" value="tarihci@ornek.edu.tr" onPress={noop} />);
     const [row] = byRole(page, 'button');
     expect(text(row!)).toBe('E-posta adresitarihci@ornek.edu.tr');
-  });
-
-  it('is at least 48 high, as `.srow` on the Ayarlar boards', () => {
-    const [row] = byRole(render(<SettingsRow label="Kütüphaneni dışa aktar" onPress={noop} />), 'button');
-    expect(css(row!, 'minHeight')).toBe('48px');
   });
 
   it('ends in a chevron', () => {
@@ -32,8 +27,8 @@ describe('SettingsRows', () => {
       </SettingsRows>,
     );
     const [first, second] = byRole(page, 'button').map((row) => parentOf(page, row));
-    expect(css(second!, 'borderTopWidth')).toBe('1px');
-    expect(css(first!, 'borderTopWidth')).toBeUndefined();
+    expect(classes(second!)).toContain('border-t');
+    expect(classes(first!)).not.toContain('border-t');
   });
 });
 

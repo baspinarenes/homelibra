@@ -40,19 +40,21 @@ const derivedSortValue = {
 const ownStyle = [
   {
     selector: "Property[key.name='fontFamily'], JSXAttribute[name.name='fontFamily']",
-    message: 'Faces come from @homelibra/ui/theme: spread a `type` entry (type.strong for a heavier word) instead.',
+    message: 'Faces come from @homelibra/ui: a Text variant, or a `type-*` class (type-strong for a heavier word).',
   },
   {
     selector:
       'Literal[value=/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/], Literal[value=/^(?:rgb|hsl)a?\\(/i], TemplateElement[value.raw=/^(?:rgb|hsl)a?\\(/i]',
-    message: 'Colours come from @homelibra/ui/theme (`Colors` from useTheme / useThemedStyles); write none in the app.',
+    message:
+      'Colours come from @homelibra/ui: a class (`bg-page`, `text-fg`), or `useTheme().colors` where JS needs one.',
   },
   // A named colour ('red'); the written values above are caught already. Text's `color`
   // (and MarkedText's, which hands it on) names a theme colour, which its type checks (#145).
   {
     selector:
       "Property[key.name=/[cC]olor$/] > Literal.value:not([value=/^(?:#|rgb|hsl)/i]):not([value='transparent']), JSXOpeningElement:not([name.name=/^(?:Text|MarkedText)$/]) > JSXAttribute[name.name=/^(?:[a-zA-Z]*[cC]olor|fill|stroke)$/] > Literal:not([value=/^(?:#|rgb|hsl)/i]):not([value='none']):not([value='transparent'])",
-    message: 'Colours come from @homelibra/ui/theme (`Colors` from useTheme / useThemedStyles); write none in the app.',
+    message:
+      'Colours come from @homelibra/ui: a class (`bg-page`, `text-fg`), or `useTheme().colors` where JS needs one.',
   },
   {
     selector:
@@ -60,6 +62,37 @@ const ownStyle = [
     message: 'Corners come from `radius` in @homelibra/ui/theme.',
   },
 ];
+
+// Tailwind classes that bypass the tokens (packages/ui/src/theme.css, generated from
+// tokens.ts): a written colour (`bg-[#fff]`), a size or line of Tailwind's own scale
+// (`text-sm`, `leading-6`, `text-[15px]`) or a face. Tokens only: `bg-page`, `type-body`.
+const tokenClasses = ['Literal', 'TemplateElement'].flatMap((node) => {
+  const value = node === 'Literal' ? 'value' : 'value.raw';
+  return [
+    {
+      selector: `${node}[${value}=/(?:^|[\\s:])(?:bg|text|border|outline|decoration|fill|stroke|shadow)-\\[(?:#|rgb|hsl|color:)/]`,
+      message: 'Colours come from the theme: `bg-page`, `text-fg`, `border-line`. Write none as a class.',
+    },
+    {
+      selector: `${node}[${value}=/(?:^|[\\s:])(?:text-(?:xs|sm|base|lg|[2-9]?xl|\\[\\d)|leading-|font-(?:sans|serif|mono|\\[)|tracking-)/]`,
+      message: "Sizes, lines and faces come from a Text variant or a `type-*` class, not Tailwind's scale.",
+    },
+  ];
+});
+
+// Corners in the app are the design system's (rounded-control, rounded-chip …), never
+// Tailwind's scale or a written one.
+const tokenCorners = ['Literal', 'TemplateElement'].map((node) => ({
+  selector: `${node}[${node === 'Literal' ? 'value' : 'value.raw'}=/(?:^|[\\s:])rounded(?:-[trbl]{1,2})?(?:-(?:xs|sm|md|lg|[2-9]?xl|full|none|\\[)|(?=[\\s'"]|$))/]`,
+  message: 'Corners come from the theme: rounded-control, rounded-chip, rounded-cover, rounded-sheet, rounded-pill.',
+}));
+
+// Styles are classes (Uniwind); a StyleSheet would be a second way to the same thing.
+const noStyleSheet = {
+  name: 'react-native',
+  importNames: ['StyleSheet'],
+  message: 'Style with className (Tailwind classes through Uniwind); dynamic values go in an inline style.',
+};
 
 // A size and its line come from one `type` entry, which the theme test holds to its
 // face's height; a line written beside it can fall short, and Android cuts the glyphs.
@@ -103,7 +136,15 @@ export default tseslint.config(
   {
     files: ['apps/app/**'],
     rules: {
-      'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownStyle, ...ownSize],
+      'no-restricted-syntax': [
+        'error',
+        ...turkishCase,
+        ...hermesGaps,
+        ...ownStyle,
+        ...ownSize,
+        ...tokenClasses,
+        ...tokenCorners,
+      ],
       // Text from @homelibra/ui/text gives each entry its colour, its heading role and its
       // Turkish upper case (#145); React Native's own leaves a screen to remember them.
       'no-restricted-imports': [
@@ -112,6 +153,7 @@ export default tseslint.config(
           paths: [
             // These options replace the block above's, so the Sort value ban comes along.
             derivedSortValue,
+            noStyleSheet,
             {
               name: 'react-native',
               importNames: ['Text'],
@@ -125,7 +167,14 @@ export default tseslint.config(
   {
     files: ['packages/ui/**'],
     ignores: ['packages/ui/src/lib/tokens.ts'],
-    rules: { 'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownSize] },
+    rules: {
+      'no-restricted-syntax': ['error', ...turkishCase, ...hermesGaps, ...ownSize, ...tokenClasses],
+    },
+  },
+  {
+    // The components; the tests' shims re-export react-native whole.
+    files: ['packages/ui/src/lib/**'],
+    rules: { 'no-restricted-imports': ['error', { paths: [noStyleSheet] }] },
   },
   {
     files: ['**/*.cjs', '**/metro.config.js', '**/babel.config.js'],

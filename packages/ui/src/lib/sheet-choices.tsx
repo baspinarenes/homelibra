@@ -1,9 +1,9 @@
 import Check from 'lucide-react-native/icons/check';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import type { Colors } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 /**
  * A sheet that is one choice (Sırala): its options on 52px lines with a thin
@@ -22,7 +22,6 @@ export function SheetChoices<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   return (
     <View role="radiogroup" aria-label={label}>
@@ -34,9 +33,12 @@ export function SheetChoices<T extends string>({
             role="radio"
             aria-checked={selected}
             onPress={() => onChange(option.value)}
-            style={({ pressed }) => [styles.option, index > 0 && styles.divided, pressed && styles.pressed]}
+            className={cx(
+              'min-h-13 flex-row items-center justify-between gap-3 active:opacity-70',
+              index > 0 && 'border-t border-line-soft',
+            )}
           >
-            <Text variant={selected ? 'choiceStrong' : 'choice'} style={styles.text}>
+            <Text variant={selected ? 'choiceStrong' : 'choice'} className="shrink">
               {option.label}
             </Text>
             {selected && <Check color={colors.accent} size={20} strokeWidth={1.6} />}
@@ -46,11 +48,3 @@ export function SheetChoices<T extends string>({
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    option: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 52 },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    pressed: { opacity: 0.7 },
-    text: { flexShrink: 1 },
-  });

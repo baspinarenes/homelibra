@@ -1,9 +1,9 @@
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 
 import { ListMessage } from '@/components/list-message';
 import type { CollectionSort } from '@/features/collection/dizin-sort';
@@ -22,11 +22,11 @@ export function useCollections(sort: CollectionSort) {
  */
 export function CollectionList({ sort }: { sort: CollectionSort }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const collections = useCollections(sort);
 
-  if (collections.isPending) return <ActivityIndicator style={styles.status} color={styles.spinner.color} />;
+  if (collections.isPending) return <ActivityIndicator className="mt-xl" color={colors.accent} />;
   if (collections.isError) {
     return (
       <ListMessage
@@ -37,7 +37,7 @@ export function CollectionList({ sort }: { sort: CollectionSort }) {
   }
   return (
     <FlatList
-      contentContainerStyle={styles.content}
+      contentContainerClassName="grow px-gutter pt-xs pb-xxl"
       data={collections.data}
       keyExtractor={(collection) => collection.id}
       keyboardShouldPersistTaps="handled"
@@ -52,9 +52,12 @@ export function CollectionList({ sort }: { sort: CollectionSort }) {
         <Pressable
           accessibilityRole="link"
           onPress={() => router.push({ pathname: '/collection/[id]', params: { id: collection.id } })}
-          style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+          className={cx(
+            'flex-row items-center gap-md py-md active:opacity-70',
+            index > 0 && 'border-t border-line-soft',
+          )}
         >
-          <View style={styles.texts}>
+          <View className="min-w-0 flex-1 gap-0.75">
             <Text variant="sourceTitleSm">{collection.name}</Text>
             <Text variant="caption" color={collection.tags.length ? 'chipInk' : 'muted2'}>
               {collection.tags.length ? collection.tags.map((tag) => tag.name).join(' · ') : t('collection.noTags')}
@@ -66,14 +69,3 @@ export function CollectionList({ sort }: { sort: CollectionSort }) {
     />
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    content: { flexGrow: 1, paddingHorizontal: space.gutter, paddingTop: space.xs, paddingBottom: space.xxl },
-    status: { marginTop: space.xl },
-    spinner: { color: c.accent },
-    pressed: { opacity: 0.7 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    texts: { flex: 1, minWidth: 0, gap: 3 },
-  });

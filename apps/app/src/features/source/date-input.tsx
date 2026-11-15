@@ -18,12 +18,12 @@ import { Button } from '@homelibra/ui/button';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, radius, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { useTheme } from '@homelibra/ui/theme';
 import { Wheels } from '@homelibra/ui/wheels';
 import Info from 'lucide-react-native/icons/info';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Linking, Pressable, View } from 'react-native';
 
 /** A Date as the form holds it: Gün and Yıl as text, Ay as a number. */
 export type DateDraft = { calendar: Calendar; day: string; month: number | null; year: string };
@@ -76,7 +76,6 @@ export function DateInput({
   today?: boolean;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const [picking, setPicking] = useState(false);
   const [explaining, setExplaining] = useState(false);
@@ -87,7 +86,7 @@ export function DateInput({
   const exact = date ? isExactInGregorian(date) : true;
 
   return (
-    <View style={styles.field}>
+    <View className="gap-1.5">
       <Text variant="fieldLabel">{label}</Text>
       <Pressable
         role="button"
@@ -97,15 +96,15 @@ export function DateInput({
           Keyboard.dismiss();
           setPicking(true);
         }}
-        style={styles.input}
+        className="min-h-11.5 flex-row items-center justify-between gap-3 rounded-control border border-line bg-surface px-3.5 py-3"
       >
-        <Text variant="body" color={shown ? 'fg' : 'muted2'} style={styles.value} numberOfLines={1}>
+        <Text variant="body" color={shown ? 'fg' : 'muted2'} className="shrink" numberOfLines={1}>
           {shown ?? t('date.pick')}
         </Text>
         {date && !today && <Text variant="caption">{t(`date.calendars.${date.calendar}`)}</Text>}
       </Pressable>
       {range && (
-        <View style={styles.rangeLine}>
+        <View className="flex-row items-center gap-1.5">
           <Text variant="caption">{t(exact ? 'date.exact' : 'date.approximate', { range })}</Text>
           {!exact && (
             <Pressable
@@ -162,7 +161,6 @@ function DatePicker({
   onChoose: (date: CalendarDate | null) => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const [wheels, setWheels] = useState<DateWheels>(() => dateWheels(date));
   // Each opening starts from the field's Date.
   const [wasVisible, setWasVisible] = useState(visible);
@@ -190,7 +188,7 @@ function DatePicker({
       primary={{ label: t('date.done'), onPress: () => onChoose(picked) }}
     >
       {today ? (
-        <View style={styles.todayRow}>
+        <View className="min-h-10 flex-row items-center justify-between">
           <Text variant="fieldLabel">{t('date.calendars.gregorian')}</Text>
           <Button label={t('date.today')} variant="text" onPress={() => setWheels(dateWheels(todayDate()))} />
         </View>
@@ -237,13 +235,13 @@ function DatePicker({
           },
         ]}
       />
-      <View style={styles.readout}>
+      <View className="items-center gap-0.5">
         {range && (
-          <Text variant="label" color="ink2" style={styles.readoutLine}>
+          <Text variant="label" color="ink2" className="text-center">
             {t(isExactInGregorian(picked) ? 'date.exact' : 'date.approximate', { range })}
           </Text>
         )}
-        <Text variant="label" color={range ? 'muted' : 'ink2'} style={styles.readoutLine}>
+        <Text variant="label" color={range ? 'muted' : 'ink2'} className="text-center">
           {shownAs}
         </Text>
       </View>
@@ -282,26 +280,3 @@ function ApproximationSheet({
     </Sheet>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    field: { gap: 6 },
-    input: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      minHeight: 46,
-    },
-    value: { flexShrink: 1 },
-    rangeLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    todayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40 },
-    readout: { alignItems: 'center', gap: 2 },
-    readoutLine: { textAlign: 'center' },
-  });

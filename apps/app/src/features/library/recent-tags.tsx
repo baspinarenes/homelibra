@@ -1,10 +1,10 @@
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { HomeDivider } from '@/features/library/home-divider';
 import { useTRPC } from '@/lib/trpc';
@@ -19,7 +19,6 @@ const shownCount = 8;
  */
 export function RecentTags() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const tags = useQuery(trpc.tags.list.queryOptions({ sort: 'recent', limit: shownCount }));
@@ -28,8 +27,9 @@ export function RecentTags() {
   return (
     <>
       <HomeDivider />
-      <View style={styles.section}>
-        <View style={styles.head}>
+      {/* Under Okunuyor or Kaldığın yer, the HomeDivider between. */}
+      <View className="py-5.5">
+        <View className="pb-xs">
           <SectionHeading
             title={t('tags.recent')}
             link={{
@@ -43,9 +43,12 @@ export function RecentTags() {
             key={tag.id}
             accessibilityRole="link"
             onPress={() => router.push({ pathname: '/tag/[id]', params: { id: tag.id } })}
-            style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+            className={cx(
+              'flex-row items-baseline justify-between gap-md py-2.5 active:opacity-70',
+              index > 0 && 'border-t border-line-soft',
+            )}
           >
-            <Text variant="body" color="fg" style={styles.name}>
+            <Text variant="body" color="fg" className="shrink">
               {tag.name}
             </Text>
             <Text variant="count">{t('tags.counts', { notes: tag.noteCount, sources: tag.sourceCount })}</Text>
@@ -55,20 +58,3 @@ export function RecentTags() {
     </>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    // Under Okunuyor or Kaldığın yer, the HomeDivider between.
-    section: { paddingVertical: 22 },
-    head: { paddingBottom: space.xs },
-    pressed: { opacity: 0.7 },
-    row: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      justifyContent: 'space-between',
-      gap: space.md,
-      paddingVertical: 10,
-    },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    name: { flexShrink: 1 },
-  });

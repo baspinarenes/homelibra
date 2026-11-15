@@ -3,7 +3,7 @@ import { Button } from '@homelibra/ui/button';
 import { HeaderIconAction, ScreenHeader } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, space, type as typeScale, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, type as typeScale, useTheme } from '@homelibra/ui/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { type NativeStackHeaderProps, Stack, useLocalSearchParams } from 'expo-router';
@@ -11,7 +11,7 @@ import { usePreventRemove } from 'expo-router/react-navigation';
 import Search from 'lucide-react-native/icons/search';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { CopyMarkdownAction, DeleteCollectionAction } from '@/features/collection/collection-actions';
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
@@ -36,21 +36,21 @@ type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const view = useQuery(trpc.collections.view.queryOptions({ id }));
 
   return view.data ? (
     <CollectionPage collection={view.data} />
   ) : (
-    <View style={styles.center}>
+    <View className="flex-1 items-center justify-center bg-page p-xl">
       <Stack.Screen options={{ title: '' }} />
       {view.isError ? (
-        <Text variant="body" style={styles.lead}>
+        <Text variant="body" className="text-center">
           {t('collection.loadFailed')}
         </Text>
       ) : (
-        <ActivityIndicator color={styles.spinner.color} />
+        <ActivityIndicator color={colors.accent} />
       )}
     </View>
   );
@@ -58,7 +58,6 @@ export default function CollectionScreen() {
 
 function CollectionPage({ collection }: { collection: Collection }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [renaming, setRenaming] = useState(false);
@@ -172,7 +171,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
   );
 
   return (
-    <View style={styles.page}>
+    <View className="flex-1">
       <Stack.Screen options={{ title: collection.name, header }} />
       {renaming && (
         <RenameField
@@ -184,7 +183,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
         />
       )}
       {/* While the name is being written, the rest stands back and waits. */}
-      <View style={[styles.page, renaming && styles.renaming]} pointerEvents={renaming ? 'none' : 'auto'}>
+      <View className={cx('flex-1', renaming && 'opacity-45')} pointerEvents={renaming ? 'none' : 'auto'}>
         <CollectionView
           view={shown}
           bar={bar}
@@ -199,7 +198,8 @@ function CollectionPage({ collection }: { collection: Collection }) {
           }
         />
       </View>
-      <View pointerEvents="box-none" style={styles.foot}>
+      {/* "Kopyalandı · n not" and failures float above this zero-height edge. */}
+      <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0">
         <SharedUndoBar />
       </View>
     </View>
@@ -225,12 +225,11 @@ function RenameField({
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const [name, setName] = useState(initial);
   const ready = name.trim().length > 0 && !busy;
   const save = () => ready && onSave(name.trim());
   return (
-    <View style={styles.rename}>
+    <View className="gap-sm px-lg pt-sm">
       <TextField
         label={t('collection.nameLabel')}
         labelHidden
@@ -243,9 +242,9 @@ function RenameField({
         returnKeyType="done"
         maxLength={200}
         error={failed ? t('collection.saveFailed') : undefined}
-        style={styles.nameInput}
+        style={nameInput}
       />
-      <View style={styles.renameActions}>
+      <View className="flex-row items-center justify-end gap-md">
         <Button label={t('collection.cancel')} variant="text" onPress={onCancel} />
         <Button label={t('collection.save')} variant="small" onPress={save} disabled={!ready} busy={busy} />
       </View>
@@ -253,16 +252,5 @@ function RenameField({
   );
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { textAlign: 'center' },
-    spinner: { color: c.accent },
-    page: { flex: 1 },
-    renaming: { opacity: 0.45 },
-    rename: { gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.sm },
-    nameInput: { ...typeScale.sourceTitle, minHeight: 50 },
-    renameActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: space.md },
-    // "Kopyalandı · n not" and failures float above this zero-height edge.
-    foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  });
+// TextField sets its own face and height; a style handed to it is laid over them.
+const nameInput = { ...typeScale.sourceTitle, minHeight: 50 };

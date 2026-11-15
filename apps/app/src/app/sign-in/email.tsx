@@ -2,11 +2,10 @@ import { NOT_INVITED } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, useThemedStyles } from '@homelibra/ui/theme';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 
 import { InviteNotice } from '@/features/account/invite-notice';
 import { authClient } from '@/lib/auth-client';
@@ -19,7 +18,6 @@ type Message = { kind: 'notInvited' } | { kind: 'sendFailed' } | { kind: 'invali
  */
 export default function EmailSignInScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const headerHeight = useHeaderHeight();
   const [email, setEmail] = useState('');
   // The address the code went to; the code field shows while it is the one typed.
@@ -68,11 +66,14 @@ export default function EmailSignInScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.page}
+      className="flex-1 bg-page"
       behavior={Platform.OS === 'web' ? undefined : 'padding'}
       keyboardVerticalOffset={headerHeight}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerClassName="w-full max-w-[420px] self-center gap-4 px-5.5 pt-2 pb-6"
+        keyboardShouldPersistTaps="handled"
+      >
         <Text variant="title">{t('signIn.emailTitle')}</Text>
         <Text variant="body">{sentTo ? t('signIn.codeSentTo', { email: sentTo }) : t('signIn.lead')}</Text>
         <TextField
@@ -127,17 +128,3 @@ export default function EmailSignInScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    page: { flex: 1, backgroundColor: c.page },
-    content: {
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 420,
-      gap: 16,
-      paddingHorizontal: 22,
-      paddingTop: 8,
-      paddingBottom: 24,
-    },
-  });

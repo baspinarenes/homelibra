@@ -1,11 +1,10 @@
 import { Button } from '@homelibra/ui/button';
 import { SectionText } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
-import { space } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { apiUrl } from '@/lib/api-url';
 import { downloadLibraryExport } from '@/features/library/export-download';
@@ -21,7 +20,7 @@ export function LibraryExportDownload() {
 
   if (Platform.OS !== 'web') {
     return (
-      <View style={styles.block}>
+      <View className="gap-sm pt-sm">
         <SectionText>{t('libraryExport.onWeb')}</SectionText>
         <Text
           variant="label"
@@ -36,7 +35,7 @@ export function LibraryExportDownload() {
   }
 
   return (
-    <View style={styles.block}>
+    <View className="gap-sm pt-sm">
       <Button label={t('libraryExport.download')} busy={download.isPending} onPress={() => download.mutate()} />
       {download.isPending ? <Text variant="caption">{t('libraryExport.preparing')}</Text> : null}
       {download.isError ? (
@@ -47,7 +46,3 @@ export function LibraryExportDownload() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  block: { gap: space.sm, paddingTop: space.sm },
-});

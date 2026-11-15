@@ -5,7 +5,7 @@ import { type ListedNote, type NoteStatus, withPendingNotes } from '@homelibra/o
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,7 +14,7 @@ import PenLine from 'lucide-react-native/icons/pen-line';
 import Search from 'lucide-react-native/icons/search';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 
 import { CoverEditor } from '@/features/source/cover-editor';
 import { NoteComposer } from '@/features/note/note-composer';
@@ -63,7 +63,6 @@ type Pin = { id: string; at: 'bar' | 'middle' };
 export default function SourceScreen() {
   const { id, write, note } = useLocalSearchParams<{ id: string; write?: string; note?: string }>();
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
@@ -82,13 +81,13 @@ export default function SourceScreen() {
   if (!source.data || !shown) {
     const waitingForNetwork = source.fetchStatus === 'paused' || notes.fetchStatus === 'paused';
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center bg-page p-xl">
         {source.isError || notes.isError ? (
-          <Text variant="body" style={styles.lead}>
+          <Text variant="body" className="text-center">
             {t('sourcePage.loadFailed')}
           </Text>
         ) : waitingForNetwork ? (
-          <Text variant="body" style={styles.lead}>
+          <Text variant="body" className="text-center">
             {t('outbox.needsConnection')}
           </Text>
         ) : (
@@ -115,7 +114,6 @@ function SourcePage({
   found: string | undefined;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const headerHeight = useHeaderHeight();
   const [searching, setSearching] = useState(false);
@@ -178,7 +176,7 @@ function SourcePage({
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      className="flex-1 bg-page"
       behavior={Platform.OS === 'web' ? undefined : 'padding'}
       keyboardVerticalOffset={headerHeight}
     >
@@ -215,8 +213,8 @@ function SourcePage({
       />
       <FlatList
         ref={list}
-        style={styles.screen}
-        contentContainerStyle={styles.content}
+        className="flex-1 bg-page"
+        contentContainerClassName="px-gutter pb-lg"
         data={listed}
         extraData={[statuses, searched.matches]}
         keyExtractor={(note) => note.id}
@@ -235,23 +233,23 @@ function SourcePage({
         ListHeaderComponent={
           <>
             {searchInBar && (
-              <View style={styles.fold}>
-                <Text variant="sourceTitleSm" numberOfLines={1} style={styles.foldText}>
+              <View className="flex-row items-baseline gap-1.5 border-b border-line py-md">
+                <Text variant="sourceTitleSm" numberOfLines={1} className="shrink">
                   {source.title}
                 </Text>
                 {Boolean(source.author) && (
-                  <Text variant="caption" numberOfLines={1} style={styles.foldText}>
+                  <Text variant="caption" numberOfLines={1} className="shrink">
                     {source.author}
                   </Text>
                 )}
               </View>
             )}
             {/* Hidden rather than gone while folded, so the cover is not loaded again. */}
-            <View style={[styles.heading, searchInBar && styles.hidden]}>
-              <View style={styles.identity}>
+            <View className={cx('gap-2.5 border-b border-line pt-md pb-3.5', searchInBar && 'hidden')}>
+              <View className="flex-row items-start gap-3.5">
                 <CoverEditor sourceId={source.id} type={source.type} cover={source.cover} />
-                <View style={styles.identityText}>
-                  <View style={styles.typeLine}>
+                <View className="flex-1 gap-xs">
+                  <View className="flex-row items-center gap-sm">
                     <Text variant="micro" color="accent">
                       {t(`sourceTypes.${source.type}.label`)}
                     </Text>
@@ -263,7 +261,9 @@ function SourcePage({
               </View>
               <SourceTags sourceId={source.id} names={source.tags.map((tag) => tag.name)} />
             </View>
-            <View style={[styles.notesHeading, searchInNotes && styles.notesSearching]}>
+            {/* As a Section spaces its heading: 18 under the rule, the first row's own 12 below;
+                while searching, the field's own height stands in for the heading's line. */}
+            <View className={cx('gap-sm', searchInNotes ? 'pt-2.5' : 'pt-4.5')}>
               {searchInNotes ? (
                 <SourceSearchBar
                   text={search.text}
@@ -301,8 +301,8 @@ function SourcePage({
           </>
         }
         ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <Text variant="body" style={styles.empty}>
+          <View className="gap-sm py-xl">
+            <Text variant="body" className="text-center">
               {t(searched.matches ? 'noteSearch.sourceEmpty' : 'sourcePage.empty')}
             </Text>
             {searched.matches && <ShortWords words={searched.shortWords} centered />}
@@ -375,7 +375,7 @@ function NoteRow({
   onLayout: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const shown = useShownStatus(status);
   return (
     <Pressable
@@ -383,14 +383,20 @@ function NoteRow({
       accessibilityHint={t('sourcePage.editNote')}
       onPress={onPress}
       onLayout={onLayout}
-      style={({ pressed }) => [styles.row, divided && styles.divided, pressed && styles.pressed]}
+      className={cx('flex-row gap-2.5 py-md active:opacity-70', divided && 'border-t border-line-soft')}
     >
-      <View style={styles.locatorColumn}>
+      <View className="w-17 gap-xs pt-1">
         <Text variant="locator">{note.locator ?? '—'}</Text>
       </View>
-      <View style={styles.texts}>
+      <View className="flex-1 gap-1.5">
         {note.excerpt && (
-          <MarkedText text={note.excerpt} marks={match?.excerpt} variant="excerpt" style={styles.excerpt} />
+          <MarkedText
+            text={note.excerpt}
+            marks={match?.excerpt}
+            variant="excerpt"
+            // MarkedText takes only a style.
+            style={{ borderLeftWidth: 2, borderLeftColor: colors.quoteBar, paddingLeft: 11 }}
+          />
         )}
         {note.comment && <MarkedText text={note.comment} marks={match?.comment} variant="comment" prefix="↳ " />}
         <NoteTagsLine names={note.tags.map((tag) => tag.name)} />
@@ -403,47 +409,3 @@ function NoteRow({
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.gutter, paddingBottom: space.lg },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { textAlign: 'center' },
-    pressed: { opacity: 0.7 },
-    heading: {
-      gap: 10,
-      paddingTop: space.md,
-      paddingBottom: 14,
-      borderBottomWidth: 1,
-      borderBottomColor: c.line,
-    },
-    // As a Section spaces its heading: 18 under the rule, the first row's own 12 below.
-    notesHeading: { paddingTop: 18, gap: space.sm },
-    // The field's own height stands in for the heading's line.
-    notesSearching: { paddingTop: 10 },
-    fold: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      gap: 6,
-      paddingVertical: space.md,
-      borderBottomWidth: 1,
-      borderBottomColor: c.line,
-    },
-    foldText: { flexShrink: 1 },
-    identity: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
-    identityText: { flex: 1, gap: space.xs },
-    typeLine: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    hidden: { display: 'none' },
-    emptyBox: { gap: space.sm, paddingVertical: space.xl },
-    empty: { textAlign: 'center' },
-    row: { flexDirection: 'row', gap: 10, paddingVertical: space.md },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    locatorColumn: { width: 68, gap: space.xs, paddingTop: 4 },
-    texts: { flex: 1, gap: 6 },
-    excerpt: {
-      borderLeftWidth: 2,
-      borderLeftColor: c.quoteBar,
-      paddingLeft: 11,
-    },
-  });

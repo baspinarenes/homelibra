@@ -20,6 +20,5 @@ export {
   type ThemePreference,
   type ThemePreferenceStorage,
   useTheme,
-  useThemedStyles,
   useThemePreference,
 } from './lib/use-theme';

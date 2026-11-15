@@ -1,6 +1,6 @@
 import type { SourceType } from '@homelibra/core/source';
-import { coverColors, coverStripe, radius } from '@homelibra/ui/theme';
-import { StyleSheet, View } from 'react-native';
+import { coverColors, coverStripe } from '@homelibra/ui/theme';
+import { View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
 /** A cover's box: `small` for list rows (design system, size s), `large` for Kaldığın yer on Genel Bakış. */
@@ -15,7 +15,12 @@ export function TemplateCover({ type, size = 'small' }: { type: SourceType; size
   const { width, height } = coverSizes[size];
   const stripes = `stripes-${type}`;
   return (
-    <View style={[styles.box, { width, height }]} accessibilityElementsHidden importantForAccessibility="no">
+    <View
+      className="overflow-hidden rounded-cover"
+      style={{ width, height }}
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+    >
       <Svg width={width} height={height}>
         <Defs>
           <Pattern id={stripes} patternUnits="userSpaceOnUse" width={12} height={12} patternTransform="rotate(135)">
@@ -28,7 +33,3 @@ export function TemplateCover({ type, size = 'small' }: { type: SourceType; size
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  box: { borderRadius: radius.cover, overflow: 'hidden' },
-});

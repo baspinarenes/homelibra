@@ -1,8 +1,8 @@
 import type { SourceType } from '@homelibra/core/source';
-import { radius, useTheme } from '@homelibra/ui/theme';
+import { cx } from '@homelibra/ui/theme';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, View } from 'react-native';
 
 import { type CoverSize, coverSizes, TemplateCover } from '@/features/source/template-cover';
 import { type Cover, useCoverImage } from '@/features/source/cover';
@@ -33,19 +33,22 @@ export function SourceCover({
 export function CoverImage({
   file,
   style,
+  className,
   onFailed,
 }: {
   file: string;
   style: { width: number; height: number };
+  /** Where the frame stands (margins, alignment), as classes. */
+  className?: string;
   onFailed?: () => void;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { colors } = useTheme();
   const source = useCoverImage(file);
   return (
     <View
-      style={[styles.frame, { backgroundColor: colors.lineSoft }, style]}
+      className={cx('overflow-hidden rounded-cover bg-line-soft', className)}
+      style={style}
       accessibilityElementsHidden
       importantForAccessibility="no"
     >
@@ -64,7 +67,3 @@ export function CoverImage({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  frame: { borderRadius: radius.cover, overflow: 'hidden' },
-});

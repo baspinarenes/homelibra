@@ -3,12 +3,11 @@ import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Switch } from '@homelibra/ui/switch';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { DefinitionTags } from '@/features/collection/definition-tags';
 import { useTRPC } from '@/lib/trpc';
@@ -21,7 +20,6 @@ import { useTRPC } from '@/lib/trpc';
  */
 export default function NewCollectionScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -58,7 +56,7 @@ export default function NewCollectionScreen() {
           headerRight: () => <HeaderTextAction label={t('collection.save')} onPress={save} disabled={!ready} />,
         }}
       />
-      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerClassName="gap-5 px-lg pt-sm pb-xxl" keyboardShouldPersistTaps="handled">
         <TextField
           label={t('collection.nameField')}
           required
@@ -70,13 +68,13 @@ export default function NewCollectionScreen() {
           returnKeyType="done"
           maxLength={200}
         />
-        <View style={styles.field}>
+        <View className="gap-1.5">
           <Text variant="fieldLabel">{t('tags.field')}</Text>
           <DefinitionTags names={tags} onChange={setTags} />
           <Text variant="caption">{t('collection.tagsHint')}</Text>
         </View>
-        <View style={styles.switchRow}>
-          <Text variant="label" style={styles.switchLabel}>
+        <View className="flex-row items-center justify-between gap-3">
+          <Text variant="label" className="shrink">
             {t('collection.sourceNotes')}
             {includeSourceNotes && !!counts?.sourceOnlyCount && (
               <Text variant="label" color="muted">
@@ -88,7 +86,7 @@ export default function NewCollectionScreen() {
           <Switch label={t('collection.sourceNotes')} value={includeSourceNotes} onChange={setIncludeSourceNotes} />
         </View>
         {tags.length > 0 && (
-          <View style={styles.preview}>
+          <View className="gap-1 border-t border-line-soft pt-3.5">
             <SectionHeading title={t('collection.inCollection')} />
             {counts && (
               <Text variant="body">
@@ -106,12 +104,3 @@ export default function NewCollectionScreen() {
     </>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    form: { gap: 20, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.xxl },
-    field: { gap: 6 },
-    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-    switchLabel: { flexShrink: 1 },
-    preview: { gap: 4, paddingTop: 14, borderTopWidth: 1, borderTopColor: c.lineSoft },
-  });

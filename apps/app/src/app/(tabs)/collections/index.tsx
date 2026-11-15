@@ -1,13 +1,12 @@
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Sheet, SheetChoices } from '@homelibra/ui/sheet';
 import { TextTabs } from '@homelibra/ui/text-tabs';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { CollectionList, useCollections } from '@/features/collection/collection-list';
 import { TagList, useTags } from '@/features/tag/tag-list';
@@ -24,7 +23,6 @@ type DizinView = 'collections' | 'tags';
  */
 export default function DizinScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ view?: string }>();
   const view: DizinView = params.view === 'tags' ? 'tags' : 'collections';
   const [collectionSort, keepCollectionSort] = useCollectionSort();
@@ -60,7 +58,7 @@ export default function DizinScreen() {
     };
 
   return (
-    <View style={styles.screen}>
+    <View className="flex-1 bg-page">
       <Stack.Screen
         options={{
           headerRight: () => (
@@ -78,7 +76,8 @@ export default function DizinScreen() {
           ),
         }}
       />
-      <View style={styles.bar}>
+      {/* Lines up with the root title. */}
+      <View className="px-gutter pt-0.5">
         <TextTabs
           label={t('collections.viewLabel')}
           options={[
@@ -123,19 +122,10 @@ export default function DizinScreen() {
  */
 function HeaderActions({ sort, onNew }: { sort?: { label: string; onPress: () => void }; onNew?: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.headerActions}>
+    <View className="flex-row items-center">
       {sort && <HeaderIconAction icon={SlidersHorizontal} label={sort.label} size={24} onPress={sort.onPress} />}
       {onNew && <HeaderIconAction icon={Plus} label={t('collections.new')} size={24} onPress={onNew} />}
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    // Lines up with the root title.
-    bar: { paddingHorizontal: space.gutter, paddingTop: 2 },
-    headerActions: { flexDirection: 'row', alignItems: 'center' },
-  });

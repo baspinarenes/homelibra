@@ -1,12 +1,15 @@
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { cx } from './cx';
 import type { IconComponent } from './icon';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
+
+// An icon's 44 × 44 touch area.
+const icon = 'h-11 w-11 items-center justify-center rounded-control';
 
 /**
  * The bar at the top of every screen, a tab root's and a pushed one's alike
@@ -35,30 +38,32 @@ export function ScreenHeader({
   /** The actions: `HeaderTextAction`s and `HeaderIconAction`s. */
   right?: ReactNode;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const { top } = useSafeAreaInsets();
   return (
-    <View style={[styles.header, { paddingTop: top + 6 }]}>
-      <View style={styles.bar}>
+    <View className="border-b border-line bg-page pb-1.5" style={{ paddingTop: top + 6 }}>
+      {/* One height on every screen: an icon's or Kaydet's 44 touch area, or the same without them.
+          The right edge puts a tab root's 24px icons on the 22 gutter. */}
+      <View className="h-11 flex-row items-center gap-0.5 pl-1.5 pr-3">
         {onBack ? (
-          <Pressable role="button" aria-label={backLabel} onPress={onBack} style={styles.icon}>
+          <Pressable role="button" aria-label={backLabel} onPress={onBack} className={icon}>
             <ArrowLeft color={colors.fg} size={24} strokeWidth={1.6} />
           </Pressable>
         ) : (
-          <View style={styles.noBack} />
+          // Without an arrow the title stands on the 22 gutter.
+          <View className="w-3" />
         )}
         {typeof title === 'string' ? (
-          <View style={styles.head}>
-            <Text variant="screenTitle" numberOfLines={1} style={styles.title}>
+          <View className="min-w-0 flex-1 flex-row items-center gap-0.5">
+            <Text variant="screenTitle" numberOfLines={1} className="shrink pl-0.5">
               {title}
             </Text>
             {titleAccessory}
           </View>
         ) : (
-          <View style={styles.slot}>{title}</View>
+          <View className="min-w-0 flex-1">{title}</View>
         )}
-        {right && <View style={styles.actions}>{right}</View>}
+        {right && <View className="flex-row items-center">{right}</View>}
       </View>
     </View>
   );
@@ -80,7 +85,6 @@ export function HeaderTextAction({
   /** Spins in place of the word (Kaydet while saving) and takes no presses. */
   busy?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const inactive = disabled || busy;
   return (
@@ -91,10 +95,11 @@ export function HeaderTextAction({
       aria-busy={busy || undefined}
       disabled={inactive}
       onPress={onPress}
-      style={[styles.textAction, disabled && !busy && styles.off]}
+      className={cx('h-11 justify-center px-3', disabled && !busy && 'opacity-45')}
     >
       {busy ? (
-        <ActivityIndicator size={20} color={colors.accent} style={styles.busy} />
+        // As wide as Kaydet, so the title does not shift while saving.
+        <ActivityIndicator size={20} color={colors.accent} className="w-8" />
       ) : (
         <Text variant="action">{label}</Text>
       )}
@@ -129,7 +134,6 @@ export function HeaderIconAction({
   busy?: boolean;
   dot?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const inactive = disabled || busy;
   return (
@@ -140,45 +144,15 @@ export function HeaderIconAction({
       aria-busy={busy || undefined}
       disabled={inactive}
       onPress={onPress}
-      style={[styles.icon, disabled && !busy && styles.off]}
+      className={cx(icon, disabled && !busy && 'opacity-45')}
     >
       {busy ? (
         <ActivityIndicator size={size} color={colors[tone]} />
       ) : (
         <Icon color={colors[tone]} size={size} strokeWidth={1.6} />
       )}
-      {dot && <View style={styles.dot} />}
+      {/* A 2px `page` ring parts it from the icon's strokes. */}
+      {dot && <View className="absolute top-2 right-2 h-2.75 w-2.75 rounded-pill border-2 border-page bg-accent" />}
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    header: { paddingBottom: 6, backgroundColor: c.page, borderBottomWidth: 1, borderBottomColor: c.line },
-    // One height on every screen: an icon's or Kaydet's 44 touch area, or the same without them.
-    // The right edge puts a tab root's 24px icons on the 22 gutter.
-    bar: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 6, paddingRight: 12 },
-    head: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 2 },
-    title: { flexShrink: 1, paddingLeft: 2 },
-    slot: { flex: 1, minWidth: 0 },
-    // Without an arrow the title stands on the 22 gutter.
-    noBack: { width: 12 },
-    actions: { flexDirection: 'row', alignItems: 'center' },
-    icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.control },
-    textAction: { height: 44, paddingHorizontal: 12, justifyContent: 'center' },
-    // As wide as Kaydet, so the title does not shift while saving.
-    busy: { width: 32 },
-    off: { opacity: 0.45 },
-    // A 2px `page` ring parts it from the icon's strokes.
-    dot: {
-      position: 'absolute',
-      top: 8,
-      right: 8,
-      width: 11,
-      height: 11,
-      borderWidth: 2,
-      borderColor: c.page,
-      borderRadius: radius.pill,
-      backgroundColor: c.accent,
-    },
-  });

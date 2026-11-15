@@ -2,18 +2,11 @@ import { Section, Sections, SectionText } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
 import { SettingsRow, SettingsRows } from '@homelibra/ui/settings-row';
 import { Text } from '@homelibra/ui/text';
-import {
-  type Colors,
-  setThemePreference,
-  space,
-  type ThemePreference,
-  useThemedStyles,
-  useThemePreference,
-} from '@homelibra/ui/theme';
+import { setThemePreference, type ThemePreference, useThemePreference } from '@homelibra/ui/theme';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { ContactSection, PrivacyDocumentsSection } from '@/features/privacy/privacy-sections';
 import { SignOutButton } from '@/features/account/sign-out-button';
@@ -30,6 +23,9 @@ import {
   useSourceSearchPlace,
 } from '@/lib/appearance-choices';
 
+/** A setting's name and its Segment on one line. */
+const choiceRow = 'flex-row items-center justify-between gap-md';
+
 /**
  * Ayarlar, on one page (#113): the theme, how Genel Bakış looks and where a Source's search starts, the Account's own pages (address,
  * export, deletion) with sign-out under them (#140), the privacy documents,
@@ -37,7 +33,6 @@ import {
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const preference = useThemePreference();
@@ -63,10 +58,10 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView className="flex-1 bg-page" contentContainerClassName="px-lg pb-lg">
       <Sections>
         <Section title={t('settings.appearance')}>
-          <View style={styles.theme}>
+          <View className={choiceRow}>
             <Text variant="body" color="fg">
               {t('settings.themeLabel')}
             </Text>
@@ -77,7 +72,7 @@ export default function SettingsScreen() {
               onChange={setThemePreference}
             />
           </View>
-          <View style={styles.theme}>
+          <View className={choiceRow}>
             <Text variant="body" color="fg">
               {t('settings.lastNotedLabel')}
             </Text>
@@ -88,7 +83,7 @@ export default function SettingsScreen() {
               onChange={setLastNotedLayout}
             />
           </View>
-          <View style={styles.theme}>
+          <View className={choiceRow}>
             <Text variant="body" color="fg">
               {t('settings.dividerLabel')}
             </Text>
@@ -99,7 +94,7 @@ export default function SettingsScreen() {
               onChange={setHomeDivider}
             />
           </View>
-          <View style={styles.theme}>
+          <View className={choiceRow}>
             <Text variant="body" color="fg">
               {t('settings.sourceSearchLabel')}
             </Text>
@@ -125,7 +120,7 @@ export default function SettingsScreen() {
               onPress={() => router.push('/settings/delete')}
             />
           </SettingsRows>
-          <View style={styles.signOut}>
+          <View className="mt-lg">
             <SignOutButton block />
           </View>
         </Section>
@@ -138,11 +133,3 @@ export default function SettingsScreen() {
     </ScrollView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingBottom: space.lg },
-    theme: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-    signOut: { marginTop: space.lg },
-  });

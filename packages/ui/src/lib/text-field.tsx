@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, type TextInputProps, View } from 'react-native';
+import { TextInput, type TextInputProps, View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import { type Colors, radius, type as typeScale } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 /**
  * A labelled text input. Every field looks the same, a Source's title too:
@@ -22,6 +22,7 @@ export function TextField({
   onFocus,
   onBlur,
   style,
+  className,
   ...input
 }: {
   label: string;
@@ -35,14 +36,14 @@ export function TextField({
   /** A six-digit sign-in code: the number pad, the code from the email offered, digits only, in mono. */
   code?: boolean;
 } & TextInputProps) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
   const invalid = error !== undefined && error !== '';
   return (
-    <View style={styles.field}>
+    <View className="gap-1.5">
       {!labelHidden && (
-        <View style={styles.label}>
+        // The label and, when required, its star on one line.
+        <View className="flex-row">
           <Text variant="fieldLabel">{label}</Text>
           {required && (
             <Text variant="fieldLabel" color="accent">
@@ -68,13 +69,27 @@ export function TextField({
           setFocused(false);
           onBlur?.(event);
         }}
+        className={cx(
+          // The focus ring is always there, only coloured on focus: adding an outline to an Android
+          // input redraws its background and drops its padding, the text then touching the border.
+          'rounded-control border bg-surface px-3.5 py-3 outline-3 outline-solid',
+          code ? 'type-sign-in-code text-center' : excerpt ? 'type-excerpt' : 'type-body',
+          excerpt ? 'text-quote-ink' : 'text-fg',
+          multiline ? 'min-h-23' : 'min-h-11.5',
+          // An accent border and a 3px accent-soft ring.
+          focused
+            ? 'border-accent outline-accent-soft'
+            : invalid
+              ? 'border-danger outline-transparent'
+              : 'border-line outline-transparent',
+          className,
+        )}
         style={[
-          styles.input,
-          excerpt && styles.excerpt,
-          code && styles.code,
-          multiline && styles.multiline,
-          invalid && styles.invalid,
-          focused && styles.focused,
+          {
+            // Android adds its own padding above and below the line otherwise.
+            includeFontPadding: false,
+            textAlignVertical: multiline ? 'top' : 'center',
+          },
           style,
         ]}
         {...input}
@@ -95,38 +110,3 @@ const codeInput: TextInputProps = {
   textContentType: 'oneTimeCode',
   maxLength: 6,
 };
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    field: { gap: 6 },
-    // The label and, when required, its star on one line.
-    label: { flexDirection: 'row' },
-    input: {
-      ...typeScale.body,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      minHeight: 46,
-      // The focus ring is always there, only coloured on focus: adding an outline to an Android
-      // input redraws its background and drops its padding, the text then touching the border.
-      outlineColor: 'transparent',
-      outlineWidth: 3,
-      outlineStyle: 'solid',
-      // Android adds its own padding above and below the line otherwise.
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-    },
-    excerpt: { ...typeScale.excerpt, color: c.quoteInk },
-    code: {
-      ...typeScale.signInCode,
-      textAlign: 'center',
-    },
-    multiline: { minHeight: 92, textAlignVertical: 'top' },
-    invalid: { borderColor: c.danger },
-    // An accent border and a 3px accent-soft ring.
-    focused: { borderColor: c.accent, outlineColor: c.accentSoft },
-  });

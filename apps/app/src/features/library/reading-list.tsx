@@ -1,11 +1,11 @@
 import { formatDate } from '@homelibra/core/date';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { HomeDivider } from '@/features/library/home-divider';
 import { SourceCover } from '@/features/source/source-cover';
@@ -22,7 +22,6 @@ const shownCount = 6;
  */
 export function ReadingList() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const reading = useQuery(trpc.sources.reading.queryOptions());
@@ -32,8 +31,9 @@ export function ReadingList() {
   return (
     <>
       <HomeDivider />
-      <View style={styles.section}>
-        <View style={styles.head}>
+      {/* Under Kaldığın yer, the HomeDivider between. */}
+      <View className="py-5.5">
+        <View className="pb-xs">
           <SectionHeading
             title={t('readingStatus.readingSection')}
             link={{ label: t('readingStatus.all'), onPress: () => router.navigate('/sources') }}
@@ -46,10 +46,13 @@ export function ReadingList() {
               key={source.id}
               accessibilityRole="button"
               onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
-              style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+              className={cx(
+                'flex-row items-center gap-3.25 py-md active:opacity-70',
+                index > 0 && 'border-t border-line-soft',
+              )}
             >
               <SourceCover type={source.type} cover={source.cover} />
-              <View style={styles.text}>
+              <View className="flex-1 gap-0.5">
                 <Text variant="sourceTitleSm" numberOfLines={2}>
                   {source.title}
                 </Text>
@@ -67,14 +70,3 @@ export function ReadingList() {
     </>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    // Under Kaldığın yer, the HomeDivider between.
-    section: { paddingVertical: 22 },
-    head: { paddingBottom: space.xs },
-    pressed: { opacity: 0.7 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    text: { flex: 1, gap: 2 },
-  });

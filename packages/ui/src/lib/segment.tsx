@@ -1,8 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useThemedStyles } from './use-theme';
 
 /** Two or three options, one chosen; the chosen one is on `accent`, as a chosen Chip is. */
 export function Segment<T extends string>({
@@ -20,9 +19,15 @@ export function Segment<T extends string>({
   /** Full width, the options sharing it equally. */
   block?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View role="radiogroup" aria-label={label} style={[styles.group, block && styles.block]}>
+    <View
+      role="radiogroup"
+      aria-label={label}
+      className={cx(
+        'flex-row gap-0.5 rounded-control border border-line p-0.75',
+        block ? 'self-stretch' : 'self-start',
+      )}
+    >
       {options.map((option) => {
         const selected = option.value === value;
         return (
@@ -31,7 +36,7 @@ export function Segment<T extends string>({
             role="radio"
             aria-checked={selected}
             onPress={() => onChange(option.value)}
-            style={[styles.option, block && styles.blockOption, selected && styles.selected]}
+            className={cx('rounded-chip px-3.5 py-1.5', block && 'flex-1 items-center', selected && 'bg-accent')}
           >
             <Text variant="label" color={selected ? 'accentFg' : 'ink2'}>
               {option.label}
@@ -42,20 +47,3 @@ export function Segment<T extends string>({
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    group: {
-      flexDirection: 'row',
-      alignSelf: 'flex-start',
-      gap: 2,
-      padding: 3,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-    },
-    block: { alignSelf: 'stretch' },
-    option: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.chip },
-    blockOption: { flex: 1, alignItems: 'center' },
-    selected: { backgroundColor: c.accent },
-  });

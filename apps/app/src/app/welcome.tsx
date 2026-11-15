@@ -1,19 +1,21 @@
 import { Button } from '@homelibra/ui/button';
 import { BookIllustration } from '@homelibra/ui/illustration';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { useTheme } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import BookOpen from 'lucide-react-native/icons/book-open';
 import Download from 'lucide-react-native/icons/download';
 import Quote from 'lucide-react-native/icons/quote';
 import Tag from 'lucide-react-native/icons/tag';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, View } from 'react-native';
 
+import { SafeAreaView } from '@/components/safe-area-view';
 import { authClient } from '@/lib/auth-client';
 import { legalVersion } from '@/features/privacy/legal';
 import { useTRPC } from '@/lib/trpc';
+
+// Uniwind reads className only on React Native's own components.
 
 const features = [
   { icon: BookOpen, key: 'welcome.features.sources' },
@@ -31,7 +33,6 @@ const features = [
  */
 export default function WelcomeScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const trpc = useTRPC();
   const { refetch } = authClient.useSession();
@@ -39,28 +40,30 @@ export default function WelcomeScreen() {
   const accept = useMutation(trpc.account.acceptTerms.mutationOptions({ onSuccess: () => refetch() }));
 
   return (
-    <SafeAreaView style={styles.page}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.illustration}>
+    <SafeAreaView className="flex-1 bg-page">
+      <ScrollView contentContainerClassName="w-full max-w-[520px] grow self-center px-gutter pt-10 pb-xl">
+        {/* The drawing's left page starts 8px inside it; pull it back to the gutter. */}
+        <View className="-ml-sm">
           <BookIllustration />
         </View>
-        <View style={styles.words}>
+        <View className="mt-7 gap-sm">
           <Text variant="display">{t('welcome.title')}</Text>
           <Text variant="body">{t('welcome.lead')}</Text>
         </View>
-        <View style={styles.features}>
+        <View className="mt-7 gap-3.5">
           {features.map(({ icon: Icon, key }) => (
-            <View key={key} style={styles.feature}>
-              <View style={styles.icon}>
+            <View key={key} className="flex-row items-start gap-3.5">
+              <View className="mt-0.25">
                 <Icon color={colors.accent} size={20} strokeWidth={1.6} />
               </View>
-              <Text variant="body" color="ink3" style={styles.featureText}>
+              <Text variant="body" color="ink3" className="flex-1">
                 {t(key)}
               </Text>
             </View>
           ))}
         </View>
-        <View style={styles.action}>
+        {/* Pinned to the foot of a tall screen, right after the features on a short one. */}
+        <View className="mt-auto gap-md pt-xl">
           <Button
             label={t('welcome.start')}
             block
@@ -77,26 +80,3 @@ export default function WelcomeScreen() {
     </SafeAreaView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    page: { flex: 1, backgroundColor: c.page },
-    content: {
-      flexGrow: 1,
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 520,
-      paddingTop: 40,
-      paddingHorizontal: space.gutter,
-      paddingBottom: space.xl,
-    },
-    // The drawing's left page starts 8px inside it; pull it back to the gutter.
-    illustration: { marginLeft: -space.sm },
-    words: { gap: space.sm, marginTop: 28 },
-    features: { gap: 14, marginTop: 28 },
-    feature: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
-    icon: { marginTop: 1 },
-    featureText: { flex: 1 },
-    // Pinned to the foot of a tall screen, right after the features on a short one.
-    action: { marginTop: 'auto', paddingTop: space.xl, gap: space.md },
-  });

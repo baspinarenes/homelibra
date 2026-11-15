@@ -3,12 +3,11 @@ import House from 'lucide-react-native/icons/house';
 import Library from 'lucide-react-native/icons/library';
 import Search from 'lucide-react-native/icons/search';
 import Settings from 'lucide-react-native/icons/settings';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 // Lucide line icons; one import per icon keeps the bundle small.
 const icons = { overview: House, sources: Library, index: BookA, search: Search, settings: Settings } as const;
@@ -35,11 +34,10 @@ export function TabBar({
   active: string;
   onPress: (key: string) => void;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <View role="tablist" style={[styles.bar, { paddingBottom: insets.bottom }]}>
+    <View role="tablist" className="flex-row border-t border-line bg-tab-bg" style={{ paddingBottom: insets.bottom }}>
       {tabs.map((tab) => {
         const open = tab.key === active;
         const Icon = icons[tab.icon];
@@ -51,11 +49,14 @@ export function TabBar({
             aria-selected={open}
             aria-label={tab.label}
             onPress={() => onPress(tab.key)}
-            style={styles.tab}
+            className="h-15 flex-1 items-center justify-center gap-0.75"
           >
             {({ pressed }) => (
               <>
-                {pressed && <View style={styles.pressed} />}
+                {/* Inside the tab's cell, so it never spills under the navigation bar. */}
+                {pressed && (
+                  <View className="absolute top-1 right-1.5 bottom-1 left-1.5 rounded-control bg-accent-soft" />
+                )}
                 <Icon color={colors[color]} size={22} strokeWidth={1.6} />
                 <Text variant="tab" color={color} numberOfLines={1}>
                   {tab.label}
@@ -68,19 +69,3 @@ export function TabBar({
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    bar: { flexDirection: 'row', backgroundColor: c.tabBg, borderTopWidth: 1, borderTopColor: c.line },
-    tab: { flex: 1, height: 60, alignItems: 'center', justifyContent: 'center', gap: 3 },
-    // Inside the tab's cell, so it never spills under the navigation bar.
-    pressed: {
-      position: 'absolute',
-      left: 6,
-      right: 6,
-      top: 4,
-      bottom: 4,
-      borderRadius: radius.control,
-      backgroundColor: c.accentSoft,
-    },
-  });

@@ -4,13 +4,12 @@ import { normalizeIsbn } from '@homelibra/core/source';
 import { Checkbox } from '@homelibra/ui/checkbox';
 import { Sheet } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
-import { space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import ScanBarcode from 'lucide-react-native/icons/scan-barcode';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { IdentifierCard } from '@/features/source/identifier-card';
 import { CoverImage } from '@/features/source/source-cover';
@@ -118,6 +117,10 @@ export function IsbnCard({
   );
 }
 
+// 2:3, as a Cover is shown everywhere.
+const preview = { width: 96, height: 144 } as const;
+const thumb = { width: 40, height: 56 } as const;
+
 /** The suggestion sheet: what Open Library gives, each field labelled as the form labels it. */
 function SuggestionSheet({
   visible,
@@ -131,7 +134,6 @@ function SuggestionSheet({
   onAccept: (withCover: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const [withCover, setWithCover] = useState(true);
   const { title, author, date, fields, cover } = suggestion;
   const rows = [
@@ -150,16 +152,16 @@ function SuggestionSheet({
       primary={{ label: t('isbn.accept'), onPress: () => onAccept(withCover) }}
     >
       <Text variant="caption">{t('isbn.lead', { isbn: suggestion.isbn })}</Text>
-      <View style={styles.offer}>
+      <View className="flex-row items-start gap-lg">
         {cover && (
-          <View style={styles.coverColumn}>
-            <CoverImage file={cover.large} style={styles.preview} />
+          <View className="items-center gap-1.5">
+            <CoverImage file={cover.large} style={preview} />
             <Text variant="caption">{t('isbn.coverCredit')}</Text>
           </View>
         )}
-        <View style={styles.fields}>
+        <View className="flex-1 gap-md">
           {rows.map(({ key, label, value }) => (
-            <View key={key} style={styles.row}>
+            <View key={key} className="gap-0.5">
               <Text variant="micro">{label}</Text>
               <Text variant={key === 'title' ? 'sourceTitleSm' : 'body'} color={value ? 'fg' : 'muted'}>
                 {value ?? t('isbn.none')}
@@ -176,15 +178,15 @@ function SuggestionSheet({
 /** At the ISBN card's foot after accepting: the cover the Source will get on save, until the scholar drops it. */
 function AcceptedCover({ suggested, onDrop }: { suggested: SuggestedCover; onDrop: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
     <>
-      <CoverImage file={suggested.cover.small} style={styles.thumb} />
-      <Text variant="caption" color="accentFg" style={styles.acceptedText}>
+      <CoverImage file={suggested.cover.small} style={thumb} />
+      {/* On the ISBN card's accent ground. */}
+      <Text variant="caption" color="accentFg" className="flex-1">
         {t('isbn.coverOnSave')}
       </Text>
       <Pressable accessibilityRole="button" onPress={onDrop} hitSlop={8}>
-        <Text variant="link" color="accentFg" style={styles.dropCover}>
+        <Text variant="link" color="accentFg" className="underline">
           {t('isbn.dropCover')}
         </Text>
       </Pressable>
@@ -209,17 +211,3 @@ export function useGiveSuggestedCover() {
     }
   };
 }
-
-const makeStyles = () =>
-  StyleSheet.create({
-    offer: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
-    coverColumn: { gap: 6, alignItems: 'center' },
-    // 2:3, as a Cover is shown everywhere.
-    preview: { width: 96, height: 144 },
-    fields: { flex: 1, gap: space.md },
-    row: { gap: 2 },
-    thumb: { width: 40, height: 56 },
-    // On the ISBN card's accent ground.
-    acceptedText: { flex: 1 },
-    dropCover: { textDecorationLine: 'underline' },
-  });

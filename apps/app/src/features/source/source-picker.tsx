@@ -2,11 +2,11 @@ import type { SourceType } from '@homelibra/core/source';
 import { Sheet } from '@homelibra/ui/sheet';
 import { TextField } from '@homelibra/ui/text-field';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 
 import { SourceTypeIcon } from '@/features/source/source-type-icon';
 import { useTRPC } from '@/lib/trpc';
@@ -41,7 +41,6 @@ export function SourcePicker({
 
 function SourceList({ currentId, onPick }: { currentId: string; onPick: (source: PickedSource) => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const trpc = useTRPC();
   const sources = useQuery(trpc.sources.list.queryOptions({ sort: 'title' }));
@@ -62,19 +61,19 @@ function SourceList({ currentId, onPick }: { currentId: string; onPick: (source:
         autoCorrect={false}
       />
       {sources.isPending ? (
-        <ActivityIndicator color={colors.accent} style={styles.status} />
+        <ActivityIndicator color={colors.accent} className="py-xl" />
       ) : sources.isError ? (
-        <Text variant="body" style={[styles.lead, styles.status]}>
+        <Text variant="body" className="py-xl text-center">
           {t('deletion.sourcesFailed')}
         </Text>
       ) : (
         <FlatList
-          style={styles.list}
+          className="flex-1"
           data={shown}
           keyExtractor={(source) => source.id}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text variant="body" style={[styles.lead, styles.status]}>
+            <Text variant="body" className="py-xl text-center">
               {t('deletion.noSourceMatches')}
             </Text>
           }
@@ -86,10 +85,13 @@ function SourceList({ currentId, onPick }: { currentId: string; onPick: (source:
                 accessibilityRole="button"
                 aria-selected={current}
                 onPress={() => onPick(source)}
-                style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+                className={cx(
+                  'flex-row items-center gap-3 py-3 active:opacity-70',
+                  index > 0 && 'border-t border-line-soft',
+                )}
               >
                 <SourceTypeIcon type={source.type} color={current ? colors.accent : colors.ink2} />
-                <View style={styles.text}>
+                <View className="flex-1 gap-0.75">
                   <Text variant="sourceTitleSm" color={current ? 'accent' : 'fg'} numberOfLines={2}>
                     {source.title}
                   </Text>
@@ -107,14 +109,3 @@ function SourceList({ currentId, onPick }: { currentId: string; onPick: (source:
     </>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    list: { flex: 1 },
-    status: { paddingVertical: space.xl },
-    lead: { textAlign: 'center' },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    pressed: { opacity: 0.7 },
-    text: { flex: 1, gap: 3 },
-  });

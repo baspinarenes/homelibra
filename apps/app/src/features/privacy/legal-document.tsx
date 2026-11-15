@@ -1,8 +1,7 @@
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { contactEmail } from '@/features/privacy/contact';
 import { type LegalSection, legalVersion } from '@/features/privacy/legal';
@@ -13,11 +12,13 @@ import { type LegalSection, legalVersion } from '@/features/privacy/legal';
  */
 export function LegalDocument({ sections }: { sections: LegalSection[] }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      className="flex-1 bg-page"
+      contentContainerClassName="w-full max-w-[640px] gap-xl self-center px-lg py-lg"
+    >
       {sections.map((section) => (
-        <View key={section.heading} style={styles.section}>
+        <View key={section.heading} className="gap-sm">
           <Text variant="sourceTitle">{section.heading}</Text>
           {section.paragraphs.map((paragraph) => (
             <Text key={paragraph} variant="body" color="ink3">
@@ -49,17 +50,3 @@ function withContactLinks(paragraph: string) {
     return [link, text];
   });
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: {
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 640,
-      paddingHorizontal: space.lg,
-      paddingVertical: space.lg,
-      gap: space.xl,
-    },
-    section: { gap: space.sm },
-  });

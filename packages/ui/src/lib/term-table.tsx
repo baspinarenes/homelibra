@@ -1,8 +1,7 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import type { Colors } from './tokens';
-import { useThemedStyles } from './use-theme';
 
 export type TermRow = { term: string; description: string };
 
@@ -11,15 +10,19 @@ export type TermRow = { term: string; description: string };
  * the left, its description beside it, top-aligned, a thin rule between rows.
  */
 export function TermTable({ rows }: { rows: readonly TermRow[] }) {
-  const styles = useThemedStyles(makeStyles);
   return (
     <View role="table">
       {rows.map((row, index) => (
-        <View key={row.term} role="row" style={[styles.row, index > 0 && styles.ruled]}>
-          <Text variant="term" role="rowheader" style={styles.term}>
+        <View
+          key={row.term}
+          role="row"
+          className={cx('flex-row items-start gap-4 pb-2.5', index > 0 && 'border-t border-line-soft pt-2.5')}
+        >
+          {/* On the body's line, so the two columns' first lines share a baseline. */}
+          <Text variant="term" role="rowheader" className="w-30">
             {row.term}
           </Text>
-          <Text variant="body" role="cell" style={styles.description}>
+          <Text variant="body" role="cell" className="flex-1">
             {row.description}
           </Text>
         </View>
@@ -27,12 +30,3 @@ export function TermTable({ rows }: { rows: readonly TermRow[] }) {
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    row: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, paddingBottom: 10 },
-    ruled: { borderTopWidth: 1, borderTopColor: c.lineSoft, paddingTop: 10 },
-    // On the body's line, so the two columns' first lines share a baseline.
-    term: { width: 120 },
-    description: { flex: 1 },
-  });

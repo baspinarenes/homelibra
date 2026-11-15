@@ -1,11 +1,11 @@
 import { HeaderTextAction, ScreenHeader } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { useTheme } from '@homelibra/ui/theme';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type NativeStackHeaderProps, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
 import { narrowView, SearchField, ShortWords, useSearchText, useTagSearch } from '@/features/search/note-search';
@@ -21,7 +21,7 @@ import { useTRPC } from '@/lib/trpc';
 export default function TagScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -44,14 +44,14 @@ export default function TagScreen() {
 
   if (!view.data) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center bg-page p-xl">
         <Stack.Screen options={{ title: '' }} />
         {view.isError ? (
-          <Text variant="body" style={styles.lead}>
+          <Text variant="body" className="text-center">
             {view.error.data?.code === 'NOT_FOUND' ? t('collection.tagMissing') : t('collection.loadFailed')}
           </Text>
         ) : (
-          <ActivityIndicator color={styles.spinner.color} />
+          <ActivityIndicator color={colors.accent} />
         )}
       </View>
     );
@@ -121,10 +121,3 @@ export default function TagScreen() {
     </>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { textAlign: 'center' },
-    spinner: { color: c.accent },
-  });

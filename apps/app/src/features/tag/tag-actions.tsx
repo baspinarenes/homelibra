@@ -3,14 +3,14 @@ import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
 import { Sheet, SheetAction } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Merge from 'lucide-react-native/icons/merge';
 import PenLine from 'lucide-react-native/icons/pen-line';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { useTRPC } from '@/lib/trpc';
 import { offerServerUndo, offerUndo } from '@/lib/undo';
@@ -20,14 +20,13 @@ export type TagRef = { id: string; name: string };
 /** The ⋯ at the end of an Etiketler row: opens {@link TagActions} for that Tag. */
 export function TagMenuButton({ name, onPress }: { name: string; onPress: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t('tagActions.menuFor', { name })}
       onPress={onPress}
       hitSlop={8}
-      style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+      className="min-h-11 min-w-11 items-center justify-center active:opacity-70"
     >
       <Text variant="more">⋯</Text>
     </Pressable>
@@ -139,7 +138,6 @@ function Rename({ tag, onMerge, onClose }: { tag: TagRef; onMerge: (into: TagRef
 
 function PickTarget({ tag, onPick, onClose }: { tag: TagRef; onPick: (into: TagRef) => void; onClose: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const trpc = useTRPC();
   const tags = useQuery(trpc.tags.list.queryOptions({ sort: 'name' }));
@@ -165,13 +163,13 @@ function PickTarget({ tag, onPick, onClose }: { tag: TagRef; onPick: (into: TagR
         autoCorrect={false}
       />
       {tags.isPending ? (
-        <ActivityIndicator color={colors.accent} style={styles.status} />
+        <ActivityIndicator color={colors.accent} className="py-xl" />
       ) : tags.isError ? (
-        <Text variant="body" style={[styles.lead, styles.status]}>
+        <Text variant="body" className="py-xl text-center">
           {t('tags.loadFailed')}
         </Text>
       ) : shown.length === 0 ? (
-        <Text variant="body" style={[styles.lead, styles.status]}>
+        <Text variant="body" className="py-xl text-center">
           {t('tagActions.noMatches')}
         </Text>
       ) : (
@@ -182,7 +180,7 @@ function PickTarget({ tag, onPick, onClose }: { tag: TagRef; onPick: (into: TagR
               key={other.id}
               role="button"
               onPress={() => onPick({ id: other.id, name: other.name })}
-              style={({ pressed }) => [styles.row, index > 0 && styles.divided, pressed && styles.pressed]}
+              className={cx('gap-0.75 py-3 active:opacity-70', index > 0 && 'border-t border-line-soft')}
             >
               <Text variant="body" color="fg">
                 {other.name}
@@ -295,13 +293,3 @@ function joinTr(parts: string[], and: string) {
   if (parts.length < 2) return parts.join('');
   return `${parts.slice(0, -1).join(', ')} ${and} ${parts[parts.length - 1]}`;
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    more: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-    pressed: { opacity: 0.7 },
-    row: { gap: 3, paddingVertical: 12 },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    status: { paddingVertical: space.xl },
-    lead: { textAlign: 'center' },
-  });

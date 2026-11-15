@@ -7,7 +7,7 @@ import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
@@ -16,7 +16,7 @@ import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, TextInput, View } from 'react-native';
 
 import {
   emptyYearRange,
@@ -36,11 +36,17 @@ type Results = inferRouterOutputs<AppRouter>['search']['library'];
 type NoteResult = Results['notes'][number];
 type SourceResult = Results['sources'][number];
 
-/** The widest the search box gets on a wide screen. */
-const BOX_WIDTH = 640;
-
 /** Sources shown before "Tüm kaynaklar". */
 const FIRST_SOURCES = 3;
+
+/** A message, or the spinner, in the middle of the screen. */
+const center = 'flex-1 items-center justify-center gap-md bg-page p-xl';
+
+/** A row under another: a hairline over it. */
+const divider = 'border-t border-line-soft';
+
+/** The quote bar at an Excerpt's left. */
+const excerptBar = 'border-l-2 border-quote-bar pl-2.75';
 
 /** Tümü / Notlar / Kaynaklar. */
 type Kind = 'all' | 'notes' | 'sources';
@@ -89,7 +95,7 @@ function hiddenLine(
  */
 export default function SearchScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const [text, setText] = useState('');
   const query = useSettled(text.trim());
@@ -122,7 +128,7 @@ export default function SearchScreen() {
   const hidden = hiddenLine(t, kind, query !== '' && dates ? first?.hiddenUndated : undefined);
 
   return (
-    <View style={styles.screen}>
+    <View className="flex-1 bg-page">
       <Stack.Screen
         options={{
           // Offline there is nothing to narrow.
@@ -141,7 +147,7 @@ export default function SearchScreen() {
       />
       <SearchBox value={text} onChange={setText} offline={offline} />
       {!offline && filterOn && (
-        <View style={styles.filters}>
+        <View className="gap-sm px-gutter pt-0.5">
           <ChipRow>
             {kind !== 'all' && (
               <Chip
@@ -164,47 +170,47 @@ export default function SearchScreen() {
         </View>
       )}
       {offline ? (
-        <View style={styles.center}>
-          <Text variant="body" style={styles.lead}>
+        <View className={center}>
+          <Text variant="body" className="text-center">
             {t('outbox.searchNeedsConnection')}
           </Text>
         </View>
       ) : query === '' ? (
-        <View style={styles.screen} />
+        <View className="flex-1 bg-page" />
       ) : results.isPending ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={styles.spinner.color} />
+        <View className={center}>
+          <ActivityIndicator color={colors.accent} />
         </View>
       ) : results.isError ? (
-        <View style={styles.center}>
-          <Text variant="body" style={styles.lead}>
+        <View className={center}>
+          <Text variant="body" className="text-center">
             {t('search.failed')}
           </Text>
           <Button variant="text" label={t('search.retry')} onPress={() => void results.refetch()} />
         </View>
       ) : sources.length === 0 && notes.length === 0 ? (
-        <View style={styles.center}>
-          <Text variant="body" style={styles.lead}>
+        <View className={center}>
+          <Text variant="body" className="text-center">
             {t('search.empty')}
           </Text>
           <ShortWords words={first?.shortWords} centered />
         </View>
       ) : (
         <FlatList
-          style={styles.screen}
-          contentContainerStyle={styles.content}
+          className="flex-1 bg-page"
+          contentContainerClassName="px-gutter pb-xxl"
           keyboardShouldPersistTaps="handled"
           data={notes}
           keyExtractor={(note) => note.id}
           ListHeaderComponent={
             <>
               {!!first?.shortWords.length && (
-                <View style={styles.short}>
+                <View className="pt-md">
                   <ShortWords words={first.shortWords} />
                 </View>
               )}
               {sources.length > 0 && (
-                <View style={styles.group}>
+                <View className="pt-md pb-xs">
                   <GroupHeading label={t('search.sources')} count={sources.length} />
                   {(kind === 'sources' ? sources : sources.slice(0, FIRST_SOURCES)).map((source, i) => (
                     <SourceRow key={source.id} source={source} divided={i > 0} />
@@ -213,7 +219,7 @@ export default function SearchScreen() {
                     <Pressable
                       accessibilityRole="button"
                       onPress={() => setChoices({ ...choices, kind: 'sources' })}
-                      style={({ pressed }) => [styles.allSources, pressed && styles.pressed]}
+                      className="self-start py-sm active:opacity-70"
                     >
                       <Text variant="button">{t('search.allSources', { count: sources.length })}</Text>
                     </Pressable>
@@ -221,7 +227,7 @@ export default function SearchScreen() {
                 </View>
               )}
               {notes.length > 0 && (
-                <View style={[styles.group, sources.length > 0 && styles.divided]}>
+                <View className={cx('pt-md pb-xs', sources.length > 0 && divider)}>
                   <GroupHeading label={t('search.notes')} count={first?.noteTotal ?? 0} />
                 </View>
               )}
@@ -233,9 +239,7 @@ export default function SearchScreen() {
           }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            results.isFetchingNextPage ? (
-              <ActivityIndicator color={styles.spinner.color} style={styles.more} />
-            ) : undefined
+            results.isFetchingNextPage ? <ActivityIndicator color={colors.accent} className="py-md" /> : undefined
           }
         />
       )}
@@ -281,7 +285,6 @@ function FilterSheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   // The last choices stay on screen while the sheet slides away.
   const [lastDraft, setLastDraft] = useState(draft ?? initial);
   if (draft && draft !== lastDraft) setLastDraft(draft);
@@ -306,7 +309,7 @@ function FilterSheet({
         disabled: yearMissing,
       }}
     >
-      <View style={styles.sheet}>
+      <View className="gap-4.5">
         <SheetField label={t('noteSearch.kindLabel')}>
           <Segment
             label={t('noteSearch.kindLabel')}
@@ -328,6 +331,9 @@ function FilterSheet({
   );
 }
 
+/** Android adds its own padding above and below the line otherwise: no class sets these. */
+const androidLine = { includeFontPadding: false, textAlignVertical: 'center' } as const;
+
 /**
  * The box under the title, a magnifier at its left and × at its right once
  * something is typed. Offline it says a search needs the connection, so no
@@ -343,12 +349,12 @@ function SearchBox({
   offline: boolean;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
   return (
-    <View style={styles.boxRow}>
-      <View style={[styles.box, offline && styles.boxOff]}>
+    <View className="items-center px-gutter pt-md pb-2.5">
+      {/* 640 is the widest the search box gets on a wide screen. */}
+      <View className={cx('w-full max-w-[640px] justify-center', offline && 'opacity-60')}>
         <TextInput
           accessibilityLabel={t('tabs.search')}
           placeholder={t(offline ? 'outbox.searchNeedsConnection' : 'search.placeholder')}
@@ -362,9 +368,16 @@ function SearchBox({
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
-          style={[styles.input, focused && styles.focused]}
+          // As in TextField, the ring is always there and only coloured on focus: an outline added
+          // on focus drops an Android input's padding and the placeholder runs under the glass.
+          // Focused: an accent border and a 3px accent-soft ring, as every field has.
+          className={cx(
+            'type-body min-h-11.5 rounded-control border bg-surface px-10 py-3 text-fg outline-3 outline-solid',
+            focused ? 'border-accent outline-accent-soft' : 'border-line outline-transparent',
+          )}
+          style={androidLine}
         />
-        <View aria-hidden pointerEvents="none" style={styles.glass}>
+        <View aria-hidden pointerEvents="none" className="absolute left-3.25">
           <Search color={offline ? colors.muted2 : colors.muted} size={18} strokeWidth={1.8} />
         </View>
         {value !== '' && (
@@ -372,7 +385,7 @@ function SearchBox({
             accessibilityRole="button"
             accessibilityLabel={t('search.clear')}
             onPress={() => onChange('')}
-            style={({ pressed }) => [styles.clear, pressed && styles.pressed]}
+            className="absolute right-px h-11 w-11 items-center justify-center active:opacity-70"
           >
             <X color={colors.muted} size={18} strokeWidth={1.8} />
           </Pressable>
@@ -388,7 +401,6 @@ function GroupHeading({ label, count }: { label: string; count: number }) {
 
 function SourceRow({ source, divided }: { source: SourceResult; divided: boolean }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   // Yazar · Tarih, the Date as it was entered.
   const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
@@ -396,10 +408,10 @@ function SourceRow({ source, divided }: { source: SourceResult; divided: boolean
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
-      style={({ pressed }) => [styles.sourceRow, divided && styles.divided, pressed && styles.pressed]}
+      className={cx('flex-row items-center gap-3.25 py-md active:opacity-70', divided && divider)}
     >
       <SourceCover type={source.type} cover={source.cover} />
-      <View style={styles.sourceText}>
+      <View className="flex-1 gap-0.5">
         <Text variant="micro">{t(`sourceTypes.${source.type}.label`)}</Text>
         <Text variant="sourceTitleSm" numberOfLines={2}>
           {source.title}
@@ -417,7 +429,6 @@ function SourceRow({ source, divided }: { source: SourceResult; divided: boolean
 /** The matching part, marked; then Yazar, Başlık · Konum, and "yorumdan" when the part is from the Comment. */
 function NoteRow({ note, divided }: { note: NoteResult; divided: boolean }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const meta = [
     [note.author, note.title].filter(Boolean).join(', '),
@@ -431,13 +442,13 @@ function NoteRow({ note, divided }: { note: NoteResult; divided: boolean }) {
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/source/[id]', params: { id: note.sourceId, note: note.id } })}
-      style={({ pressed }) => [styles.noteRow, divided && styles.divided, pressed && styles.pressed]}
+      className={cx('gap-1.5 py-md active:opacity-70', divided && divider)}
     >
-      <Text variant={variant} style={note.fromComment ? undefined : styles.excerpt}>
+      <Text variant={variant} className={note.fromComment ? undefined : excerptBar}>
         {note.fromComment && '↳ '}
         {note.snippet.map((segment, i) =>
           segment.hit ? (
-            <Text key={i} variant={variant} color="fg" style={styles.hit}>
+            <Text key={i} variant={variant} color="fg" className="bg-mark">
               {segment.text}
             </Text>
           ) : (
@@ -449,63 +460,3 @@ function NoteRow({ note, divided }: { note: NoteResult; divided: boolean }) {
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.gutter, paddingBottom: space.xxl },
-    group: { paddingTop: space.md, paddingBottom: space.xs },
-    filters: { gap: space.sm, paddingHorizontal: space.gutter, paddingTop: 2 },
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: space.md,
-      padding: space.xl,
-      backgroundColor: c.page,
-    },
-    lead: { textAlign: 'center' },
-    short: { paddingTop: space.md },
-    spinner: { color: c.accent },
-    pressed: { opacity: 0.7 },
-    boxRow: { paddingTop: space.md, paddingBottom: 10, paddingHorizontal: space.gutter, alignItems: 'center' },
-    box: { width: '100%', maxWidth: BOX_WIDTH, justifyContent: 'center' },
-    boxOff: { opacity: 0.6 },
-    glass: { position: 'absolute', left: 13 },
-    input: {
-      ...typeScale.body,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-      minHeight: 46,
-      paddingVertical: 12,
-      paddingLeft: 40,
-      paddingRight: 40,
-      // Android adds its own padding above and below the line otherwise.
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      // As in TextField, the ring is always there and only coloured on focus: an outline added
-      // on focus drops an Android input's padding and the placeholder runs under the glass.
-      outlineColor: 'transparent',
-      outlineWidth: 3,
-      outlineStyle: 'solid',
-    },
-    // An accent border and a 3px accent-soft ring, as every field has.
-    focused: { borderColor: c.accent, outlineColor: c.accentSoft },
-    clear: { position: 'absolute', right: 1, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    sheet: { gap: 18 },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
-    sourceText: { flex: 1, gap: 2 },
-    allSources: { alignSelf: 'flex-start', paddingVertical: space.sm },
-    noteRow: { gap: 6, paddingVertical: space.md },
-    excerpt: {
-      borderLeftWidth: 2,
-      borderLeftColor: c.quoteBar,
-      paddingLeft: 11,
-    },
-    hit: { backgroundColor: c.mark },
-    more: { paddingVertical: space.md },
-  });

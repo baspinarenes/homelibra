@@ -1,15 +1,16 @@
 import { deletionDueAt } from '@homelibra/core/account';
 import { Button } from '@homelibra/ui/button';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, View } from 'react-native';
 
+import { SafeAreaView } from '@/components/safe-area-view';
 import { SignOutButton } from '@/features/account/sign-out-button';
 import { authClient } from '@/lib/auth-client';
 import { useTRPC } from '@/lib/trpc';
+
+// Uniwind reads className only on React Native's own components.
 
 /**
  * A closed Account signed in again within its 14 days (#40, story 20): the
@@ -18,7 +19,6 @@ import { useTRPC } from '@/lib/trpc';
  */
 export default function AccountClosedScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const { data: session, refetch } = authClient.useSession();
   // Once the session says the Account is open again, the root layout opens the tabs.
@@ -33,11 +33,11 @@ export default function AccountClosedScreen() {
     : '';
 
   return (
-    <SafeAreaView style={styles.page}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView className="flex-1 bg-page">
+      <ScrollView contentContainerClassName="w-full max-w-[520px] self-center px-gutter pt-10 pb-xl gap-lg">
         <Text variant="display">{t('accountClosed.title')}</Text>
         <Text variant="body">{t('accountClosed.lead', { date })}</Text>
-        <View style={styles.action}>
+        <View className="mt-sm">
           <Button label={t('accountClosed.restore')} block busy={restore.isPending} onPress={() => restore.mutate()} />
         </View>
         {restore.isError ? (
@@ -45,27 +45,11 @@ export default function AccountClosedScreen() {
             {t('accountClosed.failed')}
           </Text>
         ) : null}
-        <View style={styles.signOut}>
+        {/* The button carries its own padding; pull it back to the gutter. */}
+        <View className="-ml-xs self-start">
           <SignOutButton />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    page: { flex: 1, backgroundColor: c.page },
-    content: {
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 520,
-      paddingTop: 40,
-      paddingHorizontal: space.gutter,
-      paddingBottom: space.xl,
-      gap: space.lg,
-    },
-    action: { marginTop: space.sm },
-    // The button carries its own padding; pull it back to the gutter.
-    signOut: { alignSelf: 'flex-start', marginLeft: -space.xs },
-  });

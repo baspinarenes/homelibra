@@ -2,12 +2,12 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Text } from '@homelibra/ui/text';
 import { Switch } from '@homelibra/ui/switch';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, SectionList, StyleSheet, View } from 'react-native';
+import { Pressable, SectionList, View } from 'react-native';
 
 import { MarkedText, type Match, type Matches } from '@/features/search/note-search';
 
@@ -41,7 +41,6 @@ export function CollectionView({
   underEmpty?: ReactNode;
   matches?: Matches | null;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const sections = view.groups.map((group) => ({ key: group.source.id, source: group.source, data: group.notes }));
   const list = useRef<SectionList<Note, (typeof sections)[number]>>(null);
@@ -52,20 +51,20 @@ export function CollectionView({
   }, [matches]);
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.bar}>{bar}</View>
+    <View className="flex-1 bg-page">
+      <View className="gap-2.5 border-b border-line px-lg pt-sm pb-md">{bar}</View>
       <SectionList
         ref={list}
         keyboardShouldPersistTaps="handled"
-        style={styles.screen}
-        contentContainerStyle={styles.content}
+        className="flex-1 bg-page"
+        contentContainerClassName="pb-xxl"
         sections={sections}
         keyExtractor={(note) => note.id}
         extraData={matches}
         stickySectionHeadersEnabled
         ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <Text variant="body" style={styles.empty}>
+          <View className="gap-sm p-xl">
+            <Text variant="body" className="text-center">
               {empty}
             </Text>
             {underEmpty}
@@ -93,18 +92,17 @@ export function CollectionView({
 /** Tür, `Yazar, Başlık`, and on the right the Date as entered, or "tarihsiz". */
 function SourceHeading({ source, onPress }: { source: Group['source']; onPress: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="link"
       accessibilityHint={t('collection.openSource')}
       onPress={onPress}
-      style={({ pressed }) => [styles.heading, pressed && styles.pressed]}
+      className="flex-row items-baseline gap-sm border-b border-line bg-page px-lg pt-md pb-1.5 active:opacity-70"
     >
       <Text variant="micro" color="accent">
         {t(`sourceTypes.${source.type}.label`)}
       </Text>
-      <Text variant="label" style={styles.source} numberOfLines={1}>
+      <Text variant="label" className="min-w-0 flex-1" numberOfLines={1}>
         {[source.author, source.title].filter(Boolean).join(', ')}
       </Text>
       <Text variant="caption">{source.date ? formatDate(source.date) : t('collection.undated')}</Text>
@@ -129,19 +127,18 @@ function NoteRow({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const names = note.why.tags.map((tag) => tag.name).join(', ');
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityHint={t('collection.openNote')}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, divided && styles.divided, pressed && styles.pressed]}
+      className={cx('flex-row gap-md px-lg py-2.5 active:opacity-70', divided && 'border-t border-line-soft')}
     >
-      <Text variant="locator" style={styles.locator}>
+      <Text variant="locator" className="w-18 pt-0.75">
         {note.locator ?? '—'}
       </Text>
-      <View style={styles.texts}>
+      <View className="flex-1 gap-1">
         {note.excerpt && <MarkedText text={note.excerpt} marks={match?.excerpt} variant="excerptSm" />}
         {note.comment && <MarkedText text={note.comment} marks={match?.comment} variant="commentSm" prefix="↳ " />}
         {note.why.via === 'note' ? (
@@ -164,19 +161,14 @@ function NoteRow({
  * makes it the way to its renaming.
  */
 export function ViewName({ name, onPress, hint }: { name: string; onPress?: () => void; hint?: string }) {
-  const styles = useThemedStyles(makeStyles);
+  // EB Garamond reaches 27 below and above at 21; the padding keeps g, ğ, y of the last line.
   const heading = (
-    <Text variant="sourceTitle" style={styles.name}>
+    <Text variant="sourceTitle" className="pb-0.5">
       {name}
     </Text>
   );
   return onPress ? (
-    <Pressable
-      role="button"
-      accessibilityHint={hint}
-      onPress={onPress}
-      style={({ pressed }) => pressed && styles.pressed}
-    >
+    <Pressable role="button" accessibilityHint={hint} onPress={onPress} className="active:opacity-70">
       {heading}
     </Pressable>
   ) : (
@@ -195,9 +187,8 @@ export function SourceNotesSwitch({
   onChange: (value: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.switchRow}>
+    <View className="flex-row items-center gap-sm">
       <Text variant="caption">
         {count > 0 ? t('collection.sourceNotesShortCount', { count }) : t('collection.sourceNotesShort')}
       </Text>
@@ -213,10 +204,9 @@ export function SourceNotesSwitch({
  */
 export function ViewCount({ view, of, aside }: { view: ViewData; of?: ViewData; aside?: ReactNode }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.countRow}>
-      <Text variant="caption" style={styles.count}>
+    <View className="flex-row items-center justify-between gap-md">
+      <Text variant="caption" className="shrink">
         {of && of !== view
           ? t('noteSearch.viewMatchCounts', { shown: view.noteCount, notes: of.noteCount, sources: view.sourceCount })
           : t('collection.counts', { notes: view.noteCount, sources: view.sourceCount })}
@@ -225,41 +215,3 @@ export function ViewCount({ view, of, aside }: { view: ViewData; of?: ViewData; 
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    bar: {
-      gap: space.sm + 2,
-      paddingHorizontal: space.lg,
-      paddingTop: space.sm,
-      paddingBottom: space.md,
-      borderBottomWidth: 1,
-      borderBottomColor: c.line,
-    },
-    content: { paddingBottom: space.xxl },
-    emptyBox: { gap: space.sm, padding: space.xl },
-    empty: { textAlign: 'center' },
-    pressed: { opacity: 0.7 },
-    heading: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      gap: space.sm,
-      paddingHorizontal: space.lg,
-      paddingTop: space.md,
-      paddingBottom: 6,
-      borderBottomWidth: 1,
-      borderBottomColor: c.line,
-      backgroundColor: c.page,
-    },
-    source: { flex: 1, minWidth: 0 },
-    row: { flexDirection: 'row', gap: space.md, paddingVertical: space.sm + 2, paddingHorizontal: space.lg },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    locator: { width: 72, paddingTop: 3 },
-    texts: { flex: 1, gap: 4 },
-    // EB Garamond reaches 27 below and above at 21; the padding keeps g, ğ, y of the last line.
-    name: { paddingBottom: 2 },
-    countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
-    count: { flexShrink: 1 },
-    switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  });

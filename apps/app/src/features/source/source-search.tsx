@@ -1,7 +1,6 @@
 import { Text } from '@homelibra/ui/text';
-import { space } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { type Matches, SearchField, ShortWords } from '@/features/search/note-search';
 
@@ -55,7 +54,7 @@ export function SourceSearchBar({
 }) {
   const { t } = useTranslation();
   return (
-    <View style={styles.bar}>
+    <View className="gap-sm">
       <SearchField
         look="line"
         value={text}
@@ -69,7 +68,3 @@ export function SourceSearchBar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  bar: { gap: space.sm },
-});

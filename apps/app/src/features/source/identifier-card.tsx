@@ -1,8 +1,8 @@
 import { Button, type IconComponent } from '@homelibra/ui/button';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { useTheme } from '@homelibra/ui/theme';
 import type { ReactNode } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
 /**
  * The Source form's identifier card: the ISBN (Kitap) or the DOI (Makale) on
@@ -30,14 +30,13 @@ export function IdentifierCard({
   alert?: boolean;
   children?: ReactNode;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   return (
-    <View style={styles.card}>
+    <View className="gap-2.5 rounded-control bg-accent px-lg py-3.5">
       <Text variant="fieldLabel" color="accentFg">
         {label}
       </Text>
-      <View style={styles.row}>
+      <View className="flex-row gap-sm">
         <TextInput
           aria-label={label}
           value={value}
@@ -46,9 +45,12 @@ export function IdentifierCard({
           placeholderTextColor={colors.muted2}
           autoCapitalize="none"
           autoCorrect={false}
-          style={styles.input}
+          className="type-identifier min-h-11.5 min-w-0 flex-1 rounded-control bg-surface px-3.5 py-3 text-fg"
+          // Android adds its own padding above and below the line otherwise. Neither has a class.
+          style={{ includeFontPadding: false, textAlignVertical: 'center' }}
         />
-        <View style={styles.action}>
+        {/* The button keeps its own height, centred on the input's. */}
+        <View className="justify-center">
           <Button variant="small" onAccent {...action} />
         </View>
       </View>
@@ -57,43 +59,7 @@ export function IdentifierCard({
           {alert ? <Text variant="strong">{hint}</Text> : hint}
         </Text>
       )}
-      {children && <View style={styles.foot}>{children}</View>}
+      {children && <View className="flex-row items-center gap-md border-t border-accent-rule pt-2.5">{children}</View>}
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    card: {
-      gap: 10,
-      paddingVertical: 14,
-      paddingHorizontal: space.lg,
-      backgroundColor: c.accent,
-      borderRadius: radius.control,
-    },
-    row: { flexDirection: 'row', gap: space.sm },
-    input: {
-      ...typeScale.identifier,
-      flex: 1,
-      minWidth: 0,
-      minHeight: 46,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderRadius: radius.control,
-      // Android adds its own padding above and below the line otherwise.
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-    },
-    // The button keeps its own height, centred on the input's.
-    action: { justifyContent: 'center' },
-    foot: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: space.md,
-      paddingTop: 10,
-      borderTopWidth: 1,
-      borderTopColor: c.accentRule,
-    },
-  });

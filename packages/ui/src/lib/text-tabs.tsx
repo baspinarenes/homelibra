@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import type { Colors } from './tokens';
-import { useThemedStyles } from './use-theme';
 
 /**
  * Two or more views of one list as words over a thin rule (Okunuyor | Bitti,
@@ -25,10 +24,9 @@ export function TextTabs<T extends string>({
   onChange: (value: T) => void;
   right?: ReactNode;
 }) {
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.row}>
-      <View role="tablist" aria-label={label} style={styles.tabs}>
+    <View className="flex-row items-center justify-between border-b border-line">
+      <View role="tablist" aria-label={label} className="flex-row gap-6">
         {options.map((option) => {
           const selected = option.value === value;
           const counted = option.count !== undefined;
@@ -39,7 +37,11 @@ export function TextTabs<T extends string>({
               aria-selected={selected}
               aria-label={counted ? `${option.label} ${option.count}` : option.label}
               onPress={() => onChange(option.value)}
-              style={[styles.tab, selected && styles.selected]}
+              // The underline sits on the row's rule.
+              className={cx(
+                '-mb-px flex-row items-baseline gap-1.5 border-b-2 pt-3 pb-2.75',
+                selected ? 'border-accent' : 'border-transparent',
+              )}
             >
               <Text variant="textTab" color={selected ? 'fg' : 'muted'}>
                 {option.label}
@@ -57,27 +59,3 @@ export function TextTabs<T extends string>({
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      borderBottomWidth: 1,
-      borderBottomColor: c.line,
-    },
-    tabs: { flexDirection: 'row', gap: 24 },
-    // The underline sits on the row's rule.
-    tab: {
-      flexDirection: 'row',
-      alignItems: 'baseline',
-      gap: 6,
-      paddingTop: 12,
-      paddingBottom: 11,
-      marginBottom: -1,
-      borderBottomWidth: 2,
-      borderBottomColor: 'transparent',
-    },
-    selected: { borderBottomColor: c.accent },
-  });

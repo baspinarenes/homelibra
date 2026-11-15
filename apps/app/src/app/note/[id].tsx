@@ -3,12 +3,12 @@ import { Button } from '@homelibra/ui/button';
 import { HeaderTextAction } from '@homelibra/ui/screen-header';
 import { TextField } from '@homelibra/ui/text-field';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, radius, space, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { useTheme } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
 import { TagChips } from '@/features/tag/tag-chips';
 import { type PickedSource, SourcePicker } from '@/features/source/source-picker';
@@ -28,7 +28,7 @@ import { offerReceiptUndo } from '@/lib/undo';
 export default function EditNoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const { state } = useOutbox();
   // A Note never sent is not on the server yet: the phone has it.
@@ -56,17 +56,17 @@ export default function EditNoteScreen() {
       />
     );
   return (
-    <View style={styles.center}>
+    <View className="flex-1 items-center justify-center bg-page p-xl">
       {fetched.isError ? (
-        <Text variant="body" style={styles.lead}>
+        <Text variant="body" className="text-center">
           {t('noteEdit.loadFailed')}
         </Text>
       ) : fetched.fetchStatus === 'paused' ? (
-        <Text variant="body" style={styles.lead}>
+        <Text variant="body" className="text-center">
           {t('outbox.noteNotFound')}
         </Text>
       ) : (
-        <ActivityIndicator color={styles.spinner.color} />
+        <ActivityIndicator color={colors.accent} />
       )}
     </View>
   );
@@ -78,7 +78,6 @@ export default function EditNoteScreen() {
  */
 function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: boolean; refused: boolean }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const { apply } = useOutbox();
@@ -148,7 +147,11 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
   const save = () => canSave && void update();
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      className="flex-1 bg-page"
+      contentContainerClassName="px-lg pt-md pb-xxl"
+      keyboardShouldPersistTaps="handled"
+    >
       <Stack.Screen
         options={{
           title: t('noteEdit.title'),
@@ -157,26 +160,26 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
           ),
         }}
       />
-      <View style={styles.form}>
+      <View className="w-full max-w-[640px] gap-lg self-center">
         {refused && (
           <Text variant="body" color="warn">
             {t('outbox.refusedLead')}
           </Text>
         )}
-        <View style={styles.sourceField}>
+        <View className="gap-1.5">
           <Text variant="fieldLabel">{t('deletion.source')}</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('deletion.chooseSource')}
             onPress={() => setPickingSource(true)}
-            style={({ pressed }) => [styles.source, pressed && styles.pressed]}
+            className="min-h-11.5 flex-row items-center gap-sm rounded-control border border-line bg-surface px-3.5 py-2.5 active:opacity-70"
           >
             {shownSource && <SourceTypeIcon type={shownSource.type} color={colors.ink2} />}
             {/* Kaynağı silinmiş: a new Source sends the Note there. */}
             <Text
               variant={sourceLost ? 'label' : 'sourceTitleSm'}
               color={sourceLost ? 'warn' : undefined}
-              style={styles.sourceTitle}
+              className="flex-1"
               numberOfLines={2}
             >
               {shownSource?.title ?? (sourceGone ? t('outbox.chooseNewSource') : '')}
@@ -193,7 +196,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
         />
         <TextField label={t('noteEdit.excerpt')} value={excerpt} onChangeText={setExcerpt} multiline excerpt />
         <TextField label={t('noteEdit.comment')} value={comment} onChangeText={setComment} multiline />
-        <View style={styles.tags}>
+        <View className="gap-2">
           <Text variant="fieldLabel">{t('tags.field')}</Text>
           <TagChips names={tags} pickerTitle={t('tags.noteTitle')} onChange={setTags} />
         </View>
@@ -207,7 +210,7 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
             {t('noteEdit.saveFailed')}
           </Text>
         )}
-        <View style={styles.foot}>
+        <View className="mt-lg gap-sm">
           {failed === 'delete' && (
             <Text variant="body" color="danger">
               {t('deletion.deleteFailed')}
@@ -236,30 +239,3 @@ function NoteForm({ note, sourceGone, refused }: { note: KnownNote; sourceGone: 
     </ScrollView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.xxl },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    lead: { textAlign: 'center' },
-    spinner: { color: c.accent },
-    form: { gap: space.lg, width: '100%', maxWidth: 640, alignSelf: 'center' },
-    tags: { gap: 8 },
-    sourceField: { gap: 6 },
-    source: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: space.sm,
-      minHeight: 46,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-      backgroundColor: c.surface,
-    },
-    sourceTitle: { flex: 1 },
-    pressed: { opacity: 0.7 },
-    foot: { gap: space.sm, marginTop: space.lg },
-  });

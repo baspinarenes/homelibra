@@ -1,11 +1,11 @@
 import type { SourceType } from '@homelibra/core/source';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, coverColors, radius, useThemedStyles } from '@homelibra/ui/theme';
+import { coverColors, useTheme } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Trans, useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { HomeDivider } from '@/features/library/home-divider';
 import { useOutbox } from '@/lib/outbox';
@@ -20,7 +20,7 @@ import { useTRPC } from '@/lib/trpc';
  */
 export function LibrarySummary() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const router = useRouter();
   const library = useQuery(trpc.sources.library.queryOptions());
@@ -32,7 +32,7 @@ export function LibrarySummary() {
   return (
     <>
       <HomeDivider />
-      <View style={styles.section}>
+      <View className="gap-3.5 py-5.5">
         <SectionHeading
           title={t('home.libraryTitle')}
           link={{ label: t('readingStatus.all'), onPress: () => router.navigate('/sources') }}
@@ -48,7 +48,7 @@ export function LibrarySummary() {
             components={{ count: <Text variant="strongSerif" color="fg" /> }}
           />
         </Text>
-        <View style={styles.rule} />
+        <View className="h-px bg-line-soft" />
         <Breakdown
           title={t('home.libraryTypes')}
           parts={types.map(({ type, count }) => ({
@@ -76,7 +76,8 @@ export function LibrarySummary() {
             },
           ]
             .filter((part) => part.count > 0)
-            .map((part) => ({ ...part, color: part.key === 'reading' ? styles.reading.color : styles.finished.color }))}
+            // Okuma durumu's two colours: the accent for what is being read.
+            .map((part) => ({ ...part, color: part.key === 'reading' ? colors.accent : colors.faint }))}
         />
       </View>
     </>
@@ -87,16 +88,15 @@ type Part = { key: string; label: string; count: number; color: string; onPress:
 
 /** A bar split by count, 2 between the parts, and under it a legend whose rows are what is pressed. */
 function Breakdown({ title, parts }: { title: string; parts: Part[] }) {
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.breakdown}>
+    <View className="gap-2.5">
       <Text variant="micro">{title}</Text>
-      <View style={styles.bar}>
+      <View className="h-2 flex-row gap-0.5">
         {parts.map((part) => (
-          <View key={part.key} style={[styles.barPart, { flex: part.count, backgroundColor: part.color }]} />
+          <View key={part.key} className="rounded-cover" style={{ flex: part.count, backgroundColor: part.color }} />
         ))}
       </View>
-      <View style={styles.legend}>
+      <View className="flex-row flex-wrap gap-x-4.5 gap-y-2">
         {parts.map((part) => (
           <Pressable
             key={part.key}
@@ -104,9 +104,9 @@ function Breakdown({ title, parts }: { title: string; parts: Part[] }) {
             aria-label={`${part.label} ${part.count}`}
             onPress={part.onPress}
             hitSlop={8}
-            style={({ pressed }) => [styles.legendRow, pressed && styles.pressed]}
+            className="flex-row items-center gap-1.5 active:opacity-70"
           >
-            <View style={[styles.swatch, { backgroundColor: part.color }]} />
+            <View className="h-2 w-2 rounded-cover" style={{ backgroundColor: part.color }} />
             <Text variant="label" color="ink3">
               {part.label}
             </Text>
@@ -117,19 +117,3 @@ function Breakdown({ title, parts }: { title: string; parts: Part[] }) {
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    section: { gap: 14, paddingVertical: 22 },
-    pressed: { opacity: 0.7 },
-    rule: { height: 1, backgroundColor: c.lineSoft },
-    breakdown: { gap: 10 },
-    bar: { flexDirection: 'row', gap: 2, height: 8 },
-    barPart: { borderRadius: radius.cover },
-    legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, rowGap: 8 },
-    legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    swatch: { width: 8, height: 8, borderRadius: radius.cover },
-    // Okuma durumu's two colours: the accent for what is being read.
-    reading: { color: c.accent },
-    finished: { color: c.faint },
-  });

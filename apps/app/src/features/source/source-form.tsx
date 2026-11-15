@@ -19,7 +19,7 @@ import {
 import { HeaderIconAction, HeaderTextAction } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, radius, space, useTheme, useThemedStyles, wideMinWidth } from '@homelibra/ui/theme';
+import { cx, space, useTheme, wideMinWidth } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
@@ -27,7 +27,7 @@ import Link from 'lucide-react-native/icons/link';
 import Save from 'lucide-react-native/icons/save';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/features/source/date-input';
@@ -189,7 +189,6 @@ export function SourceForm({
   deleteAction?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { width } = useWindowDimensions();
   const wide = Platform.OS === 'web' && width >= wideMinWidth;
   const [draft, setDraft] = useState(initial);
@@ -298,12 +297,16 @@ export function SourceForm({
             ),
         }}
       />
-      <View style={[styles.form, wide && styles.formWide]}>
-        <View style={styles.field}>
+      <View className={cx('gap-lg', wide && 'w-full max-w-[860px] self-center')}>
+        <View className="gap-1.5">
           <Text variant="micro">{t('sourceForm.type')}</Text>
-          <View accessibilityRole="radiogroup" accessibilityLabel={t('sourceForm.type')} style={styles.types}>
+          <View
+            accessibilityRole="radiogroup"
+            accessibilityLabel={t('sourceForm.type')}
+            className="-mx-0.75 flex-row flex-wrap"
+          >
             {sourceTypes.map((type) => (
-              <View key={type} style={[styles.typeCell, { width: wide ? '20%' : '33.333%' }]}>
+              <View key={type} className={cx('p-0.75', wide ? 'w-[20%]' : 'w-[33.333%]')}>
                 <TypeChip type={type} selected={type === draft.type} onPress={() => changeType(type)} />
               </View>
             ))}
@@ -357,9 +360,9 @@ export function SourceForm({
         />
 
         {typeFields.length > 0 && (
-          <View style={wide ? styles.columns : styles.stack}>
+          <View className={wide ? '-mx-sm flex-row flex-wrap gap-y-lg' : 'gap-lg'}>
             {typeFields.map((key) => (
-              <View key={key} style={wide && styles.column}>
+              <View key={key} className={wide ? 'w-[50%] px-sm' : undefined}>
                 {fieldInput(key)}
               </View>
             ))}
@@ -367,7 +370,7 @@ export function SourceForm({
         )}
 
         {!tuckedOpen && layout.tucked.length > 0 && (
-          <Pressable accessibilityRole="button" onPress={() => setTuckedOpen(true)} style={styles.more}>
+          <Pressable accessibilityRole="button" onPress={() => setTuckedOpen(true)} className="self-start py-1.5">
             <Text variant="button">
               {t('sourceForm.showTucked', {
                 fields: layout.tucked.map((key) => t(`sourceFields.${key}`)).join(', '),
@@ -408,12 +411,12 @@ export function SourceForm({
 
 /** The form's screen: the strip under the header, when there is something to say, and the form scrolling below it. */
 function FormScreen({ notice, children }: { notice: string | null; children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
   const { bottom } = useSafeAreaInsets();
   return (
-    <View style={styles.screen}>
+    <View className="flex-1 bg-page">
       {notice && (
-        <View role="alert" style={styles.strip}>
+        // Under the header, the screen's width: a failed save or being offline.
+        <View role="alert" className="border-b border-line bg-warn-soft px-gutter py-2.5">
           <Text variant="label" color="warn">
             {notice}
           </Text>
@@ -421,8 +424,9 @@ function FormScreen({ notice, children }: { notice: string | null; children: Rea
       )}
       {/* The form's end clears the phone's navigation bar. */}
       <ScrollView
-        style={styles.screen}
-        contentContainerStyle={[styles.content, { paddingBottom: bottom + space.xxl }]}
+        className="flex-1 bg-page"
+        contentContainerClassName="px-lg pt-md"
+        contentContainerStyle={{ paddingBottom: bottom + space.xxl }}
         keyboardShouldPersistTaps="handled"
       >
         {children}
@@ -433,19 +437,21 @@ function FormScreen({ notice, children }: { notice: string | null; children: Rea
 
 function TypeChip({ type, selected, onPress }: { type: SourceType; selected: boolean; onPress: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="radio"
       aria-checked={selected}
       onPress={onPress}
-      style={[styles.typeChip, selected && styles.typeChipSelected]}
+      className={cx(
+        'flex-1 gap-0.5 rounded-control border px-2.25 py-2',
+        selected ? 'border-accent bg-accent-sub' : 'border-line bg-surface',
+      )}
     >
-      <View style={styles.typeHead}>
+      <View className="flex-row items-start gap-1.5">
         <SourceTypeIcon type={type} color={selected ? colors.accent : colors.ink2} />
         {/* Wraps on a phone rather than cutting "Süreli yayın" short. */}
-        <Text variant="label" color={selected ? 'accent' : 'fg'} style={styles.typeLabel}>
+        <Text variant="label" color={selected ? 'accent' : 'fg'} className="-mt-0.25 shrink">
           {t(`sourceTypes.${type}.label`)}
         </Text>
       </View>
@@ -453,39 +459,3 @@ function TypeChip({ type, selected, onPress }: { type: SourceType; selected: boo
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.lg, paddingTop: space.md },
-    form: { gap: space.lg },
-    formWide: { width: '100%', maxWidth: 860, alignSelf: 'center' },
-    field: { gap: 6 },
-    types: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -3 },
-    typeCell: { padding: 3 },
-    typeChip: {
-      flex: 1,
-      gap: 2,
-      paddingVertical: 8,
-      paddingHorizontal: 9,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-      backgroundColor: c.surface,
-    },
-    typeChipSelected: { borderColor: c.accent, backgroundColor: c.accentSub },
-    typeHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
-    typeLabel: { flexShrink: 1, marginTop: -1 },
-    stack: { gap: space.lg },
-    columns: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.lg, marginHorizontal: -space.sm },
-    column: { width: '50%', paddingHorizontal: space.sm },
-    more: { alignSelf: 'flex-start', paddingVertical: 6 },
-    // Under the header, the screen's width: a failed save or being offline.
-    strip: {
-      paddingVertical: 10,
-      paddingHorizontal: space.gutter,
-      backgroundColor: c.warnSoft,
-      borderBottomWidth: 1,
-      borderBottomColor: c.line,
-    },
-  });

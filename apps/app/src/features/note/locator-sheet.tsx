@@ -3,11 +3,11 @@ import type { SourceType } from '@homelibra/core/source';
 import { Sheet } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, radius, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { type as typeScale, useTheme } from '@homelibra/ui/theme';
 import Delete from 'lucide-react-native/icons/delete';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 /**
  * The writing sheet's Locator editor, a sheet over it. Sources cited by page,
@@ -32,7 +32,6 @@ export function LocatorSheet({
   onHidden?: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const pad = locatorPad(sourceType);
   const [locator, setLocator] = useState(initial);
@@ -88,28 +87,29 @@ export function LocatorSheet({
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="done"
-          style={styles.input}
+          style={typeScale.locatorInput}
         />
       ) : (
         <Text
           variant={locator ? 'locatorKey' : 'keyHint'}
           color={fresh && locator !== '' ? 'muted2' : undefined}
           accessibilityLabel={`${t('capture.locator')}: ${locator || t('capture.noLocator')}`}
-          style={styles.display}
+          className="py-1.5 text-center"
           numberOfLines={1}
         >
           {locator || t('capture.wholeSource')}
         </Text>
       )}
       {pad && !freeText && (
-        <View style={styles.pad}>
+        <View className="flex-row flex-wrap gap-2">
           {[...pad.keys, locatorErase].map((key) => (
+            // Three to a row: a third of the width less the two gaps.
             <Pressable
               key={key}
               accessibilityRole="button"
               accessibilityLabel={key === locatorErase ? t('capture.locatorErase') : key}
               onPress={() => press(key)}
-              style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
+              className="h-13 w-[31.5%] items-center justify-center rounded-control border border-line bg-surface active:bg-line-soft"
             >
               {key === locatorErase ? (
                 <Delete color={colors.ink2} size={20} strokeWidth={1.6} />
@@ -121,33 +121,10 @@ export function LocatorSheet({
         </View>
       )}
       {pad && !freeText && Platform.OS !== 'web' && (
-        <Pressable accessibilityRole="button" onPress={() => setFreeText(true)} style={styles.keyboard}>
+        <Pressable accessibilityRole="button" onPress={() => setFreeText(true)} className="self-center px-2 py-1">
           <Text variant="link">{t('capture.locatorKeyboard')}</Text>
         </Pressable>
       )}
     </Sheet>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    display: {
-      textAlign: 'center',
-      paddingVertical: 6,
-    },
-    input: { ...typeScale.locatorInput },
-    pad: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    key: {
-      // Three to a row: a third of the width less the two gaps.
-      width: '31.5%',
-      height: 52,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-      backgroundColor: c.surface,
-    },
-    keyPressed: { backgroundColor: c.lineSoft },
-    keyboard: { alignSelf: 'center', paddingVertical: 4, paddingHorizontal: 8 },
-  });

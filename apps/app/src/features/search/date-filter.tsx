@@ -2,9 +2,8 @@ import { type Calendar, calendars, formatDate, type YearRange, yearRange } from 
 import { Segment } from '@homelibra/ui/segment';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 /**
  * The Tarih filter as the scholar types it (#122): one calendar for both
@@ -51,7 +50,6 @@ export function YearRangeFields({
   onChange: (value: YearRangeDraft) => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const bounds = yearRange({ from: boundOf(value.calendar, value.from), to: boundOf(value.calendar, value.to) });
   // The year its calendar does not have, for the message.
   const missing = [value.from, value.to].find((year) => {
@@ -59,7 +57,7 @@ export function YearRangeFields({
     return bound && !yearRange({ from: bound });
   });
   const year = (side: 'from' | 'to') => (
-    <View style={styles.year}>
+    <View className="flex-1 gap-1.5">
       {/* Read out by the field itself. */}
       <Text variant="labelSm" color="ink2" aria-hidden>
         {t(`dateFilter.${side}`)}
@@ -78,7 +76,7 @@ export function YearRangeFields({
   );
 
   return (
-    <View style={styles.fields}>
+    <View className="gap-1.5">
       <Segment
         label={t('dateFilter.calendar')}
         options={calendars.map((calendar) => ({ value: calendar, label: t(`date.calendars.${calendar}`) }))}
@@ -86,9 +84,10 @@ export function YearRangeFields({
         onChange={(calendar) => onChange({ ...value, calendar })}
         block
       />
-      <View style={styles.years}>
+      <View className="flex-row items-end gap-sm">
         {year('from')}
-        <Text variant="body" color="muted" style={styles.dash}>
+        {/* Level with the inputs' text, whatever the label above them. */}
+        <Text variant="body" color="muted" className="w-3.5 pb-3 text-center">
           –
         </Text>
         {year('to')}
@@ -110,12 +109,3 @@ export function YearRangeFields({
     </View>
   );
 }
-
-const makeStyles = () =>
-  StyleSheet.create({
-    fields: { gap: 6 },
-    years: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
-    year: { flex: 1, gap: 6 },
-    // Level with the inputs' text, whatever the label above them.
-    dash: { width: 14, paddingBottom: 12, textAlign: 'center' },
-  });

@@ -7,7 +7,7 @@ import { Segment } from '@homelibra/ui/segment';
 import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { TextTabs } from '@homelibra/ui/text-tabs';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { useTheme } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { inferRouterInputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,7 +15,7 @@ import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, View } from 'react-native';
 
 import {
   emptyYearRange,
@@ -66,7 +66,7 @@ function sourceFilter({ types, dates }: Choices) {
  */
 export default function SourcesScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const router = useRouter();
   const [tab, setTab] = useState<ReadingStatus>('reading');
@@ -102,10 +102,10 @@ export default function SourcesScreen() {
 
   if (all.isPending || all.isError || all.data.length === 0) {
     return (
-      <View style={styles.screen}>
+      <View className="flex-1 bg-page">
         <Stack.Screen options={{ headerRight: () => <HeaderActions onAdd={addSource} /> }} />
         {all.isPending ? (
-          <ActivityIndicator style={styles.pending} color={styles.spinner.color} />
+          <ActivityIndicator className="flex-1" color={colors.accent} />
         ) : all.isError ? (
           <ListMessage lead={t('sources.loadFailed')} />
         ) : (
@@ -128,7 +128,7 @@ export default function SourcesScreen() {
   const clearFilters = () => setChoices(unfiltered(choices));
 
   const empty = () => {
-    if (sources.isPending) return <ActivityIndicator style={styles.pending} color={styles.spinner.color} />;
+    if (sources.isPending) return <ActivityIndicator className="flex-1" color={colors.accent} />;
     if (sources.isError) return <ListMessage lead={t('sources.loadFailed')} />;
     if (filterOn) {
       return (
@@ -143,7 +143,7 @@ export default function SourcesScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <View className="flex-1 bg-page">
       <Stack.Screen
         options={{
           headerRight: () => (
@@ -151,7 +151,8 @@ export default function SourcesScreen() {
           ),
         }}
       />
-      <View style={styles.tabs}>
+      {/* Lines up with the root title. */}
+      <View className="px-gutter pt-0.5">
         <TextTabs
           label={t('sources.statusTabs')}
           options={[
@@ -163,13 +164,14 @@ export default function SourcesScreen() {
         />
       </View>
       <FlatList
-        style={styles.list}
-        contentContainerStyle={styles.content}
+        className="flex-1"
+        // Grows so an empty tab's message can sit in the middle.
+        contentContainerClassName="grow px-gutter pb-xxl"
         data={tab === 'reading' ? reading : finished}
         keyExtractor={(source) => source.id}
         ListHeaderComponent={
           filterOn ? (
-            <View style={styles.filters}>
+            <View className="gap-sm pt-md">
               <ChipRow>
                 {dates && (
                   <Chip
@@ -232,7 +234,6 @@ function FilterSheet({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   // The last choices stay on screen while the sheet slides away.
   const [lastDraft, setLastDraft] = useState(draft ?? initial);
   if (draft && draft !== lastDraft) setLastDraft(draft);
@@ -259,7 +260,7 @@ function FilterSheet({
       }}
       primary={{ label: t('sources.show', { count }), onPress: onApply, disabled: yearMissing }}
     >
-      <View style={styles.sheet}>
+      <View className="gap-4.5">
         <SheetField label={t('sources.sort')}>
           <Segment
             label={t('sources.sort')}
@@ -301,9 +302,8 @@ function FilterSheet({
  */
 function HeaderActions({ filter, onAdd }: { filter?: { on: boolean; onPress: () => void }; onAdd: () => void }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.headerActions}>
+    <View className="flex-row items-center">
       {filter && (
         <HeaderIconAction
           icon={SlidersHorizontal}
@@ -317,18 +317,3 @@ function HeaderActions({ filter, onAdd }: { filter?: { on: boolean; onPress: () 
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    // Lines up with the root title.
-    tabs: { paddingHorizontal: space.gutter, paddingTop: 2 },
-    list: { flex: 1 },
-    // Grows so an empty tab's message can sit in the middle.
-    content: { flexGrow: 1, paddingHorizontal: space.gutter, paddingBottom: space.xxl },
-    pending: { flex: 1 },
-    spinner: { color: c.accent },
-    headerActions: { flexDirection: 'row', alignItems: 'center' },
-    filters: { gap: space.sm, paddingTop: space.md },
-    sheet: { gap: 18 },
-  });

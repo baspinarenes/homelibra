@@ -1,11 +1,11 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx } from '@homelibra/ui/theme';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { SourceCover } from '@/features/source/source-cover';
 import { elapsed } from '@/features/library/elapsed';
@@ -19,7 +19,6 @@ type ListedSource = inferRouterOutputs<AppRouter>['sources']['list'][number];
  */
 export function SourceListRow({ source, divided }: { source: ListedSource; divided: boolean }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   // Yazar · Tarih, the Date as it was entered.
   const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
@@ -30,10 +29,10 @@ export function SourceListRow({ source, divided }: { source: ListedSource; divid
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
-      style={({ pressed }) => [styles.row, divided && styles.divided, pressed && styles.pressed]}
+      className={cx('flex-row items-center gap-3.25 py-md active:opacity-70', divided && 'border-t border-line-soft')}
     >
       <SourceCover type={source.type} cover={source.cover} />
-      <View style={styles.text}>
+      <View className="flex-1 gap-0.5">
         <Text variant="micro">{t(`sourceTypes.${source.type}.label`)}</Text>
         <Text variant="sourceTitleSm" numberOfLines={2}>
           {source.title}
@@ -48,11 +47,3 @@ export function SourceListRow({ source, divided }: { source: ListedSource; divid
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: space.md },
-    divided: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-    pressed: { opacity: 0.7 },
-    text: { flex: 1, gap: 2 },
-  });

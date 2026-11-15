@@ -18,7 +18,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useHeaderOptions } from '@/components/tab-stack';
@@ -76,7 +76,7 @@ function RootLayout() {
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             {/* Under the native splash on Android and iOS; only the web, which has none, sees it. */}
             {loading ? (
-              <View style={[styles.splash, { backgroundColor: colors.page }]}>
+              <View className="flex-1 items-center justify-center bg-page">
                 <ActivityIndicator color={colors.accent} />
               </View>
             ) : (
@@ -113,7 +113,3 @@ function RootLayout() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  splash: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-});

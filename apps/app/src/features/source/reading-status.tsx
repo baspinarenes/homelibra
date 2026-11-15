@@ -1,10 +1,10 @@
 import type { AppRouter } from '@homelibra/api';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, radius, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useTRPC } from '@/lib/trpc';
@@ -19,7 +19,6 @@ export type ReadingStatus = inferRouterOutputs<AppRouter>['sources']['get']['rea
  */
 export function ReadingStatusButton({ sourceId, status }: { sourceId: string; status: ReadingStatus }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const offline = useOffline();
@@ -46,11 +45,11 @@ export function ReadingStatusButton({ sourceId, status }: { sourceId: string; st
       disabled={change.isPending}
       onPress={toggle}
       hitSlop={8}
-      style={({ pressed }) => [
-        styles.button,
-        finished && styles.finished,
-        (pressed || change.isPending) && styles.pressed,
-      ]}
+      className={cx(
+        'self-start rounded-chip border px-sm py-0.5',
+        finished ? 'border-accent bg-accent-soft' : 'border-line',
+        change.isPending ? 'opacity-70' : 'active:opacity-70',
+      )}
     >
       <Text variant="caption" color={finished ? 'accent' : 'ink2'}>
         {finished ? `✓ ${t('readingStatus.finished')}` : t('readingStatus.reading')}
@@ -58,17 +57,3 @@ export function ReadingStatusButton({ sourceId, status }: { sourceId: string; st
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    pressed: { opacity: 0.7 },
-    button: {
-      alignSelf: 'flex-start',
-      paddingVertical: 2,
-      paddingHorizontal: space.sm,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.chip,
-    },
-    finished: { borderColor: c.accent, backgroundColor: c.accentSoft },
-  });

@@ -1,7 +1,7 @@
 import { Text } from '@homelibra/ui/text';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { TagChips } from '@/features/tag/tag-chips';
 import { useOffline } from '@/lib/network';
@@ -29,7 +29,7 @@ export function SourceTags({ sourceId, names }: { sourceId: string; names: strin
   // While saving, the chips show what was chosen.
   const shown = setOnSource.isPending ? setOnSource.variables.names : names;
   return (
-    <View style={styles.tags}>
+    <View className="gap-1.5">
       <TagChips
         names={shown}
         pickerTitle={t('tags.sourceTitle')}
@@ -43,7 +43,3 @@ export function SourceTags({ sourceId, names }: { sourceId: string; names: strin
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tags: { gap: 6 },
-});

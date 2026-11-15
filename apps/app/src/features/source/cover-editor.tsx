@@ -1,7 +1,7 @@
 import type { SourceType } from '@homelibra/core/source';
 import { Sheet, SheetAction } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, radius, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import Camera from 'lucide-react-native/icons/camera';
@@ -9,7 +9,7 @@ import ImageIcon from 'lucide-react-native/icons/image';
 import Trash from 'lucide-react-native/icons/trash';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, View } from 'react-native';
 
 import { CoverImage, SourceCover } from '@/features/source/source-cover';
 import { type Cover, coverFiles } from '@/features/source/cover';
@@ -27,7 +27,7 @@ import { offerServerUndo, offerUndo } from '@/lib/undo';
  */
 export function CoverEditor({ sourceId, type, cover }: { sourceId: string; type: SourceType; cover: Cover | null }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const offline = useOffline();
@@ -100,12 +100,12 @@ export function CoverEditor({ sourceId, type, cover }: { sourceId: string; type:
         accessibilityLabel={cover ? t('cover.change') : t('cover.add')}
         disabled={busy}
         onPress={() => (offline ? offerUndo({ message: t('cover.needsConnection') }) : setOpen(true))}
-        style={({ pressed }) => [pressed && styles.pressed, drop.over && styles.dropping]}
+        className={cx('active:opacity-70', drop.over && dropping)}
       >
         <SourceCover type={type} cover={cover} />
         {busy && (
-          <View style={styles.busy}>
-            <ActivityIndicator color={styles.spinner.color} />
+          <View className="absolute inset-0 items-center justify-center bg-scrim">
+            <ActivityIndicator color={colors.accent} />
           </View>
         )}
       </Pressable>
@@ -136,18 +136,23 @@ function SheetBody({
   onRemove: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const drop = useImageDrop(onDrop);
   const web = Platform.OS === 'web';
   return (
     <>
       {web && (
-        <View ref={drop.ref} style={[styles.dropZone, drop.over && styles.dropping]}>
-          {cover && <CoverImage file={cover.large} style={styles.preview} />}
+        <View
+          ref={drop.ref}
+          className={cx(
+            'items-center gap-md rounded-control border border-dashed border-line py-lg',
+            drop.over && dropping,
+          )}
+        >
+          {cover && <CoverImage file={cover.large} style={preview} />}
           <Text variant="caption">{t('cover.dropHint')}</Text>
         </View>
       )}
-      {!web && cover && <CoverImage file={cover.large} style={styles.previewAlone} />}
+      {!web && cover && <CoverImage file={cover.large} style={preview} className="mb-1 self-center" />}
       <View>
         {!web && <SheetAction icon={Camera} label={t('cover.camera')} onPress={() => onPick('camera')} />}
         <SheetAction
@@ -161,22 +166,8 @@ function SheetBody({
   );
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    pressed: { opacity: 0.7 },
-    dropping: { outlineWidth: 2, outlineStyle: 'dashed', outlineColor: c.accent, outlineOffset: 3 },
-    busy: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: c.scrim },
-    spinner: { color: c.accent },
-    // 2:3, as the file is shown everywhere.
-    preview: { width: 120, height: 180 },
-    previewAlone: { width: 120, height: 180, alignSelf: 'center', marginBottom: 4 },
-    dropZone: {
-      alignItems: 'center',
-      gap: space.md,
-      paddingVertical: space.lg,
-      borderWidth: 1,
-      borderStyle: 'dashed',
-      borderColor: c.line,
-      borderRadius: radius.control,
-    },
-  });
+/** A picture dragged over the Cover or the drop zone (web). */
+const dropping = 'outline-2 outline-dashed outline-accent outline-offset-3';
+
+// 2:3, as the file is shown everywhere.
+const preview = { width: 120, height: 180 } as const;

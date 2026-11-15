@@ -1,13 +1,13 @@
 import type { AppRouter } from '@homelibra/api';
 import { Text, type UpperCaseVariant, type Variant } from '@homelibra/ui/text';
-import { type Colors, radius, space, type as typeScale, useTheme, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import Search from 'lucide-react-native/icons/search';
 import X from 'lucide-react-native/icons/x';
 import { type ComponentProps, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/features/search/settled';
@@ -129,13 +129,10 @@ export function SearchField({
   onClose?: () => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const offline = useOffline();
-  const inputStyle = { box: styles.input, bar: [styles.bareInput, styles.barInput], line: styles.bareInput }[look];
-  const xStyle = { box: styles.clear, bar: styles.barX, line: undefined }[look];
   return (
-    <View style={[styles.box, look === 'line' && styles.line]}>
+    <View className={cx('flex-row items-center', look === 'line' && 'min-h-10 gap-sm border-b-2 border-accent')}>
       {look === 'line' && <Search color={colors.muted} size={16} strokeWidth={1.8} />}
       <TextInput
         accessibilityLabel={placeholder}
@@ -149,7 +146,7 @@ export function SearchField({
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        style={inputStyle}
+        className={inputLooks[look]}
       />
       {(onClose || value !== '') && (
         <Pressable
@@ -157,7 +154,7 @@ export function SearchField({
           accessibilityLabel={t(onClose ? 'noteSearch.close' : 'noteSearch.clear')}
           onPress={onClose ?? (() => onChange(''))}
           hitSlop={8}
-          style={xStyle}
+          className={xLooks[look]}
         >
           <X color={colors.muted} size={18} strokeWidth={1.8} />
         </Pressable>
@@ -165,6 +162,21 @@ export function SearchField({
     </View>
   );
 }
+
+// Each look names its own padding, so no two classes on the input set the same property.
+const inputLooks = {
+  box: 'min-w-0 flex-1 rounded-control border border-line bg-surface py-2 pr-9 pl-3 type-body text-fg',
+  // Where a screen's title starts in the bar.
+  bar: 'min-w-0 flex-1 p-0 pl-0.5 type-body text-fg',
+  line: 'min-w-0 flex-1 p-0 type-body text-fg',
+} as const;
+
+const xLooks = {
+  box: 'absolute right-2.5',
+  // The 44 touch area every icon in the bar has.
+  bar: 'h-11 w-11 items-center justify-center',
+  line: undefined,
+} as const;
 
 /**
  * "«ad» 3 harften kısa, yalnızca tam kelime olarak aranır." for the query's
@@ -175,10 +187,9 @@ export function SearchField({
  */
 export function ShortWords({ words, centered = false }: { words: readonly string[] | undefined; centered?: boolean }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   if (!words?.length) return null;
   return (
-    <Text variant="caption" style={centered && styles.centered}>
+    <Text variant="caption" className={centered ? 'text-center' : undefined}>
       {t('noteSearch.shortWords', { words: words.map((word) => `«${word}»`).join(', ') })}
     </Text>
   );
@@ -203,7 +214,6 @@ export function MarkedText({
   style?: ComponentProps<typeof Text>['style'];
   prefix?: string;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const current = marks && marks.map((segment) => segment.text).join('') === text ? marks : null;
   return (
     <Text variant={variant} color={color} style={style}>
@@ -211,7 +221,7 @@ export function MarkedText({
       {current
         ? current.map((segment, i) =>
             segment.hit ? (
-              <Text key={i} variant={variant} color="fg" style={styles.hit}>
+              <Text key={i} variant={variant} color="fg" className="bg-mark">
                 {segment.text}
               </Text>
             ) : (
@@ -222,30 +232,3 @@ export function MarkedText({
     </Text>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    box: { flexDirection: 'row', alignItems: 'center' },
-    line: { gap: space.sm, minHeight: 40, borderBottomWidth: 2, borderBottomColor: c.accent },
-    bareInput: { ...typeScale.body, flex: 1, minWidth: 0, color: c.fg, paddingVertical: 0, paddingHorizontal: 0 },
-    // Where a screen's title starts in the bar.
-    barInput: { paddingLeft: 2 },
-    input: {
-      ...typeScale.body,
-      flex: 1,
-      minWidth: 0,
-      color: c.fg,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-      paddingLeft: 12,
-      paddingRight: 36,
-      paddingVertical: 8,
-    },
-    clear: { position: 'absolute', right: 10 },
-    // The 44 touch area every icon in the bar has.
-    barX: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    hit: { backgroundColor: c.mark },
-    centered: { textAlign: 'center' },
-  });

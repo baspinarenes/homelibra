@@ -1,9 +1,8 @@
-import { space } from '@homelibra/ui/theme';
 import { Toast } from '@homelibra/ui/toast';
 import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { offerUndo, type UndoOffer, useUndoOffer } from '@/lib/undo';
 
@@ -30,9 +29,13 @@ export function UndoBar({ offer, onDismiss }: { offer: UndoOffer | null; onDismi
 
   if (!offer) return null;
   const { undo } = offer;
+  // Just above the top edge of the view that holds it; the Toast keeps 16 from the screen's sides.
+  // Not `bottom: '100%'`: React Native takes that against the holder's height
+  // less its padding, which sank the bar into the view under it. A zero-height
+  // edge on the holder's top needs no percentage.
   return (
-    <View pointerEvents="box-none" style={styles.edge}>
-      <View pointerEvents="box-none" style={styles.place}>
+    <View pointerEvents="box-none" className="absolute top-0 right-0 left-0 h-0">
+      <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0 mb-md">
         <Toast
           message={offer.message}
           action={
@@ -63,12 +66,3 @@ export function SharedUndoBar() {
   const dismiss = useCallback(() => offerUndo(null), []);
   return <UndoBar offer={focused ? offer : null} onDismiss={dismiss} />;
 }
-
-// Just above the top edge of the view that holds it; the Toast keeps 16 from the screen's sides.
-// Not `bottom: '100%'`: React Native takes that against the holder's height
-// less its padding, which sank the bar into the view under it. A zero-height
-// edge on the holder's top needs no percentage.
-const styles = StyleSheet.create({
-  edge: { position: 'absolute', left: 0, right: 0, top: 0, height: 0 },
-  place: { position: 'absolute', left: 0, right: 0, bottom: 0, marginBottom: space.md },
-});
