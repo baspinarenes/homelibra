@@ -12,6 +12,7 @@ import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { emptyYearRange, yearRangeOf } from '@/features/search/date-filter';
 import { ListMessage } from '@/components/list-message';
@@ -289,8 +290,10 @@ function WideHeader({
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
+  const { top } = useSafeAreaInsets();
   return (
-    <View className="gap-sm px-xxl pt-5">
+    // The header bar kept the status bar's inset; without it the title does, 20 under it.
+    <View className="gap-sm px-xxl" style={{ paddingTop: top + 20 }}>
       <View className="flex-row items-center gap-sm">
         <Text variant="title" className="flex-1">
           {t('tabs.sources')}
