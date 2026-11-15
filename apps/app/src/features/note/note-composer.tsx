@@ -1,4 +1,3 @@
-import { ablativeTr } from '@homelibra/core';
 import type { SourceType } from '@homelibra/core/source';
 import { Button } from '@homelibra/ui/button';
 import { Dialog } from '@homelibra/ui/dialog';
@@ -19,13 +18,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { uuidv7 } from 'uuidv7';
 
 import { LocatorSheet } from '@/features/note/locator-sheet';
+import { useNoteCapture } from '@/features/note/note-capture';
 import { TagPicker } from '@/features/tag/tag-picker';
 import { SharedUndoBar } from '@/components/undo-bar';
-import { useOutbox } from '@/lib/outbox';
-import { offerReceiptUndo } from '@/lib/undo';
 
 // The fields are a few lines tall before anything is written in them.
 // The gaps and padding below are the classes `gap-1.75` (labelGap), `gap-4.5` (fieldsGap) and `pt-1`
@@ -74,75 +71,35 @@ export function NoteComposer({
   const { t } = useTranslation();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { apply } = useOutbox();
+  const capture = useNoteCapture({ sourceId, carriedLocator, onSaved });
+  const { excerpt, setExcerpt, comment, setComment, tags, setTags, hasText, busy, failed } = capture;
   const [open, setOpen] = useState(openAtStart);
   const [discarding, setDiscarding] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [excerpt, setExcerpt] = useState('');
-  const [comment, setComment] = useState('');
   const [commenting, setCommenting] = useState(false);
-  const [locator, setLocator] = useState(carriedLocator);
   const [editingLocator, setEditingLocator] = useState(false);
-  // The Tags for the Note being written; untagged is the default, and each save starts untagged again.
-  const [tags, setTags] = useState<string[]>([]);
   const [pickingTags, setPickingTags] = useState(false);
   const excerptRef = useRef<TextInputInstance>(null);
   const commentRef = useRef<TextInputInstance>(null);
-  // The id a failed save used, kept while nothing changes, so sending the
-  // same Note again cannot make a second one.
-  const attempt = useRef<{ id: string; key: string } | null>(null);
   // The height the fields have over the keyboard; 0 until it has been measured.
   const [fieldsRoom, setFieldsRoom] = useState(0);
 
   const backToExcerpt = () => excerptRef.current?.focus();
 
-  const hasText = excerpt.trim() !== '' || comment.trim() !== '';
-
-  // What a Note's save or a discarded draft empties; the Locator stays.
-  const clearDraft = () => {
-    setExcerpt('');
-    setComment('');
-    setCommenting(false);
-    setTags([]);
-  };
-
   const close = () => {
     setDiscarding(false);
     setOpen(false);
-    clearDraft();
-    setFailed(false);
-    attempt.current = null;
+    capture.discard();
+    setCommenting(false);
   };
   // Every way out comes here: a draft is never lost without asking.
   const requestClose = () => (hasText ? setDiscarding(true) : close());
 
   // Through the outbox, which sends now or once the connection returns; the
-  // sheet does not know which. A failure comes back only where there is no
-  // outbox (the web).
+  // sheet does not know which. Saved, the sheet stays open for the next Note.
   const save = async () => {
-    if (!hasText || busy) return;
-    setBusy(true);
-    setFailed(false);
-    try {
-      const note = { sourceId, locator, tags, excerpt, comment };
-      const key = JSON.stringify(note);
-      if (attempt.current?.key !== key) attempt.current = { id: uuidv7(), key };
-      const { id } = attempt.current;
-      await apply({ type: 'createNote', note: { id, ...note } });
-      attempt.current = null;
-      onSaved(id);
-      clearDraft();
-      backToExcerpt();
-      // Geri al takes the Note away as Notu sil does, offline too.
-      offerReceiptUndo(t('capture.saved'), async () => {
-        await apply({ type: 'deleteNote', id });
-      });
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(false);
-    }
+    if (!(await capture.save())) return;
+    setCommenting(false);
+    backToExcerpt();
   };
 
   // The web's keyboard event; a phone has no Ctrl or Cmd to hold.
@@ -155,16 +112,15 @@ export function NoteComposer({
 
   const setLocatorFromSheet = (next: string) => {
     setEditingLocator(false);
-    setLocator(next);
+    capture.setLocator(next);
     backToExcerpt();
   };
 
   useGrowOnWeb(excerptRef, excerpt, open);
   useGrowOnWeb(commentRef, comment, open && commenting);
 
-  const trimmedLocator = locator.trim();
+  const { trimmedLocator, carriedOn } = capture;
   const shownLocator = trimmedLocator || t('capture.noLocator');
-  const carriedOn = trimmedLocator ? t('capture.carriedOn', { from: ablativeTr(trimmedLocator) }) : null;
 
   return (
     <>
