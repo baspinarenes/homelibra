@@ -2,6 +2,7 @@ import { Button } from '@homelibra/ui/button';
 import { BookIllustration } from '@homelibra/ui/illustration';
 import { Text } from '@homelibra/ui/text';
 import { useTheme } from '@homelibra/ui/theme';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { useMutation } from '@tanstack/react-query';
 import BookOpen from 'lucide-react-native/icons/book-open';
 import Download from 'lucide-react-native/icons/download';
@@ -29,11 +30,13 @@ const features = [
  * Library opens. The terms were accepted at sign-in, by the "okudum" box above
  * Giriş's buttons; Başla records that acceptance with the version of the texts
  * (account.acceptTerms), and the Library opens. There is no consent box:
- * nothing here rests on consent (docs/research/kvkk-obligations.md).
+ * nothing here rests on consent (docs/research/kvkk-obligations.md). On a
+ * wide screen it is one 440 px column in the middle of the window (#184).
  */
 export default function WelcomeScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const wide = useWideLayout().tier === 'wide';
   const trpc = useTRPC();
   const { refetch } = authClient.useSession();
   // Once the session says the terms are accepted, the root layout opens the tabs.
@@ -41,7 +44,13 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-page">
-      <ScrollView contentContainerClassName="w-full max-w-[520px] grow self-center px-gutter pt-10 pb-xl">
+      <ScrollView
+        contentContainerClassName={
+          wide
+            ? 'w-full max-w-[440px] grow justify-center self-center px-gutter py-xl'
+            : 'w-full max-w-[520px] grow self-center px-gutter pt-10 pb-xl'
+        }
+      >
         {/* The drawing's left page starts 8px inside it; pull it back to the gutter. */}
         <View className="-ml-sm">
           <BookIllustration />
@@ -62,8 +71,8 @@ export default function WelcomeScreen() {
             </View>
           ))}
         </View>
-        {/* Pinned to the foot of a tall screen, right after the features on a short one. */}
-        <View className="mt-auto gap-md pt-xl">
+        {/* Pinned to the foot of a tall phone, right after the features on a short one or in the wide column. */}
+        <View className={wide ? 'gap-md pt-xl' : 'mt-auto gap-md pt-xl'}>
           <Button
             label={t('welcome.start')}
             block
