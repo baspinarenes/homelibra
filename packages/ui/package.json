@@ -33,7 +33,8 @@
     "./note-row": "./src/note-row.ts",
     "./panel": "./src/panel.ts",
     "./note-panel": "./src/note-panel.ts",
-    "./menu": "./src/menu.ts"
+    "./menu": "./src/menu.ts",
+    "./note-editor": "./src/note-editor.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
