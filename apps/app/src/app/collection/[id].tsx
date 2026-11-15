@@ -1,22 +1,35 @@
 import type { AppRouter } from '@homelibra/api';
 import { Button } from '@homelibra/ui/button';
+import { type MenuItem, MoreMenu } from '@homelibra/ui/menu';
+import { KeyHints, PanelLayout } from '@homelibra/ui/panel';
 import { HeaderIconAction, ScreenHeader } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
 import { cx, type as typeScale, useTheme } from '@homelibra/ui/theme';
+import { useShortcuts } from '@homelibra/ui/wide-layout';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
-import { type NativeStackHeaderProps, Stack, useLocalSearchParams } from 'expo-router';
+import { type NativeStackHeaderProps, Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import Search from 'lucide-react-native/icons/search';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 
-import { CopyMarkdownAction, DeleteCollectionAction } from '@/features/collection/collection-actions';
+import {
+  CopyMarkdownAction,
+  copyNoteMarkdown,
+  DeleteCollectionAction,
+  useCopyMarkdown,
+  useDeleteCollection,
+} from '@/features/collection/collection-actions';
+import { focusedNote, ViewNotePanel } from '@/features/collection/collection-note-panel';
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
 import { DefinitionTags } from '@/features/collection/definition-tags';
+import { type NoteFocus, stepInView } from '@/features/collection/note-focus';
+import { viewAction } from '@/features/collection/view-keys';
 import { narrowView, SearchField, ShortWords, useCollectionSearch, useSearchText } from '@/features/search/note-search';
+import { useFramePanel } from '@/components/wide-frame';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useTRPC } from '@/lib/trpc';
 
@@ -32,6 +45,12 @@ type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
  * header the search's field, as on a Source's page, while the bar folds to
  * the name on one line and the count; the search only narrows what is shown,
  * and going back puts it away before it leaves the page.
+ *
+ * On a wide screen (#171) there is no header: the list's own head has the
+ * magnifier and ⋯ (Markdown olarak kopyala ⌘⇧C, Dosyayı sil), the Notes
+ * stand in full rows in a centred reading column, and a Note opens in the
+ * panel beside them, the rows going compact. ↑↓ move the panel through the
+ * rows, ⌘C copies its Note, E edits it, / searches, Esc closes the panel.
  */
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -88,6 +107,60 @@ function CollectionPage({ collection }: { collection: Collection }) {
   };
   usePreventRemove(searching, closeSearch);
 
+  // The wide tier's panel: which Note it shows, null while it is closed (as it is on entry).
+  const router = useRouter();
+  const [focus, setFocus] = useState<NoteFocus | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const layout = useFramePanel(focus !== null);
+  const wide = layout.tier === 'wide';
+  const panelOpen = wide && focus !== null;
+  const inFront = useIsFocused();
+  const copyAll = useCopyMarkdown(shown);
+  const deletion = useDeleteCollection(collection);
+  // The focused Source's Notes as the panel fetched them: a key acts on them at once, the clipboard allows no wait.
+  const sourceNotes = (sourceId: string) => queryClient.getQueryData(trpc.notes.list.queryKey({ sourceId }));
+
+  useShortcuts({ panelOpen, active: wide && inFront && !menuOpen }, (command) => {
+    const action = viewAction(command, { panelOpen, renaming, searching, notes: shown.noteCount });
+    switch (action) {
+      case 'previous':
+      case 'next': {
+        const order = focus ? sourceNotes(focus.sourceId)?.map((note) => note.id) : undefined;
+        const to = stepInView(shown, focus, action, order);
+        if (to) setFocus(to);
+        return to !== null;
+      }
+      case 'copyNote': {
+        if (!focus) return false;
+        const { source, note } = focusedNote(collection, focus, sourceNotes(focus.sourceId));
+        if (!source || !note) return false;
+        copyNoteMarkdown(source, note, { done: t('widePanel.noteCopied'), failed: t('collectionActions.copyFailed') });
+        return true;
+      }
+      case 'copyAll':
+        copyAll.copy();
+        return true;
+      case 'edit':
+        if (!focus) return false;
+        router.push({ pathname: '/note/[id]', params: { id: focus.noteId } });
+        return true;
+      case 'searchHere':
+        setSearching(true);
+        return true;
+      case 'cancelRename':
+        setRenaming(false);
+        return true;
+      case 'closePanel':
+        setFocus(null);
+        return true;
+      case 'closeSearch':
+        closeSearch();
+        return true;
+      default:
+        return false;
+    }
+  });
+
   // While saving, the bar shows what was chosen.
   const tagNames = setTags.isPending ? setTags.variables.names : collection.tags.map((tag) => tag.name);
   const includeSourceNotes = setSwitch.isPending
@@ -128,20 +201,20 @@ function CollectionPage({ collection }: { collection: Collection }) {
     />
   );
 
-  const bar = (
+  const name = !renaming && (
+    <ViewName name={collection.name} onPress={() => setRenaming(true)} hint={t('collection.rename')} />
+  );
+  const definition = (
+    <DefinitionTags names={tagNames} onChange={(names) => setTags.mutate({ id: collection.id, names })} />
+  );
+  const searchedName = (
+    <Text variant="sourceTitleSm" numberOfLines={1}>
+      {collection.name}
+    </Text>
+  );
+
+  const counts = (
     <>
-      {searching ? (
-        <Text variant="sourceTitleSm" numberOfLines={1}>
-          {collection.name}
-        </Text>
-      ) : (
-        <>
-          {!renaming && (
-            <ViewName name={collection.name} onPress={() => setRenaming(true)} hint={t('collection.rename')} />
-          )}
-          <DefinitionTags names={tagNames} onChange={(names) => setTags.mutate({ id: collection.id, names })} />
-        </>
-      )}
       {/* With no match, the words stand under "Eşleşen not yok." instead. */}
       {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
       <ViewCount
@@ -170,38 +243,150 @@ function CollectionPage({ collection }: { collection: Collection }) {
     </>
   );
 
-  return (
-    <View className="flex-1">
-      <Stack.Screen options={{ title: collection.name, header }} />
-      {renaming && (
-        <RenameField
-          initial={collection.name}
-          busy={rename.isPending}
-          failed={rename.isError}
-          onSave={(name) => rename.mutate({ id: collection.id, name })}
-          onCancel={() => setRenaming(false)}
-        />
+  const bar = (
+    <>
+      {searching ? (
+        searchedName
+      ) : (
+        <>
+          {name}
+          {definition}
+        </>
       )}
-      {/* While the name is being written, the rest stands back and waits. */}
-      <View className={cx('flex-1', renaming && 'opacity-45')} pointerEvents={renaming ? 'none' : 'auto'}>
-        <CollectionView
-          view={shown}
-          bar={bar}
-          matches={searched.matches}
-          underEmpty={searched.matches && <ShortWords words={searched.shortWords} centered />}
-          empty={
-            searched.matches
-              ? t('noteSearch.viewEmpty')
-              : collection.tags.length === 0
-                ? t('collection.emptyNoTags')
-                : t('collection.emptyNoNotes')
-          }
-        />
-      </View>
-      {/* "Kopyalandı · n not" and failures float above this zero-height edge. */}
-      <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0">
-        <SharedUndoBar />
-      </View>
+      {counts}
+    </>
+  );
+
+  // Along the list's foot while the panel is open, beside the full sidebar; only keys that act here.
+  const keyHints = [
+    { keys: '↑↓', label: t('widePanel.hintRows') },
+    { keys: '⌘C', label: t('widePanel.hintCopyNote') },
+    { keys: '⌘⇧C', label: t('widePanel.hintCopyAll') },
+    ...(searching ? [] : [{ keys: '/', label: t('widePanel.hintSearch') }]),
+    { keys: 'Esc', label: t('widePanel.hintClose') },
+  ];
+
+  // The wide head: the magnifier and ⋯ beside DOSYA, or beside the name while the panel narrows the list.
+  const menuItems: MenuItem[] = [
+    { label: t('collectionActions.copy'), keys: '⌘⇧C', onPress: copyAll.copy, disabled: copyAll.count === 0 },
+    ...(searching
+      ? []
+      : [
+          {
+            label: t('collectionActions.delete'),
+            tone: 'danger' as const,
+            onPress: deletion.remove,
+            disabled: deletion.busy,
+          },
+        ]),
+  ];
+  const actions = !renaming && (
+    <View className="flex-row items-center gap-xs">
+      {!searching && (
+        <HeaderIconAction icon={Search} label={t('noteSearch.inView')} onPress={() => setSearching(true)} />
+      )}
+      <MoreMenu label={t('widePanel.more')} items={menuItems} open={menuOpen} onOpenChange={setMenuOpen} />
+    </View>
+  );
+  const wideBar = (
+    <>
+      {searching ? (
+        <>
+          <View className="flex-row items-center gap-sm">
+            <View className="min-w-0 flex-1">
+              <SearchField
+                value={search.text}
+                onChange={search.setText}
+                placeholder={t('noteSearch.inView')}
+                autoFocus
+                onClose={closeSearch}
+              />
+            </View>
+            {actions}
+          </View>
+          {searchedName}
+        </>
+      ) : panelOpen ? (
+        <View className="flex-row items-center gap-sm">
+          <View className="min-w-0 flex-1">{name}</View>
+          {actions}
+        </View>
+      ) : (
+        <>
+          <View className="flex-row items-center justify-between gap-sm">
+            <Text variant="micro">{t('collection.pageTitle')}</Text>
+            {actions}
+          </View>
+          {name}
+        </>
+      )}
+      {!searching && definition}
+      {counts}
+    </>
+  );
+
+  return wide ? (
+    <View className="flex-1">
+      <Stack.Screen options={{ title: collection.name, headerShown: false }} />
+      <PanelLayout
+        narrow={layout.sidebar === 'iconRail'}
+        panel={
+          focus && <ViewNotePanel view={collection} focus={focus} onFocus={setFocus} onClose={() => setFocus(null)} />
+        }
+      >
+        {page(wideBar)}
+      </PanelLayout>
+      <UndoBarEdge />
+    </View>
+  ) : (
+    <View className="flex-1">
+      <Stack.Screen options={{ title: collection.name, header, headerShown: true }} />
+      {page(bar)}
+      <UndoBarEdge />
+    </View>
+  );
+
+  /** The renaming over the page, and the page: the bar and the Notes. */
+  function page(head: ReactNode) {
+    return (
+      <>
+        {renaming && (
+          <RenameField
+            initial={collection.name}
+            busy={rename.isPending}
+            failed={rename.isError}
+            onSave={(name) => rename.mutate({ id: collection.id, name })}
+            onCancel={() => setRenaming(false)}
+          />
+        )}
+        {/* While the name is being written, the rest stands back and waits. */}
+        <View className={cx('flex-1', renaming && 'opacity-45')} pointerEvents={renaming ? 'none' : 'auto'}>
+          <CollectionView
+            view={shown}
+            bar={head}
+            matches={searched.matches}
+            underEmpty={searched.matches && <ShortWords words={searched.shortWords} centered />}
+            empty={
+              searched.matches
+                ? t('noteSearch.viewEmpty')
+                : collection.tags.length === 0
+                  ? t('collection.emptyNoTags')
+                  : t('collection.emptyNoNotes')
+            }
+            wide={wide ? { density: layout.density, focus, onOpen: setFocus } : undefined}
+            foot={panelOpen && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
+          />
+        </View>
+      </>
+    );
+  }
+}
+
+function UndoBarEdge() {
+  return (
+    // "Kopyalandı · n not" and failures float above this zero-height edge.
+    <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0">
+      <SharedUndoBar />
     </View>
   );
 }

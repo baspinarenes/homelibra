@@ -674,6 +674,29 @@ export const tr = {
     deleted: '“{{name}}” silindi',
     deleteFailed: 'Silinemedi. Bağlantını kontrol edip yeniden dene.',
   },
+  // A wide screen's list of Notes and the panel beside it (#171): Collection, and later Etiket, Ara.
+  widePanel: {
+    panel: 'Not',
+    openNote: 'Notu yanda aç',
+    close: 'Paneli kapat',
+    previous: 'Önceki not',
+    next: 'Sonraki not',
+    place: '{{total}} notun {{n}}.',
+    copy: 'Kopyala',
+    edit: 'Düzenle',
+    openSource: 'Kaynağı aç',
+    siblings: 'Bu kaynaktan diğer notlar',
+    notInView: 'bu dosyada değil',
+    withComment: '+ yorum',
+    more: 'Diğer',
+    noteCopied: 'Kopyalandı · not',
+    // Along the list's foot, after each key: "↑↓ not", "⌘C notu"…
+    hintRows: 'not',
+    hintCopyNote: 'notu',
+    hintCopyAll: 'dosyayı',
+    hintSearch: 'ara',
+    hintClose: 'paneli kapat',
+  },
   // Reading status (#62): okunuyor or bitti, and the lists it orders.
   readingStatus: {
     reading: 'okunuyor',
