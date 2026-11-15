@@ -1,28 +1,25 @@
 import type { AppRouter } from '@homelibra/api';
 import { Button } from '@homelibra/ui/button';
 import { type MenuItem, MoreMenu } from '@homelibra/ui/menu';
-import { KeyHints, PanelLayout } from '@homelibra/ui/panel';
+import { PanelLayout } from '@homelibra/ui/panel';
 import { HeaderIconAction, HeaderTextAction, ScreenHeader } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { useTheme } from '@homelibra/ui/theme';
-import { useShortcuts } from '@homelibra/ui/wide-layout';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
-import { type NativeStackHeaderProps, Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { type NativeStackHeaderProps, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import Copy from 'lucide-react-native/icons/copy';
 import Search from 'lucide-react-native/icons/search';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, type TextInputInstance, View } from 'react-native';
 
-import { copyNoteMarkdown, useCopyMarkdown } from '@/features/collection/collection-actions';
-import { focusedNote, useNoteEditing, ViewNotePanel } from '@/features/collection/collection-note-panel';
+import { useCopyMarkdown } from '@/features/collection/collection-actions';
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
-import { type NoteFocus, stepInView } from '@/features/collection/note-focus';
-import { viewAction } from '@/features/collection/view-keys';
+import { UndoBarEdge, useViewPanel, WideSearchNotes } from '@/features/collection/view-panel';
 import { narrowView, SearchField, ShortWords, useSearchText, useTagSearch } from '@/features/search/note-search';
-import { useFramePanel, useLeave } from '@/components/wide-frame';
-import { SharedUndoBar } from '@/components/undo-bar';
+import { useLeave } from '@/components/wide-frame';
 import { useTRPC } from '@/lib/trpc';
 
 type TagView = inferRouterOutputs<AppRouter>['collections']['tagView'];
@@ -97,29 +94,12 @@ function TagPage({
   );
   const makeCollection = () => save.mutate({ name: tag.name, tags: [tag.name], includeSourceNotes });
 
-  // The wide tier's panel: which Note it shows, null while it is closed (as it is on entry).
-  const [focus, setFocus] = useState<NoteFocus | null>(null);
-  // Whether ↑↓ chose it: then the focus follows to its row. A press or ‹ › keep the focus where they are.
-  const [byKeys, setByKeys] = useState(false);
-  const focusBy = (keys: boolean) => (to: NoteFocus) => {
-    setFocus(to);
-    setByKeys(keys);
-  };
   const [menuOpen, setMenuOpen] = useState(false);
-  // Not al takes the panel's place (#178).
-  const layout = useFramePanel(focus !== null, () => setFocus(null));
-  // Another row pressed over an edit with changes asks first.
-  const leave = useLeave();
-  const wide = layout.tier === 'wide';
-  const panelOpen = wide && focus !== null;
-  const inFront = useIsFocused();
-  // While its Note is edited in the panel, the edit hears the keys.
-  const { editing, setEditing } = useNoteEditing(focus);
-
   // On the phone the box is always there; on a wide screen it waits behind the magnifier or /.
   const [searching, setSearching] = useState(false);
   const search = useSearchText();
-  const searched = useTagSearch(tag.id, includeSourceNotes, wide && !searching ? '' : search.query);
+  const searchWaits = useWideLayout().tier === 'wide' && !searching;
+  const searched = useTagSearch(tag.id, includeSourceNotes, searchWaits ? '' : search.query);
   const shown = narrowView(view, searched.matches);
   const searchField = useRef<TextInputInstance>(null);
   const closeSearch = () => {
@@ -128,51 +108,19 @@ function TagPage({
   };
 
   const copyAll = useCopyMarkdown({ ...shown, name: tag.name });
-  // The focused Source's Notes as the panel fetched them: a key acts on them at once, the clipboard allows no wait.
-  const sourceNotes = (sourceId: string) => queryClient.getQueryData(trpc.notes.list.queryKey({ sourceId }));
-
-  useShortcuts({ panelOpen, active: wide && inFront && !menuOpen && !editing }, (command) => {
-    const action = viewAction(command, { panelOpen, renaming: false, searching, notes: shown.noteCount });
-    switch (action) {
-      case 'previous':
-      case 'next': {
-        const order = focus ? sourceNotes(focus.sourceId)?.map((note) => note.id) : undefined;
-        const to = stepInView(shown, focus, action, order);
-        if (to) focusBy(true)(to);
-        return to !== null;
-      }
-      case 'copyNote': {
-        if (!focus) return false;
-        const { source, note } = focusedNote(view, focus, sourceNotes(focus.sourceId));
-        if (!source || !note) return false;
-        copyNoteMarkdown(source, note, {
-          done: t('collectionActions.copied', { count: 1 }),
-          failed: t('collectionActions.copyFailed'),
-        });
-        return true;
-      }
-      case 'copyAll':
-        copyAll.copy();
-        return true;
-      case 'edit':
-        if (!focus) return false;
-        setEditing(true);
-        return true;
-      case 'searchHere':
-        // Open already: the cursor goes back to the box (a new box takes it as it opens).
-        if (searching) searchField.current?.focus();
-        else setSearching(true);
-        return true;
-      case 'closePanel':
-        setFocus(null);
-        return true;
-      case 'closeSearch':
-        closeSearch();
-        return true;
-      default:
-        return false;
-    }
+  const { layout, wide, panelOpen, wideList, panel, foot } = useViewPanel({
+    view,
+    shown,
+    found: searched.matches !== null,
+    searching,
+    menuOpen,
+    copyAll: copyAll.copy,
+    // Open already: the cursor goes back to the box (a new box takes it as it opens).
+    onSearchHere: () => (searching ? searchField.current?.focus() : setSearching(true)),
+    onCloseSearch: closeSearch,
   });
+  // Back to Dizin over an edit with changes asks first.
+  const leave = useLeave();
 
   const counts = (
     <>
@@ -206,15 +154,6 @@ function TagPage({
     </>
   );
 
-  // Along the list's foot while the panel is open, beside the full sidebar; only keys that act here.
-  const keyHints = [
-    { keys: '↑↓', label: t('widePanel.hintRows') },
-    { keys: '⌘C', label: t('widePanel.hintCopyNote') },
-    { keys: '⌘⇧C', label: searched.matches ? t('widePanel.hintCopyFound') : t('widePanel.hintCopyAll') },
-    ...(searching ? [] : [{ keys: '/', label: t('widePanel.hintSearch') }]),
-    { keys: 'Esc', label: t('widePanel.hintClose') },
-  ];
-
   // The wide head (R4-Tag): back to Dizin's Etiketler, and the magnifier, Dosya yap and ⋯ beside it.
   const menuItems: MenuItem[] = [
     { label: t('collectionActions.copy'), keys: '⌘⇧C', onPress: copyAll.copy, disabled: copyAll.count === 0 },
@@ -232,25 +171,17 @@ function TagPage({
   const found = searched.matches !== null && shown.noteCount > 0;
   // Under the wide search's name and count, which stand on one line.
   const wideSearchNotes = (
-    <>
-      {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
-      {searched.failed && (
-        <Text variant="caption" color="danger">
-          {t('noteSearch.failed')}
-        </Text>
-      )}
-      {save.isError && (
-        <Text variant="caption" color="danger">
-          {t('collection.saveFailed')}
-        </Text>
-      )}
-    </>
+    <WideSearchNotes
+      shortWords={searched.shortWords}
+      noteCount={shown.noteCount}
+      searchFailed={searched.failed}
+      saveFailed={save.isError}
+    />
   );
   const crumb = (
     <Pressable
       role="button"
       aria-label={t('collection.tagCrumbLabel')}
-      // Back to Dizin over an edit with changes asks first.
       onPress={() => leave(() => router.dismissTo({ pathname: '/collections', params: { view: 'tags' } }))}
       className="min-w-0 flex-1 self-center active:opacity-70"
     >
@@ -317,34 +248,15 @@ function TagPage({
       matches={searched.matches}
       underEmpty={searched.matches && <ShortWords words={searched.shortWords} centered />}
       empty={searched.matches ? t('noteSearch.viewEmpty') : t('collection.emptyTagNoNotes')}
-      wide={
-        wide
-          ? { density: layout.density, focus, onOpen: (to) => leave(() => focusBy(false)(to)), focusRow: byKeys }
-          : undefined
-      }
-      foot={panelOpen && !editing && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
+      wide={wideList}
+      foot={foot}
     />
   );
 
   return wide ? (
     <View className="flex-1">
       <Stack.Screen options={{ title: tag.name, headerShown: false }} />
-      <PanelLayout
-        narrow={layout.sidebar === 'iconRail'}
-        beside={layout.capturing}
-        panel={
-          focus && (
-            <ViewNotePanel
-              view={view}
-              focus={focus}
-              editing={editing}
-              onEditingChange={setEditing}
-              onFocus={focusBy(false)}
-              onClose={() => setFocus(null)}
-            />
-          )
-        }
-      >
+      <PanelLayout narrow={layout.sidebar === 'iconRail'} beside={layout.capturing} panel={panel}>
         {list}
       </PanelLayout>
       <UndoBarEdge />
@@ -374,14 +286,5 @@ function TagPage({
       />
       {list}
     </>
-  );
-}
-
-function UndoBarEdge() {
-  return (
-    // "Kopyalandı · n not" and failures float above this zero-height edge.
-    <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0">
-      <SharedUndoBar />
-    </View>
   );
 }
