@@ -24,6 +24,7 @@ import { KeptHidden, SourceFieldInput, TuckedFields, useSourceForm } from '@/fea
 import { useCreateSource, useUpdateSource } from '@/features/source/source-save';
 import { coverSizes } from '@/features/source/template-cover';
 import { refreshLibrary } from '@/lib/refresh-library';
+import { useUnsavedWork } from '@/components/wide-frame';
 
 type StoredSource = inferRouterOutputs<AppRouter>['sources']['get'];
 
@@ -145,6 +146,8 @@ function SourceFormPanel({
   const { draft, setDraft, layout, typeFields, typeText } = form;
   const [asking, setAsking] = useState(false);
   const confirmingDelete = deletion?.confirming ?? false;
+  // Changed, the form holds Not al: neither N nor its sidebar button puts it away unasked (#178).
+  useUnsavedWork(form.changed);
 
   useShortcuts({ panelOpen: true, unsavedChanges: form.changed && !asking && !confirmingDelete, active }, (command) => {
     switch (command) {

@@ -75,6 +75,7 @@ export function WideFrame({ library, children }: { library: boolean; children: R
   if (writing && !framed) setWriting(false);
   // A panel is closed on entry: another screen, or a screen's own panel opened, puts the writing away.
   const pathname = usePathname();
+  const segments = useSegments();
   const [path, setPath] = useState(pathname);
   if (path !== pathname) {
     setPath(pathname);
@@ -86,9 +87,12 @@ export function WideFrame({ library, children }: { library: boolean; children: R
   const openWriting = () => {
     // Work not yet saved in front is never put away unasked: finish or leave it first.
     if (unsaved.current > 0) return;
-    // With no Source yet, the first one is made before any Note.
+    // With no Source yet, the first one is made before any Note: in Yeni kaynak's panel beside Kaynaklar.
     if (home.data?.sourceCount === 0) {
-      router.push('/source/new');
+      const href = { pathname: '/sources', params: { add: '1' } } as const;
+      if (sidebarMove({ segments, place: sidebarPlace(pathname).place, to: 'sources' }) === 'switchTab')
+        router.navigate(href);
+      else router.dismissTo(href);
       return;
     }
     if (!writing) void capture.ready();

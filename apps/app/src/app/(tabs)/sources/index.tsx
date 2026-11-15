@@ -58,25 +58,28 @@ export default function SourcesScreen() {
   const router = useRouter();
   // Yeni kaynak's panel beside the table (#180): closed on entry, as every panel is.
   const [adding, setAdding] = useState(false);
-  const { tier, density } = useFramePanel(adding);
+  // Not al takes the panel's place (#178); a form with changes holds it off.
+  const { tier, density } = useFramePanel(adding, () => setAdding(false));
   const wide = tier === 'wide';
   const focused = useIsFocused();
   const [tab, setTab] = useState<ReadingStatus>('reading');
   const [filters, setFilters] = useState<SourceFilters>(noFilters);
   const [order, setOrder] = useSourceOrder();
   // A link from Genel Bakış's Kütüphanen opens a tab (`tab`) or narrows to one Tür (`type`), the tab kept.
+  // The wide sidebar's Not al with no Source yet opens Yeni kaynak's panel (`add`, #178).
   // Taken into the screen's own state once, then cleared, so the same link works again.
-  const link = useLocalSearchParams<{ tab?: string; type?: string }>();
-  const linked = link.tab || link.type ? `${link.tab}|${link.type}` : null;
+  const link = useLocalSearchParams<{ tab?: string; type?: string; add?: string }>();
+  const linked = link.tab || link.type || link.add ? `${link.tab}|${link.type}|${link.add}` : null;
   const [taken, setTaken] = useState<string | null>(null);
   if (linked !== taken) {
     setTaken(linked);
     if (link.tab === 'reading' || link.tab === 'finished') setTab(link.tab);
     const type = sourceTypes.find((known) => known === link.type);
     if (type) setFilters((current) => ({ ...current, types: [type] }));
+    if (link.add === '1') setAdding(true);
   }
   useEffect(() => {
-    if (linked) router.setParams({ tab: undefined, type: undefined });
+    if (linked) router.setParams({ tab: undefined, type: undefined, add: undefined });
   }, [linked, router]);
   // The phone sheet's choices while it is open; "Kapat" drops them.
   const [draft, setDraft] = useState<Choices | null>(null);
