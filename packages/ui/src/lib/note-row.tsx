@@ -41,7 +41,8 @@ type Props = {
  * Notes): the Locator on the left (— when it has none), and in `full` the
  * Excerpt and ↳ the Comment whole with why the Note is here under them; in
  * `compact` one line of the Excerpt, or of the Comment when there is no
- * Excerpt. The row the panel shows is framed in the accent; a row under
+ * Excerpt, + yorum marked when the search matched the Comment hidden
+ * behind it. The row the panel shows is framed in the accent; a row under
  * the pointer takes the chip's ground.
  */
 export function NoteRow({
@@ -93,11 +94,18 @@ export function NoteRow({
               variant={excerpt ? 'excerptSm' : 'commentSm'}
               oneLine
             />
-            {excerpt && comment && (
-              <Text variant="count" className="shrink-0">
-                {labels.withComment}
-              </Text>
-            )}
+            {excerpt &&
+              comment &&
+              // The words the search matched in the Comment are off this line: + yorum takes the mark for them.
+              (hits(comment, marks?.comment) ? (
+                <Text variant="count" color="fg" className="shrink-0 bg-mark">
+                  {labels.withComment}
+                </Text>
+              ) : (
+                <Text variant="count" className="shrink-0">
+                  {labels.withComment}
+                </Text>
+              ))}
           </>
         ) : (
           <View className="min-w-0 flex-1 gap-1">
@@ -117,6 +125,11 @@ export function NoteRow({
       </Pressable>
     </View>
   );
+}
+
+/** The marks still spell `text` (the Note has not changed since the search) and one of them is a hit. */
+function hits(text: string, marks: readonly MarkSegment[] | null | undefined) {
+  return !!marks && marks.map((segment) => segment.text).join('') === text && marks.some((segment) => segment.hit);
 }
 
 /** The text with its matched words on the mark's ground; marks that no longer spell it are left out. */
