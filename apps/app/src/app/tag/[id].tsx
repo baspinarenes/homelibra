@@ -9,10 +9,11 @@ import { useShortcuts } from '@homelibra/ui/wide-layout';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { type NativeStackHeaderProps, Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import Copy from 'lucide-react-native/icons/copy';
 import Search from 'lucide-react-native/icons/search';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, type TextInputInstance, View } from 'react-native';
 
 import { copyNoteMarkdown, useCopyMarkdown } from '@/features/collection/collection-actions';
 import { focusedNote, ViewNotePanel } from '@/features/collection/collection-note-panel';
@@ -37,8 +38,9 @@ type TagView = inferRouterOutputs<AppRouter>['collections']['tagView'];
  * "‹ Dizin · Etiketler" over the list's own head with the magnifier, Dosya
  * yap and ⋯ (Markdown olarak kopyala ⌘⇧C), full rows in a centred column,
  * and a Note opening in the panel beside them. The search waits behind the
- * magnifier or /, and the keys are the Collection's: Esc closes the panel,
- * then the search, and never leaves the page.
+ * magnifier or /, and opens as a Collection's does: its box with Bulunanları
+ * kopyala, under them the name and "3 / 15 not · 3 kaynak". The keys are the
+ * Collection's: Esc closes the panel, then the search, and never leaves the page.
  */
 export default function TagScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -114,6 +116,7 @@ function TagPage({
   const search = useSearchText();
   const searched = useTagSearch(tag.id, includeSourceNotes, wide && !searching ? '' : search.query);
   const shown = narrowView(view, searched.matches);
+  const searchField = useRef<TextInputInstance>(null);
   const closeSearch = () => {
     setSearching(false);
     search.setText('');
@@ -151,7 +154,9 @@ function TagPage({
         router.push({ pathname: '/note/[id]', params: { id: focus.noteId } });
         return true;
       case 'searchHere':
-        setSearching(true);
+        // Open already: the cursor goes back to the box (a new box takes it as it opens).
+        if (searching) searchField.current?.focus();
+        else setSearching(true);
         return true;
       case 'closePanel':
         setFocus(null);
@@ -200,7 +205,7 @@ function TagPage({
   const keyHints = [
     { keys: '↑↓', label: t('widePanel.hintRows') },
     { keys: '⌘C', label: t('widePanel.hintCopyNote') },
-    { keys: '⌘⇧C', label: t('widePanel.hintCopyAll') },
+    { keys: '⌘⇧C', label: searched.matches ? t('widePanel.hintCopyFound') : t('widePanel.hintCopyAll') },
     ...(searching ? [] : [{ keys: '/', label: t('widePanel.hintSearch') }]),
     { keys: 'Esc', label: t('widePanel.hintClose') },
   ];
@@ -217,6 +222,24 @@ function TagPage({
       <Button label={t('collection.saveAsCollection')} variant="small" onPress={makeCollection} busy={save.isPending} />
       <MoreMenu label={t('widePanel.more')} items={menuItems} open={menuOpen} onOpenChange={setMenuOpen} />
     </View>
+  );
+  // Only what the search found, never the whole page while the box is empty or the first answer is on its way.
+  const found = searched.matches !== null && shown.noteCount > 0;
+  // Under the wide search's name and count, which stand on one line.
+  const wideSearchNotes = (
+    <>
+      {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
+      {searched.failed && (
+        <Text variant="caption" color="danger">
+          {t('noteSearch.failed')}
+        </Text>
+      )}
+      {save.isError && (
+        <Text variant="caption" color="danger">
+          {t('collection.saveFailed')}
+        </Text>
+      )}
+    </>
   );
   const crumb = (
     <Pressable
@@ -238,16 +261,34 @@ function TagPage({
       </View>
       {searching ? (
         <>
-          <SearchField
-            value={search.text}
-            onChange={search.setText}
-            placeholder={t('noteSearch.inView')}
-            autoFocus
-            onClose={closeSearch}
-          />
-          <Text variant="sourceTitleSm" numberOfLines={1}>
-            {tag.name}
-          </Text>
+          {/* As a Collection's (#172): the box with Bulunanları kopyala, then the name and the count. */}
+          <View className="flex-row items-center gap-sm">
+            <View className="min-w-0 flex-1">
+              <SearchField
+                look="frame"
+                inputRef={searchField}
+                value={search.text}
+                onChange={search.setText}
+                placeholder={t('noteSearch.inView')}
+                autoFocus
+                onClose={closeSearch}
+              />
+            </View>
+            <Button
+              label={t('noteSearch.copyFound')}
+              variant="small"
+              icon={Copy}
+              onPress={copyAll.copy}
+              disabled={!found}
+            />
+          </View>
+          <View className="flex-row items-baseline justify-between gap-md">
+            <Text variant="sourceTitleSm" numberOfLines={1} className="min-w-0 flex-1">
+              {tag.name}
+            </Text>
+            <ViewCount view={shown} of={view} />
+          </View>
+          {wideSearchNotes}
         </>
       ) : (
         <>
@@ -257,9 +298,9 @@ function TagPage({
             </Text>
           )}
           <ViewName name={tag.name} />
+          {counts}
         </>
       )}
-      {counts}
     </>
   );
 
