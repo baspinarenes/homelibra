@@ -110,7 +110,6 @@ function CollectionPage({ collection }: { collection: Collection }) {
     setSearching(false);
     search.setText('');
   };
-  usePreventRemove(searching, closeSearch);
 
   // The wide tier's panel: which Note it shows, null while it is closed (as it is on entry).
   const router = useRouter();
@@ -125,6 +124,9 @@ function CollectionPage({ collection }: { collection: Collection }) {
   const layout = useFramePanel(focus !== null);
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
+  // The phone's back puts the search away before it leaves the page. On a wide screen Esc does,
+  // and the sidebar, like any way out, leaves at the first press.
+  usePreventRemove(searching && !wide, closeSearch);
   const inFront = useIsFocused();
   const copyAll = useCopyMarkdown(shown);
   const deletion = useDeleteCollection(collection);
