@@ -7,13 +7,20 @@
   },
   "scripts": {
     "dev": "scripts/dev.sh",
+    "check": "pnpm typecheck && pnpm lint:boundaries && pnpm lint && pnpm test:unit && pnpm test:scripts",
     "typecheck": "pnpm -r --parallel typecheck",
     "lint": "eslint .",
     "lint:boundaries": "depcruise apps packages",
     "test": "pnpm -r test && pnpm test:scripts",
+    "test:unit": "pnpm -r --filter=!@homelibra/api test",
+    "test:api": "pnpm --filter @homelibra/api test",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
-    "version:bump": "node scripts/version-bump.mjs bump",
     "db:up": "docker compose up -d --build postgres",
+    "db:migrate": "pnpm --filter @homelibra/api db:migrate",
+    "db:generate": "pnpm --filter @homelibra/api db:generate",
+    "invite": "pnpm --filter @homelibra/api invite",
+    "usage": "pnpm --filter @homelibra/api usage",
+    "version:bump": "node scripts/version-bump.mjs bump",
     "prepare": "husky"
   },
   "devDependencies": {
