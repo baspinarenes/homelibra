@@ -102,6 +102,8 @@ export function WideSourcePage({
     pin.current = id;
     retries.current = 0;
     scrollToPin();
+    // A row already laid out is placed at once: nothing is left to hold, nor to pull the list back to later.
+    if (rows.current.has(id)) pin.current = null;
   };
 
   // The cursor goes to Alıntı once the writing is in the column.
@@ -163,7 +165,14 @@ export function WideSourcePage({
 
   // While a Note is edited in the column, the edit hears the keys.
   useShortcuts({ panelOpen: shown !== null, active: inFront && !menuOpen && !editing }, (command) => {
-    const state = { showing: shownNote !== null, choosingTags, searching, canSave, notes: listed.length };
+    // The Tag choice is the writing's: out of sight while a Note is shown.
+    const state = {
+      showing: shownNote !== null,
+      choosingTags: choosingTags && !shownNote,
+      searching,
+      canSave,
+      notes: listed.length,
+    };
     switch (sourceAction(command, state)) {
       case 'save':
         void save();
@@ -302,7 +311,7 @@ export function WideSourcePage({
               <ReadingStatusButton sourceId={source.id} status={source.readingStatus} />
               <Button
                 label={t('sourcePage.edit')}
-                variant="secondary"
+                variant="small"
                 onPress={() => router.push({ pathname: '/source/[id]/edit', params: { id: source.id } })}
               />
               <MoreMenu label={t('widePanel.more')} items={menuItems} open={menuOpen} onOpenChange={setMenuOpen} />
