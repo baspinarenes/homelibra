@@ -98,6 +98,12 @@ function TagPage({
 
   // The wide tier's panel: which Note it shows, null while it is closed (as it is on entry).
   const [focus, setFocus] = useState<NoteFocus | null>(null);
+  // Whether ↑↓ chose it: then the focus follows to its row. A press or ‹ › keep the focus where they are.
+  const [byKeys, setByKeys] = useState(false);
+  const focusBy = (keys: boolean) => (to: NoteFocus) => {
+    setFocus(to);
+    setByKeys(keys);
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const layout = useFramePanel(focus !== null);
   const wide = layout.tier === 'wide';
@@ -126,7 +132,7 @@ function TagPage({
       case 'next': {
         const order = focus ? sourceNotes(focus.sourceId)?.map((note) => note.id) : undefined;
         const to = stepInView(shown, focus, action, order);
-        if (to) setFocus(to);
+        if (to) focusBy(true)(to);
         return to !== null;
       }
       case 'copyNote': {
@@ -266,7 +272,7 @@ function TagPage({
       matches={searched.matches}
       underEmpty={searched.matches && <ShortWords words={searched.shortWords} centered />}
       empty={searched.matches ? t('noteSearch.viewEmpty') : t('collection.emptyTagNoNotes')}
-      wide={wide ? { density: layout.density, focus, onOpen: setFocus } : undefined}
+      wide={wide ? { density: layout.density, focus, onOpen: focusBy(false), focusRow: byKeys } : undefined}
       foot={panelOpen && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
     />
   );
@@ -276,7 +282,9 @@ function TagPage({
       <Stack.Screen options={{ title: tag.name, headerShown: false }} />
       <PanelLayout
         narrow={layout.sidebar === 'iconRail'}
-        panel={focus && <ViewNotePanel view={view} focus={focus} onFocus={setFocus} onClose={() => setFocus(null)} />}
+        panel={
+          focus && <ViewNotePanel view={view} focus={focus} onFocus={focusBy(false)} onClose={() => setFocus(null)} />
+        }
       >
         {list}
       </PanelLayout>
