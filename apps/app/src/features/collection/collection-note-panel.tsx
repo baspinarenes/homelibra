@@ -109,16 +109,38 @@ export function ViewNotePanel({
     >
       {/* Undefined, not false, while not editing: then the panel shows the Note's detail. */}
       {editing ? (
-        <NoteEditInPlace
-          id={note.id}
-          onEnd={(end) => {
-            onEditingChange(false);
-            if (end && 'deleted' in end) onClose();
-            else if (end && end.saved.sourceId !== focus.sourceId)
-              onFocus({ sourceId: end.saved.sourceId, noteId: focus.noteId });
-          }}
-        />
+        <PanelNoteEdit focus={focus} onEditingChange={onEditingChange} onFocus={onFocus} onClose={onClose} />
       ) : undefined}
     </NotePanel>
+  );
+}
+
+/**
+ * The Note in `focus` edited in a note panel, in place of its detail (any
+ * NotePanel's children: a Collection's, a Tag page's, Ara's). Saved, the
+ * edit ends and the panel shows the Note, at its new Source if it moved;
+ * deleted, the panel closes; put away, the panel shows it as it was.
+ */
+export function PanelNoteEdit({
+  focus,
+  onEditingChange,
+  onFocus,
+  onClose,
+}: {
+  focus: NoteFocus;
+  onEditingChange: (editing: boolean) => void;
+  onFocus: (focus: NoteFocus) => void;
+  onClose: () => void;
+}) {
+  return (
+    <NoteEditInPlace
+      id={focus.noteId}
+      onEnd={(end) => {
+        onEditingChange(false);
+        if (end && 'deleted' in end) onClose();
+        else if (end && end.saved.sourceId !== focus.sourceId)
+          onFocus({ sourceId: end.saved.sourceId, noteId: focus.noteId });
+      }}
+    />
   );
 }

@@ -46,6 +46,7 @@ import type { NoteFocus } from '@/features/collection/note-focus';
 import { viewAction } from '@/features/collection/view-keys';
 import { ShortWords } from '@/features/search/note-search';
 import { SearchNotePanel } from '@/features/search/search-note-panel';
+import { useNoteEditing } from '@/features/collection/collection-note-panel';
 import { resultMeta, resultRow, stepInResults } from '@/features/search/search-results';
 import { SearchTipsPopover } from '@/features/search/search-tips';
 import { SourceCover } from '@/features/source/source-cover';
@@ -181,6 +182,8 @@ export default function SearchScreen() {
   const layout = useFramePanel(focus !== null);
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
+  // While its Note is edited in the panel, the edit hears the keys.
+  const { editing, setEditing } = useNoteEditing(focus);
   const openNote = (to: NoteFocus, byKeys = false) => setOpened({ focus: to, query, byKeys });
   const closePanel = () => setOpened(null);
   const [tipsOpen, setTipsOpen] = useState(false);
@@ -191,7 +194,7 @@ export default function SearchScreen() {
   // What the panel fetched for its Note: a key acts on it at once, the clipboard allows no wait.
   const sourceNotes = (sourceId: string) => queryClient.getQueryData(trpc.notes.list.queryKey({ sourceId }));
 
-  useShortcuts({ panelOpen, active: wide && inFront && !tipsOpen }, (command) => {
+  useShortcuts({ panelOpen, active: wide && inFront && !tipsOpen && !editing }, (command) => {
     // Esc puts the Tarih fields away before the panel.
     if ((command === 'closePanel' || command === 'back') && draft) {
       setDraft(null);
@@ -219,7 +222,7 @@ export default function SearchScreen() {
       }
       case 'edit':
         if (!focus) return false;
-        router.push({ pathname: '/note/[id]', params: { id: focus.noteId } });
+        setEditing(true);
         return true;
       case 'searchHere':
         box.current?.focus();
@@ -316,7 +319,17 @@ export default function SearchScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <PanelLayout
           narrow={layout.sidebar === 'iconRail'}
-          panel={focus && <SearchNotePanel focus={focus} onFocus={(to) => openNote(to)} onClose={closePanel} />}
+          panel={
+            focus && (
+              <SearchNotePanel
+                focus={focus}
+                editing={editing}
+                onEditingChange={setEditing}
+                onFocus={(to) => openNote(to)}
+                onClose={closePanel}
+              />
+            )
+          }
         >
           <View className="flex-1 bg-page">
             {/* The status bar's inset, which the tab's header kept, and 16 under it. */}
@@ -377,7 +390,7 @@ export default function SearchScreen() {
                 onEndReached={nextPage}
               />
             )}
-            {panelOpen && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
+            {panelOpen && !editing && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
           </View>
         </PanelLayout>
       </View>
