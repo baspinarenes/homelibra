@@ -26,7 +26,11 @@
     "./wheels": "./src/wheels.ts",
     "./illustration": "./src/illustration.ts",
     "./wide-layout": "./src/wide-layout.ts",
-    "./sidebar": "./src/sidebar.ts"
+    "./sidebar": "./src/sidebar.ts",
+    "./note-row": "./src/note-row.ts",
+    "./panel": "./src/panel.ts",
+    "./note-panel": "./src/note-panel.ts",
+    "./menu": "./src/menu.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
