@@ -2,7 +2,6 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Button } from '@homelibra/ui/button';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
-import { NoteRow as WideNoteRow } from '@homelibra/ui/note-row';
 import { KeyHints, PanelLayout } from '@homelibra/ui/panel';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
@@ -10,14 +9,14 @@ import { Segment } from '@homelibra/ui/segment';
 import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { cx, useTheme } from '@homelibra/ui/theme';
-import { type Density, useShortcuts } from '@homelibra/ui/wide-layout';
+import { useShortcuts } from '@homelibra/ui/wide-layout';
 import { keepPreviousData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import Search from 'lucide-react-native/icons/search';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
-import { type ReactElement, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Pressable, TextInput, type TextInputInstance, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,11 +35,11 @@ import { viewAction } from '@/features/collection/view-keys';
 import { ShortWords } from '@/features/search/note-search';
 import { SearchNotePanel } from '@/features/search/search-note-panel';
 import { useNoteEditing } from '@/features/collection/collection-note-panel';
-import { resultMeta, resultRow, stepInResults } from '@/features/search/search-results';
+import { stepInResults } from '@/features/search/search-results';
 import { SearchTipsPopover } from '@/features/search/search-tips';
+import { WideResults } from '@/features/search/wide-results';
 import { SourceCover } from '@/features/source/source-cover';
 import type { CoverSize } from '@/features/source/template-cover';
-import { usePressedRowAnchor } from '@/components/pressed-row-anchor';
 import { useFramePanel, useLeave } from '@/components/wide-frame';
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/features/search/settled';
@@ -500,86 +499,6 @@ function DatesPanel({
           disabled={hasYear(draft.dates) && yearRangeOf(draft.dates) === null}
         />
       </View>
-    </View>
-  );
-}
-
-/**
- * A wide Ara's Notes, @homelibra/ui's NoteRow as a Collection's (#171): full
- * rows, compact while the panel is open, the one it shows framed; a press
- * opens the Note in the panel. As in a Collection's view the pressed row
- * stays where it stood on the screen while the rows go compact, and a row
- * the keys move to is brought into view (`usePressedRowAnchor`).
- */
-function WideResults({
-  notes,
-  density,
-  focus,
-  onOpen,
-  focusRow,
-  header,
-  footer,
-  onEndReached,
-}: {
-  notes: NoteResult[];
-  density: Density;
-  focus: NoteFocus | null;
-  onOpen: (focus: NoteFocus) => void;
-  /** The keys chose `focus` (↑↓): the focus goes to its row too, so the framed row and the focused one agree. */
-  focusRow: boolean;
-  header: ReactElement;
-  footer: ReactElement | undefined;
-  onEndReached: () => void;
-}) {
-  const { t } = useTranslation();
-  const list = useRef<FlatList<NoteResult>>(null);
-  const focused = focus?.noteId ?? null;
-  const anchor = usePressedRowAnchor({
-    density,
-    focused,
-    focusRow,
-    panelOpen: focus !== null,
-    scrollTo: (offset) => list.current?.scrollToOffset({ offset, animated: false }),
-    reveal: (id) => {
-      const index = notes.findIndex((note) => note.id === id);
-      if (index >= 0) list.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false });
-    },
-  });
-
-  return (
-    <View ref={anchor.frame} collapsable={false} className="flex-1">
-      <FlatList
-        ref={list}
-        className="flex-1 bg-page"
-        contentContainerClassName="px-sm pb-xxl"
-        keyboardShouldPersistTaps="handled"
-        data={notes}
-        keyExtractor={(note) => note.id}
-        extraData={[density, focused]}
-        onScroll={anchor.onScroll}
-        scrollEventThrottle={16}
-        onScrollToIndexFailed={() => {}}
-        ListHeaderComponent={header}
-        renderItem={({ item: note, index }) => (
-          <View ref={anchor.row(note.id)} collapsable={false}>
-            <WideNoteRow
-              ref={anchor.target(note.id)}
-              density={density}
-              locator={note.locator}
-              {...resultRow(note)}
-              meta={resultMeta(note, t('search.fromComment'))}
-              selected={note.id === focused}
-              divided={index > 0}
-              hint={t('widePanel.openNote')}
-              labels={{ withComment: t('widePanel.withComment') }}
-              onPress={() => anchor.press(note.id, () => onOpen({ sourceId: note.sourceId, noteId: note.id }))}
-            />
-          </View>
-        )}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={footer}
-      />
     </View>
   );
 }
