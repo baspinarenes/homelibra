@@ -3,6 +3,7 @@ import { sideColumnBeside } from '@homelibra/ui/wide-layout';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useFramePanel } from '@/components/wide-frame';
 import { type LastNoted, LastNotedSection } from '@/features/library/last-noted';
 import { LibrarySummary } from '@/features/library/library-summary';
 import { LostNotesNotice, useLostNoteCount } from '@/features/library/lost-notes-notice';
@@ -15,13 +16,16 @@ import { RecentTags } from '@/features/library/recent-tags';
  * yellow strip of what waits on the scholar, Kaldığın yer and Son notlar,
  * and beside it a 300 px side column, Okunuyor, Son kullanılan etiketler
  * and Kütüphanen, the sections in the phone's order. Below about 1300 px
- * the side column goes under the main one (Q46). Only for a Library with
+ * the side column goes under the main one (Q46), as it does while Not al's
+ * panel stands beside the page. Only for a Library with
  * Notes: the empty states stay centred, with no side column (Q45).
  */
 export function WideOverview({ lastNoted }: { lastNoted: LastNoted }) {
   const { width } = useWindowDimensions();
   const { top } = useSafeAreaInsets();
-  const beside = sideColumnBeside(width);
+  // With Not al's panel beside the page the main column needs the room: the side column goes under (#187).
+  const { capturing } = useFramePanel(false);
+  const beside = sideColumnBeside({ width, panelOpen: capturing });
   const alerts = useLostNoteCount() > 0;
   return (
     <ScrollView

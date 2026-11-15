@@ -43,11 +43,26 @@ describe('wideLayout', () => {
 
 describe('sideColumnBeside', () => {
   it("keeps a page's side column beside its main column from 1280 px, the width Genel Bakış is drawn at", () => {
-    expect([1024, 1100, 1279, 1280, 1440].map(sideColumnBeside)).toEqual([false, false, false, true, true]);
+    expect([1024, 1100, 1279, 1280, 1440].map((width) => sideColumnBeside({ width }))).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+    ]);
   });
 
   it('puts it under the main column below the wide tier', () => {
-    expect([390, 720, 1023].map(sideColumnBeside)).toEqual([false, false, false]);
+    expect([390, 720, 1023].map((width) => sideColumnBeside({ width }))).toEqual([false, false, false]);
+  });
+
+  it("puts it under the main column while a panel stands beside the page, Not al's 520 px taking its room", () => {
+    expect([1280, 1440, 1920].map((width) => sideColumnBeside({ width, panelOpen: true }))).toEqual([
+      false,
+      false,
+      false,
+    ]);
+    expect(sideColumnBeside({ width: 1280, panelOpen: false })).toBe(true);
   });
 });
 

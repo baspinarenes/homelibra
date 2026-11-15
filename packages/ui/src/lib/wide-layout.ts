@@ -52,10 +52,12 @@ export function wideLayout({ width, panelOpen = false }: LayoutState): Layout {
  * Whether a page that has a main and a side column (Genel Bakış, #182)
  * draws them side by side; below, the side column goes under the main one.
  * Only the wide tier has room, and only from about 1300 px (Q46): 1280,
- * the width the page is drawn at, keeps both.
+ * the width the page is drawn at, keeps both. A panel beside the page
+ * (Not al's writing, 520 px) takes that room at any width, so the side
+ * column goes under while it is open.
  */
-export function sideColumnBeside(width: number): boolean {
-  return width >= sideColumnFrom;
+export function sideColumnBeside({ width, panelOpen = false }: LayoutState): boolean {
+  return width >= sideColumnFrom && !panelOpen;
 }
 
 /**

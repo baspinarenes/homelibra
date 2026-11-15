@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { useFramePanel } from '@/components/wide-frame';
 import { contactEmail } from '@/features/privacy/contact';
 import { contentsOf, sectionAt } from '@/features/privacy/contents';
 import { type LegalSection, legalVersion } from '@/features/privacy/legal';
@@ -132,7 +133,9 @@ function WideLegalDocument({ title, sections }: { title: string; sections: Legal
  * A privacy page on a wide screen: the 680 px column it reads in, scrolling
  * on its own, and on its left the way back and whatever the page lists there.
  * The left stays put while the column scrolls. With nowhere to go back to (a
- * page opened by its address), the way back goes to `back`.
+ * page opened by its address), the way back goes to `back`. While Not al's
+ * panel stands beside the page the text needs the room: the way back goes
+ * above the column and the list beside it is left out (#187).
  */
 export function ReadingColumn({
   back,
@@ -149,9 +152,11 @@ export function ReadingColumn({
 }) {
   const { t } = useTranslation();
   const router = useRouter();
+  // The same views in both arrangements, so opening Not al keeps the place read in the text.
+  const { capturing } = useFramePanel(false);
   return (
-    <View className="flex-1 flex-row bg-page">
-      <View className="mr-12 ml-10 w-[220px] gap-3 pt-7">
+    <View className={cx('flex-1 bg-page', !capturing && 'flex-row')}>
+      <View className={capturing ? 'px-10 pt-7' : 'mr-12 ml-10 w-[220px] gap-3 pt-7'}>
         <Text
           variant="link"
           role="link"
@@ -160,13 +165,13 @@ export function ReadingColumn({
         >
           {t('privacy.back')}
         </Text>
-        {aside}
+        {!capturing && aside}
       </View>
       <ScrollView
         ref={scrollRef}
         className="flex-1"
         // 680 px of text where there is room; narrower beside the sidebar below about 1240 px, never cut off.
-        contentContainerClassName="w-full max-w-[720px] pt-7 pr-10 pb-xxl"
+        contentContainerClassName={cx('w-full max-w-[720px] pb-xxl', capturing ? 'px-10 pt-3.5' : 'pt-7 pr-10')}
         onScroll={onScroll}
         scrollEventThrottle={32}
       >
