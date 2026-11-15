@@ -1,0 +1,7 @@
+/* The app's one stylesheet: Tailwind (Uniwind) and the design system's tokens. */
+@import 'tailwindcss';
+@import 'uniwind';
+@import '@homelibra/ui/theme.css';
+
+/* Classes written in the design system's components. */
+@source '../../../packages/ui/src';

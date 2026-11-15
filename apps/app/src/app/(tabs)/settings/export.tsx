@@ -1,10 +1,9 @@
 import { Section, SectionText } from '@homelibra/ui/section-heading';
 import { TermTable } from '@homelibra/ui/term-table';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
-import { LibraryExportDownload } from '@/components/library-export';
+import { LibraryExportDownload } from '@/features/library/library-export';
 
 /**
  * Kütüphaneni dışa aktar (#40, stories 16-18; ADR-0004): what the ZIP
@@ -13,10 +12,9 @@ import { LibraryExportDownload } from '@/components/library-export';
  */
 export default function LibraryExportScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.top}>
+    <ScrollView className="flex-1 bg-page" contentContainerClassName="w-full max-w-[560px] self-center px-lg">
+      <View className="gap-sm py-lg">
         <SectionText>{t('libraryExport.lead')}</SectionText>
         <LibraryExportDownload />
       </View>
@@ -31,10 +29,3 @@ export default function LibraryExportScreen() {
     </ScrollView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { alignSelf: 'center', width: '100%', maxWidth: 560, paddingHorizontal: space.lg },
-    top: { gap: space.sm, paddingVertical: space.lg },
-  });

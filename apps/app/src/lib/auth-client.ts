@@ -9,7 +9,8 @@ import { apiUrl } from './api-url';
 /**
  * Better Auth in the app. On native, expoClient keeps the session in
  * SecureStore; on web it steps aside and the browser holds the httpOnly
- * session cookie. The session's user carries the API's extra Account
+ * session cookie; the scheme it sends as its origin is the build's own
+ * (app.config.ts). The session's user carries the API's extra Account
  * fields, such as when the terms of use were accepted.
  */
 export const authClient = createAuthClient({
@@ -18,6 +19,6 @@ export const authClient = createAuthClient({
   plugins: [
     emailOTPClient(),
     inferAdditionalFields<Auth>(),
-    expoClient({ scheme: 'homelibra', storagePrefix: 'homelibra', storage: SecureStore }),
+    expoClient({ storagePrefix: 'homelibra', storage: SecureStore }),
   ],
 });

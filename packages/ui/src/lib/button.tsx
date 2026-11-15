@@ -1,9 +1,10 @@
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable } from 'react-native';
 
+import { cx } from './cx';
 import type { IconComponent } from './icon';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import type { Colors } from './tokens';
+import { useTheme } from './use-theme';
 
 export type ButtonVariant = 'primary' | 'danger' | 'secondary' | 'small' | 'text';
 
@@ -40,7 +41,6 @@ export function Button({
   busy?: boolean;
   disabled?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const inactive = busy || disabled;
   const ink = (
@@ -60,15 +60,13 @@ export function Button({
       aria-busy={busy || undefined}
       disabled={inactive}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        styles[variant],
-        variant === 'secondary' && tone && { borderColor: colors[tone] },
-        block && styles.block,
-        onAccent && styles.onAccent,
-        disabled && styles.off,
-        pressed && styles.pressed,
-      ]}
+      className={cx(
+        'flex-row items-center justify-center gap-2 rounded-control active:opacity-80',
+        block ? 'self-stretch' : 'self-start',
+        onAccent ? onAccentLook : looks[variant],
+        variant === 'secondary' && frames[tone ?? 'none'],
+        disabled && 'opacity-45',
+      )}
     >
       {busy ? (
         <ActivityIndicator color={colors[ink]} />
@@ -84,26 +82,17 @@ export function Button({
   );
 }
 
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    button: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      alignSelf: 'flex-start',
-      gap: 8,
-      minHeight: 44,
-      paddingVertical: 12,
-      paddingHorizontal: 24,
-      borderRadius: radius.control,
-    },
-    primary: { backgroundColor: c.accent },
-    danger: { backgroundColor: c.danger },
-    secondary: { borderWidth: 1, borderColor: c.line },
-    small: { minHeight: 36, paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: c.line },
-    text: { paddingVertical: 0, paddingHorizontal: 4 },
-    block: { alignSelf: 'stretch' },
-    onAccent: { backgroundColor: c.accentFg, borderColor: 'transparent' },
-    off: { opacity: 0.45 },
-    pressed: { opacity: 0.8 },
-  });
+// Each look names its own height, padding and frame, so no two classes on a button set the same property.
+const looks = {
+  primary: 'min-h-11 bg-accent px-6 py-3',
+  danger: 'min-h-11 bg-danger px-6 py-3',
+  secondary: 'min-h-11 border px-6 py-3',
+  small: 'min-h-9 border border-line px-3 py-2',
+  text: 'min-h-11 px-1 py-0',
+} as const satisfies Record<ButtonVariant, string>;
+
+/** A `small` button on the accent card: the light ground, its frame gone. */
+const onAccentLook = 'min-h-9 border border-transparent bg-accent-fg px-3 py-2';
+
+/** A `secondary` button's frame: its tone, or the theme's line. */
+const frames = { accent: 'border-accent', danger: 'border-danger', none: 'border-line' } as const;

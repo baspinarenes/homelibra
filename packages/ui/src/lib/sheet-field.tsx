@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Text } from './text';
 
@@ -9,13 +9,9 @@ import { Text } from './text';
  */
 export function SheetField({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <View style={styles.field}>
+    <View className="gap-1.5">
       <Text variant="fieldLabel">{label}</Text>
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  field: { gap: 6 },
-});

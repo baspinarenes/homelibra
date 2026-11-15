@@ -45,9 +45,18 @@ export type AuthOptions = {
   trustedOrigins: string[];
   /** Google sign-in's OAuth client; without it only email codes work. */
   google?: { clientId: string; clientSecret: string };
+  /**
+   * A fixed sign-in code for addresses at homelibra.test, so the Maestro smoke
+   * flow (`pnpm e2e`) can sign in without reading the console. Development
+   * only: env.ts refuses it in production or beside a real mailer.
+   */
+  e2eCode?: string;
 };
 
-export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google }: AuthOptions) {
+/** The only addresses a fixed e2e code opens; no one can receive mail there. */
+export const E2E_DOMAIN = '@homelibra.test';
+
+export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google, e2eCode }: AuthOptions) {
   const invited = invitations(db);
 
   return betterAuth({
@@ -139,6 +148,9 @@ export function createAuth({ db, mailer, baseURL, secret, trustedOrigins, google
         otpLength: 6,
         expiresIn: CODE_LIFETIME_SECONDS,
         allowedAttempts: CODE_ATTEMPTS,
+        // Undefined falls back to Better Auth's random code.
+        generateOTP: ({ email, type }) =>
+          e2eCode && type === 'sign-in' && email.endsWith(E2E_DOMAIN) ? e2eCode : undefined,
         async sendVerificationOTP({ email, otp, type }) {
           if (type === 'change-email') await mailer.sendEmailChangeCode(email, otp);
           else await mailer.sendSignInCode(email, otp);

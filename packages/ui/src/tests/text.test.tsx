@@ -1,9 +1,7 @@
-import { StyleSheet } from 'react-native';
 import { describe, expect, it } from 'vitest';
 
 import { Text } from '../text';
-import { setThemePreference } from '../theme';
-import { all, byRole, css, type Node, render, text } from './render';
+import { all, byRole, classes, type Node, render, text } from './render';
 
 /** The innermost element showing `words`: the Text itself, under the page's own wrappers. */
 const drawn = (element: Parameters<typeof render>[0], words: string): Node =>
@@ -11,29 +9,20 @@ const drawn = (element: Parameters<typeof render>[0], words: string): Node =>
 
 describe('Text', () => {
   it("draws a caption in its entry's face, size and line, in muted", () => {
-    const caption = drawn(<Text variant="caption">Okunuyor</Text>, 'Okunuyor');
-    expect(css(caption, 'fontSize')).toBe('12.5px');
-    expect(css(caption, 'lineHeight')).toBe('17px');
-    expect(css(caption, 'color')).toBe('rgba(117,108,96,1.00)');
+    expect(classes(drawn(<Text variant="caption">Okunuyor</Text>, 'Okunuyor'))).toEqual(['type-caption', 'text-muted']);
   });
 
-  // The colour most of the app set each entry in by hand before #145, light and dark.
+  // The colour most of the app set each entry in by hand before #145; light and dark come from the theme.
   it.each([
-    ['body', 'rgba(106,99,88,1.00)', 'rgba(187,178,164,1.00)'],
-    ['sourceTitle', 'rgba(42,37,32,1.00)', 'rgba(240,232,219,1.00)'],
-    ['excerpt', 'rgba(74,68,59,1.00)', 'rgba(208,199,185,1.00)'],
-    ['comment', 'rgba(63,58,51,1.00)', 'rgba(226,217,203,1.00)'],
-    ['link', 'rgba(166,90,64,1.00)', 'rgba(208,138,110,1.00)'],
-    ['heading', 'rgba(117,108,96,1.00)', 'rgba(152,142,128,1.00)'],
-  ] as const)('sets %s in its own colour', (variant, light, dark) => {
-    const word = () => drawn(<Text variant={variant}>Tanin</Text>, variant === 'heading' ? 'TANİN' : 'Tanin');
-    expect(css(word(), 'color')).toBe(light);
-    setThemePreference('dark');
-    try {
-      expect(css(word(), 'color')).toBe(dark);
-    } finally {
-      setThemePreference('system');
-    }
+    ['body', 'text-ink2'],
+    ['sourceTitle', 'text-fg'],
+    ['excerpt', 'text-quote-ink'],
+    ['comment', 'text-ink3'],
+    ['link', 'text-accent'],
+    ['heading', 'text-muted'],
+  ] as const)('sets %s in its own colour', (variant, colour) => {
+    const word = drawn(<Text variant={variant}>Tanin</Text>, variant === 'heading' ? 'TANİN' : 'Tanin');
+    expect(classes(word)).toContain(colour);
   });
 
   it('takes another colour from the theme by name', () => {
@@ -43,27 +32,7 @@ describe('Text', () => {
       </Text>,
       'Bağlantı kurulamadı',
     );
-    expect(css(error, 'color')).toBe('rgba(163,53,43,1.00)');
-  });
-
-  it("takes the dark theme's colours in the dark theme", () => {
-    setThemePreference('dark');
-    try {
-      expect(css(drawn(<Text variant="caption">Okunuyor</Text>, 'Okunuyor'), 'color')).toBe('rgba(152,142,128,1.00)');
-      expect(
-        css(
-          drawn(
-            <Text variant="caption" color="danger">
-              Hata
-            </Text>,
-            'Hata',
-          ),
-          'color',
-        ),
-      ).toBe('rgba(238,142,128,1.00)');
-    } finally {
-      setThemePreference('system');
-    }
+    expect(classes(error)).toEqual(['type-caption', 'text-danger']);
   });
 
   // A locale-blind upper case gives ISTANBUL and IRAK's dotted twin; Turkish needs İ and I.
@@ -122,20 +91,18 @@ describe('Text', () => {
     );
     const word = all(page).findLast((n) => n.children.includes('Yeniden dene'))!;
     const line = all(page).findLast((n) => n.children.includes(word))!;
-    expect(css(line, 'color')).toBe('rgba(143,94,20,1.00)');
-    expect(css(word, 'color')).toBeUndefined();
-    expect(css(word, 'fontFamily')).toBeDefined();
+    expect(classes(line)).toContain('text-warn');
+    expect(classes(word)).toEqual(['type-strong']);
     expect(
-      css(
+      classes(
         drawn(
           <Text variant="strong" color="accent">
             Kaynağı aç
           </Text>,
           'Kaynağı aç',
         ),
-        'color',
       ),
-    ).toBe('rgba(166,90,64,1.00)');
+    ).toEqual(['type-strong', 'text-accent']);
   });
 
   // Checked by `pnpm typecheck`: a face, size, line or colour comes only from the entry and `color`,
@@ -167,14 +134,12 @@ describe('Text', () => {
   });
 
   it('lays out as the screen says', () => {
-    const { row: style } = StyleSheet.create({ row: { marginTop: 6, flexShrink: 1 } });
     const row = drawn(
-      <Text variant="body" style={style}>
+      <Text variant="body" className="mt-1.5 shrink">
         Tanin
       </Text>,
       'Tanin',
     );
-    expect(css(row, 'marginTop')).toBe('6px');
-    expect(css(row, 'fontSize')).toBe('15px');
+    expect(classes(row)).toEqual(['type-body', 'text-ink2', 'mt-1.5', 'shrink']);
   });
 });

@@ -1,11 +1,10 @@
 import { type ReactNode, useRef, useState } from 'react';
-import { type LayoutChangeEvent, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { type LayoutChangeEvent, Modal, Pressable, View } from 'react-native';
 
 import { Button } from './button';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
 
+// Between two answers: `gap-2` below, and the stacking maths.
 const gap = 8;
 
 /**
@@ -40,8 +39,6 @@ export function Dialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const styles = useThemedStyles(makeStyles);
-  const { shadow } = useTheme();
   const stacking = useStacking();
   const block = stacking.stacked;
 
@@ -69,10 +66,14 @@ export function Dialog({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
+      <View className="flex-1 justify-center bg-scrim p-6">
         {/* Screen readers answer with the buttons; the dimmed screen is for a tap. */}
-        <Pressable aria-hidden style={styles.dismiss} onPress={onCancel} />
-        <View aria-modal role="alertdialog" style={[styles.dialog, { boxShadow: shadow.lift }]}>
+        <Pressable aria-hidden className="absolute inset-0" onPress={onCancel} />
+        <View
+          aria-modal
+          role="alertdialog"
+          className="w-full max-w-[420px] gap-6 self-center rounded-control bg-page p-6 shadow-lift"
+        >
           {typeof message === 'string' ? (
             <Text variant="body" color="fg">
               {message}
@@ -80,7 +81,7 @@ export function Dialog({
           ) : (
             message
           )}
-          <View onLayout={stacking.onRoom} style={block ? styles.stack : styles.row}>
+          <View onLayout={stacking.onRoom} className={block ? 'gap-2' : 'flex-row justify-end gap-2'}>
             {block
               ? answers.reverse()
               : answers.map((answer, index) => (
@@ -129,20 +130,3 @@ export function DialogMessage({ children }: { children: ReactNode }) {
     </Text>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    dialog: {
-      width: '100%',
-      maxWidth: 420,
-      alignSelf: 'center',
-      gap: 24,
-      padding: 24,
-      borderRadius: radius.control,
-      backgroundColor: c.page,
-    },
-    row: { flexDirection: 'row', justifyContent: 'flex-end', gap },
-    stack: { gap },
-  });

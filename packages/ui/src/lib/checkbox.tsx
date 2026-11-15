@@ -1,9 +1,9 @@
 import Check from 'lucide-react-native/icons/check';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 /** A box and its label; the whole row toggles it. */
 export function Checkbox({
@@ -17,7 +17,6 @@ export function Checkbox({
   onChange: (checked: boolean) => void;
   disabled?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   return (
     <Pressable
@@ -27,31 +26,19 @@ export function Checkbox({
       aria-disabled={disabled || undefined}
       disabled={disabled}
       onPress={() => onChange(!checked)}
-      style={[styles.row, disabled && styles.off]}
+      className={cx('flex-row items-center gap-3 py-2', disabled && 'opacity-45')}
     >
-      <View style={[styles.box, checked && styles.checked]}>
+      <View
+        className={cx(
+          'h-5 w-5 items-center justify-center rounded-cover border-[1.5px]',
+          checked ? 'border-accent bg-accent' : 'border-line-strong',
+        )}
+      >
         {checked && <Check size={14} strokeWidth={3} color={colors.accentFg} />}
       </View>
-      <Text variant="body" color="fg" style={styles.label}>
+      <Text variant="body" color="fg" className="shrink">
         {label}
       </Text>
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-    box: {
-      width: 20,
-      height: 20,
-      borderRadius: radius.cover,
-      borderWidth: 1.5,
-      borderColor: c.lineStrong,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    checked: { backgroundColor: c.accent, borderColor: c.accent },
-    label: { flexShrink: 1 },
-    off: { opacity: 0.45 },
-  });

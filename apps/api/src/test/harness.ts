@@ -213,7 +213,7 @@ function cookieHeaders(setCookie: string[]) {
  * called in-process without a network. `owner` connects as the table owner
  * and is only for arranging fixtures that no procedure can create yet.
  */
-export function testApi() {
+export function testApi({ e2eCode }: { e2eCode?: string } = {}) {
   const db = createDb(testDatabaseUrl);
   const owner = createDb(testMigrationDatabaseUrl);
   const mail = fakeMailer();
@@ -240,6 +240,7 @@ export function testApi() {
     openLibrary: openLibrary.openLibrary,
     covers: covers.storage,
     now,
+    e2eCode,
   });
 
   afterAll(async () => {

@@ -1,8 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
 
 /**
  * A short notice in ink on paper (“Tanin” silindi), with at most one action
@@ -10,11 +9,16 @@ import { useTheme, useThemedStyles } from './use-theme';
  * decides how high it floats and how long it stays.
  */
 export function Toast({ message, action }: { message: string; action?: { label: string; onPress: () => void } }) {
-  const styles = useThemedStyles(makeStyles);
-  const { shadow } = useTheme();
   return (
-    <View role="status" style={[styles.toast, !action && styles.plain, { boxShadow: shadow.lift }]}>
-      <Text variant="label" color="page" style={styles.message} numberOfLines={2}>
+    <View
+      role="status"
+      className={cx(
+        'mx-4 min-h-12 flex-row items-center justify-between gap-3 rounded-control bg-fg py-1.5 pl-4 shadow-lift',
+        // Only a word, no action beside it.
+        action ? 'pr-2' : 'pr-4',
+      )}
+    >
+      <Text variant="label" color="page" className="flex-1" numberOfLines={2}>
         {message}
       </Text>
       {action && (
@@ -22,7 +26,7 @@ export function Toast({ message, action }: { message: string; action?: { label: 
           role="button"
           aria-label={action.label}
           onPress={action.onPress}
-          style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+          className="min-h-9 justify-center px-2 active:opacity-70"
         >
           <Text variant="button" color="accentSoft">
             {action.label}
@@ -32,26 +36,3 @@ export function Toast({ message, action }: { message: string; action?: { label: 
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    toast: {
-      marginHorizontal: 16,
-      minHeight: 48,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-      paddingTop: 6,
-      paddingRight: 8,
-      paddingBottom: 6,
-      paddingLeft: 16,
-      borderRadius: radius.control,
-      backgroundColor: c.fg,
-    },
-    // Only a word, no action beside it.
-    plain: { paddingRight: 16 },
-    message: { flex: 1 },
-    action: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 8 },
-    pressed: { opacity: 0.7 },
-  });

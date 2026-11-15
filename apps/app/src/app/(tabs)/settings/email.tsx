@@ -2,13 +2,12 @@ import { EMAIL_TAKEN } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
-import { CodeInput } from '@/components/code-input';
+import { CodeInput } from '@/features/account/code-input';
 import { authClient } from '@/lib/auth-client';
 import { offerUndo } from '@/lib/undo';
 
@@ -25,7 +24,6 @@ const INVALID_EMAIL = 'INVALID_EMAIL';
  */
 export default function EmailChangeScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { data: session, refetch } = authClient.useSession();
   const currentEmail = session?.user.email ?? '';
@@ -71,13 +69,17 @@ export default function EmailChangeScreen() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      className="flex-1 bg-page"
+      contentContainerClassName="w-full max-w-[480px] gap-sm self-center p-lg"
+      keyboardShouldPersistTaps="handled"
+    >
       {step.kind === 'address' ? (
         <>
-          <Text variant="body" style={styles.lead}>
+          <Text variant="body" className="mb-sm">
             {t('emailChange.current', { email: currentEmail })}
           </Text>
-          <Text variant="body" style={styles.lead}>
+          <Text variant="body" className="mb-sm">
             {t('emailChange.lead')}
           </Text>
           <TextField
@@ -93,7 +95,7 @@ export default function EmailChangeScreen() {
             onSubmitEditing={() => newEmail.trim() && sendCode(newEmail.trim())}
           />
           <Text variant="caption">{t('emailChange.durableAddressHint')}</Text>
-          <View style={styles.action}>
+          <View className="mt-md">
             <Button
               label={t('emailChange.sendCode')}
               busy={busy}
@@ -106,7 +108,7 @@ export default function EmailChangeScreen() {
 
       {step.kind === 'code' ? (
         <>
-          <Text variant="body" style={styles.lead}>
+          <Text variant="body" className="mb-sm">
             {t('emailChange.codeSentTo', { email: step.newEmail })}
           </Text>
           <CodeInput
@@ -115,7 +117,7 @@ export default function EmailChangeScreen() {
             onChange={setCode}
             onSubmit={() => submitCode(step.newEmail)}
           />
-          <View style={styles.action}>
+          <View className="mt-md">
             <Button
               label={t('emailChange.submit')}
               busy={busy}
@@ -123,7 +125,7 @@ export default function EmailChangeScreen() {
               onPress={() => submitCode(step.newEmail)}
             />
           </View>
-          <View style={styles.links}>
+          <View className="mt-md flex-row justify-between">
             <Pressable onPress={() => sendCode(step.newEmail)} disabled={busy}>
               <Text variant="label" color="accent">
                 {t('emailChange.resend')}
@@ -139,20 +141,10 @@ export default function EmailChangeScreen() {
       ) : null}
 
       {error ? (
-        <Text variant="label" color="warn" style={styles.error}>
+        <Text variant="label" color="warn" className="mt-sm">
           {error}
         </Text>
       ) : null}
     </ScrollView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { alignSelf: 'center', width: '100%', maxWidth: 480, padding: space.lg, gap: space.sm },
-    lead: { marginBottom: space.sm },
-    action: { marginTop: space.md },
-    links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
-    error: { marginTop: space.sm },
-  });

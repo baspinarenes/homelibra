@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Section, SectionHeading, SectionText } from '../section-heading';
 import { Toast } from '../toast';
-import { byRole, css, nameOf, type Node, render, text } from './render';
+import { byRole, classes, nameOf, type Node, render, text } from './render';
 
 const noop = () => {};
 
@@ -47,9 +47,9 @@ describe('Section', () => {
 
   // The Ayarlar boards: 12 between a section's parts, 8 between running text, 6 under a heading over rows.
   it.each([
-    ['default', '12px', undefined],
-    ['text', '8px', undefined],
-    ['rows', '0px', '6px'],
+    ['default', 'gap-3', false],
+    ['text', 'gap-2', false],
+    ['rows', 'gap-0', true],
   ] as const)('spaces its parts by %s', (spacing, gap, underHeading) => {
     const page = render(
       <Section title="Hesap" spacing={spacing}>
@@ -58,8 +58,8 @@ describe('Section', () => {
     );
     const section = drawn(page);
     const heading = section.children[0] as Node;
-    expect(css(section, 'gap')).toBe(gap);
-    expect(css(heading, 'marginBottom')).toBe(underHeading);
+    expect(classes(section)).toContain(gap);
+    expect(classes(heading).includes('mb-1.5')).toBe(underHeading);
   });
 });
 
@@ -68,7 +68,7 @@ describe('SectionText', () => {
     const page = render(<SectionText>Sorular, destek ve KVKK başvuruları için:</SectionText>);
     const paragraph = drawn(page);
     expect(text(paragraph)).toBe('Sorular, destek ve KVKK başvuruları için:');
-    expect(css(paragraph, 'fontSize')).toBe('15px');
+    expect(classes(paragraph)).toContain('type-body');
   });
 });
 

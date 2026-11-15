@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 // The components render to HTML through react-native-web, as the app's web
 // build draws them, so a test reads what a screen reader would get.
-const native = [/react-native-svg/, /lucide-react-native/, /react-native-safe-area-context/];
+const native = [/react-native-svg/, /lucide-react-native/, /react-native-safe-area-context/, /uniwind/];
 
 const resolve = {
   alias: [

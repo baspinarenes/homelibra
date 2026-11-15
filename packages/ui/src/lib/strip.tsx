@@ -1,9 +1,8 @@
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 /**
  * A yellow strip at the top of a screen for what waits on the scholar
@@ -12,11 +11,14 @@ import { useTheme, useThemedStyles } from './use-theme';
  * "…" where it does not fit. Strips stand 8 apart.
  */
 export function Strip({ title, detail, onPress }: { title: string; detail?: string; onPress: () => void }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   return (
-    <Pressable role="link" onPress={onPress} style={({ pressed }) => [styles.strip, pressed && styles.pressed]}>
-      <View style={styles.text}>
+    <Pressable
+      role="link"
+      onPress={onPress}
+      className="min-h-12 flex-row items-center gap-2.5 rounded-control bg-warn-soft py-2.5 pr-2.5 pl-3.5 active:opacity-70"
+    >
+      <View className="min-w-0 flex-1 gap-0.5">
         <Text variant="bodyStrong" color="warn">
           {title}
         </Text>
@@ -30,21 +32,3 @@ export function Strip({ title, detail, onPress }: { title: string; detail?: stri
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    strip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      minHeight: 48,
-      paddingTop: 10,
-      paddingRight: 10,
-      paddingBottom: 10,
-      paddingLeft: 14,
-      borderRadius: radius.control,
-      backgroundColor: c.warnSoft,
-    },
-    pressed: { opacity: 0.7 },
-    text: { flex: 1, minWidth: 0, gap: 2 },
-  });

@@ -36,11 +36,21 @@ export const env = z
     COVERS_S3_ACCESS_KEY_ID: z.string().optional(),
     COVERS_S3_SECRET_ACCESS_KEY: z.string().optional(),
     COVERS_DIR: z.string().default('.covers'),
+    /** A fixed sign-in code for @homelibra.test addresses, for `pnpm e2e` (auth.ts). */
+    E2E_SIGN_IN_CODE: z
+      .string()
+      .regex(/^\d{6}$/, 'E2E_SIGN_IN_CODE is six digits')
+      .optional(),
   })
   // Production sends codes through Resend and is same-origin: never log
   // codes to the console or open CORS there.
   .refine((e) => process.env.NODE_ENV !== 'production' || (e.RESEND_API_KEY && e.CORS_ORIGINS.length === 0), {
     message: 'production needs RESEND_API_KEY and no CORS_ORIGINS',
+  })
+  // A known code opens Accounts: only where codes go to the console anyway.
+  // (server.ts also ignores it beside a real mailer.)
+  .refine((e) => !e.E2E_SIGN_IN_CODE || process.env.NODE_ENV !== 'production', {
+    message: 'E2E_SIGN_IN_CODE is for development only, never production',
   })
   .refine((e) => !e.GOOGLE_CLIENT_ID === !e.GOOGLE_CLIENT_SECRET, {
     message: 'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET come together',

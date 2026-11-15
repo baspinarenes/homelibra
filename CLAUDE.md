@@ -1,6 +1,6 @@
 ## Code layout
 
-Packages are deep modules: see [packages/README.md](./packages/README.md) before adding or importing one.
+Packages are deep modules: see [packages/README.md](./packages/README.md) before adding or importing one. The app's own folders (routes, `features/<area>`, `components`, `lib`) are in [apps/app/README.md](./apps/app/README.md).
 
 Dependencies are hoisted: a library's source is in the root `node_modules/<name>`, with no `.pnpm` store and no per-app `node_modules` (`nodeLinker` in `pnpm-workspace.yaml`).
 

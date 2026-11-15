@@ -1,24 +1,14 @@
 import X from 'lucide-react-native/icons/x';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  Modal,
-  PanResponder,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Animated, Easing, Modal, PanResponder, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from './button';
 import type { IconComponent } from './icon';
 import { useKeyboardTop } from './keyboard';
+import { cx } from './cx';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 type Action = { label: string; onPress: () => void; disabled?: boolean };
 
@@ -30,6 +20,9 @@ const keyboardReadyAfter = 100;
 
 /** How far a drag on the handle or the title must go down before the sheet closes. */
 const dismissDistance = 80;
+
+// React Native's own Animated.View drops `className` on native; the View Uniwind hands out reads it.
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 /**
  * A sheet from the bottom of the screen, the same in every flow: the handle,
@@ -93,7 +86,6 @@ export function Sheet({
   fill?: boolean;
   children: ReactNode;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const keyboardTop = useKeyboardTop();
@@ -152,33 +144,36 @@ export function Sheet({
       }
       onDismiss={onHidden}
     >
-      <View style={styles.frame}>
-        <Animated.View style={[styles.backdrop, { opacity: shown }]}>
-          <Pressable aria-hidden style={styles.dismiss} onPress={onClose} />
-        </Animated.View>
-        <Animated.View
+      <View className="flex-1 justify-end">
+        <AnimatedView className="absolute inset-0 bg-scrim" style={{ opacity: shown }}>
+          <Pressable aria-hidden className="absolute inset-0" onPress={onClose} />
+        </AnimatedView>
+        <AnimatedView
           role="dialog"
           aria-modal
           aria-label={title}
+          className="w-full max-w-[560px] gap-3.5 self-center rounded-t-sheet bg-page px-5.5 pt-2"
           style={[
-            styles.sheet,
             fill ? { height: tallest } : { maxHeight: tallest },
             { paddingBottom: bottom },
             { transform: [{ translateY: Animated.add(rise, drag) }] },
           ]}
         >
-          <View {...pan.panHandlers} style={styles.top}>
-            <View style={styles.handle} />
+          <View {...pan.panHandlers} className="gap-3.5">
+            <View className="mb-0.5 h-1 w-9 self-center rounded-[2px] bg-faint" />
             {header ?? (
-              <View style={styles.head}>
-                <Text variant="sourceTitle" style={styles.title} numberOfLines={2}>
+              <View className="flex-row items-start justify-between gap-3">
+                {/* One line of title stands in the middle of the X's 44pt touch area; a
+                    second line goes below, the X staying beside the first one. */}
+                <Text variant="sourceTitle" className="flex-1 pt-2.5 pb-2.25" numberOfLines={2}>
                   {title}
                 </Text>
                 <Pressable
                   role="button"
                   aria-label={closeLabel}
                   onPress={onClose}
-                  style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+                  // The touch area reaches past the gutter so the X itself stands on it.
+                  className="-mr-2.5 mt-0.5 -mb-0.5 h-11 w-11 items-center justify-center rounded-control active:opacity-70"
                 >
                   <X color={colors.fg} size={24} strokeWidth={1.6} />
                 </Pressable>
@@ -186,11 +181,13 @@ export function Sheet({
             )}
           </View>
           {fill ? (
-            <View style={[styles.body, styles.filled]}>{children}</View>
+            <View className="flex-1 gap-3.5">{children}</View>
           ) : (
+            // The scroll clips what it holds: it reaches 4 past the body on every side, so a field at the
+            // body's edge keeps its border and its 3px focus ring.
             <ScrollView
-              style={styles.scroll}
-              contentContainerStyle={[styles.body, styles.scrolled]}
+              className="-m-1 shrink grow-0"
+              contentContainerClassName="gap-3.5 p-1"
               keyboardShouldPersistTaps="handled"
               bounces={false}
             >
@@ -198,14 +195,15 @@ export function Sheet({
             </ScrollView>
           )}
           {(primary || secondary) && (
-            <View style={styles.footer}>
+            <View className="flex-row gap-2">
+              {/* A third for the secondary, more when its label needs it, so it never wraps; the primary takes the rest. */}
               {secondary && (
-                <View style={styles.secondary}>
+                <View className="min-w-[33%] shrink-0">
                   <Button {...secondary} variant="secondary" block />
                 </View>
               )}
               {primary && (
-                <View style={styles.primary}>
+                <View className="flex-1">
                   <Button
                     label={primary.label}
                     onPress={primary.onPress}
@@ -218,7 +216,7 @@ export function Sheet({
               )}
             </View>
           )}
-        </Animated.View>
+        </AnimatedView>
       </View>
     </Modal>
   );
@@ -241,7 +239,6 @@ export function SheetAction({
   destructive?: boolean;
   disabled?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   const ink = destructive ? 'danger' : 'fg';
   return (
@@ -251,7 +248,10 @@ export function SheetAction({
       aria-disabled={disabled || undefined}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.action, disabled && styles.off, pressed && styles.pressed]}
+      className={cx(
+        'min-h-13 flex-row items-center gap-3 border-t border-line-soft',
+        disabled ? 'opacity-45' : 'active:opacity-70',
+      )}
     >
       <Icon color={colors[ink]} size={20} strokeWidth={1.6} />
       <Text variant="body" color={ink}>
@@ -260,58 +260,3 @@ export function SheetAction({
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    frame: { flex: 1, justifyContent: 'flex-end' },
-    backdrop: { ...StyleSheet.absoluteFill, backgroundColor: c.scrim },
-    dismiss: { ...StyleSheet.absoluteFill },
-    sheet: {
-      width: '100%',
-      maxWidth: 560,
-      alignSelf: 'center',
-      gap: 14,
-      paddingTop: 8,
-      paddingHorizontal: 22,
-      backgroundColor: c.page,
-      borderTopLeftRadius: radius.sheet,
-      borderTopRightRadius: radius.sheet,
-    },
-    top: { gap: 14 },
-    handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: c.faint, marginBottom: 2 },
-    head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-    // One line of title stands in the middle of the X's 44pt touch area; a
-    // second line goes below, the X staying beside the first one.
-    title: { flex: 1, paddingTop: 10, paddingBottom: 9 },
-    // The touch area reaches past the gutter so the X itself stands on it.
-    close: {
-      width: 44,
-      height: 44,
-      marginTop: 2,
-      marginBottom: -2,
-      marginRight: -10,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.control,
-    },
-    // The scroll clips what it holds: it reaches 4 past the body on every side, so a field at the
-    // body's edge keeps its border and its 3px focus ring.
-    scroll: { flexGrow: 0, flexShrink: 1, margin: -4 },
-    scrolled: { padding: 4 },
-    body: { gap: 14 },
-    filled: { flex: 1 },
-    footer: { flexDirection: 'row', gap: 8 },
-    // A third for the secondary, more when its label needs it, so it never wraps; the primary takes the rest.
-    secondary: { flexShrink: 0, minWidth: '33%' },
-    primary: { flex: 1 },
-    action: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      minHeight: 52,
-      borderTopWidth: 1,
-      borderTopColor: c.lineSoft,
-    },
-    off: { opacity: 0.45 },
-    pressed: { opacity: 0.7 },
-  });

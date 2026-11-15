@@ -1,4 +1,7 @@
 # Local development database. `pnpm db:up` builds our image and starts it.
+# One project name, so every checkout and worktree shares this one Postgres.
+name: homelibra
+
 services:
   postgres:
     build: infra/postgres

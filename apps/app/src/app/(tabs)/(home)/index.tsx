@@ -3,27 +3,30 @@ import { formatDate } from '@homelibra/core/date';
 import { Button } from '@homelibra/ui/button';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { cx, useTheme } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
-import { LibrarySummary } from '@/components/library-summary';
-import { LostNotesNotice, useLostNoteCount } from '@/components/lost-notes-notice';
-import { ReadingList } from '@/components/reading-list';
-import { RecentTags } from '@/components/recent-tags';
-import { SourceCover } from '@/components/source-cover';
-import { elapsed } from '@/lib/elapsed';
+import { LibrarySummary } from '@/features/library/library-summary';
+import { LostNotesNotice, useLostNoteCount } from '@/features/library/lost-notes-notice';
+import { ReadingList } from '@/features/library/reading-list';
+import { RecentTags } from '@/features/library/recent-tags';
+import { SourceCover } from '@/features/source/source-cover';
+import { elapsed } from '@/features/library/elapsed';
 import { useLastNotedLayout } from '@/lib/appearance-choices';
 import { useTRPC } from '@/lib/trpc';
 
 type LastNoted = NonNullable<inferRouterOutputs<AppRouter>['sources']['lastNoted']>;
 
+/** A message, or the spinner, in the middle of the screen. */
+const center = 'flex-1 items-center justify-center gap-md bg-page p-xl';
+
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const router = useRouter();
   const home = useQuery(trpc.sources.home.queryOptions());
@@ -32,15 +35,15 @@ export default function HomeScreen() {
 
   if (home.isPending || lastNoted.isPending) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={styles.spinner.color} />
+      <View className={center}>
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
   if (home.isError || lastNoted.isError) {
     return (
-      <View style={styles.center}>
-        <Text variant="body" style={styles.lead}>
+      <View className={center}>
+        <Text variant="body" className="text-center">
           {t('home.loadFailed')}
         </Text>
         {/* The button keeps to its start edge; this box centres it. */}
@@ -63,9 +66,9 @@ export default function HomeScreen() {
   if (lastNoted.data) {
     const alerts = lostNotes > 0;
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <ScrollView className="flex-1 bg-page" contentContainerClassName="px-gutter pb-xxl">
         {alerts && (
-          <View style={styles.alerts}>
+          <View className="gap-sm pt-md pb-1.5">
             <LostNotesNotice />
           </View>
         )}
@@ -80,11 +83,11 @@ export default function HomeScreen() {
   // Sources but no Notes yet: there is no last Source to go on with, so the scholar picks one in Kaynaklar.
   if (home.data.sourceCount > 0) {
     return (
-      <View style={styles.center}>
-        <Text variant="body" style={styles.lead}>
+      <View className={center}>
+        <Text variant="body" className="text-center">
           {t('home.takeNoteLead')}
         </Text>
-        <View style={styles.action}>
+        <View className="mt-lg">
           <Button label={t('home.takeNote')} onPress={() => router.navigate('/sources')} />
         </View>
       </View>
@@ -92,14 +95,14 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.center}>
-      <Text variant="title" style={styles.title}>
+    <View className={center}>
+      <Text variant="title" className="text-center">
         {t('home.emptyTitle')}
       </Text>
-      <Text variant="body" style={styles.lead}>
+      <Text variant="body" className="text-center">
         {t('home.emptyLead')}
       </Text>
-      <View style={styles.action}>
+      <View className="mt-lg">
         <Button label={t('home.addFirstSource')} onPress={() => router.push('/source/new')} />
       </View>
     </View>
@@ -122,7 +125,6 @@ function LastNotedSection({
   afterAlerts: boolean;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const layout = useLastNotedLayout();
   const byline = [source.author, source.date && formatDate(source.date)].filter(Boolean).join(' · ');
@@ -132,7 +134,7 @@ function LastNotedSection({
   const noteText = text && (
     <Text
       variant={note.excerpt ? (noteFirst ? 'excerptLg' : 'excerpt') : noteFirst ? 'bodyLg' : 'body'}
-      style={note.excerpt && !noteFirst ? styles.excerpt : undefined}
+      className={note.excerpt && !noteFirst ? 'border-l-2 border-quote-bar pl-2.75' : undefined}
       numberOfLines={noteFirst ? 4 : 3}
     >
       {text}
@@ -144,19 +146,20 @@ function LastNotedSection({
     </Text>
   );
   return (
-    <View style={[styles.lastNoted, afterAlerts && styles.lastNotedAfterAlerts]}>
+    // 18 under the header's rule, as every Section stands; 14 under the alerts.
+    <View className={cx('gap-md pb-5.5', afterAlerts ? 'pt-3.5' : 'pt-4.5')}>
       <SectionHeading title={t('home.lastNoted')} count={elapsed(t, note.capturedAt)} />
       <Pressable
         role="button"
         onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id, write: '1' } })}
-        style={({ pressed }) => [styles.lastNotedBody, pressed && styles.pressed]}
+        className="gap-3.5 active:opacity-70"
       >
         {noteFirst ? (
           <>
             {noteText}
-            <View style={styles.sourceLine}>
+            <View className="flex-row items-center gap-md">
               <SourceCover type={source.type} cover={source.cover} />
-              <View style={styles.identityText}>
+              <View className="min-w-0 flex-1 gap-xs">
                 <Text variant="sourceTitleSm" numberOfLines={1}>
                   {source.title}
                 </Text>
@@ -167,9 +170,9 @@ function LastNotedSection({
         ) : (
           <>
             {/* Kaynak önde: the Source as the Source page heads it. */}
-            <View style={styles.identity}>
+            <View className="flex-row gap-3.5">
               <SourceCover type={source.type} cover={source.cover} size="large" />
-              <View style={styles.identityText}>
+              <View className="min-w-0 flex-1 gap-xs">
                 <Text variant="micro" color="accent">
                   {t(`sourceTypes.${source.type}.label`)}
                 </Text>
@@ -183,10 +186,10 @@ function LastNotedSection({
             {noteText}
           </>
         )}
-        <View style={styles.goOn}>
+        <View className="flex-row items-baseline justify-between gap-md">
           <Text variant="button">{t('home.goOn')}</Text>
           {note.locator && (
-            <Text variant="locator" style={styles.goOnLocator} numberOfLines={1}>
+            <Text variant="locator" className="shrink" numberOfLines={1}>
               {note.locator}
             </Text>
           )}
@@ -195,37 +198,3 @@ function LastNotedSection({
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: space.xl,
-      gap: space.md,
-      backgroundColor: c.page,
-    },
-    title: { textAlign: 'center' },
-    lead: { textAlign: 'center' },
-    action: { marginTop: space.lg },
-    spinner: { color: c.accent },
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { paddingHorizontal: space.gutter, paddingBottom: space.xxl },
-    pressed: { opacity: 0.7 },
-    alerts: { gap: space.sm, paddingTop: space.md, paddingBottom: 6 },
-    // 18 under the header's rule, as every Section stands.
-    lastNoted: { gap: space.md, paddingTop: 18, paddingBottom: 22 },
-    lastNotedAfterAlerts: { paddingTop: 14 },
-    lastNotedBody: { gap: 14 },
-    identity: { flexDirection: 'row', gap: 14 },
-    identityText: { flex: 1, minWidth: 0, gap: space.xs },
-    excerpt: {
-      borderLeftWidth: 2,
-      borderLeftColor: c.quoteBar,
-      paddingLeft: 11,
-    },
-    sourceLine: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-    goOn: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-    goOnLocator: { flexShrink: 1 },
-  });

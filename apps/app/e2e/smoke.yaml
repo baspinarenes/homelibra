@@ -1,0 +1,57 @@
+# The smoke flow: sign in, add a Source, capture a Note, on the dev build.
+# `pnpm e2e` runs it (scripts/e2e.sh) against the stack `pnpm dev --e2e` brought up,
+# whose API signs e2e@homelibra.test in with the fixed E2E_SIGN_IN_CODE.
+appId: app.homelibra.dev
+env:
+  EMAIL: e2e@homelibra.test
+---
+# A fresh install's state: signed out, no outbox. The dev build then needs to be
+# told where Metro is, and to open no menu or Tools button over the app (the
+# button sits on the header's right). A link that arrives
+# before its launcher has settled is dropped, so wait for the launcher first.
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: DEVELOPMENT SERVERS
+    timeout: 60000
+- openLink: homelibra-dev://expo-development-client/?url=${METRO || 'http%3A%2F%2Flocalhost%3A8081'}&__expo_disable_onboarding=1&__expo_disable_auto_launch=1&__expo_disable_fab=1
+- extendedWaitUntil:
+    visible: E-posta ile devam et
+    timeout: 120000
+
+# Sign in
+- tapOn: Aydınlatma metnini okudum.*
+- tapOn: E-posta ile devam et
+- tapOn: ad@ornek.com
+- inputText: ${EMAIL}
+- tapOn: Kod gönder
+- extendedWaitUntil:
+    visible: Giriş yap
+    timeout: 15000
+- tapOn: Giriş kodu
+- inputText: ${E2E_SIGN_IN_CODE}
+- tapOn: Giriş yap
+- tapOn:
+    text: Başla # the first sign-in of an Account accepts the terms here
+    optional: true
+- extendedWaitUntil:
+    visible: Genel Bakış
+    timeout: 15000
+
+# Add a Source, under a title no earlier run used
+- evalScript: ${output.title = 'Smoke ' + Date.now()}
+- tapOn: Kaynaklar
+- tapOn: Kaynak ekle
+- tapOn: Başlık
+- inputText: ${output.title}
+- hideKeyboard
+- tapOn: Kaydet
+- tapOn: ${output.title}
+
+# Capture a Note on it
+- tapOn: Not al
+- tapOn: Yazarın sözleri, olduğu gibi…
+- inputText: Bir alıntı.
+- tapOn: Kaydet
+- tapOn: Vazgeç # the composer stays open for the next Note
+- assertVisible: Bir alıntı.

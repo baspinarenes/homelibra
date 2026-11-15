@@ -3,16 +3,17 @@ import { Button } from '@homelibra/ui/button';
 import { Checkbox } from '@homelibra/ui/checkbox';
 import { AppLogo, GoogleLogo } from '@homelibra/ui/logo';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, useThemedStyles } from '@homelibra/ui/theme';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, View } from 'react-native';
 
-import { InviteNotice } from '@/components/invite-notice';
+import { SafeAreaView } from '@/components/safe-area-view';
+import { InviteNotice } from '@/features/account/invite-notice';
 import { authClient } from '@/lib/auth-client';
+
+// Uniwind reads className only on React Native's own components.
 
 type Message = { kind: 'notInvited' } | { kind: 'error'; text: string } | null;
 
@@ -24,7 +25,6 @@ type Message = { kind: 'notInvited' } | { kind: 'error'; text: string } | null;
  */
 export default function SignInScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const [hasRead, setHasRead] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -55,21 +55,21 @@ export default function SignInScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.page}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.brand}>
+    <SafeAreaView className="flex-1 bg-page">
+      <ScrollView contentContainerClassName="w-full max-w-[420px] grow justify-center self-center px-5.5 py-6">
+        <View className="items-center gap-5">
           <AppLogo size={64} label={t('signIn.logo')} />
-          <View style={styles.words}>
-            <Text variant="display" style={styles.title}>
+          <View className="gap-2">
+            <Text variant="display" className="text-center">
               {t('signIn.title')}
             </Text>
-            <Text variant="body" style={styles.tagline}>
+            <Text variant="body" className="text-center">
               {t('signIn.tagline')}
             </Text>
           </View>
         </View>
 
-        <View style={styles.actions}>
+        <View className="gap-3 pt-10">
           <Text variant="caption">
             <Trans
               i18nKey="signIn.legalNote"
@@ -100,7 +100,7 @@ export default function SignInScreen() {
             onPress={continueWithGoogle}
           />
           {message?.kind === 'error' ? (
-            <Text variant="label" color="danger" style={styles.error}>
+            <Text variant="label" color="danger" className="text-center">
               {message.text}
             </Text>
           ) : null}
@@ -110,23 +110,3 @@ export default function SignInScreen() {
     </SafeAreaView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    page: { flex: 1, backgroundColor: c.page },
-    content: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 420,
-      paddingHorizontal: 22,
-      paddingVertical: 24,
-    },
-    brand: { alignItems: 'center', gap: 20 },
-    words: { gap: 8 },
-    title: { textAlign: 'center' },
-    tagline: { textAlign: 'center' },
-    actions: { gap: 12, paddingTop: 40 },
-    error: { textAlign: 'center' },
-  });

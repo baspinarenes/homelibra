@@ -5,13 +5,11 @@ import {
   Platform,
   ScrollView,
   type ScrollViewInstance,
-  StyleSheet,
   View,
 } from 'react-native';
 
+import { cx } from './cx';
 import { Text } from './text';
-import { type Colors, radius } from './tokens';
-import { useThemedStyles } from './use-theme';
 
 // A wheel turns through numbers (a day, a month, a year); null is "—".
 type Value = number | null;
@@ -30,6 +28,8 @@ export type WheelColumn = {
   align?: 'center' | 'start';
 };
 
+// The classes below write these out, as Tailwind needs whole class names: a row is `h-9` (36),
+// a wheel `h-45` (five rows, 180), the band `top-18` and the scroll's `py-18` (two rows, 72). Change them together.
 const rowHeight = 36;
 // Five rows show: the chosen one on the band, two above and two below.
 const around = 2;
@@ -47,23 +47,23 @@ const clamp = (i: number, n: number) => Math.max(0, Math.min(n - 1, i));
  * wheel one row at a time (increment, decrement).
  */
 export function Wheels({ columns }: { columns: readonly WheelColumn[] }) {
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={styles.wheels}>
-      <View style={styles.heads}>
+    <View className="gap-1.5">
+      <View className="flex-row gap-2 px-1">
         {columns.map((column) => (
           <Text
             key={column.label}
             variant="fieldLabel"
             aria-hidden
-            style={[place(column), column.align === 'start' ? styles.headStart : styles.headCenter]}
+            className={cx(room(column), column.align === 'start' ? 'pl-3' : 'text-center')}
+            style={place(column)}
           >
             {column.label}
           </Text>
         ))}
       </View>
-      <View style={styles.row}>
-        <View style={styles.band} />
+      <View className="h-45 flex-row gap-2 px-1">
+        <View className="absolute top-18 right-0 left-0 h-9 rounded-control border border-line bg-surface" />
         {columns.map((column) => (
           <Wheel key={column.label} column={column} />
         ))}
@@ -72,11 +72,12 @@ export function Wheels({ columns }: { columns: readonly WheelColumn[] }) {
   );
 }
 
-const place = ({ width }: WheelColumn) => (width === undefined ? { flex: 1, minWidth: 0 } : { width });
+// A column's fixed width, or the room left: the width is the column's own, so it stays a style.
+const room = ({ width }: WheelColumn) => width === undefined && 'min-w-0 flex-1';
+const place = ({ width }: WheelColumn) => (width === undefined ? undefined : { width });
 
 function Wheel({ column }: { column: WheelColumn }) {
   const { label, options, value, onChange, disabled = false, align = 'center' } = column;
-  const styles = useThemedStyles(makeStyles);
   const scroll = useRef<ScrollViewInstance>(null);
   const index = Math.max(
     0,
@@ -131,7 +132,8 @@ function Wheel({ column }: { column: WheelColumn }) {
       aria-disabled={disabled || undefined}
       accessibilityActions={disabled ? [] : [{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={({ nativeEvent }) => step(nativeEvent.actionName === 'increment' ? 1 : -1)}
-      style={[styles.wheel, place(column)]}
+      className={cx('h-45', room(column))}
+      style={place(column)}
     >
       <ScrollView
         ref={scroll}
@@ -146,7 +148,7 @@ function Wheel({ column }: { column: WheelColumn }) {
         // Inside the sheet's own ScrollView, Android otherwise gives the drag to the sheet.
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingVertical: around * rowHeight }}
+        contentContainerClassName="py-18"
       >
         <View style={{ height: from * rowHeight }} />
         {options.slice(from, to).map((option, i) => (
@@ -175,43 +177,18 @@ const Row = memo(function Row({
   off: boolean;
   start: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
   const centre = !off && distance === 0;
   const color = off ? (distance === 0 ? 'muted2' : 'faint') : (['fg', 'ink2', 'muted2'] as const)[distance];
   return (
-    <View style={[styles.option, start && styles.optionStart]}>
+    <View className={cx('h-9 justify-center', start ? 'items-start pl-3' : 'items-center')}>
       <Text
         variant={centre ? 'wheelCentre' : 'wheel'}
         color={color}
         numberOfLines={1}
-        style={!off && distance === 2 && styles.far}
+        className={!off && distance === 2 ? 'opacity-55' : undefined}
       >
         {label}
       </Text>
     </View>
   );
 });
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    wheels: { gap: 6 },
-    heads: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
-    headCenter: { textAlign: 'center' },
-    headStart: { paddingLeft: 12 },
-    row: { flexDirection: 'row', gap: 8, paddingHorizontal: 4, height: (2 * around + 1) * rowHeight },
-    band: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      top: around * rowHeight,
-      height: rowHeight,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.line,
-      borderRadius: radius.control,
-    },
-    wheel: { height: (2 * around + 1) * rowHeight },
-    option: { height: rowHeight, alignItems: 'center', justifyContent: 'center' },
-    optionStart: { alignItems: 'flex-start', paddingLeft: 12 },
-    far: { opacity: 0.55 },
-  });

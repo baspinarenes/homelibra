@@ -1,7 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { type Colors, radius } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { cx } from './cx';
 
 /** An on/off switch, 40 × 24. Its label stands beside it on the screen; `label` names it for screen readers. */
 export function Switch({
@@ -15,8 +14,6 @@ export function Switch({
   onChange: (value: boolean) => void;
   disabled?: boolean;
 }) {
-  const styles = useThemedStyles(makeStyles);
-  const { shadow } = useTheme();
   return (
     <Pressable
       role="switch"
@@ -26,26 +23,11 @@ export function Switch({
       disabled={disabled}
       onPress={() => onChange(!value)}
       hitSlop={10}
-      style={[styles.track, value && styles.on, disabled && styles.off]}
+      className={cx('h-6 w-10 rounded-pill', value ? 'bg-accent' : 'bg-line', disabled && 'opacity-45')}
     >
-      <View style={[styles.knob, value && styles.knobOn, { boxShadow: shadow.card }]} />
+      <View
+        className={cx('absolute top-0.5 h-5 w-5 rounded-pill bg-surface shadow-card', value ? 'left-4.5' : 'left-0.5')}
+      />
     </Pressable>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    track: { width: 40, height: 24, borderRadius: radius.pill, backgroundColor: c.line },
-    on: { backgroundColor: c.accent },
-    off: { opacity: 0.45 },
-    knob: {
-      position: 'absolute',
-      top: 2,
-      left: 2,
-      width: 20,
-      height: 20,
-      borderRadius: radius.pill,
-      backgroundColor: c.surface,
-    },
-    knobOn: { left: 18 },
-  });

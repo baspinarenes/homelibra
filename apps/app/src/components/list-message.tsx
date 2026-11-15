@@ -1,7 +1,6 @@
 import { Button } from '@homelibra/ui/button';
 import { Text } from '@homelibra/ui/text';
-import { space } from '@homelibra/ui/theme';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 /**
  * What stands in the middle of an empty or failed list (`.center` on the
@@ -18,13 +17,13 @@ export function ListMessage({
   action?: { label: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'text' };
 }) {
   return (
-    <View style={styles.center}>
+    <View className="flex-1 items-center justify-center gap-md px-xxl py-xl">
       {title && (
-        <Text variant="title" style={styles.centred}>
+        <Text variant="title" className="text-center">
           {title}
         </Text>
       )}
-      <Text variant="body" style={styles.centred}>
+      <Text variant="body" className="text-center">
         {lead}
       </Text>
       {action && (
@@ -36,15 +35,3 @@ export function ListMessage({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.md,
-    paddingHorizontal: space.xxl,
-    paddingVertical: space.xl,
-  },
-  centred: { textAlign: 'center' },
-});

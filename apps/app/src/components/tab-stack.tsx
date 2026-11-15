@@ -3,7 +3,7 @@ import { useTheme } from '@homelibra/ui/theme';
 import { type NativeStackHeaderProps, Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import type { tr } from '@/i18n/tr';
 
@@ -34,23 +34,18 @@ export function TabStack({
   const { t } = useTranslation();
   const header = (props: NativeStackHeaderProps) => <RootHeader {...props} titleAccessory={titleAccessory?.()} />;
   return (
-    <View style={styles.tab}>
+    <View className="flex-1">
       <Stack screenOptions={useHeaderOptions()}>
         <Stack.Screen name="index" options={{ title: t(title), headerRight, header }} />
         {children}
       </Stack>
-      <View pointerEvents="box-none" style={styles.foot}>
+      {/* The bar floats above this zero-height edge. */}
+      <View pointerEvents="box-none" className="absolute right-0 bottom-0 left-0">
         <SharedUndoBar />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  tab: { flex: 1 },
-  // The bar floats above this zero-height edge.
-  foot: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-});
 
 /** A tab root's header from @homelibra/ui, its icons from the options the tab or its screen sets. */
 function RootHeader({ route, options, titleAccessory }: NativeStackHeaderProps & { titleAccessory?: ReactNode }) {

@@ -2,16 +2,22 @@ import { withPendingNotes } from '@homelibra/outbox';
 import { Dialog, DialogMessage } from '@homelibra/ui/dialog';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
+import { useTheme } from '@homelibra/ui/theme';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Trash from 'lucide-react-native/icons/trash';
 import { useCallback, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
-import { useGiveSuggestedCover } from '@/components/isbn-suggestion';
-import { draftToInput, type SourceDraft, SourceForm, sourceToDraft, useLeaveAfterSave } from '@/components/source-form';
+import { useGiveSuggestedCover } from '@/features/source/isbn-suggestion';
+import {
+  draftToInput,
+  type SourceDraft,
+  SourceForm,
+  sourceToDraft,
+  useLeaveAfterSave,
+} from '@/features/source/source-form';
 import { useOffline } from '@/lib/network';
 import { useOnlineFirst } from '@/lib/online-first';
 import { useOutbox } from '@/lib/outbox';
@@ -23,7 +29,7 @@ import { offerServerUndo } from '@/lib/undo';
 export default function EditSourceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   const trpc = useTRPC();
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const giveCover = useGiveSuggestedCover();
@@ -38,9 +44,9 @@ export default function EditSourceScreen() {
 
   if (source.isPending || source.isError) {
     return (
-      <View style={styles.center}>
+      <View className="flex-1 items-center justify-center bg-page p-xl">
         {source.isPending ? (
-          <ActivityIndicator color={styles.spinner.color} />
+          <ActivityIndicator color={colors.accent} />
         ) : (
           <Text variant="body">{t('sourceForm.loadFailed')}</Text>
         )}
@@ -85,7 +91,6 @@ function DeleteSource({
   onFailed: (failed: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const trpc = useTRPC();
   const router = useRouter();
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
@@ -136,7 +141,7 @@ function DeleteSource({
             <Trans
               i18nKey="deletion.confirmSource"
               values={{ title, count: noteCount ?? 0 }}
-              components={{ title: <Text variant="body" color="fg" style={styles.title} /> }}
+              components={{ title: <Text variant="body" color="fg" className="italic" /> }}
             />
           </DialogMessage>
         }
@@ -150,10 +155,3 @@ function DeleteSource({
     </>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, backgroundColor: c.page },
-    spinner: { color: c.accent },
-    title: { fontStyle: 'italic' },
-  });

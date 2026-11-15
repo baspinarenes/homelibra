@@ -1,4 +1,6 @@
 // The design system's tokens and the hook that picks the light or dark set.
+export { bgColor, borderColor, textColor, typeClass } from './lib/classes';
+export { cx } from './lib/cx';
 export {
   type Colors,
   coverColors,
@@ -18,6 +20,5 @@ export {
   type ThemePreference,
   type ThemePreferenceStorage,
   useTheme,
-  useThemedStyles,
   useThemePreference,
 } from './lib/use-theme';

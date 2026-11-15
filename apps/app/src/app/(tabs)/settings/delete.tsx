@@ -2,14 +2,13 @@ import { Button } from '@homelibra/ui/button';
 import { Section, Sections } from '@homelibra/ui/section-heading';
 import { SettingsRow } from '@homelibra/ui/settings-row';
 import { Text } from '@homelibra/ui/text';
-import { type Colors, space, useThemedStyles } from '@homelibra/ui/theme';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
-import { CodeInput } from '@/components/code-input';
+import { CodeInput } from '@/features/account/code-input';
 import { authClient } from '@/lib/auth-client';
 import { forgetQueries } from '@/lib/query-provider';
 import { useTRPC } from '@/lib/trpc';
@@ -22,7 +21,6 @@ import { useTRPC } from '@/lib/trpc';
  */
 export default function AccountDeletionScreen() {
   const { t } = useTranslation();
-  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const trpc = useTRPC();
   const { data: session, refetch } = authClient.useSession();
@@ -50,16 +48,16 @@ export default function AccountDeletionScreen() {
 
   if (!codeSent) {
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <ScrollView className="flex-1 bg-page" contentContainerClassName="w-full max-w-[480px] self-center px-gutter">
         <Sections>
-          <Text variant="body" color="fg" style={styles.first}>
+          <Text variant="body" color="fg" className="pt-md pb-4.5">
             {t('accountDeletion.lead')}
           </Text>
           <Section title={t('accountDeletion.exportHeading')}>
             <Text variant="body">{t('accountDeletion.exportLead')}</Text>
             <SettingsRow label={t('libraryExport.title')} onPress={() => router.push('/settings/export')} />
           </Section>
-          <View style={styles.actions}>
+          <View className="gap-2.5 py-4.5">
             <Button
               label={t('accountDeletion.sendCode')}
               variant="danger"
@@ -80,11 +78,15 @@ export default function AccountDeletionScreen() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      className="flex-1 bg-page"
+      contentContainerClassName="w-full max-w-[480px] gap-lg self-center px-gutter pt-md pb-xl"
+      keyboardShouldPersistTaps="handled"
+    >
       <Text variant="body" color="fg">
         {t('accountDeletion.codeSentTo', { email: session?.user.email ?? '' })}
       </Text>
-      <View style={styles.field}>
+      <View className="gap-1.5">
         <CodeInput
           label={t('accountDeletion.codeLabel')}
           value={code}
@@ -105,7 +107,8 @@ export default function AccountDeletionScreen() {
         disabled={code.length !== 6}
         onPress={() => confirm.mutate({ code })}
       />
-      <View style={styles.resend}>
+      {/* The button keeps 4 on each side of its word; this puts the word on the gutter. */}
+      <View className="-ml-1">
         <Button
           label={t('accountDeletion.resend')}
           variant="text"
@@ -121,23 +124,3 @@ export default function AccountDeletionScreen() {
     </ScrollView>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.page },
-    content: { alignSelf: 'center', width: '100%', maxWidth: 480, paddingHorizontal: space.gutter },
-    form: {
-      alignSelf: 'center',
-      width: '100%',
-      maxWidth: 480,
-      paddingTop: space.md,
-      paddingHorizontal: space.gutter,
-      paddingBottom: space.xl,
-      gap: space.lg,
-    },
-    first: { paddingTop: space.md, paddingBottom: 18 },
-    actions: { gap: 10, paddingVertical: 18 },
-    field: { gap: 6 },
-    // The button keeps 4 on each side of its word; this puts the word on the gutter.
-    resend: { marginLeft: -4 },
-  });

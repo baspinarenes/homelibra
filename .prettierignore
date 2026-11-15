@@ -4,6 +4,9 @@ skills-lock.json
 apps/api/drizzle/
 apps/app/.expo/
 apps/app/expo-env.d.ts
+apps/app/src/uniwind-types.d.ts
+packages/ui/src/theme.css
+packages/ui/src/lib/classes.ts
 
 # Skills installed from upstream; edits would be overwritten on update
 .agents/

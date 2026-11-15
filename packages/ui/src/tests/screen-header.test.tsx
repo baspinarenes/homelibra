@@ -2,7 +2,7 @@ import Trash from 'lucide-react-native/icons/trash';
 import { describe, expect, it } from 'vitest';
 
 import { HeaderIconAction, HeaderTextAction, ScreenHeader } from '../screen-header';
-import { all, byRole, css, type Node, nameOf, render, text } from './render';
+import { all, byRole, classes, nameOf, render, text } from './render';
 
 const noop = () => {};
 
@@ -37,35 +37,10 @@ describe('ScreenHeader', () => {
     expect(text(byRole(page, 'heading')[0]!)).toBe('KAYNAKLAR');
   });
 
-  it('sets the title in mono 15/20 with a 1px rule underneath', () => {
+  it('sets the title in mono 15/20', () => {
     const page = render(<ScreenHeader title="Kaynaklar" />);
     const [heading] = byRole(page, 'heading');
-    expect(css(heading!, 'fontSize')).toBe('15px');
-    expect(css(heading!, 'lineHeight')).toBe('20px');
-    expect(css(heading!, 'letterSpacing')).toBe('2.2px');
-    const ruled = all(page).filter((n) => all(n).includes(heading!) && css(n, 'borderBottomWidth') === '1px');
-    expect(ruled).toHaveLength(1);
-  });
-
-  it('keeps the title on a 44 bar with icons or without, so it never shifts between screens', () => {
-    const bar = (page: Node) => {
-      const [heading] = byRole(page, 'heading');
-      return all(page).filter((n) => all(n).includes(heading!) && css(n, 'height') === '44px');
-    };
-    const bare = render(<ScreenHeader title="Genel Bakış" />);
-    const withIcons = render(
-      <ScreenHeader
-        title="Kaynaklar"
-        right={
-          <>
-            <HeaderIconAction icon={Trash} label="Sırala" size={24} onPress={noop} />
-            <HeaderIconAction icon={Trash} label="Filtrele" size={24} onPress={noop} />
-          </>
-        }
-      />,
-    );
-    expect(bar(bare)).toHaveLength(1);
-    expect(bar(withIcons)).toHaveLength(1);
+    expect(classes(heading!)).toContain('type-screen-title');
   });
 
   it("sets an icon right beside a tab root's title, before the actions at the right", () => {

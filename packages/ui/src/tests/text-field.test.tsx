@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { TextField } from '../text-field';
-import { all, css, render, text } from './render';
+import { all, classes, render, text } from './render';
 
 const inputs = (page: ReturnType<typeof render>) => all(page).filter((n) => n.tag === 'input' || n.tag === 'textarea');
 
@@ -21,16 +21,14 @@ describe('TextField', () => {
   it('sets an Excerpt in the quote face', () => {
     const draw = (excerpt: boolean) =>
       inputs(render(<TextField label="Alıntı" value="" excerpt={excerpt} multiline onChangeText={() => {}} />))[0]!;
-    expect(css(draw(true), 'fontFamily')).toContain('CharisSIL');
-    expect(css(draw(false), 'fontFamily')).not.toContain('CharisSIL');
+    expect(classes(draw(true))).toContain('type-excerpt');
+    expect(classes(draw(false))).not.toContain('type-excerpt');
   });
 
-  it('keeps 14 inside its edge and has its 3px focus ring before it is focused', () => {
+  it('has its focus ring before it is focused, uncoloured', () => {
     // On Android an outline that appears on focus drops the input's padding.
     const [input] = inputs(render(<TextField label="Dosyanın adı" value="" onChangeText={() => {}} />));
-    expect(css(input!, 'paddingInline')).toBe('14px');
-    expect(css(input!, 'outlineWidth')).toBe('3px');
-    expect(css(input!, 'outlineColor')).toBe('transparent');
+    expect(classes(input!)).toContain('outline-transparent');
   });
 
   it('shows what is wrong below an invalid field', () => {

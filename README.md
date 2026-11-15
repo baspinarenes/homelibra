@@ -14,38 +14,45 @@ pnpm workspaces, no build orchestrator (ADR-0006):
 
 ## Development
 
-We develop on a physical Android phone over USB, running our own dev build (Expo Go cannot load the app's native modules). Once: enable USB debugging on the phone and accept the prompt when you plug it in. Then:
+Every command runs from the repository root. You need Node 24, pnpm, Docker Desktop and Go (`brew install go`; `pnpm dev` is a small Go program in [tools/dev](tools/dev)). For Android, Android Studio with an emulator or a phone with USB debugging on; for iOS, Xcode with a simulator.
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-`pnpm dev` ([scripts/dev.sh](scripts/dev.sh)) starts Postgres, applies migrations, installs the dev build if the phone lacks it, reverses ports 3000 and 8081 onto the phone, starts the API and Metro, and opens the app. Sign-in codes appear in the `[api]` lines. JavaScript changes reload on save; after adding or upgrading a native dependency, run `pnpm dev --rebuild`. With several devices attached, pick one with `ANDROID_SERIAL=<id> pnpm dev` (ids from `adb devices`).
+`pnpm dev` asks what to run (Android, iOS, web, or the API alone) and on which device: emulators and simulators first, then phones on USB; one that is not running is booted. It remembers the last answers. Then it starts Postgres, applies migrations, installs the dev build if the device lacks it, starts the API on :3000 and Metro on :8081, and opens the app. Sign-in codes appear in the `[api]` lines. Ctrl-C stops the API and Metro; Postgres keeps running.
 
-For the web app, run Postgres, the API and Metro yourself (Docker Desktop must be running):
+To skip the questions:
 
 ```bash
-pnpm db:up
-pnpm --filter @homelibra/api db:migrate
-pnpm --filter @homelibra/api dev
-pnpm --filter @homelibra/app web
+pnpm dev:android   # or dev:ios, dev:web, dev:api
+pnpm dev --platform android --device Pixel_8
+pnpm dev --rebuild   # reinstall the dev build after a native dependency changes
 ```
+
+`pnpm dev --help` lists the flags. A port that is taken stops it: in a terminal it offers to stop the process, otherwise it names the PID and exits. Only `--api-port` and `--metro-port` move a server, for a second checkout beside a running stack. Every checkout and worktree shares the one Postgres (compose project `homelibra`).
+
+The dev build is its own app, "Homelibra Dev" (`app.homelibra.dev`, scheme `homelibra-dev`), installed beside the beta app with its own sign-in and outbox. `APP_VARIANT=development` selects it in [apps/app/app.config.ts](apps/app/app.config.ts); `pnpm dev` and EAS's development profile set it. Without it, the config is `app.json` as written, which preview and production build.
+
+| Command | What it does |
+| --- | --- |
+| `pnpm check` | everything CI checks: theme fresh, types, package boundaries, lint, unit and script tests, the dev CLI |
+| `pnpm test:api` | API integration tests (needs `pnpm db:up`) |
+| `pnpm db:up` / `pnpm db:migrate` | start Postgres / apply migrations |
+| `pnpm db:generate` | write a migration from `apps/api/src/db/schema.ts` |
+| `pnpm db:prod` | psql on production as a read-only role, over SSH; `--setup` creates the role or refreshes it after a migration ([ADR-0015](docs/adr/0015-production-is-read-through-a-read-only-role-over-ssh.md)) |
+| `pnpm invite add <email>` | invite an address to the closed beta, locally |
+| `pnpm gen component <area> <name>` | a new component in `apps/app/src/features/<area>` ([apps/app/README.md](apps/app/README.md)); `pnpm gen ui <name>` for `@homelibra/ui` |
+| `pnpm gen:theme` | regenerate the Tailwind theme after changing `packages/ui/src/lib/tokens.ts` |
+| `pnpm e2e` | the Maestro smoke flow (sign in, add a Source, capture a Note) on an emulator or simulator, after `pnpm dev --e2e` ([apps/app/e2e](apps/app/e2e)) |
+| `pnpm version:bump patch` | raise `expo.version` (a PR that changes the app needs it) |
 
 In development the web app calls the API on `localhost:3000`; set `EXPO_PUBLIC_API_URL` to reach it elsewhere.
 
-## Checks
-
-```bash
-pnpm typecheck
-pnpm lint
-pnpm lint:boundaries   # packages are imported only through their entry points (packages/README.md)
-pnpm test        # core unit tests and API integration tests (needs `pnpm db:up`)
-```
-
 ## Migrations
 
-`pnpm --filter @homelibra/api db:generate` writes a migration from `src/db/schema.ts`. SQL that Drizzle cannot express (row-level security, extensions, search functions) goes in a hand-written migration: `npx drizzle-kit generate --custom --name=<name>` inside `apps/api`. Every Library table gets account-scoped queries in code and a row-level security policy (see `drizzle/0002_library_isolation.sql`).
+`pnpm db:generate` writes a migration from `src/db/schema.ts`. SQL that Drizzle cannot express (row-level security, extensions, search functions) goes in a hand-written migration: `npx drizzle-kit generate --custom --name=<name>` inside `apps/api`. Every Library table gets account-scoped queries in code and a row-level security policy (see `drizzle/0002_library_isolation.sql`).
 
 ## Beta hosting
 

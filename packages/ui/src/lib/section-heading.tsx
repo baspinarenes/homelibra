@@ -1,10 +1,9 @@
 import { Children, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import type { IconComponent } from './icon';
 import { Text } from './text';
-import type { Colors } from './tokens';
-import { useTheme, useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 type HeadingProps = {
   title: string;
@@ -18,11 +17,11 @@ type HeadingProps = {
 
 /** A section's heading: one style and colour everywhere in the app, whatever the section. */
 export function SectionHeading({ title, count, link, action }: HeadingProps) {
-  const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
   return (
-    <View style={styles.row}>
-      <Text variant="heading" style={styles.title}>
+    // Baseline-aligned, the two ends apart.
+    <View className="flex-row items-baseline justify-between gap-3">
+      <Text variant="heading" className="shrink">
         {title}
       </Text>
       {count !== undefined && <Text variant="collectionCount">{count}</Text>}
@@ -37,7 +36,8 @@ export function SectionHeading({ title, count, link, action }: HeadingProps) {
           aria-label={action.accessibilityLabel}
           onPress={action.onPress}
           hitSlop={12}
-          style={styles.action}
+          // Centred: an icon has no baseline to line up.
+          className="flex-row items-center gap-1.25 self-center"
         >
           <action.icon color={colors.accent} size={15} strokeWidth={2} />
           <Text variant="link">{action.label}</Text>
@@ -58,16 +58,22 @@ export function Section({
   spacing = 'default',
   ...heading
 }: HeadingProps & { spacing?: 'default' | 'text' | 'rows'; children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
   return (
-    <View style={[styles.section, spacing === 'text' && styles.text, spacing === 'rows' && styles.rows]}>
-      <View style={spacing === 'rows' && styles.rowsHeading}>
+    <View className={sectionLooks[spacing]}>
+      <View className={spacing === 'rows' ? 'mb-1.5' : undefined}>
         <SectionHeading {...heading} />
       </View>
       {children}
     </View>
   );
 }
+
+// Each spacing names its own gap: two gap classes on one element fight on the web.
+const sectionLooks = {
+  default: 'gap-3 py-4.5',
+  text: 'gap-2 py-4.5',
+  rows: 'gap-0 py-4.5',
+} as const;
 
 /** Running text inside a section. */
 export function SectionText({ children }: { children: ReactNode }) {
@@ -76,28 +82,13 @@ export function SectionText({ children }: { children: ReactNode }) {
 
 /** Sections one under another, a thin `lineSoft` rule between each two. */
 export function Sections({ children }: { children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
   return (
     <View>
       {Children.toArray(children).map((child, index) => (
-        <View key={index} style={index > 0 && styles.divider}>
+        <View key={index} className={index > 0 ? 'border-t border-line-soft' : undefined}>
           {child}
         </View>
       ))}
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    // Baseline-aligned, the two ends apart.
-    row: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
-    title: { flexShrink: 1 },
-    // Centred: an icon has no baseline to line up.
-    action: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 5 },
-    section: { gap: 12, paddingVertical: 18 },
-    text: { gap: 8 },
-    rows: { gap: 0 },
-    rowsHeading: { marginBottom: 6 },
-    divider: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-  });

@@ -15,18 +15,15 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      # The dev CLI (tools/dev) is Go; its go.mod names the version.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/dev/go.mod
+          cache-dependency-path: tools/dev/go.sum
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint:boundaries
-      - run: pnpm lint
-      - name: core tests
-        run: pnpm --filter @homelibra/core test
-      - name: outbox tests
-        run: pnpm --filter @homelibra/outbox test
-      - name: app tests
-        run: pnpm --filter @homelibra/app test
-      - name: script tests
-        run: pnpm test:scripts
+      # The same command as on a laptop, so the two cannot drift: the theme
+      # is fresh, types, boundaries, lint, unit tests, script tests, dev CLI.
+      - run: pnpm check
 
   # A PR that changes what ships in the app raises expo.version in
   # apps/app/app.json over its base (scripts/version-bump.mjs). A required

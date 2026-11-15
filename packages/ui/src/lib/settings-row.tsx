@@ -1,10 +1,9 @@
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { Children, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Text } from './text';
-import { type Colors, space } from './tokens';
-import { useThemedStyles } from './use-theme';
+import { useTheme } from './use-theme';
 
 /**
  * One line that opens something (`.srow` on the Ayarlar boards): a label, an
@@ -23,42 +22,35 @@ export function SettingsRow({
   tone?: 'fg' | 'danger';
   onPress: () => void;
 }) {
-  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
   return (
-    <Pressable role="button" onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      <Text variant="body" color={tone} style={styles.label}>
+    <Pressable
+      role="button"
+      onPress={onPress}
+      className="min-h-12 flex-row items-center gap-md py-sm active:opacity-60"
+    >
+      <Text variant="body" color={tone} className="shrink-0 grow">
         {label}
       </Text>
       {value ? (
-        <Text variant="caption" style={styles.value} numberOfLines={1}>
+        <Text variant="caption" className="shrink" numberOfLines={1}>
           {value}
         </Text>
       ) : null}
-      <ChevronRight size={18} color={styles.chevron.color} />
+      <ChevronRight size={18} color={colors.muted2} />
     </Pressable>
   );
 }
 
 /** `SettingsRow`s one under another, a thin `lineSoft` rule between each two. */
 export function SettingsRows({ children }: { children: ReactNode }) {
-  const styles = useThemedStyles(makeStyles);
   return (
     <View>
       {Children.toArray(children).map((child, index) => (
-        <View key={index} style={index > 0 && styles.divider}>
+        <View key={index} className={index > 0 ? 'border-t border-line-soft' : undefined}>
           {child}
         </View>
       ))}
     </View>
   );
 }
-
-const makeStyles = (c: Colors) =>
-  StyleSheet.create({
-    row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48, paddingVertical: space.sm },
-    pressed: { opacity: 0.6 },
-    label: { flexGrow: 1, flexShrink: 0 },
-    value: { flexShrink: 1 },
-    chevron: { color: c.muted2 },
-    divider: { borderTopWidth: 1, borderTopColor: c.lineSoft },
-  });
