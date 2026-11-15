@@ -31,3 +31,23 @@ export function sidebarPlace(pathname: string): Selection {
   const file = first === 'collection' && second && second !== 'new' ? second : null;
   return { place, file };
 }
+
+/**
+ * How the router goes to a place of the sidebar. `dismissTo` closes the pages
+ * over the tabs, or over the open tab's root, and lands on the place. The tab
+ * navigator does not handle that, so where the tabs are in front another tab
+ * is reached by `switchTab` (`router.navigate`).
+ */
+export function sidebarMove({
+  segments,
+  place,
+  to,
+}: {
+  /** `useSegments()`: a tab's path starts with its `(tabs)` group. */
+  segments: readonly string[];
+  /** Where the scholar is, from `sidebarPlace`. */
+  place: SidebarPlace | null;
+  to: SidebarPlace;
+}): 'switchTab' | 'dismissTo' {
+  return segments[0] === '(tabs)' && place !== to ? 'switchTab' : 'dismissTo';
+}

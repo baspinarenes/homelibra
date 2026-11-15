@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { sidebarPlace } from '@/components/sidebar-place';
+import { sidebarMove, sidebarPlace } from '@/components/sidebar-place';
 
 describe('sidebarPlace', () => {
   it('selects the tab the scholar is in, and its pushed pages', () => {
@@ -35,5 +35,25 @@ describe('sidebarPlace', () => {
 
   it('selects nothing elsewhere', () => {
     expect(sidebarPlace('/somewhere')).toEqual({ place: null, file: null });
+  });
+});
+
+describe('sidebarMove', () => {
+  it('switches tabs where the tabs are in front', () => {
+    expect(sidebarMove({ segments: ['(tabs)', 'sources'], place: 'sources', to: 'search' })).toBe('switchTab');
+    expect(sidebarMove({ segments: ['(tabs)', 'settings', 'email'], place: 'settings', to: 'index' })).toBe(
+      'switchTab',
+    );
+  });
+
+  it('goes back down to a tab from a page pushed over the tabs', () => {
+    expect(sidebarMove({ segments: ['collection', '[id]'], place: 'index', to: 'index' })).toBe('dismissTo');
+    expect(sidebarMove({ segments: ['source', '[id]'], place: 'sources', to: 'overview' })).toBe('dismissTo');
+  });
+
+  it("goes back down to the open tab's root, as a tab pressed again does", () => {
+    expect(sidebarMove({ segments: ['(tabs)', 'settings', 'email'], place: 'settings', to: 'settings' })).toBe(
+      'dismissTo',
+    );
   });
 });

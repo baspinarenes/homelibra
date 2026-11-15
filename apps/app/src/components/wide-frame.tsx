@@ -1,13 +1,13 @@
-import { Sidebar } from '@homelibra/ui/sidebar';
+import { Sidebar, type SidebarPlace } from '@homelibra/ui/sidebar';
 import { type Layout, type Sidebar as SidebarShape, useWideLayout } from '@homelibra/ui/wide-layout';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { type Href, useIsFocused, usePathname, useRouter } from 'expo-router';
+import { type Href, useIsFocused, usePathname, useRouter, useSegments } from 'expo-router';
 import { createContext, type ReactNode, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { openPanels, type OpenPanels } from '@/components/open-panels';
-import { sidebarPlace } from '@/components/sidebar-place';
+import { sidebarMove, sidebarPlace } from '@/components/sidebar-place';
 import { useCollections } from '@/features/collection/collection-list';
 import { useTRPC } from '@/lib/trpc';
 
@@ -56,7 +56,7 @@ const tabHref = {
   sources: '/sources',
   index: '/collections',
   settings: '/settings',
-} as const satisfies Record<string, Href>;
+} as const satisfies Record<SidebarPlace, Href>;
 
 function FrameSidebar({ shape }: { shape: SidebarShape }) {
   const { t } = useTranslation();
@@ -64,9 +64,15 @@ function FrameSidebar({ shape }: { shape: SidebarShape }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { place, file } = sidebarPlace(usePathname());
+  const segments = useSegments();
   // Dosyalar in Son değişen order, the Collections last written in first.
   const collections = useCollections('recent');
   const home = useQuery(trpc.sources.home.queryOptions());
+
+  const go = (to: SidebarPlace) => {
+    if (sidebarMove({ segments, place, to }) === 'switchTab') router.navigate(tabHref[to]);
+    else router.dismissTo(tabHref[to]);
+  };
 
   // Today's way to take a Note (#178 gives Not al its own panel): the last
   // noted Source, ready to write, as Kaldığın yer opens it; with no Note yet,
@@ -75,7 +81,7 @@ function FrameSidebar({ shape }: { shape: SidebarShape }) {
     const last = await queryClient.fetchQuery(trpc.sources.lastNoted.queryOptions()).catch(() => null);
     if (last) router.push({ pathname: '/source/[id]', params: { id: last.source.id, write: '1' } });
     else if (home.data?.sourceCount === 0) router.push('/source/new');
-    else router.dismissTo('/sources');
+    else go('sources');
   };
 
   return (
@@ -98,8 +104,7 @@ function FrameSidebar({ shape }: { shape: SidebarShape }) {
         fileNotes: (name, count) => t('wideSidebar.fileNotes', { name, count }),
         sourceCount: (count) => t('wideSidebar.sourceCount', { count }),
       }}
-      // Back to the tabs, closing the pages pushed over them, as a tab pressed again pops its stack.
-      onGo={(to) => router.dismissTo(tabHref[to])}
+      onGo={go}
       onOpenFile={(id) => {
         if (id === file) return;
         const href = { pathname: '/collection/[id]', params: { id } } as const;
