@@ -1,4 +1,4 @@
-// The wide layout model: tier, sidebar, density and the command a key gives (ADR-0012).
+// The wide layout model: tier, sidebar, density, a side column's place and the command a key gives (ADR-0012).
 export {
   type Command,
   commandFor,
@@ -7,6 +7,7 @@ export {
   type HeardState,
   type Layout,
   shortcutFor,
+  sideColumnBeside,
   type Sidebar,
   type Tier,
   wideLayout,

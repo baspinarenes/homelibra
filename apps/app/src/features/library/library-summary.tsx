@@ -1,5 +1,5 @@
 import type { SourceType } from '@homelibra/core/source';
-import { SectionHeading } from '@homelibra/ui/section-heading';
+import { Section, SectionHeading } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
 import { coverColors, useTheme } from '@homelibra/ui/theme';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 
 import { HomeDivider } from '@/features/library/home-divider';
+import { WideSectionBody } from '@/features/library/last-noted';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 
@@ -17,8 +18,10 @@ import { useTRPC } from '@/lib/trpc';
  * dağılımı in the cover colours and Okuma durumu. A Tür's legend row opens
  * Kaynaklar narrowed to it, Okunuyor and Bitti open their tab. On the phone
  * the Notes still in the outbox count too. Nothing while the Library has no Source.
+ * `wide` (#182): the same, as the last section of a wide Genel Bakış's side
+ * column, inside `<Sections wide>` (Q44).
  */
-export function LibrarySummary() {
+export function LibrarySummary({ wide = false }: { wide?: boolean }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const trpc = useTRPC();
@@ -29,56 +32,68 @@ export function LibrarySummary() {
   const { sourceCount, noteCount, tagCount, types, reading, finished } = library.data;
   const toSources = (params: { tab?: string; type?: SourceType }) => router.navigate({ pathname: '/sources', params });
 
+  const all = { label: t('readingStatus.all'), onPress: () => router.navigate('/sources') };
+  const summary = (
+    <>
+      <Text variant="summary">
+        <Trans
+          i18nKey="home.librarySentence"
+          values={{
+            sources: sourceCount.toLocaleString('tr-TR'),
+            notes: (noteCount + waiting).toLocaleString('tr-TR'),
+            tags: tagCount.toLocaleString('tr-TR'),
+          }}
+          components={{ count: <Text variant="strongSerif" color="fg" /> }}
+        />
+      </Text>
+      <View className="h-px bg-line-soft" />
+      <Breakdown
+        title={t('home.libraryTypes')}
+        parts={types.map(({ type, count }) => ({
+          key: type,
+          label: t(`sourceTypes.${type}.label`),
+          count,
+          color: coverColors[type],
+          onPress: () => toSources({ type }),
+        }))}
+      />
+      <Breakdown
+        title={t('home.libraryStatus')}
+        parts={[
+          {
+            key: 'reading',
+            label: t('readingStatus.readingSection'),
+            count: reading,
+            onPress: () => toSources({ tab: 'reading' }),
+          },
+          {
+            key: 'finished',
+            label: t('readingStatus.finishedSection'),
+            count: finished,
+            onPress: () => toSources({ tab: 'finished' }),
+          },
+        ]
+          .filter((part) => part.count > 0)
+          // Okuma durumu's two colours: the accent for what is being read.
+          .map((part) => ({ ...part, color: part.key === 'reading' ? colors.accent : colors.faint }))}
+      />
+    </>
+  );
+
+  if (wide)
+    return (
+      <Section title={t('home.libraryTitle')} link={all}>
+        <WideSectionBody>
+          <View className="gap-3.5">{summary}</View>
+        </WideSectionBody>
+      </Section>
+    );
   return (
     <>
       <HomeDivider />
       <View className="gap-3.5 py-5.5">
-        <SectionHeading
-          title={t('home.libraryTitle')}
-          link={{ label: t('readingStatus.all'), onPress: () => router.navigate('/sources') }}
-        />
-        <Text variant="summary">
-          <Trans
-            i18nKey="home.librarySentence"
-            values={{
-              sources: sourceCount.toLocaleString('tr-TR'),
-              notes: (noteCount + waiting).toLocaleString('tr-TR'),
-              tags: tagCount.toLocaleString('tr-TR'),
-            }}
-            components={{ count: <Text variant="strongSerif" color="fg" /> }}
-          />
-        </Text>
-        <View className="h-px bg-line-soft" />
-        <Breakdown
-          title={t('home.libraryTypes')}
-          parts={types.map(({ type, count }) => ({
-            key: type,
-            label: t(`sourceTypes.${type}.label`),
-            count,
-            color: coverColors[type],
-            onPress: () => toSources({ type }),
-          }))}
-        />
-        <Breakdown
-          title={t('home.libraryStatus')}
-          parts={[
-            {
-              key: 'reading',
-              label: t('readingStatus.readingSection'),
-              count: reading,
-              onPress: () => toSources({ tab: 'reading' }),
-            },
-            {
-              key: 'finished',
-              label: t('readingStatus.finishedSection'),
-              count: finished,
-              onPress: () => toSources({ tab: 'finished' }),
-            },
-          ]
-            .filter((part) => part.count > 0)
-            // Okuma durumu's two colours: the accent for what is being read.
-            .map((part) => ({ ...part, color: part.key === 'reading' ? colors.accent : colors.faint }))}
-        />
+        <SectionHeading title={t('home.libraryTitle')} link={all} />
+        {summary}
       </View>
     </>
   );

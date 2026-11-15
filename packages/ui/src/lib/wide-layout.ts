@@ -20,6 +20,8 @@ const railFrom = 720;
 const wideFrom = 1024;
 /** Below it, an open panel narrows the sidebar so the list and the panel keep their width. */
 const fullSidebarFrom = 1200;
+/** From it, a page with a side column (Genel Bakış) has room for it beside its main column. */
+const sideColumnFrom = 1280;
 
 export type LayoutState = {
   /** The window's width in px. */
@@ -44,6 +46,16 @@ export function wideLayout({ width, panelOpen = false }: LayoutState): Layout {
     sidebar: tier !== 'wide' ? null : panel && width < fullSidebarFrom ? 'iconRail' : 'full',
     density: panel ? 'compact' : 'full',
   };
+}
+
+/**
+ * Whether a page that has a main and a side column (Genel Bakış, #182)
+ * draws them side by side; below, the side column goes under the main one.
+ * Only the wide tier has room, and only from about 1300 px (Q46): 1280,
+ * the width the page is drawn at, keeps both.
+ */
+export function sideColumnBeside(width: number): boolean {
+  return width >= sideColumnFrom;
 }
 
 /**

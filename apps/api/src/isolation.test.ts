@@ -80,6 +80,19 @@ describe('Library isolation', () => {
     await expect(insert).rejects.toMatchObject({ cause: { constraint_name: 'note_source_fk' } });
   });
 
+  it("Son notlar never shows another Account's Notes", async () => {
+    const kadi = await (await t.signIn(scholarEmail('kadi'))).call();
+    const naib = await (await t.signIn(scholarEmail('naib'))).call();
+    const kadiSource = await kadi.sources.create({ type: 'archive', title: 'DH.MKT', author: 'BOA' });
+    const naibSource = await naib.sources.create({ type: 'book', title: 'Tezâkir' });
+    await kadi.notes.create({ id: uuidv7(), sourceId: kadiSource.id, locator: 'gml. 3', comment: 'Kadının notu' });
+    // Naib writes last: the newest Note anywhere is not Kadı's.
+    await naib.notes.create({ id: uuidv7(), sourceId: naibSource.id, comment: 'Naibin notu' });
+
+    expect((await kadi.notes.recent()).map((n) => n.comment)).toEqual(['Kadının notu']);
+    expect((await naib.notes.recent()).map((n) => n.comment)).toEqual(['Naibin notu']);
+  });
+
   it("outside a Library transaction the API's role sees no Notes", async () => {
     const kadi = await (await t.signIn(scholarEmail('kadi'))).call();
     const { id: sourceId } = await kadi.sources.create({ type: 'book', title: 'Tezâkir' });

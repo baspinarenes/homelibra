@@ -218,6 +218,51 @@ describe("Genel Bakış's last noted Source", () => {
   });
 });
 
+describe('Son notlar', () => {
+  it("are the Library's last five Notes, the newest first, each with its Source's title and author", async () => {
+    const api = await (await t.signIn(scholarEmail())).call();
+    const kadi = await api.sources.create({ type: 'book', title: 'Taşrada Kadı ve Naib', author: 'Halil İnalcık' });
+    const dhmkt = await api.sources.create({ type: 'archive', title: 'DH.MKT' });
+    // Finished Sources count as much as the ones being read: it is the Library's newest, wherever.
+    await api.sources.setReadingStatus({ id: dhmkt.id, status: 'finished' });
+    const ids = Array.from({ length: 6 }, () => uuidv7());
+    for (const [index, id] of ids.entries())
+      await api.notes.create({
+        id,
+        sourceId: index % 2 === 0 ? kadi.id : dhmkt.id,
+        locator: `s. ${index + 1}`,
+        comment: `Not ${index + 1}`,
+      });
+    const last = uuidv7();
+    await api.notes.create({ id: last, sourceId: dhmkt.id, excerpt: "Ma'lûm-ı âlîleri buyuruldukda" });
+
+    const recent = await api.notes.recent();
+
+    expect(recent.map((n) => n.id)).toEqual([last, ids[5], ids[4], ids[3], ids[2]]);
+    expect(recent[0]).toEqual({
+      id: last,
+      sourceId: dhmkt.id,
+      locator: null,
+      excerpt: "Ma'lûm-ı âlîleri buyuruldukda",
+      comment: null,
+      capturedAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT/),
+      source: { title: 'DH.MKT', author: null },
+    });
+    expect(recent[2]).toMatchObject({
+      locator: 's. 5',
+      comment: 'Not 5',
+      source: { title: 'Taşrada Kadı ve Naib', author: 'Halil İnalcık' },
+    });
+  });
+
+  it('are none while the Library has no Notes', async () => {
+    const api = await (await t.signIn(scholarEmail())).call();
+    await api.sources.create({ type: 'book', title: 'Tezâkir' });
+
+    expect(await api.notes.recent()).toEqual([]);
+  });
+});
+
 describe('A Comment attached to a Note', () => {
   it('joins the Excerpt it was written after', async () => {
     const { api, sourceId } = await scholarWithSource();
