@@ -92,9 +92,15 @@ describe('TagRow', () => {
     expect(classes(slot)).toContain('opacity-0');
   });
 
-  it('shows the ⋯ on the row ↑↓ chose, and while its menu is open', () => {
-    expect(classes(menuSlot(row({ selected: true })))).toContain('opacity-100');
+  it('keeps the ⋯ in sight while its menu is open', () => {
     expect(classes(menuSlot(row({ menu: tagMenu(true) })))).toContain('opacity-100');
+  });
+
+  it('puts the row ↑↓ chose on the chip’s ground, its ⋯ in sight only with the focus', () => {
+    const page = row({ selected: true });
+    expect(byRole(page, 'link')[0]!.attrs['aria-selected']).toBe('true');
+    expect(all(page).some((node) => classes(node).includes('bg-chip-bg'))).toBe(true);
+    expect(classes(menuSlot(page))).toContain('opacity-0');
   });
 
   it('opens the same three steps as on a phone', () => {

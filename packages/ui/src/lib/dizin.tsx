@@ -24,8 +24,9 @@ export function DizinColumn({
   children: ReactNode;
 }) {
   return (
-    <View role="region" aria-label={title} className="min-w-0 flex-1">
-      <View className="flex-row items-center gap-1.5 border-b border-line px-5 pt-5 pb-2.5">
+    <View role="region" aria-label={title} className="min-h-0 min-w-0 flex-1">
+      {/* Wraps where a narrow window leaves the actions no room beside the name. */}
+      <View className="flex-row flex-wrap items-center gap-1.5 border-b border-line px-5 pt-5 pb-2.5">
         <Text variant="micro" className="flex-1">
           {count === undefined ? title : `${title} · ${count}`}
         </Text>
@@ -103,7 +104,8 @@ export function CollectionRow({
  * A Tag in a wide Dizin: its name and "6 not · 1 kaynak"; a press, or ↵
  * once ↑↓ put the focus on it, opens its page. Its ⋯ (Yeniden adlandır,
  * Birleştir…, Sil) stands beside the link, in sight only while the pointer
- * is over the row, the row or the ⋯ has the focus, or its menu is open;
+ * is over the row, the row or the ⋯ has the focus (↑↓ puts it there), or
+ * its menu is open;
  * out of sight it keeps its room, and Tab still reaches it.
  */
 export function TagRow({
@@ -129,7 +131,8 @@ export function TagRow({
   // Anything in the row has the focus: the link or the ⋯.
   const [focused, setFocused] = useState(false);
   const lit = selected || hovered;
-  const shown = lit || focused || menu.open;
+  // Not for being chosen alone: the choice outlives the focus (a press elsewhere, back from the Tag's page).
+  const shown = hovered || focused || menu.open;
   return (
     <View
       // Heard around the link and the ⋯ alike, so going from one to the other keeps the ⋯ in sight.

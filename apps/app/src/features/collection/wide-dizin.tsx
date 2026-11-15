@@ -206,7 +206,10 @@ export function WideDizin({
         <View className="px-xxl" style={{ paddingTop: top + 20 }}>
           <Text variant="title">{t('tabs.collections')}</Text>
         </View>
-        <View className="min-h-0 flex-1 flex-row gap-xxl px-xxl pt-md">
+        {/* Beside the panel two columns would leave each about 200 px: one over the other, each scrolling. */}
+        <View
+          className={creating ? 'min-h-0 flex-1 gap-lg px-xxl pt-md' : 'min-h-0 flex-1 flex-row gap-xxl px-xxl pt-md'}
+        >
           <DizinColumn
             title={t('collections.collections')}
             count={collections.data?.length || undefined}
@@ -214,7 +217,9 @@ export function WideDizin({
               <>
                 {!!collections.data?.length &&
                   sortMenu('collectionSort', collectionSort, (sort) => t('wideDizin.sortCollections', { sort }))}
-                <Button label={t('collections.new')} icon={Plus} onPress={() => setCreating(true)} />
+                {!creating && (
+                  <Button label={t('collections.new')} icon={Plus} variant="small" onPress={() => setCreating(true)} />
+                )}
               </>
             }
           >
