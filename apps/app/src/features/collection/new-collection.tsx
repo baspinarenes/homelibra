@@ -126,8 +126,8 @@ export function NewCollectionFields({ form }: { form: NewCollection }) {
 /**
  * Yeni dosya in the panel beside a wide Dizin (#181), as the Kaynak form
  * opens beside Kaynaklar (Q58): the same fields, Vazgeç and Kaydet at its
- * foot. ⌘↵ saves; Esc closes it, but first asks "Değişiklikler atılsın
- * mı?" in the foot once something is written. `active` is false while
+ * foot. ⌘↵ saves; Esc, Vazgeç and ✕ close it, but first ask "Değişiklikler
+ * atılsın mı?" in the foot once something is written. `active` is false while
  * another screen is in front of Dizin.
  */
 export function NewCollectionPanel({
@@ -148,6 +148,8 @@ export function NewCollectionPanel({
     onClose();
     asking?.then();
   };
+  // Vazgeç and ✕ ask first once something is written, as Esc does.
+  const cancel = () => (form.changed ? ask(() => {}) : onClose());
   // Half filled, the form holds every way out of it: N, the sidebar's Not al and places ask first (#178).
   useUnsavedWork(form.changed, ask);
 
@@ -183,7 +185,7 @@ export function NewCollectionPanel({
         <KeyHint keys="Esc" label={t('newCollectionPanel.hintCancel')} />
         <KeyHint keys="⌘↵" label={t('newCollectionPanel.hintSave')} />
       </View>
-      <Button label={t('collection.cancel')} variant="secondary" onPress={onClose} />
+      <Button label={t('collection.cancel')} variant="secondary" onPress={cancel} />
       <Button label={t('collection.save')} onPress={form.save} disabled={!form.ready} busy={form.busy} />
     </View>
   );
@@ -193,7 +195,7 @@ export function NewCollectionPanel({
       label={t('collection.newTitle')}
       head={<Text variant="sourceTitle">{t('collection.newTitle')}</Text>}
       closeLabel={t('widePanel.close')}
-      onClose={onClose}
+      onClose={cancel}
       foot={foot}
     >
       <View className="gap-5 px-xl pt-lg">
