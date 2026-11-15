@@ -122,9 +122,15 @@ describe('commandFor', () => {
       press('n', { altKey: true }),
       press('e', { altKey: true }),
       press('ArrowDown', { metaKey: true }),
-      press('Enter'),
     ];
-    expect(held.map((key) => commandFor(key, wide))).toEqual([null, null, null, null, null, null]);
+    expect(held.map((key) => commandFor(key, wide))).toEqual([null, null, null, null, null]);
+  });
+
+  it('opens the chosen row on ↵ alone, leaving ↵ in a text field and ⇧↵ to the page', () => {
+    expect(commandFor(press('Enter'), wide)).toBe('open');
+    expect(commandFor(press('Enter'), { ...wide, typing: true })).toBeNull();
+    expect(commandFor(press('Enter', { shiftKey: true }), wide)).toBeNull();
+    expect(commandFor(press('Enter'), { width: 1023 })).toBeNull();
   });
 
   it('leaves ⌘ shortcuts with Alt held to the browser and to AltGr, which reports Ctrl+Alt', () => {

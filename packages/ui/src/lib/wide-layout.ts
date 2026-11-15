@@ -51,7 +51,8 @@ export function wideLayout({ width, panelOpen = false }: LayoutState): Layout {
  * what that means where it is. ⌘K `quickSearch`, N `capture` (Not al),
  * / `searchHere` (search this view), ↑↓ `previous` / `next` row, ⌘C
  * `copyNote`, ⌘⇧C `copyAll` (the open Collection, Tag or Source as
- * Markdown), E `edit`, ⌘↵ `submit` (save what is being written). Esc gives
+ * Markdown), E `edit`, ⌘↵ `submit` (save what is being written), ↵ `open`
+ * (the row ↑↓ chose, when nothing focused takes ↵ itself). Esc gives
  * `askDiscard` (Değişiklikler atılsın mı?), `closePanel` or `back`.
  */
 export type Command =
@@ -64,6 +65,7 @@ export type Command =
   | 'copyAll'
   | 'edit'
   | 'submit'
+  | 'open'
   | 'askDiscard'
   | 'closePanel'
   | 'back';
@@ -109,5 +111,6 @@ export function commandFor(press: KeyPress, state: CommandState): Command | null
   if (key === '/') return 'searchHere';
   if (key === 'arrowup') return 'previous';
   if (key === 'arrowdown') return 'next';
+  if (key === 'enter' && !press.shiftKey) return 'open';
   return null;
 }

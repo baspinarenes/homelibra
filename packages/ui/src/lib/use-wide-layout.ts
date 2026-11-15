@@ -40,6 +40,8 @@ export function useShortcuts(
       // Text selected on the page is copied as the browser copies it, not as a note.
       const selected = document.getSelection()?.isCollapsed === false;
       if ((command === 'copyNote' || command === 'copyAll') && selected) return;
+      // A focused button, tab or row presses itself on ↵: `open` is for ↵ with nothing focused.
+      if (command === 'open' && !nothingFocused(document.activeElement)) return;
       if (act(command) === true) event.preventDefault();
     };
     document.addEventListener('keydown', listener);
@@ -48,6 +50,10 @@ export function useShortcuts(
 }
 
 const notText = new Set(['button', 'checkbox', 'radio', 'range', 'color', 'file', 'image', 'reset', 'submit']);
+
+function nothingFocused(element: Element | null): boolean {
+  return !element || element === document.body || element === document.documentElement;
+}
 
 function isTextField(element: Element | null): boolean {
   if (!element) return false;
