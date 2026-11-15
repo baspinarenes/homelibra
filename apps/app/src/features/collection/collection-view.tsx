@@ -9,16 +9,9 @@ import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  Pressable,
-  SectionList,
-  View,
-  type PressableInstance,
-  type ViewInstance,
-} from 'react-native';
+import { Pressable, SectionList, View, type PressableInstance } from 'react-native';
 
+import { usePressedRowAnchor } from '@/components/pressed-row-anchor';
 import type { NoteFocus } from '@/features/collection/note-focus';
 import { MarkedText, type Match, type Matches } from '@/features/search/note-search';
 
@@ -79,14 +72,6 @@ export function CollectionView({
   const router = useRouter();
   const sections = view.groups.map((group) => ({ key: group.source.id, source: group.source, data: group.notes }));
   const list = useRef<SectionList<Note, (typeof sections)[number]>>(null);
-  const frame = useRef<ViewInstance>(null);
-  const rows = useRef(new Map<string, ViewInstance>());
-  // Each drawn row's own press target, to put the focus on.
-  const targets = useRef(new Map<string, PressableInstance>());
-  const scrollY = useRef(0);
-  // The pressed row and where it stood on the screen, until the rows have changed under it.
-  const pressed = useRef<{ id: string; top: number } | null>(null);
-  const density = wide?.density;
   const focused = wide?.focus?.noteId ?? null;
 
   // The search can open anywhere down the list; what it finds starts at the top.
@@ -94,62 +79,29 @@ export function CollectionView({
     if (matches) list.current?.getScrollResponder()?.scrollTo({ y: 0, animated: false });
   }, [matches]);
 
-  const scrollBy = (dy: number) => {
-    if (Math.abs(dy) >= 1) list.current?.getScrollResponder()?.scrollTo({ y: scrollY.current + dy, animated: false });
-  };
-
-  // The rows have changed density under the pressed row: put it back where it stood.
-  useEffect(() => {
-    const was = pressed.current;
-    if (!was) return;
-    const frameId = requestAnimationFrame(() => {
-      pressed.current = null;
-      rows.current.get(was.id)?.measureInWindow((_x, top) => scrollBy(top - was.top));
-    });
-    return () => cancelAnimationFrame(frameId);
-    // Only a change of density moves the rows; scrollBy reads refs.
-  }, [density]);
-
-  // A row the keys moved to comes into view and takes the focus; a pressed one already has both.
-  const focusRow = wide?.focusRow ?? false;
-  useEffect(() => {
-    if (!focused || pressed.current) return;
-    const row = rows.current.get(focused);
-    if (focusRow) targets.current.get(focused)?.focus();
-    if (!row) {
-      // Not drawn yet, far down a long list: the list finds it and draws it.
-      const sectionIndex = sections.findIndex((section) => section.data.some((note) => note.id === focused));
-      const itemIndex = sections[sectionIndex]?.data.findIndex((note) => note.id === focused) ?? -1;
+  const anchor = usePressedRowAnchor({
+    density: wide?.density,
+    focused,
+    focusRow: wide?.focusRow ?? false,
+    panelOpen: !!wide?.focus,
+    scrollTo: (y) => list.current?.getScrollResponder()?.scrollTo({ y, animated: false }),
+    reveal: (id) => {
+      const sectionIndex = sections.findIndex((section) => section.data.some((note) => note.id === id));
+      const itemIndex = sections[sectionIndex]?.data.findIndex((note) => note.id === id) ?? -1;
       if (itemIndex >= 0)
         list.current?.scrollToLocation({ sectionIndex, itemIndex, viewPosition: 0.5, animated: false });
-      if (!focusRow) return;
-      const frameId = requestAnimationFrame(() => targets.current.get(focused)?.focus());
-      return () => cancelAnimationFrame(frameId);
-    }
-    frame.current?.measureInWindow((_fx, frameTop, _fw, frameHeight) =>
-      row.measureInWindow((_x, top, _w, height) => {
-        if (top < frameTop + STICKY_ROOM) scrollBy(top - frameTop - STICKY_ROOM);
-        else if (top + height > frameTop + frameHeight) scrollBy(top + height - frameTop - frameHeight);
-      }),
-    );
-    // Only a change of the focused Note asks for this.
-  }, [focused]);
+    },
+    topRoom: STICKY_ROOM,
+  });
 
   const open = (focus: NoteFocus) => {
-    if (!wide) return;
-    const row = rows.current.get(focus.noteId);
-    // With the panel open already the rows keep their density, and nothing moves.
-    if (!row || wide.focus) return wide.onOpen(focus);
-    row.measureInWindow((_x, top) => {
-      pressed.current = { id: focus.noteId, top };
-      wide.onOpen(focus);
-    });
+    if (wide) anchor.press(focus.noteId, () => wide.onOpen(focus));
   };
 
   return (
     <View className="flex-1 bg-page">
       <View className="gap-2.5 border-b border-line px-lg pt-sm pb-md">{bar}</View>
-      <View ref={frame} collapsable={false} className="flex-1">
+      <View ref={anchor.frame} collapsable={false} className="flex-1">
         <SectionList
           ref={list}
           keyboardShouldPersistTaps="handled"
@@ -157,11 +109,9 @@ export function CollectionView({
           contentContainerClassName="pb-xxl"
           sections={sections}
           keyExtractor={(note) => note.id}
-          extraData={wide ? [matches, density, focused] : matches}
+          extraData={wide ? [matches, wide.density, focused] : matches}
           stickySectionHeadersEnabled
-          onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            scrollY.current = event.nativeEvent.contentOffset.y;
-          }}
+          onScroll={anchor.onScroll}
           scrollEventThrottle={16}
           onScrollToIndexFailed={() => {}}
           ListEmptyComponent={
@@ -181,18 +131,9 @@ export function CollectionView({
           )}
           renderItem={({ item: note, index, section }) =>
             wide ? (
-              <View
-                ref={(row) => {
-                  if (row) rows.current.set(note.id, row);
-                  else rows.current.delete(note.id);
-                }}
-                collapsable={false}
-              >
+              <View ref={anchor.row(note.id)} collapsable={false}>
                 <WideRow
-                  target={(target) => {
-                    if (target) targets.current.set(note.id, target);
-                    else targets.current.delete(note.id);
-                  }}
+                  target={anchor.target(note.id)}
                   note={note}
                   match={matches?.get(note.id)}
                   density={wide.density}

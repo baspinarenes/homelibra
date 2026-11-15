@@ -6,17 +6,11 @@ import { useTheme } from '@homelibra/ui/theme';
 import type { Density } from '@homelibra/ui/wide-layout';
 import { Stack, useRouter } from 'expo-router';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FlatList,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  Pressable,
-  View,
-  type ViewInstance,
-} from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 
+import { usePressedRowAnchor } from '@/components/pressed-row-anchor';
 import { SharedUndoBar } from '@/components/undo-bar';
 import { useFramePanel, useLeave } from '@/components/wide-frame';
 import { knownNotes } from '@/features/note/known-notes';
@@ -160,35 +154,17 @@ function WideLostList({
 }) {
   const { t } = useTranslation();
   const list = useRef<FlatList<KnownNote>>(null);
-  const rows = useRef(new Map<string, ViewInstance>());
-  const scrollY = useRef(0);
-  // The pressed row and where it stood on the screen, until the rows have changed under it.
-  const pressed = useRef<{ id: string; top: number } | null>(null);
-
-  // The rows have changed density under the pressed row: put it back where it stood.
-  useEffect(() => {
-    const was = pressed.current;
-    if (!was) return;
-    const frameId = requestAnimationFrame(() => {
-      pressed.current = null;
-      rows.current.get(was.id)?.measureInWindow((_x, top) => {
-        const dy = top - was.top;
-        if (Math.abs(dy) >= 1) list.current?.scrollToOffset({ offset: scrollY.current + dy, animated: false });
-      });
-    });
-    return () => cancelAnimationFrame(frameId);
-    // Only a change of density moves the rows; the rest are refs.
-  }, [density]);
-
-  const open = (id: string) => {
-    const row = rows.current.get(id);
-    // With the panel open already the rows keep their density, and nothing moves.
-    if (!row || focusId) return onOpen(id);
-    row.measureInWindow((_x, top) => {
-      pressed.current = { id, top };
-      onOpen(id);
-    });
-  };
+  const anchor = usePressedRowAnchor({
+    density,
+    focused: focusId,
+    focusRow: false,
+    panelOpen: focusId !== null,
+    scrollTo: (offset) => list.current?.scrollToOffset({ offset, animated: false }),
+    reveal: (id) => {
+      const index = notes.findIndex((note) => note.id === id);
+      if (index >= 0) list.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false });
+    },
+  });
 
   return (
     <View className="flex-1 bg-page">
@@ -198,44 +174,40 @@ function WideLostList({
         </Text>
         <Text variant="body">{t('outbox.lostLead')}</Text>
       </View>
-      <FlatList
-        ref={list}
-        className="flex-1 bg-page"
-        contentContainerClassName="pb-xxl"
-        data={notes}
-        keyExtractor={(note) => note.id}
-        extraData={[density, focusId]}
-        onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-          scrollY.current = event.nativeEvent.contentOffset.y;
-        }}
-        scrollEventThrottle={16}
-        ListEmptyComponent={
-          <Text variant="body" className="p-xl text-center">
-            {t('outbox.lostNone')}
-          </Text>
-        }
-        renderItem={({ item: note, index }) => (
-          <View
-            ref={(row) => {
-              if (row) rows.current.set(note.id, row);
-              else rows.current.delete(note.id);
-            }}
-            collapsable={false}
-          >
-            <WideNoteRow
-              density={density}
-              locator={note.locator}
-              excerpt={note.excerpt}
-              comment={note.comment}
-              selected={note.id === focusId}
-              divided={index > 0}
-              hint={t('sourcePage.editNote')}
-              labels={{ withComment: t('widePanel.withComment') }}
-              onPress={() => open(note.id)}
-            />
-          </View>
-        )}
-      />
+      <View ref={anchor.frame} collapsable={false} className="flex-1">
+        <FlatList
+          ref={list}
+          className="flex-1 bg-page"
+          contentContainerClassName="pb-xxl"
+          data={notes}
+          keyExtractor={(note) => note.id}
+          extraData={[density, focusId]}
+          onScroll={anchor.onScroll}
+          onScrollToIndexFailed={() => {}}
+          scrollEventThrottle={16}
+          ListEmptyComponent={
+            <Text variant="body" className="p-xl text-center">
+              {t('outbox.lostNone')}
+            </Text>
+          }
+          renderItem={({ item: note, index }) => (
+            <View ref={anchor.row(note.id)} collapsable={false}>
+              <WideNoteRow
+                ref={anchor.target(note.id)}
+                density={density}
+                locator={note.locator}
+                excerpt={note.excerpt}
+                comment={note.comment}
+                selected={note.id === focusId}
+                divided={index > 0}
+                hint={t('sourcePage.editNote')}
+                labels={{ withComment: t('widePanel.withComment') }}
+                onPress={() => anchor.press(note.id, () => onOpen(note.id))}
+              />
+            </View>
+          )}
+        />
+      </View>
     </View>
   );
 }

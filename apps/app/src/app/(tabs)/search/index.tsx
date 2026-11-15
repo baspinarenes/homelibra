@@ -19,18 +19,7 @@ import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
 import { type ReactElement, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  FlatList,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  Pressable,
-  type PressableInstance,
-  TextInput,
-  type TextInputInstance,
-  View,
-  type ViewInstance,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, TextInput, type TextInputInstance, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -51,6 +40,7 @@ import { resultMeta, resultRow, stepInResults } from '@/features/search/search-r
 import { SearchTipsPopover } from '@/features/search/search-tips';
 import { SourceCover } from '@/features/source/source-cover';
 import type { CoverSize } from '@/features/source/template-cover';
+import { usePressedRowAnchor } from '@/components/pressed-row-anchor';
 import { useFramePanel, useLeave } from '@/components/wide-frame';
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/features/search/settled';
@@ -519,8 +509,7 @@ function DatesPanel({
  * rows, compact while the panel is open, the one it shows framed; a press
  * opens the Note in the panel. As in a Collection's view the pressed row
  * stays where it stood on the screen while the rows go compact, and a row
- * the keys move to is brought into view (that measuring is CollectionView's
- * own, written again here for a ranked list rather than one grouped by Source).
+ * the keys move to is brought into view (`usePressedRowAnchor`).
  */
 function WideResults({
   notes,
@@ -544,65 +533,21 @@ function WideResults({
 }) {
   const { t } = useTranslation();
   const list = useRef<FlatList<NoteResult>>(null);
-  const frame = useRef<ViewInstance>(null);
-  const rows = useRef(new Map<string, ViewInstance>());
-  // Each drawn row's own press target, to put the focus on.
-  const targets = useRef(new Map<string, PressableInstance>());
-  const scrollY = useRef(0);
-  // The pressed row and where it stood on the screen, until the rows have changed under it.
-  const pressed = useRef<{ id: string; top: number } | null>(null);
   const focused = focus?.noteId ?? null;
-
-  const scrollBy = (dy: number) => {
-    if (Math.abs(dy) >= 1) list.current?.scrollToOffset({ offset: scrollY.current + dy, animated: false });
-  };
-
-  // The rows have changed density under the pressed row: put it back where it stood.
-  useEffect(() => {
-    const was = pressed.current;
-    if (!was) return;
-    const frameId = requestAnimationFrame(() => {
-      pressed.current = null;
-      rows.current.get(was.id)?.measureInWindow((_x, top) => scrollBy(top - was.top));
-    });
-    return () => cancelAnimationFrame(frameId);
-    // Only a change of density moves the rows; scrollBy reads refs.
-  }, [density]);
-
-  // A row the keys moved to comes into view and takes the focus; a pressed one already has both.
-  useEffect(() => {
-    if (!focused || pressed.current) return;
-    const row = rows.current.get(focused);
-    if (focusRow) targets.current.get(focused)?.focus();
-    if (!row) {
-      // Not drawn yet, far down a long list: the list finds it and draws it.
-      const index = notes.findIndex((note) => note.id === focused);
+  const anchor = usePressedRowAnchor({
+    density,
+    focused,
+    focusRow,
+    panelOpen: focus !== null,
+    scrollTo: (offset) => list.current?.scrollToOffset({ offset, animated: false }),
+    reveal: (id) => {
+      const index = notes.findIndex((note) => note.id === id);
       if (index >= 0) list.current?.scrollToIndex({ index, viewPosition: 0.5, animated: false });
-      if (!focusRow) return;
-      const frameId = requestAnimationFrame(() => targets.current.get(focused)?.focus());
-      return () => cancelAnimationFrame(frameId);
-    }
-    frame.current?.measureInWindow((_fx, frameTop, _fw, frameHeight) =>
-      row.measureInWindow((_x, top, _w, height) => {
-        if (top < frameTop) scrollBy(top - frameTop);
-        else if (top + height > frameTop + frameHeight) scrollBy(top + height - frameTop - frameHeight);
-      }),
-    );
-    // Only a change of the focused Note asks for this.
-  }, [focused]);
-
-  const open = (to: NoteFocus) => {
-    const row = rows.current.get(to.noteId);
-    // With the panel open already the rows keep their density, and nothing moves.
-    if (!row || focus) return onOpen(to);
-    row.measureInWindow((_x, top) => {
-      pressed.current = { id: to.noteId, top };
-      onOpen(to);
-    });
-  };
+    },
+  });
 
   return (
-    <View ref={frame} collapsable={false} className="flex-1">
+    <View ref={anchor.frame} collapsable={false} className="flex-1">
       <FlatList
         ref={list}
         className="flex-1 bg-page"
@@ -611,25 +556,14 @@ function WideResults({
         data={notes}
         keyExtractor={(note) => note.id}
         extraData={[density, focused]}
-        onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
-          scrollY.current = event.nativeEvent.contentOffset.y;
-        }}
+        onScroll={anchor.onScroll}
         scrollEventThrottle={16}
         onScrollToIndexFailed={() => {}}
         ListHeaderComponent={header}
         renderItem={({ item: note, index }) => (
-          <View
-            ref={(row) => {
-              if (row) rows.current.set(note.id, row);
-              else rows.current.delete(note.id);
-            }}
-            collapsable={false}
-          >
+          <View ref={anchor.row(note.id)} collapsable={false}>
             <WideNoteRow
-              ref={(target) => {
-                if (target) targets.current.set(note.id, target);
-                else targets.current.delete(note.id);
-              }}
+              ref={anchor.target(note.id)}
               density={density}
               locator={note.locator}
               {...resultRow(note)}
@@ -638,7 +572,7 @@ function WideResults({
               divided={index > 0}
               hint={t('widePanel.openNote')}
               labels={{ withComment: t('widePanel.withComment') }}
-              onPress={() => open({ sourceId: note.sourceId, noteId: note.id })}
+              onPress={() => anchor.press(note.id, () => onOpen({ sourceId: note.sourceId, noteId: note.id }))}
             />
           </View>
         )}
