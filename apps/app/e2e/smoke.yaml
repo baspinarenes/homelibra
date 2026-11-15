@@ -4,16 +4,17 @@
 appId: app.homelibra.dev
 env:
   EMAIL: e2e@homelibra.test
-  METRO: http%3A%2F%2Flocalhost%3A8081
 ---
 # A fresh install's state: signed out, no outbox. The dev build then needs to be
-# told where Metro is.
+# told where Metro is, and to open no menu or Tools button over the app (the
+# button sits on the header's right). A link that arrives
+# before its launcher has settled is dropped, so wait for the launcher first.
 - launchApp:
     clearState: true
-- openLink: homelibra-dev://expo-development-client/?url=${METRO}
-- tapOn:
-    text: Continue # the dev build's first-run note about its menu
-    optional: true
+- extendedWaitUntil:
+    visible: DEVELOPMENT SERVERS
+    timeout: 60000
+- openLink: homelibra-dev://expo-development-client/?url=${METRO || 'http%3A%2F%2Flocalhost%3A8081'}&__expo_disable_onboarding=1&__expo_disable_auto_launch=1&__expo_disable_fab=1
 - extendedWaitUntil:
     visible: E-posta ile devam et
     timeout: 120000
@@ -52,4 +53,5 @@ env:
 - tapOn: Yazarın sözleri, olduğu gibi…
 - inputText: Bir alıntı.
 - tapOn: Kaydet
+- tapOn: Vazgeç # the composer stays open for the next Note
 - assertVisible: Bir alıntı.

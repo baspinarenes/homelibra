@@ -71,7 +71,7 @@ func TestPickMatchesIDOrNameAndFallsBackToFirst(t *testing.T) {
 }
 
 func TestDevClientURLPointsAtThisMetro(t *testing.T) {
-	want := "homelibra-dev://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+	want := "homelibra-dev://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081&__expo_disable_onboarding=1&__expo_disable_auto_launch=1"
 	if got := devClientURL(); got != want {
 		t.Fatalf("got %s, want %s", got, want)
 	}

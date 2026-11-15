@@ -360,9 +360,10 @@ func (s *Stack) metro(p Platform, d Device, serial string) error {
 	return ignoreInterrupt(cmd.Wait())
 }
 
-// devClientURL opens the dev build straight onto this Metro, without its launcher screen.
+// devClientURL opens the dev build straight onto this Metro, without its launcher
+// screen or the menu it opens over the app at launch.
 func devClientURL() string {
-	return appScheme + "://expo-development-client/?url=" + url.QueryEscape(fmt.Sprintf("http://localhost:%d", metroPort))
+	return appScheme + "://expo-development-client/?url=" + url.QueryEscape(fmt.Sprintf("http://localhost:%d", metroPort)) + "&__expo_disable_onboarding=1&__expo_disable_auto_launch=1"
 }
 
 func open(p Platform, d Device, serial string) {
