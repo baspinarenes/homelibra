@@ -27,7 +27,8 @@
     "./illustration": "./src/illustration.ts",
     "./wide-layout": "./src/wide-layout.ts",
     "./sidebar": "./src/sidebar.ts",
-    "./quick-search": "./src/quick-search.ts"
+    "./quick-search": "./src/quick-search.ts",
+    "./inline-choices": "./src/inline-choices.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

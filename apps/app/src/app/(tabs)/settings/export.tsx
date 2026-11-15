@@ -1,8 +1,9 @@
 import { Section, SectionText } from '@homelibra/ui/section-heading';
 import { TermTable } from '@homelibra/ui/term-table';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
+import { SettingsPage } from '@/features/account/settings-page';
 import { LibraryExportDownload } from '@/features/library/library-export';
 
 /**
@@ -13,7 +14,7 @@ import { LibraryExportDownload } from '@/features/library/library-export';
 export default function LibraryExportScreen() {
   const { t } = useTranslation();
   return (
-    <ScrollView className="flex-1 bg-page" contentContainerClassName="w-full max-w-[560px] self-center px-lg">
+    <SettingsPage title={t('libraryExport.title')} back phone="w-full max-w-[560px] self-center px-lg">
       <View className="gap-sm py-lg">
         <SectionText>{t('libraryExport.lead')}</SectionText>
         <LibraryExportDownload />
@@ -26,6 +27,6 @@ export default function LibraryExportScreen() {
           }))}
         />
       </Section>
-    </ScrollView>
+    </SettingsPage>
   );
 }

@@ -121,6 +121,7 @@ export const type = {
   excerptLg: { fontFamily: fonts.quote, fontSize: 19, lineHeight: 32 }, // Kaldığın yer's words, Not önde
   body: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
   bodyLg: { fontFamily: fonts.sans, fontSize: 17, lineHeight: 25 }, // Kaldığın yer's comment, Not önde
+  reading: { fontFamily: fonts.sans, fontSize: 16, lineHeight: 27 }, // a legal text's paragraph on a wide screen
   bodySm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 20 }, // a form's error, Arama ipuçları
   comment: { fontFamily: fonts.sans, fontSize: 14.5, lineHeight: 22 }, // a Note's comment under its excerpt
   commentSm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 22 }, // the same under excerptSm

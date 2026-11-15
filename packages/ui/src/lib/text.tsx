@@ -26,6 +26,7 @@ const defaultColor: { [V in Variant]: keyof Colors | undefined } = {
   excerptLg: 'fg',
   body: 'ink2',
   bodyLg: 'fg',
+  reading: 'ink3',
   bodySm: 'fg',
   comment: 'ink3',
   commentSm: 'ink3',
