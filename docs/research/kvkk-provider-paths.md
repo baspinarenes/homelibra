@@ -16,7 +16,7 @@ anlamında aktarımdır ve gerçekçi yol Kurul'un **SS-2** metninin **değişti
 imzalanıp 5 iş günü içinde bildirilmesidir [KV1][KV2][KV3]. Beta bugün beş yabancı sağlayıcıyla
 çalışıyor (ADR-0009): Hetzner (sunucu + Object Storage, Almanya), Resend (giriş e-postaları),
 Sentry (hata raporları, AB bölgesi), Expo EAS Update (OTA, ABD), Cloudflare Email Routing (iletişim
-adresine gelen posta). Operatör Türkiye'de tek bir gerçek kişi; beta ücretsiz ve davetle.
+adresine gelen posta). İşletici Türkiye'de tek bir gerçek kişi; beta ücretsiz ve davetle.
 
 Bu belge her sağlayıcı için üç yolu birincil kaynaklardan maliyetlendirir:
 
@@ -183,7 +183,7 @@ ya da olumsuz bir ifade yok.
   metaverisi. Ayrıca: "Your selection determines your data storage location only. Sentry will
   continue to access and process your data in accordance with your agreement" ve destek
   taleplerinde paylaşılan veri ABD'de saklanıyor [SN4]. **Çıkarım:** ABD'de kalan kalemler
-  operatörün kendi hesap ve yapılandırma verisi; son kullanıcı verisi olay yükünde, yani seçilen
+  İşleticinin kendi hesap ve yapılandırma verisi; son kullanıcı verisi olay yükünde, yani seçilen
   bölgede. AB bölgesi
   KVKK açısından yine yurt dışı.
 - **Alt işleyenler 2.3.0 (1 Haz 2026).** AWS, Cloudflare, Google Cloud (AB + ABD), Sinch/Mailgun
@@ -219,6 +219,9 @@ ya da olumsuz bir ifade yok.
     `Sentry.setUser({ip_address: '0.0.0.0'})`." Ayrıca "The full request URL and Referer of
     outgoing HTTP requests is **always sent to Sentry**" [SN8]. Depodaki `apps/app/src/lib/sentry.ts`
     URL sorgularını `beforeSend`/`beforeBreadcrumb` ile kesiyor; `setUser` çağrısı yok.
+    **Düzeltme (depodan okundu):** kurulu `@sentry/react-native` 8.28.0, `sendDefaultPii` verilmediğinde
+    olaya `infer_ip: 'never'` yazıyor (`dist/js/client.js`), yani belgedeki varsayılan bu sürümde
+    geçerli değil ve Sentry IP'yi istekten çıkarmıyor.
 - **Çıkarım.** Uygulama tarafında IP'nin olaya yazılmasını kapatmak için belgelenmiş yollar:
   (a) projede "IP adreslerini saklama" ayarı + `$user.geo.**` kuralı, (b) RN'de
   `Sentry.setUser({ ip_address: '0.0.0.0' })`. Bunlarla olay kaydı kimliksizleşir; mobil replay
@@ -311,7 +314,7 @@ ya da olumsuz bir ifade yok.
   ("Email preview", yaklaşık 7 gün) yalnızca gönderim tarafı için belgelenmiş [CF4].
 - **Çıkarım.** Buradan geçen kişisel veri, iletişim adresine yazan kişilerin adresi ve ileti
   içeriği; hacmi düşük ama Hetzner/Resend'den farklı olarak içerik serbest metin. Yönlendirme
-  hedefi operatörün kendi posta kutusu olduğundan, o kutunun sağlayıcısı da ayrı bir alıcı.
+  hedefi İşleticinin kendi posta kutusu olduğundan, o kutunun sağlayıcısı da ayrı bir alıcı.
 - **Hüküm.** SS-2 için yayımlı yol yok. En ucuz çözüm sözleşme değil, MX kaydını Türkiye'de
   barındırılan bir posta kutusuna çevirmek (bkz. bölüm 5).
 
@@ -764,7 +767,9 @@ olan günde 5.000 iletinin çok altında.
 | React Native | Kurulum sayfası var: `@sentry/react-native`, "JavaScript errors, native crashes (iOS and Android)" [GT4] | SDK'ya özgü sayfa okunmadı; genel ifade "works with the Sentry SDKs" [BS1] |
 
 - **Bu depodaki kullanım açısından (Çıkarım).** Uygulama hata, trace, log ve mobil replay
-  gönderiyor (`apps/app/src/lib/sentry.ts`, `apps/api/src/instrument.ts`).
+  gönderiyor (`apps/app/src/lib/sentry.ts`, `apps/api/src/instrument.ts`). (Bu belge yazıldıktan
+  sonra replay ve log gönderimi #31 kapsamında kapatıldı; aşağıdaki replay notları o günkü hâli
+  anlatır.)
   - **GlitchTip:** hata + trace + log karşılanıyor; replay ve release health karşılanmıyor.
     `replaysOnErrorSampleRate` / `replaysSessionSampleRate` ve `mobileReplayIntegration` kaldırılmalı,
     `autoSessionTracking: false` eklenmeli. Mevcut Coolify sunucusunda bir konteyner + mevcut
@@ -784,7 +789,7 @@ olan günde 5.000 iletinin çok altında.
 
 #### İletişim adresi için Türkiye'de posta kutusu
 
-- Bugün `iletisim@` adresi Cloudflare Email Routing ile operatörün kendi posta kutusuna
+- Bugün `iletisim@` adresi Cloudflare Email Routing ile İşleticinin kendi posta kutusuna
   yönlendiriliyor (`scripts/deploy-beta.sh`, "Cloudflare: mail to iletisim@" aşaması). O kutunun
   sağlayıcısı da ayrı bir alıcı; depoda yazmıyor.
 - **Turhost / Natro XMail Kurumsal 1:** 1 hesap, 50 GB, IMAP/SMTP; üstü çizili $2.99 / Ay, "en
@@ -876,7 +881,7 @@ Bölüm 2'deki sayfalar (karakter sayısı / `Turk|Türkiye|KVKK|6698` eşleşme
 ## Öneri (bilgi, görüş değil)
 
 Bu bir bilgi derlemesi; hangi yolun hukuken yeterli olduğu bir hukukçunun, hangisinin seçileceği
-ürün sahibinin kararıdır. Her sağlayıcı için üç yol: **(a)** SS-2 imzalat, **(b)** Türkiye'de
+İşleticinin kararıdır. Her sağlayıcı için üç yol: **(a)** SS-2 imzalat, **(b)** Türkiye'de
 barındırılan eşdeğere geç, **(c)** kaldır ya da kişisel veri akmayacak hale getir.
 
 | Sağlayıcı | (a) SS-2 | (b) Türkiye'deki eşdeğer ve aylık maliyet | (c) Kaldır / etkisizleştir | Gerçekçilik sırası |
