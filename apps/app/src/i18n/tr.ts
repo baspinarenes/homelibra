@@ -303,6 +303,21 @@ export const tr = {
     filterEmpty: 'Bu filtreyle kaynak yok.',
     clearFilter: 'Filtreyi temizle',
   },
+  // Kaynaklar as a table on a wide screen (#179); Başlık, Yazar, Tarih and Son not are `sources` and `sourceList`'s.
+  sourceTable: {
+    label: 'Kaynaklar',
+    type: 'Tür',
+    notes: 'Not',
+    filter: 'Filtrele',
+    typesChip: 'Tür: {{types}}',
+    datesChip: 'Tarih: {{range}}',
+    sortHint: 'Başlığa tıkla: sırala · tekrar: yönü çevir',
+    none: '—',
+    undated: 'tarihsiz',
+    keyRows: 'kaynak',
+    keyOpen: 'sayfasını aç',
+    keyCapture: 'seçili kaynağa not al',
+  },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
     book: {
