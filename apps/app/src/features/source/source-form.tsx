@@ -17,7 +17,6 @@ import { HeaderIconAction, HeaderTextAction } from '@homelibra/ui/screen-header'
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
 import { cx, space, useTheme } from '@homelibra/ui/theme';
-import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import Link from 'lucide-react-native/icons/link';
@@ -27,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useFramePanel } from '@/components/wide-frame';
 import { type DateDraft, readDateDraft } from '@/features/source/date-draft';
 import { DateInput } from '@/features/source/date-input';
 import { IdentifierCard } from '@/features/source/identifier-card';
@@ -85,7 +85,9 @@ export function SourceForm({
 }) {
   const { t } = useTranslation();
   // Two columns from the rail tier up; in the wide tier a pushed form keeps them (Kaynaklar and the Source page open the panel).
-  const wide = useWideLayout().tier !== 'phone';
+  // With Not al's panel beside it (#187) the form has a phone's room: one column.
+  const { tier, capturing } = useFramePanel(false);
+  const wide = tier !== 'phone' && !capturing;
   const form = useSourceForm({ initial, saving, onSave });
   const { draft, setDraft, layout, typeFields, typeText, canSave, save, changeType, setValue, doi, offline } = form;
 
