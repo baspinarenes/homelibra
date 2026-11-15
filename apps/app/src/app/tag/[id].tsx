@@ -250,7 +250,8 @@ function TagPage({
     <Pressable
       role="button"
       aria-label={t('collection.tagCrumbLabel')}
-      onPress={() => router.dismissTo({ pathname: '/collections', params: { view: 'tags' } })}
+      // Back to Dizin over an edit with changes asks first.
+      onPress={() => leave(() => router.dismissTo({ pathname: '/collections', params: { view: 'tags' } }))}
       className="min-w-0 flex-1 self-center active:opacity-70"
     >
       <Text variant="caption" color="accent" numberOfLines={1}>
