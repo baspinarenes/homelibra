@@ -11,10 +11,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { type NativeStackHeaderProps, Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
+import Copy from 'lucide-react-native/icons/copy';
 import Search from 'lucide-react-native/icons/search';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, type TextInputInstance, View } from 'react-native';
 
 import {
   CopyMarkdownAction,
@@ -51,6 +52,9 @@ type Collection = inferRouterOutputs<AppRouter>['collections']['view'];
  * stand in full rows in a centred reading column, and a Note opens in the
  * panel beside them, the rows going compact. ↑↓ move the panel through the
  * rows, ⌘C copies its Note, E edits it, / searches, Esc closes the panel.
+ * The search (#172) makes the list's head its box, with Bulunanları kopyala
+ * beside it and under them the name and "3 / 15 not · 3 kaynak"; / puts the
+ * cursor back in the box, Esc puts it away once the panel is closed.
  */
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -101,19 +105,28 @@ function CollectionPage({ collection }: { collection: Collection }) {
   const search = useSearchText();
   const searched = useCollectionSearch(collection.id, searching ? search.query : '');
   const shown = narrowView(collection, searched.matches);
+  const searchField = useRef<TextInputInstance>(null);
   const closeSearch = () => {
     setSearching(false);
     search.setText('');
   };
-  usePreventRemove(searching, closeSearch);
 
   // The wide tier's panel: which Note it shows, null while it is closed (as it is on entry).
   const router = useRouter();
   const [focus, setFocus] = useState<NoteFocus | null>(null);
+  // Whether ↑↓ chose it: then the focus follows to its row. A press or ‹ › keep the focus where they are.
+  const [byKeys, setByKeys] = useState(false);
+  const focusBy = (keys: boolean) => (to: NoteFocus) => {
+    setFocus(to);
+    setByKeys(keys);
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const layout = useFramePanel(focus !== null);
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
+  // The phone's back puts the search away before it leaves the page. On a wide screen Esc does,
+  // and the sidebar, like any way out, leaves at the first press.
+  usePreventRemove(searching && !wide, closeSearch);
   const inFront = useIsFocused();
   const copyAll = useCopyMarkdown(shown);
   const deletion = useDeleteCollection(collection);
@@ -127,7 +140,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
       case 'next': {
         const order = focus ? sourceNotes(focus.sourceId)?.map((note) => note.id) : undefined;
         const to = stepInView(shown, focus, action, order);
-        if (to) setFocus(to);
+        if (to) focusBy(true)(to);
         return to !== null;
       }
       case 'copyNote': {
@@ -148,7 +161,9 @@ function CollectionPage({ collection }: { collection: Collection }) {
         router.push({ pathname: '/note/[id]', params: { id: focus.noteId } });
         return true;
       case 'searchHere':
-        setSearching(true);
+        // Open already: the cursor goes back to the box (a new box takes it as it opens).
+        if (searching) searchField.current?.focus();
+        else setSearching(true);
         return true;
       case 'cancelRename':
         setRenaming(false);
@@ -246,6 +261,23 @@ function CollectionPage({ collection }: { collection: Collection }) {
     </>
   );
 
+  // Under the wide search's name and count, which stand on one line.
+  const wideSearchNotes = (
+    <>
+      {shown.noteCount > 0 && <ShortWords words={searched.shortWords} />}
+      {searched.failed && (
+        <Text variant="caption" color="danger">
+          {t('noteSearch.failed')}
+        </Text>
+      )}
+      {failed && (
+        <Text variant="caption" color="danger">
+          {t('collection.saveFailed')}
+        </Text>
+      )}
+    </>
+  );
+
   const bar = (
     <>
       {searching ? (
@@ -264,7 +296,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
   const keyHints = [
     { keys: '↑↓', label: t('widePanel.hintRows') },
     { keys: '⌘C', label: t('widePanel.hintCopyNote') },
-    { keys: '⌘⇧C', label: t('widePanel.hintCopyAll') },
+    { keys: '⌘⇧C', label: searched.matches ? t('widePanel.hintCopyFound') : t('widePanel.hintCopyAll') },
     ...(searching ? [] : [{ keys: '/', label: t('widePanel.hintSearch') }]),
     { keys: 'Esc', label: t('widePanel.hintClose') },
   ];
@@ -291,6 +323,8 @@ function CollectionPage({ collection }: { collection: Collection }) {
       <MoreMenu label={t('widePanel.more')} items={menuItems} open={menuOpen} onOpenChange={setMenuOpen} />
     </View>
   );
+  // Only what the search found, never the whole file while the box is empty or the first answer is on its way.
+  const found = searched.matches !== null && shown.noteCount > 0;
   const wideBar = (
     <>
       {searching ? (
@@ -298,6 +332,8 @@ function CollectionPage({ collection }: { collection: Collection }) {
           <View className="flex-row items-center gap-sm">
             <View className="min-w-0 flex-1">
               <SearchField
+                look="frame"
+                inputRef={searchField}
                 value={search.text}
                 onChange={search.setText}
                 placeholder={t('noteSearch.inView')}
@@ -305,9 +341,20 @@ function CollectionPage({ collection }: { collection: Collection }) {
                 onClose={closeSearch}
               />
             </View>
-            {actions}
+            {!renaming && (
+              <Button
+                label={t('noteSearch.copyFound')}
+                variant="small"
+                icon={Copy}
+                onPress={copyAll.copy}
+                disabled={!found}
+              />
+            )}
           </View>
-          {searchedName}
+          <View className="flex-row items-baseline justify-between gap-md">
+            <View className="min-w-0 flex-1">{searchedName}</View>
+            <ViewCount view={shown} of={collection} />
+          </View>
         </>
       ) : panelOpen ? (
         <View className="flex-row items-center gap-sm">
@@ -324,7 +371,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
         </>
       )}
       {!searching && definition}
-      {counts}
+      {searching ? wideSearchNotes : counts}
     </>
   );
 
@@ -334,7 +381,9 @@ function CollectionPage({ collection }: { collection: Collection }) {
       <PanelLayout
         narrow={layout.sidebar === 'iconRail'}
         panel={
-          focus && <ViewNotePanel view={collection} focus={focus} onFocus={setFocus} onClose={() => setFocus(null)} />
+          focus && (
+            <ViewNotePanel view={collection} focus={focus} onFocus={focusBy(false)} onClose={() => setFocus(null)} />
+          )
         }
       >
         {page(wideBar)}
@@ -376,7 +425,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
                   ? t('collection.emptyNoTags')
                   : t('collection.emptyNoNotes')
             }
-            wide={wide ? { density: layout.density, focus, onOpen: setFocus } : undefined}
+            wide={wide ? { density: layout.density, focus, onOpen: focusBy(false), focusRow: byKeys } : undefined}
             foot={panelOpen && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
           />
         </View>
