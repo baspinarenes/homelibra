@@ -54,6 +54,8 @@ type Stack struct {
 // Up brings up Postgres, migrations and the API, then Metro and the app on the
 // chosen platform, and returns when Metro (or, for api, the API) exits.
 func (s *Stack) Up(p Platform, d Device, rebuild bool) error {
+	// Every expo command below (prebuild, run, start) builds and serves the dev variant.
+	os.Setenv("APP_VARIANT", appVariant)
 	ports := []int{apiPort}
 	if p != APIOnly {
 		ports = append(ports, metroPort)
@@ -166,6 +168,9 @@ func (s *Stack) android(d Device, rebuild bool) (string, error) {
 	installed := strings.Contains(string(out)+"\n", "package:"+appPackage+"\n")
 	if rebuild || !installed {
 		step("Dev build (the first time takes a few minutes)")
+		if err := s.prebuildIfStale(Android); err != nil {
+			return "", err
+		}
 		cmd := s.pnpm("--filter", "@homelibra/app", "exec", "expo", "run:android", "--no-bundler")
 		cmd.Env = append(os.Environ(), "ANDROID_SERIAL="+serial)
 		if err := s.inherit(cmd).Run(); err != nil {
@@ -186,12 +191,45 @@ func (s *Stack) ios(d Device, rebuild bool) error {
 	installed := exec.Command("xcrun", "simctl", "get_app_container", d.ID, appPackage).Run() == nil
 	if rebuild || !installed {
 		step("Dev build (the first time takes several minutes)")
+		if err := s.prebuildIfStale(IOS); err != nil {
+			return err
+		}
 		cmd := s.pnpm("--filter", "@homelibra/app", "exec", "expo", "run:ios", "--no-bundler", "--device", d.ID)
 		if err := s.inherit(cmd).Run(); err != nil {
 			return fmt.Errorf("the dev build failed: %w", err)
 		}
 	}
 	return nil
+}
+
+// prebuildIfStale regenerates apps/app/android or ios when it was made for
+// another app ID (before the dev variant, or by a preview build): `expo run`
+// only prebuilds a missing folder, and would install the old app.
+func (s *Stack) prebuildIfStale(p Platform) error {
+	if !nativeStale(filepath.Join(s.Root, "apps", "app"), p) {
+		return nil
+	}
+	note(fmt.Sprintf("apps/app/%s is for another app ID: regenerating it for %s", p, appPackage))
+	return s.inherit(s.pnpm("--filter", "@homelibra/app", "exec", "expo", "prebuild", "--clean", "--platform", string(p))).Run()
+}
+
+// nativeStale says whether app's native folder for p exists but builds another app ID.
+func nativeStale(app string, p Platform) bool {
+	var files []string
+	var want string
+	if p == Android {
+		files = []string{filepath.Join(app, "android", "app", "build.gradle")}
+		want = "applicationId '" + appPackage + "'"
+	} else {
+		files, _ = filepath.Glob(filepath.Join(app, "ios", "*.xcodeproj", "project.pbxproj"))
+		want = "PRODUCT_BUNDLE_IDENTIFIER = " + appPackage + ";"
+	}
+	for _, f := range files {
+		if b, err := os.ReadFile(f); err == nil {
+			return !strings.Contains(string(b), want)
+		}
+	}
+	return false
 }
 
 // --- Postgres and the API ---
@@ -241,7 +279,8 @@ func (s *Stack) migrate() error {
 func (s *Stack) api() (<-chan error, error) {
 	step(fmt.Sprintf("API on :%d (sign-in codes appear here as [api] lines)", apiPort))
 	cmd := s.pnpm("--filter", "@homelibra/api", "dev")
-	cmd.Env = os.Environ()
+	// Better Auth accepts the dev build's scheme as an origin, whatever apps/api/.env says.
+	cmd.Env = append(os.Environ(), "TRUSTED_ORIGINS="+appScheme+"://")
 	if s.E2E && os.Getenv("E2E_SIGN_IN_CODE") == "" {
 		// `pnpm e2e` signs e2e@homelibra.test in with it (scripts/e2e.sh); the API
 		// ignores it beside a real mailer and refuses it in production.

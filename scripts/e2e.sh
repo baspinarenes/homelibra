@@ -4,15 +4,18 @@
 # simulator: sign in, add a Source, capture a Note. Start the stack first with
 # `pnpm dev --e2e`, whose API signs e2e@homelibra.test in with a fixed code
 # that only works locally (apps/api/src/env.ts refuses it in production).
-# Local only, not in CI.
+# Local only, not in CI. Beside another stack (`pnpm dev --api-port 3001
+# --metro-port 8092`), name its ports: API_PORT=3001 METRO_PORT=8092 pnpm e2e.
 #
-# The flow starts from a cleared app (signed out, empty outbox), so it never
-# runs on a phone: the dev build shares its package with the beta app.
+# The flow starts from a cleared dev build (signed out, empty outbox), so it
+# never runs on a phone, where that dev build holds someone's own notes.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 code=${E2E_SIGN_IN_CODE:-246810} # what `pnpm dev --e2e` sets (tools/dev/main.go)
+api_port=${API_PORT:-3000}
+metro_port=${METRO_PORT:-8081}
 
 maestro=$(command -v maestro || true)
 [[ -z "$maestro" && -x "$HOME/.maestro/bin/maestro" ]] && maestro="$HOME/.maestro/bin/maestro"
@@ -20,8 +23,8 @@ if [[ -z "$maestro" ]]; then
   printf '\n✗ pnpm e2e needs Maestro: brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro\n' >&2
   exit 1
 fi
-if ! curl -sf -o /dev/null localhost:3000/api/auth/ok; then
-  printf '\n✗ No API on :3000. Start the stack first: pnpm dev --e2e\n' >&2
+if ! curl -sf -o /dev/null "localhost:$api_port/api/auth/ok"; then
+  printf '\n✗ No API on :%s. Start the stack first: pnpm dev --e2e\n' "$api_port" >&2
   exit 1
 fi
 
@@ -39,4 +42,5 @@ if [[ -z "$device" ]]; then
 fi
 
 pnpm --silent invite add e2e@homelibra.test
-exec "$maestro" --device "$device" test -e E2E_SIGN_IN_CODE="$code" apps/app/e2e/smoke.yaml "$@"
+exec "$maestro" --device "$device" test -e E2E_SIGN_IN_CODE="$code" \
+  -e METRO="http%3A%2F%2Flocalhost%3A$metro_port" apps/app/e2e/smoke.yaml "$@"

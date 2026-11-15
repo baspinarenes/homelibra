@@ -7,6 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": { "APP_VARIANT": "development" },
       "node": "24.11.0",
       "pnpm": "11.8.0",
       "android": {

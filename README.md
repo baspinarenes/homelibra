@@ -33,6 +33,8 @@ pnpm dev --rebuild   # reinstall the dev build after a native dependency changes
 
 `pnpm dev --help` lists the flags. A port that is taken stops it: in a terminal it offers to stop the process, otherwise it names the PID and exits. Only `--api-port` and `--metro-port` move a server, for a second checkout beside a running stack. Every checkout and worktree shares the one Postgres (compose project `homelibra`).
 
+The dev build is its own app, "Homelibra Dev" (`app.homelibra.dev`, scheme `homelibra-dev`), installed beside the beta app with its own sign-in and outbox. `APP_VARIANT=development` selects it in [apps/app/app.config.ts](apps/app/app.config.ts); `pnpm dev` and EAS's development profile set it. Without it, the config is `app.json` as written, which preview and production build.
+
 | Command | What it does |
 | --- | --- |
 | `pnpm check` | everything CI checks: theme fresh, types, package boundaries, lint, unit and script tests, the dev CLI |

@@ -1,7 +1,7 @@
 # The smoke flow: sign in, add a Source, capture a Note, on the dev build.
 # `pnpm e2e` runs it (scripts/e2e.sh) against the stack `pnpm dev --e2e` brought up,
 # whose API signs e2e@homelibra.test in with the fixed E2E_SIGN_IN_CODE.
-appId: app.homelibra
+appId: app.homelibra.dev
 env:
   EMAIL: e2e@homelibra.test
   METRO: http%3A%2F%2Flocalhost%3A8081
@@ -10,7 +10,7 @@ env:
 # told where Metro is.
 - launchApp:
     clearState: true
-- openLink: homelibra://expo-development-client/?url=${METRO}
+- openLink: homelibra-dev://expo-development-client/?url=${METRO}
 - tapOn:
     text: Continue # the dev build's first-run note about its menu
     optional: true

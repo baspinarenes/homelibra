@@ -18,10 +18,12 @@ import (
 	"golang.org/x/term"
 )
 
-// The dev build's Android package / iOS bundle ID and URL scheme (apps/app/app.json).
+// The dev build's Android package / iOS bundle ID and URL scheme: the development
+// variant in apps/app/app.config.ts, which APP_VARIANT selects.
 const (
-	appPackage = "app.homelibra"
-	appScheme  = "homelibra"
+	appVariant = "development"
+	appPackage = "app.homelibra.dev"
+	appScheme  = "homelibra-dev"
 	e2eCode    = "246810" // the fixed sign-in code for e2e@homelibra.test; scripts/e2e.sh too
 )
 
@@ -41,7 +43,6 @@ const (
 type Choice struct {
 	Platform Platform `json:"platform"`
 	Device   string   `json:"device"` // a Device ID or name; empty for web and api
-	DB       string   `json:"db"`     // local; prod is not available yet
 }
 
 func main() {
@@ -57,7 +58,6 @@ func run() error {
 	}
 	platform := flag.String("platform", "", "android, ios, web or api")
 	device := flag.String("device", "", "an AVD name, adb serial, simulator name or UDID")
-	db := flag.String("db", "", "local")
 	flag.IntVar(&apiPort, "api-port", apiPort, "the API's port")
 	flag.IntVar(&metroPort, "metro-port", metroPort, "Metro's port")
 	e2e := flag.Bool("e2e", false, "let the API sign e2e@homelibra.test in with a fixed code, for pnpm e2e")
@@ -66,7 +66,7 @@ func run() error {
 
 	interactive := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 	last := loadLast(root)
-	choice := Choice{Platform: Platform(*platform), Device: *device, DB: *db}
+	choice := Choice{Platform: Platform(*platform), Device: *device}
 
 	if choice.Platform == "" {
 		if !interactive {
@@ -76,13 +76,6 @@ func run() error {
 			return err
 		}
 	}
-	if choice.DB == "" {
-		choice.DB = "local"
-	}
-	if choice.DB != "local" {
-		return errors.New("--db " + choice.DB + ": only local is available; reading production is not set up")
-	}
-
 	var target Device
 	switch choice.Platform {
 	case Android, IOS:
