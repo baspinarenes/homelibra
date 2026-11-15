@@ -22,6 +22,7 @@ import (
 const (
 	appPackage = "app.homelibra"
 	appScheme  = "homelibra"
+	e2eCode    = "246810" // the fixed sign-in code for e2e@homelibra.test; scripts/e2e.sh too
 )
 
 // The ports the app expects. Only an explicit flag moves them (a second checkout

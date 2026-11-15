@@ -20,6 +20,7 @@
     "test:api": "pnpm --filter @homelibra/api test",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "test:dev": "scripts/go.sh vet ./... && scripts/go.sh test ./... && scripts/go.sh build -o /dev/null .",
+    "e2e": "scripts/e2e.sh",
     "db:up": "docker compose up -d --build postgres",
     "db:migrate": "pnpm --filter @homelibra/api db:migrate",
     "db:generate": "pnpm --filter @homelibra/api db:generate",

@@ -240,9 +240,15 @@ func (s *Stack) migrate() error {
 func (s *Stack) api() (<-chan error, error) {
 	step(fmt.Sprintf("API on :%d (sign-in codes appear here as [api] lines)", apiPort))
 	cmd := s.pnpm("--filter", "@homelibra/api", "dev")
+	cmd.Env = os.Environ()
+	if os.Getenv("E2E_SIGN_IN_CODE") == "" {
+		// `pnpm e2e` signs e2e@homelibra.test in with it (scripts/e2e.sh); the API
+		// ignores it beside a real mailer and refuses it in production.
+		cmd.Env = append(cmd.Env, "E2E_SIGN_IN_CODE="+e2eCode)
+	}
 	if apiPort != 3000 || metroPort != 8081 {
 		api := fmt.Sprintf("http://localhost:%d", apiPort)
-		cmd.Env = append(os.Environ(), "PORT="+strconv.Itoa(apiPort), "BETTER_AUTH_URL="+api,
+		cmd.Env = append(cmd.Env, "PORT="+strconv.Itoa(apiPort), "BETTER_AUTH_URL="+api,
 			fmt.Sprintf("CORS_ORIGINS=http://localhost:%d", metroPort))
 	}
 	out, err := cmd.StdoutPipe()

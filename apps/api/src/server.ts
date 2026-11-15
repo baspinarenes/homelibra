@@ -42,6 +42,7 @@ const api = createApi({
     env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
       ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
       : undefined,
+  e2eCode: env.RESEND_API_KEY ? undefined : env.E2E_SIGN_IN_CODE,
 });
 
 serve({ fetch: api.http.fetch, port: env.PORT }, (info) => {
