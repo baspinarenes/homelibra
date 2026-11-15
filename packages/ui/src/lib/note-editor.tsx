@@ -58,7 +58,8 @@ type Props = {
  * beside a list, a Source page's column. Notu düzenle along its top, then
  * Kaynak, Konum, Alıntı, Yorum and the Tags, Vazgeç Esc and Kaydet ⌘↵ at
  * their foot, which give way to "Değişiklikler atılsın mı?" while that is
- * asked, and Notu sil under them all. It fills the width it is given.
+ * asked, and Notu sil under them all. It opens with the cursor in Alıntı,
+ * and fills the width it is given.
  */
 export function NoteEditor({
   text,
@@ -109,6 +110,8 @@ export function NoteEditor({
         onChangeText={(excerpt) => onTextChange({ ...text, excerpt })}
         multiline
         excerpt
+        // The cursor waits here: E, then type (Q51).
+        autoFocus
       />
       <TextField
         label={labels.comment}

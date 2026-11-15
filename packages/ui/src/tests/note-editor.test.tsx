@@ -101,6 +101,13 @@ describe('NoteEditor', () => {
     expect(text(page)).toContain('Selanik · 1908');
   });
 
+  it('opens with the cursor in Alıntı, so the keyboard types at once', () => {
+    const [locator, excerpt, comment] = fields(editor());
+    expect(excerpt!.attrs).toHaveProperty('autofocus');
+    expect(locator!.attrs).not.toHaveProperty('autofocus');
+    expect(comment!.attrs).not.toHaveProperty('autofocus');
+  });
+
   it('sets the Excerpt in the quote face', () => {
     const [locator, excerpt, comment] = fields(editor());
     expect(classes(excerpt!)).toContain('type-excerpt');
