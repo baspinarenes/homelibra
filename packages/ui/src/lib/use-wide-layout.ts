@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { createContext, createElement, type ReactNode, useContext, useEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 
 import { type Command, type Layout, shortcutFor, wideLayout } from './wide-layout';
@@ -14,7 +14,23 @@ export type ShortcutState = {
   unsavedChanges?: boolean;
   /** Whether this screen hears keys now: false while another screen is in front of it. */
   active?: boolean;
+  /**
+   * Hears only what nothing heard before it took: after every other
+   * listener, and never from a text field (which stops its keys). The
+   * frame's N is such a fallback, so a page with an N of its own keeps it.
+   */
+  last?: boolean;
 };
+
+const Held = createContext(false);
+
+/**
+ * While `held`, every useShortcuts below it hears nothing: something
+ * beside them has the keys (the frame's Not al panel beside the screen).
+ */
+export function HoldShortcuts({ held, children }: { held: boolean; children: ReactNode }) {
+  return createElement(Held.Provider, { value: held }, children);
+}
 
 /**
  * Hears the wide tier's shortcuts while `active` and hands each command to
@@ -26,18 +42,21 @@ export type ShortcutState = {
  * to the field nor to the browser. Any other answer leaves the key as it
  * was, so a field that handles ⌘↵ itself (the composer) still gets it. A
  * key pressed in a dialog is the dialog's; ⌘C over selected text is the
- * browser's. Where there is no document (a phone), it hears nothing.
+ * browser's. Where there is no document (a phone), it hears nothing, nor
+ * under a HoldShortcuts that holds the keys.
  */
 export function useShortcuts(
-  { panelOpen = false, unsavedChanges = false, active = true }: ShortcutState,
+  { panelOpen = false, unsavedChanges = false, active = true, last = false }: ShortcutState,
   onCommand: (command: Command) => boolean | void,
 ): void {
+  const held = useContext(Held);
+  const hearing = active && !held;
   const { width } = useWindowDimensions();
   const latest = useRef({ width, panelOpen, unsavedChanges, onCommand });
   latest.current = { width, panelOpen, unsavedChanges, onCommand };
 
   useEffect(() => {
-    if (!active || typeof document === 'undefined') return;
+    if (!hearing || typeof document === 'undefined') return;
     const listener = (event: KeyboardEvent) => {
       const { onCommand: act, ...state } = latest.current;
       const command = shortcutFor(event, {
@@ -52,9 +71,11 @@ export function useShortcuts(
       event.stopPropagation();
     };
     // In the capture phase: before the field, which would stop the key on its way up.
-    document.addEventListener('keydown', listener, true);
-    return () => document.removeEventListener('keydown', listener, true);
-  }, [active]);
+    // `last` in the bubble phase: after it, once everything else has had the key.
+    const capture = !last;
+    document.addEventListener('keydown', listener, capture);
+    return () => document.removeEventListener('keydown', listener, capture);
+  }, [hearing, last]);
 }
 
 const notText = new Set(['button', 'checkbox', 'radio', 'range', 'color', 'file', 'image', 'reset', 'submit']);

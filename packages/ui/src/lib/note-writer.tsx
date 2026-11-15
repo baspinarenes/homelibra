@@ -43,13 +43,15 @@ type Props = {
   onSave: () => void;
   /** Alıntı, which takes the cursor on N, after a save and on coming back to the writing. */
   excerptRef?: Ref<TextInputInstance>;
+  /** Yeni Not and its keys along the top; false in a panel whose head already names the writing. */
+  heading?: boolean;
   labels: NoteWriterLabels;
 };
 
 /**
  * The writing on a wide screen (#177, ADR-0012), on the page rather than in
  * the phone's sheet (#157): Yeni Not with N odak · ⌘↵ kaydet along its
- * top, then (off a Source page) Kaynak, Konum with where the next Note goes
+ * top (unless a panel's head has them), then (off a Source page) Kaynak, Konum with where the next Note goes
  * on from, Alıntı, Yorum, the Tags, Kaydet ⌘↵ and what saving does. It
  * fills the width it is given; the screen holds the draft and hears the keys.
  */
@@ -64,23 +66,26 @@ export function NoteWriter({
   saving = false,
   onSave,
   excerptRef,
+  heading = true,
   labels,
 }: Props) {
   const { colors } = useTheme();
   const inactive = !canSave || saving;
   return (
     <View className="gap-md px-gutter pt-5 pb-xl">
-      <View className="flex-row items-center justify-between gap-md">
-        <Text variant="sourceTitleSm" role="heading">
-          {labels.title}
-        </Text>
-        <View className="flex-row items-center gap-1">
-          <Key keys="N" />
-          <Text variant="caption">{` ${labels.focusHint} · `}</Text>
-          <Key keys="⌘↵" />
-          <Text variant="caption">{` ${labels.saveHint}`}</Text>
+      {heading && (
+        <View className="flex-row items-center justify-between gap-md">
+          <Text variant="sourceTitleSm" role="heading">
+            {labels.title}
+          </Text>
+          <View className="flex-row items-center gap-1">
+            <Key keys="N" />
+            <Text variant="caption">{` ${labels.focusHint} · `}</Text>
+            <Key keys="⌘↵" />
+            <Text variant="caption">{` ${labels.saveHint}`}</Text>
+          </View>
         </View>
-      </View>
+      )}
       {source && (
         <View className="gap-1.5">
           <Text variant="fieldLabel">{labels.source}</Text>

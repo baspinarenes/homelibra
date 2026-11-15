@@ -34,6 +34,10 @@ describe('noteEditAction', () => {
       expect(noteEditAction(command, editing)).toBeNull();
     }
   });
+
+  it('keeps N, so Not al never puts an edit away unasked', () => {
+    expect(noteEditAction('capture', editing)).toBe('stay');
+  });
 });
 
 const noop = () => {};

@@ -44,6 +44,13 @@ describe('NoteWriter', () => {
     expect(text(writer())).toMatch(/^Yeni NotN odak · ⌘↵ kaydet/);
   });
 
+  it('leaves the heading to a panel whose head already names the writing', () => {
+    const page = writer({ heading: false });
+    expect(byRole(page, 'heading')).toEqual([]);
+    expect(text(page)).not.toContain('odak');
+    expect(fields(page).map((field) => field.attrs['aria-label'])).toEqual(['Konum', 'Alıntı', 'Yorum']);
+  });
+
   it('holds Konum with where the next Note goes on from, then Alıntı and Yorum, then the Tags', () => {
     const page = writer();
     expect(fields(page).map((field) => field.attrs['aria-label'])).toEqual(['Konum', 'Alıntı', 'Yorum']);

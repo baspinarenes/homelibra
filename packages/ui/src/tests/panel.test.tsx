@@ -35,6 +35,14 @@ describe('PanelLayout', () => {
     expect(text(page)).toBe('ListeKitap · UğurluAyrıntı');
   });
 
+  it('with a panel drawn beside it elsewhere (the frame’s Not al) lets the list fill its place, uncentred', () => {
+    const page = render(<PanelLayout beside>{list}</PanelLayout>);
+    expect(byRole(page, 'region')).toEqual([]);
+    expect(classes(listColumn(page))).toContain('flex-1');
+    expect(classes(listColumn(page))).not.toContain('max-w-[760px]');
+    expect(classes(listColumn(page))).not.toContain('w-[440px]');
+  });
+
   it('beside the icon rail gives the list 420 px', () => {
     const page = render(
       <PanelLayout panel={panel} narrow>

@@ -11,12 +11,13 @@ export type NoteEditKeyState = {
 };
 
 /** What the edit does with a shortcut; null leaves the key as it was. */
-export type NoteEditAction = 'save' | 'ask' | 'keepEditing' | 'closeChoice' | 'close';
+export type NoteEditAction = 'save' | 'ask' | 'keepEditing' | 'closeChoice' | 'close' | 'stay';
 
 /**
  * A Note edited in place (ADR-0012): ⌘↵ saves it. Esc takes back one thing
  * at a time: an open choice, then the edit itself, asking first when it
- * holds changes; Esc while asking goes back to the edit. Every other key is
+ * holds changes; Esc while asking goes back to the edit. N `stay`s: Not al
+ * waits until the edit is done (#178). Every other key is
  * the list's around it, which waits while the Note is being edited.
  */
 export function noteEditAction(command: Command, state: NoteEditKeyState): NoteEditAction | null {
@@ -29,6 +30,8 @@ export function noteEditAction(command: Command, state: NoteEditKeyState): NoteE
     case 'closePanel':
     case 'back':
       return choosing ? 'closeChoice' : 'close';
+    case 'capture':
+      return 'stay';
     default:
       return null;
   }

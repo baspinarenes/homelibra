@@ -11,24 +11,33 @@ import { useTheme } from './use-theme';
  * beside it (ADR-0012): never over it, no drawer or sheet. With no panel
  * the list is centred in a 760 px reading column; with one, the list keeps
  * a 440 px column (420 beside the icon rail, `narrow`) and the panel takes
- * the rest. The list stays where it is in the tree in both states, so
- * opening the panel never remounts it or loses its scroll.
+ * the rest. `beside`: a panel stands beside it that is drawn elsewhere
+ * (the frame's Not al, #178); the list fills its place. The list stays
+ * where it is in the tree in every state, so opening the panel never
+ * remounts it or loses its scroll.
  */
 export function PanelLayout({
   panel,
   narrow = false,
+  beside = false,
   children,
 }: {
   panel?: ReactNode;
   narrow?: boolean;
+  beside?: boolean;
   children: ReactNode;
 }) {
   const open = !!panel;
+  const centred = !open && !beside;
   return (
-    <View className={open ? 'flex-1 flex-row bg-page' : 'flex-1 flex-row justify-center bg-page px-xxl'}>
+    <View className={centred ? 'flex-1 flex-row justify-center bg-page px-xxl' : 'flex-1 flex-row bg-page'}>
       <View
         className={
-          open ? cx('min-w-0 border-r border-line', narrow ? 'w-[420px]' : 'w-[440px]') : 'w-full max-w-[760px] min-w-0'
+          open
+            ? cx('min-w-0 border-r border-line', narrow ? 'w-[420px]' : 'w-[440px]')
+            : centred
+              ? 'w-full max-w-[760px] min-w-0'
+              : 'min-w-0 flex-1'
         }
       >
         {children}

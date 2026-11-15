@@ -11,4 +11,4 @@ export {
   type Tier,
   wideLayout,
 } from './lib/wide-layout';
-export { type ShortcutState, useShortcuts, useWideLayout } from './lib/use-wide-layout';
+export { HoldShortcuts, type ShortcutState, useShortcuts, useWideLayout } from './lib/use-wide-layout';
