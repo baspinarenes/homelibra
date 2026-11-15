@@ -58,9 +58,10 @@ export function WideLostList({
   });
   const open = (id: string) => anchor.press(id, () => onOpen(id));
 
-  // The panel put away: the focus goes back to its row, so ↑↓ go on from there.
+  // The panel put away: the focus goes back to its row, so ↑↓ go on from there. Not when Not al
+  // took its place: the cursor is in Not al's Alıntı then.
   useEffect(() => {
-    if (panelOpen || !chosen) return;
+    if (panelOpen || !chosen || !keys) return;
     const frameId = requestAnimationFrame(() => anchor.focus(chosen));
     return () => cancelAnimationFrame(frameId);
     // Only the panel closing asks for this.

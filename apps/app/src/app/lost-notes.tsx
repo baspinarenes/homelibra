@@ -75,7 +75,8 @@ export default function LostNotesScreen() {
             density={layout.density}
             focusId={shown?.id ?? null}
             onOpen={(id) => leave(() => setFocusId(id))}
-            keys={inFront}
+            // Not al's panel beside the list has the keys.
+            keys={inFront && !layout.capturing}
             hints={layout.sidebar === 'full'}
           />
         </PanelLayout>
