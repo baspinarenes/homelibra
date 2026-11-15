@@ -2,6 +2,8 @@ import { NOT_INVITED } from '@homelibra/core/errors';
 import { Button } from '@homelibra/ui/button';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
+import { useRouter } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,9 +17,13 @@ type Message = { kind: 'notInvited' } | { kind: 'sendFailed' } | { kind: 'invali
 /**
  * E-posta ile giriş: one screen. Once a code is sent, its field opens below
  * the address, which stays editable; changing the address closes it again.
+ * On a wide screen it is Giriş 4's white column (#184), with no header: its
+ * way back to Giriş stands above the title.
  */
 export default function EmailSignInScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
+  const wide = useWideLayout().tier === 'wide';
   const headerHeight = useHeaderHeight();
   const [email, setEmail] = useState('');
   // The address the code went to; the code field shows while it is the one typed.
@@ -66,14 +72,28 @@ export default function EmailSignInScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-page"
+      className={wide ? 'flex-1 bg-surface' : 'flex-1 bg-page'}
       behavior={Platform.OS === 'web' ? undefined : 'padding'}
       keyboardVerticalOffset={headerHeight}
     >
       <ScrollView
-        contentContainerClassName="w-full max-w-[420px] self-center gap-4 px-5.5 pt-2 pb-6"
+        contentContainerClassName={
+          wide
+            ? 'w-[340px] grow justify-center self-center gap-4 py-xl'
+            : 'w-full max-w-[420px] self-center gap-4 px-5.5 pt-2 pb-6'
+        }
         keyboardShouldPersistTaps="handled"
       >
+        {wide ? (
+          <Text
+            variant="link"
+            role="link"
+            className="self-start"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}
+          >
+            {t('signIn.back')}
+          </Text>
+        ) : null}
         <Text variant="title">{t('signIn.emailTitle')}</Text>
         <Text variant="body">{sentTo ? t('signIn.codeSentTo', { email: sentTo }) : t('signIn.lead')}</Text>
         <TextField

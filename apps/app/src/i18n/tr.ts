@@ -155,10 +155,43 @@ export const tr = {
     resend: 'Kodu yeniden gönder',
     inviteOnly: 'Homelibra şu an davetle açık.',
     inviteOnlyContact: 'Davet için bize yazabilirsin:',
+    // The sign-in column on a wide screen (#184): its heading, the way to Gizlilik signed out (#40), and back from e-mail.
+    heading: 'Giriş',
+    privacyLink: 'Gizlilik ve hesabını silmek',
+    back: '‹ Giriş',
     errors: {
       sendFailed: 'Kod gönderilemedi. Bağlantını kontrol edip yeniden dene.',
       invalidCode: 'Kod yanlış ya da süresi dolmuş.',
       googleFailed: 'Google ile giriş yapılamadı. Yeniden dene.',
+    },
+  },
+  // Giriş's left half on a wide screen (#184): what Homelibra is, in three steps, each with a small example.
+  // The examples borrow the sample names the Kaynak formu already shows; the note's words are the composer's placeholders.
+  signInIntro: {
+    eyebrow: 'Araştırmacının not defteri',
+    title: 'Kaynaktan yazıya, alıntı alıntı.',
+    lead: "Kitap, makale, arşiv belgesi ya da gazete: ne okuyorsan künyesiyle ekle, notunu Konum'uyla al, yazacağın şeyin dosyasında topla.",
+    steps: {
+      source: {
+        title: 'Kaynağını ekle',
+        text: 'Dokuz türden biri; ISBN ya da DOI ile künye dolar.',
+      },
+      note: {
+        title: 'Notunu al',
+        text: 'Alıntı olduğu gibi, yorumun ayrı; Konum bir sonraki nota taşınır.',
+      },
+      collection: {
+        title: 'Dosyanda topla',
+        text: 'Etiketler bir yazının dosyasını kurar; tamamı Markdown olarak kopyalanır.',
+      },
+    },
+    examples: {
+      periodicalPlace: 'İstanbul',
+      locator: 's. 45',
+      // The Locator with its ablative, for capture.carriedOn: the next note starts from it.
+      locatorFrom: "s. 45'ten",
+      collectionName: 'İttihat ve Terakki makalesi',
+      tags: ['basın', 'meşrutiyet'],
     },
   },
   home: {
