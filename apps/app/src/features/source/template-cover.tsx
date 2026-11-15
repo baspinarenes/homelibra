@@ -3,8 +3,15 @@ import { coverColors, coverStripe } from '@homelibra/ui/theme';
 import { View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
-/** A cover's box: `small` for list rows (design system, size s), `large` for Kaldığın yer on Genel Bakış. */
-export const coverSizes = { small: { width: 40, height: 56 }, large: { width: 56, height: 80 } } as const;
+/**
+ * A cover's box: `small` for list rows (design system, size s), `large` for
+ * Kaldığın yer on Genel Bakış, `table` beside a Başlık in the wide Kaynaklar table.
+ */
+export const coverSizes = {
+  small: { width: 40, height: 56 },
+  large: { width: 56, height: 80 },
+  table: { width: 24, height: 34 },
+} as const;
 export type CoverSize = keyof typeof coverSizes;
 
 /**

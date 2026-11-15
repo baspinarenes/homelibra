@@ -43,6 +43,7 @@ export function useShortcuts(
       const command = shortcutFor(event, {
         ...state,
         typing: isTextField(document.activeElement),
+        focused: !nothingFocused(document.activeElement),
         inDialog: event.target instanceof Element && event.target.closest('[aria-modal="true"]') !== null,
         textSelected: document.getSelection()?.isCollapsed === false,
       });
@@ -57,6 +58,11 @@ export function useShortcuts(
 }
 
 const notText = new Set(['button', 'checkbox', 'radio', 'range', 'color', 'file', 'image', 'reset', 'submit']);
+
+/** The page itself has the focus: no button, tab, row or field that would take ↵. */
+function nothingFocused(element: Element | null): boolean {
+  return !element || element === document.body || element === document.documentElement;
+}
 
 function isTextField(element: Element | null): boolean {
   if (!element) return false;

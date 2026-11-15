@@ -122,9 +122,15 @@ describe('commandFor', () => {
       press('n', { altKey: true }),
       press('e', { altKey: true }),
       press('ArrowDown', { metaKey: true }),
-      press('Enter'),
     ];
-    expect(held.map((key) => commandFor(key, wide))).toEqual([null, null, null, null, null, null]);
+    expect(held.map((key) => commandFor(key, wide))).toEqual([null, null, null, null, null]);
+  });
+
+  it('opens the chosen row on ↵ alone, leaving ↵ in a text field and ⇧↵ to the page', () => {
+    expect(commandFor(press('Enter'), wide)).toBe('open');
+    expect(commandFor(press('Enter'), { ...wide, typing: true })).toBeNull();
+    expect(commandFor(press('Enter', { shiftKey: true }), wide)).toBeNull();
+    expect(commandFor(press('Enter'), { width: 1023 })).toBeNull();
   });
 
   it('leaves ⌘ shortcuts with Alt held to the browser and to AltGr, which reports Ctrl+Alt', () => {
@@ -177,6 +183,17 @@ describe('shortcutFor', () => {
     expect(shortcutFor(press('c', { metaKey: true }), selected)).toBeNull();
     expect(shortcutFor(press('c', { metaKey: true, shiftKey: true }), selected)).toBeNull();
     expect(shortcutFor(press('k', { metaKey: true }), selected)).toBe('quickSearch');
+  });
+
+  it('opens the chosen row on ↵ only while nothing on the page has the focus', () => {
+    expect(shortcutFor(press('Enter'), quiet)).toBe('open');
+    // A focused button, tab or row presses itself on ↵.
+    expect(shortcutFor(press('Enter'), { ...quiet, focused: true })).toBeNull();
+    // ↵ in a field (Filtrele's years) or in the quick search window is theirs.
+    expect(shortcutFor(press('Enter'), { ...quiet, focused: true, typing: true })).toBeNull();
+    expect(shortcutFor(press('Enter'), { ...quiet, inDialog: true })).toBeNull();
+    // The other keys do not care where the focus is.
+    expect(shortcutFor(press('ArrowDown'), { ...quiet, focused: true })).toBe('next');
   });
 
   it('skips a key still being composed, or one something before it already took', () => {

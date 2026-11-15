@@ -51,7 +51,8 @@ export function wideLayout({ width, panelOpen = false }: LayoutState): Layout {
  * what that means where it is. ⌘K `quickSearch`, N `capture` (Not al),
  * / `searchHere` (search this view), ↑↓ `previous` / `next` row, ⌘C
  * `copyNote`, ⌘⇧C `copyAll` (the open Collection, Tag or Source as
- * Markdown), E `edit`, ⌘↵ `submit` (save what is being written). Esc gives
+ * Markdown), E `edit`, ⌘↵ `submit` (save what is being written), ↵ `open`
+ * (the row ↑↓ chose, when nothing focused takes ↵ itself). Esc gives
  * `askDiscard` (Değişiklikler atılsın mı?), `closePanel` or `back`.
  */
 export type Command =
@@ -64,6 +65,7 @@ export type Command =
   | 'copyAll'
   | 'edit'
   | 'submit'
+  | 'open'
   | 'askDiscard'
   | 'closePanel'
   | 'back';
@@ -97,17 +99,24 @@ export type HeardState = CommandState & {
   inDialog: boolean;
   /** Text on the page is selected, which ⌘C copies as the browser copies it. */
   textSelected: boolean;
+  /** An element has the focus (a button, a tab, a row), which presses itself on ↵. */
+  focused?: boolean;
 };
 
 /**
  * Whether a key heard on the page is a shortcut, and which: the command
  * `commandFor` gives, unless the key is still being composed, was already
- * taken, came from a dialog, or is ⌘C / ⌘⇧C over selected text.
+ * taken, came from a dialog, is ⌘C / ⌘⇧C over selected text, or is ↵
+ * while an element has the focus and presses itself on it.
  */
-export function shortcutFor(key: HeardKey, { inDialog, textSelected, ...state }: HeardState): Command | null {
+export function shortcutFor(
+  key: HeardKey,
+  { inDialog, textSelected, focused = false, ...state }: HeardState,
+): Command | null {
   if (key.isComposing || key.defaultPrevented || inDialog) return null;
   const command = commandFor(key, state);
   if ((command === 'copyNote' || command === 'copyAll') && textSelected) return null;
+  if (command === 'open' && focused) return null;
   return command;
 }
 
@@ -136,5 +145,6 @@ export function commandFor(press: KeyPress, state: CommandState): Command | null
   if (key === '/') return 'searchHere';
   if (key === 'arrowup') return 'previous';
   if (key === 'arrowdown') return 'next';
+  if (key === 'enter' && !press.shiftKey) return 'open';
   return null;
 }
