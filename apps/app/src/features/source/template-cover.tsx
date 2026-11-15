@@ -5,12 +5,14 @@ import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
 /**
  * A cover's box: `small` for list rows (design system, size s), `large` for
- * Kaldığın yer on Genel Bakış, `table` beside a Başlık in the wide Kaynaklar table.
+ * Kaldığın yer on Genel Bakış, `table` beside a Başlık in the wide Kaynaklar table,
+ * `form` in the Kapak column of the wide Source form (#180).
  */
 export const coverSizes = {
   small: { width: 40, height: 56 },
   large: { width: 56, height: 80 },
   table: { width: 24, height: 34 },
+  form: { width: 96, height: 144 },
 } as const;
 export type CoverSize = keyof typeof coverSizes;
 

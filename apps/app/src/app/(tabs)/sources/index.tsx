@@ -29,6 +29,7 @@ import {
   type SourceFilters,
   unfiltered,
 } from '@/features/source/source-filter';
+import { NewSourcePanel } from '@/features/source/source-form-panel';
 import { SourceListRow } from '@/features/source/source-list-row';
 import { inOrder, naturalOrder } from '@/features/source/source-order';
 import { useSourceOrder } from '@/features/source/source-sort';
@@ -47,14 +48,17 @@ import { useTRPC } from '@/lib/trpc';
  * On a wide screen (#179) the list is a table whose column headings choose
  * the order and turn it round; Filtrele keeps only Tür and Tarih and opens
  * in the page; ↑↓ choose a row, ↵ opens it, N opens it ready to write.
+ * Kaynak ekle opens the Source form in a panel beside the table (#180),
+ * which then shows Tür, Başlık, Yazar and Not only.
  */
 export default function SourcesScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const trpc = useTRPC();
   const router = useRouter();
-  // #180's Kaynak form panel opens beside the table: its state goes here and to useShortcuts.
-  const { tier } = useFramePanel(false);
+  // Yeni kaynak's panel beside the table (#180): closed on entry, as every panel is.
+  const [adding, setAdding] = useState(false);
+  const { tier, density } = useFramePanel(adding);
   const wide = tier === 'wide';
   const focused = useIsFocused();
   const [tab, setTab] = useState<ReadingStatus>('reading');
@@ -95,12 +99,13 @@ export default function SourcesScreen() {
   const reading = rows.filter((source) => source.readingStatus === 'reading');
   const finished = rows.filter((source) => source.readingStatus === 'finished');
   const shown = tab === 'reading' ? reading : finished;
-  const addSource = () => router.push('/source/new');
+  const addSource = () => (wide ? setAdding(true) : router.push('/source/new'));
   const openSource = (id: string, write = false) =>
     router.push({ pathname: '/source/[id]', params: write ? { id, write: '1' } : { id } });
 
   const selection = useRowSelection(shown.map((source) => source.id));
-  useShortcuts({ active: focused }, (command) => {
+  // While the form is open its panel hears the keys.
+  useShortcuts({ active: focused && !(wide && adding) }, (command) => {
     if (command === 'previous' || command === 'next') {
       selection.step(command);
       return true;
@@ -119,6 +124,20 @@ export default function SourcesScreen() {
     }
   });
 
+  // Saved, the panel closes on the new Source's row, chosen.
+  const panel = wide && adding && (
+    <View className="w-[520px]">
+      <NewSourcePanel
+        active={focused}
+        onClose={() => setAdding(false)}
+        onSaved={(id) => {
+          setAdding(false);
+          selection.select(id);
+        }}
+      />
+    </View>
+  );
+
   if (all.isPending || all.isError || all.data.length === 0) {
     const message = all.isPending ? (
       <ActivityIndicator className="flex-1" color={colors.accent} />
@@ -133,10 +152,13 @@ export default function SourcesScreen() {
     );
     if (wide) {
       return (
-        <View className="flex-1 bg-page">
+        <View className="flex-1 flex-row bg-page">
           <Stack.Screen options={{ headerShown: false }} />
-          <WideHeader onAdd={addSource} />
-          {message}
+          <View className={adding ? 'min-w-0 flex-1 border-r border-line' : 'min-w-0 flex-1'}>
+            <WideHeader onAdd={addSource} />
+            {message}
+          </View>
+          {panel}
         </View>
       );
     }
@@ -188,9 +210,8 @@ export default function SourcesScreen() {
     return (
       <View className="flex-1 bg-page">
         <Stack.Screen options={{ headerShown: false }} />
-        {/* #180's panel stands beside this column. */}
         <View className="flex-1 flex-row">
-          <View className="min-w-0 flex-1">
+          <View className={adding ? 'min-w-0 flex-1 border-r border-line' : 'min-w-0 flex-1'}>
             <WideHeader
               onAdd={addSource}
               chips={filterOn && <FilterChips filters={filters} onChange={setFilters} named />}
@@ -221,9 +242,11 @@ export default function SourcesScreen() {
               onOpen={(id) => openSource(id)}
               header={hiddenUndated ? <View className="px-md pt-sm">{hiddenUndated}</View> : undefined}
               empty={empty()}
+              density={density}
             />
             <SourceTableKeys />
           </View>
+          {panel}
         </View>
       </View>
     );
