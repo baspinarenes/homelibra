@@ -146,14 +146,18 @@ function SourceFormPanel({
   const { draft, setDraft, layout, typeFields, typeText } = form;
   // "Değişiklikler atılsın mı?" in the foot, and the way out taken once the changes are thrown away.
   const [asking, setAsking] = useState<{ then: () => void } | null>(null);
-  const ask = (then: () => void) => setAsking({ then });
+  const confirmingDelete = deletion?.confirming ?? false;
+  // Asked from elsewhere (the sidebar) over Kaynağı sil's question: this one takes the foot.
+  const ask = (then: () => void) => {
+    if (confirmingDelete) deletion?.cancel();
+    setAsking({ then });
+  };
   const discard = () => {
     onClose();
     asking?.then();
   };
   // Vazgeç and ✕ ask first once something changed, as Esc does.
   const cancel = () => (form.changed ? ask(() => {}) : onClose());
-  const confirmingDelete = deletion?.confirming ?? false;
   // Changed, the form holds every way out of it: N, the sidebar's Not al and places ask first (#178).
   useUnsavedWork(form.changed, ask);
 
