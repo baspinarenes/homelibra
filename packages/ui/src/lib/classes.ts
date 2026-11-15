@@ -106,6 +106,7 @@ export const typeClass = {
   excerptLg: 'type-excerpt-lg',
   body: 'type-body',
   bodyLg: 'type-body-lg',
+  reading: 'type-reading',
   bodySm: 'type-body-sm',
   comment: 'type-comment',
   commentSm: 'type-comment-sm',
