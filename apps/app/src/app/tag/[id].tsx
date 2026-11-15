@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { copyNoteMarkdown, useCopyMarkdown } from '@/features/collection/collection-actions';
-import { focusedNote, ViewNotePanel } from '@/features/collection/collection-note-panel';
+import { focusedNote, useNoteEditing, ViewNotePanel } from '@/features/collection/collection-note-panel';
 import { CollectionView, SourceNotesSwitch, ViewCount, ViewName } from '@/features/collection/collection-view';
 import { type NoteFocus, stepInView } from '@/features/collection/note-focus';
 import { viewAction } from '@/features/collection/view-keys';
@@ -109,6 +109,8 @@ function TagPage({
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
   const inFront = useIsFocused();
+  // While its Note is edited in the panel, the edit hears the keys.
+  const { editing, setEditing } = useNoteEditing(focus);
 
   // On the phone the box is always there; on a wide screen it waits behind the magnifier or /.
   const [searching, setSearching] = useState(false);
@@ -125,7 +127,7 @@ function TagPage({
   // The focused Source's Notes as the panel fetched them: a key acts on them at once, the clipboard allows no wait.
   const sourceNotes = (sourceId: string) => queryClient.getQueryData(trpc.notes.list.queryKey({ sourceId }));
 
-  useShortcuts({ panelOpen, active: wide && inFront && !menuOpen }, (command) => {
+  useShortcuts({ panelOpen, active: wide && inFront && !menuOpen && !editing }, (command) => {
     const action = viewAction(command, { panelOpen, renaming: false, searching, notes: shown.noteCount });
     switch (action) {
       case 'previous':
@@ -150,7 +152,7 @@ function TagPage({
         return true;
       case 'edit':
         if (!focus) return false;
-        router.push({ pathname: '/note/[id]', params: { id: focus.noteId } });
+        setEditing(true);
         return true;
       case 'searchHere':
         setSearching(true);
@@ -286,7 +288,7 @@ function TagPage({
       underEmpty={searched.matches && <ShortWords words={searched.shortWords} centered />}
       empty={searched.matches ? t('noteSearch.viewEmpty') : t('collection.emptyTagNoNotes')}
       wide={wide ? { density: layout.density, focus, onOpen: focusBy(false), focusRow: byKeys } : undefined}
-      foot={panelOpen && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
+      foot={panelOpen && !editing && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
     />
   );
 
@@ -296,7 +298,16 @@ function TagPage({
       <PanelLayout
         narrow={layout.sidebar === 'iconRail'}
         panel={
-          focus && <ViewNotePanel view={view} focus={focus} onFocus={focusBy(false)} onClose={() => setFocus(null)} />
+          focus && (
+            <ViewNotePanel
+              view={view}
+              focus={focus}
+              editing={editing}
+              onEditingChange={setEditing}
+              onFocus={focusBy(false)}
+              onClose={() => setFocus(null)}
+            />
+          )
         }
       >
         {list}
