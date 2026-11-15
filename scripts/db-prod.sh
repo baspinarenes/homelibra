@@ -83,7 +83,8 @@ main() {
   local file
   file=$(env_file)
   [[ -n "$file" ]] || fail "No .env.production: the beta wizards write it (scripts/setup-beta-infra.sh)."
-  value() { grep -m1 "^$1=" "$file" | cut -d= -f2-; }
+  # The wizards write KEY='value' lines, so the shell reads them back.
+  value() { (set +u; source "$file"; printf '%s' "${!1:-}"); }
   local key ip db
   key=$(value SSH_KEY_PATH); ip=$(value SERVER_IP); db=$(value DB_UUID)
   [[ -n "$key" && -n "$ip" && -n "$db" ]] || fail "$file lacks SSH_KEY_PATH, SERVER_IP or DB_UUID: run scripts/deploy-beta.sh."
