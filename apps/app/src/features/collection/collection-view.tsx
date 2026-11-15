@@ -15,6 +15,7 @@ import {
   Pressable,
   SectionList,
   View,
+  type PressableInstance,
   type ViewInstance,
 } from 'react-native';
 
@@ -38,6 +39,8 @@ export type WideList = {
   density: Density;
   focus: NoteFocus | null;
   onOpen: (focus: NoteFocus) => void;
+  /** The keys chose `focus` (↑↓): the focus goes to its row too, so the framed row and the focused one agree. */
+  focusRow?: boolean;
 };
 
 /** Room kept above a row brought into view, for the Source heading that sticks over the list. */
@@ -78,6 +81,8 @@ export function CollectionView({
   const list = useRef<SectionList<Note, (typeof sections)[number]>>(null);
   const frame = useRef<ViewInstance>(null);
   const rows = useRef(new Map<string, ViewInstance>());
+  // Each drawn row's own press target, to put the focus on.
+  const targets = useRef(new Map<string, PressableInstance>());
   const scrollY = useRef(0);
   // The pressed row and where it stood on the screen, until the rows have changed under it.
   const pressed = useRef<{ id: string; top: number } | null>(null);
@@ -105,17 +110,21 @@ export function CollectionView({
     // Only a change of density moves the rows; scrollBy reads refs.
   }, [density]);
 
-  // A row the keys moved to comes into view; a pressed one already is.
+  // A row the keys moved to comes into view and takes the focus; a pressed one already has both.
+  const focusRow = wide?.focusRow ?? false;
   useEffect(() => {
     if (!focused || pressed.current) return;
     const row = rows.current.get(focused);
+    if (focusRow) targets.current.get(focused)?.focus();
     if (!row) {
-      // Not drawn yet, far down a long list: the list finds it.
+      // Not drawn yet, far down a long list: the list finds it and draws it.
       const sectionIndex = sections.findIndex((section) => section.data.some((note) => note.id === focused));
       const itemIndex = sections[sectionIndex]?.data.findIndex((note) => note.id === focused) ?? -1;
       if (itemIndex >= 0)
         list.current?.scrollToLocation({ sectionIndex, itemIndex, viewPosition: 0.5, animated: false });
-      return;
+      if (!focusRow) return;
+      const frameId = requestAnimationFrame(() => targets.current.get(focused)?.focus());
+      return () => cancelAnimationFrame(frameId);
     }
     frame.current?.measureInWindow((_fx, frameTop, _fw, frameHeight) =>
       row.measureInWindow((_x, top, _w, height) => {
@@ -180,6 +189,10 @@ export function CollectionView({
                 collapsable={false}
               >
                 <WideRow
+                  target={(target) => {
+                    if (target) targets.current.set(note.id, target);
+                    else targets.current.delete(note.id);
+                  }}
                   note={note}
                   match={matches?.get(note.id)}
                   density={wide.density}
@@ -208,6 +221,7 @@ export function CollectionView({
 
 /** The wide tier's row, from @homelibra/ui, with why the Note is here in the app's words. */
 function WideRow({
+  target,
   note,
   match,
   density,
@@ -215,6 +229,7 @@ function WideRow({
   divided,
   onPress,
 }: {
+  target: (row: PressableInstance | null) => void;
   note: Note;
   match: Match | undefined;
   density: Density;
@@ -226,6 +241,7 @@ function WideRow({
   const names = note.why.tags.map((tag) => tag.name).join(', ');
   return (
     <WideNoteRow
+      ref={target}
       density={density}
       locator={note.locator}
       excerpt={note.excerpt}
