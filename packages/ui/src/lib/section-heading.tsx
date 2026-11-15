@@ -1,4 +1,4 @@
-import { Children, type ReactNode } from 'react';
+import { Children, createContext, type ReactNode, useContext } from 'react';
 import { Pressable, View } from 'react-native';
 
 import type { IconComponent } from './icon';
@@ -15,15 +15,33 @@ type HeadingProps = {
   action?: { label: string; accessibilityLabel: string; icon: IconComponent; onPress: () => void };
 };
 
-/** A section's heading: one style and colour everywhere in the app, whatever the section. */
+/** Inside `<Sections wide>`: the wide tier's single column. */
+const WideColumn = createContext(false);
+
+/** Whether this stands in `<Sections wide>`, the wide tier's single column (Ayarlar, #183). */
+export function useWideColumn() {
+  return useContext(WideColumn);
+}
+
+/**
+ * A section's heading: one style and colour everywhere in the app, whatever
+ * the section; in a wide column, in serif as written (the wide Ayarlar board).
+ */
 export function SectionHeading({ title, count, link, action }: HeadingProps) {
   const { colors } = useTheme();
+  const wide = useWideColumn();
   return (
     // Baseline-aligned, the two ends apart.
     <View className="flex-row items-baseline justify-between gap-3">
-      <Text variant="heading" className="shrink">
-        {title}
-      </Text>
+      {wide ? (
+        <Text variant="summary" color="fg" role="heading" className="shrink">
+          {title}
+        </Text>
+      ) : (
+        <Text variant="heading" className="shrink">
+          {title}
+        </Text>
+      )}
       {count !== undefined && <Text variant="collectionCount">{count}</Text>}
       {link && (
         <Pressable role="link" aria-label={link.label} onPress={link.onPress} hitSlop={12}>
@@ -51,13 +69,25 @@ export function SectionHeading({ title, count, link, action }: HeadingProps) {
  * A section without a box: its heading, then its content, 18 above and below.
  * Between its parts, 12 by default; `text` sets running text 8 apart (İletişim);
  * `rows` puts `SettingsRow`s 6 under the heading and close to each other, as
- * the Ayarlar boards draw Hesap and Gizlilik.
+ * the Ayarlar boards draw Hesap and Gizlilik. In a wide column the heading
+ * stands 22 under the section above, a `line` rule under it; running text
+ * keeps 10 above and below, and rows follow the rule, ruling under themselves.
  */
 export function Section({
   children,
   spacing = 'default',
   ...heading
 }: HeadingProps & { spacing?: 'default' | 'text' | 'rows'; children: ReactNode }) {
+  const wide = useWideColumn();
+  if (wide)
+    return (
+      <View>
+        <View className="border-b border-line pt-[22px] pb-1.5">
+          <SectionHeading {...heading} />
+        </View>
+        {spacing === 'text' ? <View className="gap-2 py-2.5">{children}</View> : children}
+      </View>
+    );
   return (
     <View className={sectionLooks[spacing]}>
       <View className={spacing === 'rows' ? 'mb-1.5' : undefined}>
@@ -80,8 +110,18 @@ export function SectionText({ children }: { children: ReactNode }) {
   return <Text variant="body">{children}</Text>;
 }
 
-/** Sections one under another, a thin `lineSoft` rule between each two. */
-export function Sections({ children }: { children: ReactNode }) {
+/**
+ * Sections one under another, a thin `lineSoft` rule between each two.
+ * `wide`: the wide tier's single column (Ayarlar, #183), where each section's
+ * heading carries its own rule and its rows rule under themselves.
+ */
+export function Sections({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+  if (wide)
+    return (
+      <WideColumn value>
+        <View>{children}</View>
+      </WideColumn>
+    );
   return (
     <View>
       {Children.toArray(children).map((child, index) => (
