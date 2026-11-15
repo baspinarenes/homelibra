@@ -2,7 +2,7 @@
   "expo": {
     "name": "Homelibra",
     "slug": "homelibra",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "homelibra",
@@ -40,7 +40,10 @@
         "@sentry/react-native/expo",
         {
           "organization": "enes-baspnar",
-          "project": "homelibra-app"
+          "project": "homelibra-app",
+          "experimental_android": {
+            "enableAndroidGradlePlugin": true
+          }
         }
       ],
       "expo-sqlite",
