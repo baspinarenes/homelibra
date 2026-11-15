@@ -118,6 +118,8 @@ function EditForm({
       case 'close':
         putAway();
         return true;
+      case 'stay':
+        return true;
       default:
         return false;
     }

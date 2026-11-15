@@ -50,7 +50,9 @@ export function WideDizin({
   const tags = useTags(tagSort.value);
   // Yeni dosya's panel: closed on entry, as every panel is.
   const [creating, setCreating] = useState(false);
-  useFramePanel(creating);
+  // Not al takes the panel's place (#178); beside either, the columns stand one over the other.
+  const { capturing } = useFramePanel(creating, () => setCreating(false));
+  const stacked = creating || capturing;
   const [menu, setMenu] = useState<Menu | null>(null);
   const [acting, setActing] = useState<{ tag: TagRef; start: TagActionStart } | null>(null);
 
@@ -208,7 +210,7 @@ export function WideDizin({
         </View>
         {/* Beside the panel two columns would leave each about 200 px: one over the other, each scrolling. */}
         <View
-          className={creating ? 'min-h-0 flex-1 gap-lg px-xxl pt-md' : 'min-h-0 flex-1 flex-row gap-xxl px-xxl pt-md'}
+          className={stacked ? 'min-h-0 flex-1 gap-lg px-xxl pt-md' : 'min-h-0 flex-1 flex-row gap-xxl px-xxl pt-md'}
         >
           <DizinColumn
             title={t('collections.collections')}

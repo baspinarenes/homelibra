@@ -259,6 +259,16 @@ export const tr = {
     writing: 'Yeni not',
     note: 'Not',
   },
+  // Not al off a Source page (#178): the writing in the panel beside any wide screen; the rest are capture's and wideSource's.
+  wideCapture: {
+    panel: 'Yeni not',
+    anywhere: 'her yerden',
+    source: 'Kaynak',
+    lastNoted: 'son not alınan · değiştir',
+    change: 'değiştir',
+    chooseSource: 'Kaynak seç',
+    footnote: 'Kaydedince alanlar boşalır, Kaynak ve Konum kalır; panel yazma alanı olarak açık durur.',
+  },
   noteEdit: {
     title: 'Notu düzenle',
     locator: 'Konum',

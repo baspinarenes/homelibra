@@ -30,6 +30,7 @@ import { SourceSearchBar } from '@/features/source/source-search';
 import { SourceTags } from '@/features/source/source-tags';
 import { TagEditor } from '@/features/tag/tag-picker';
 import { SharedUndoBar } from '@/components/undo-bar';
+import { usePageWriting } from '@/components/wide-frame';
 
 type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 
@@ -119,6 +120,8 @@ export function WideSourcePage({
     setEditing(false);
     setFocusAsked(true);
   };
+  // The sidebar's Not al writes here, in the column, as N does (#178).
+  usePageWriting(toWriting);
 
   // The Note just saved, lit from when the list has it.
   const [flash, setFlash] = useState<string | null>(null);

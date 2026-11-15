@@ -1,19 +1,41 @@
 import { Sidebar, type SidebarPlace } from '@homelibra/ui/sidebar';
-import { type Layout, type Sidebar as SidebarShape, useShortcuts, useWideLayout } from '@homelibra/ui/wide-layout';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  HoldShortcuts,
+  type Layout,
+  type Sidebar as SidebarShape,
+  useShortcuts,
+  useWideLayout,
+} from '@homelibra/ui/wide-layout';
+import { useQuery } from '@tanstack/react-query';
 import { type Href, useIsFocused, usePathname, useRouter, useSegments } from 'expo-router';
-import { createContext, type ReactNode, useContext, useEffect, useState, useSyncExternalStore } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 
 import { openPanels, type OpenPanels } from '@/components/open-panels';
 import { sidebarMove, sidebarPlace } from '@/components/sidebar-place';
 import { useCollections } from '@/features/collection/collection-list';
+import { captureAction } from '@/features/note/capture-keys';
+import { CapturePanel, useWideCapture } from '@/features/note/wide-capture';
 import { QuickSearchWindow } from '@/features/search/quick-search';
 import { useTRPC } from '@/lib/trpc';
 
 const Panels = createContext<OpenPanels | null>(null);
 const SidebarShown = createContext(false);
+// Whether the frame's Not al panel stands beside the screen (#178).
+const Capturing = createContext(false);
+// The writing of the page in front that writes on its own (a Source page), which takes Not al.
+type PageWriting = { current: (() => void) | null };
+const PageWritings = createContext<PageWriting | null>(null);
 
 /**
  * The frame around every screen of the open Library (ADR-0012): in the wide
@@ -26,43 +48,128 @@ const SidebarShown = createContext(false);
  * a tier never remounts the screens.
  */
 export function WideFrame({ library, children }: { library: boolean; children: ReactNode }) {
+  const router = useRouter();
+  const trpc = useTRPC();
   const [panels] = useState(openPanels);
-  const panelOpen = useSyncExternalStore(panels.subscribe, panels.isOpen, panels.isOpen);
-  const { sidebar } = useWideLayout({ panelOpen });
+  const screenPanel = useSyncExternalStore(panels.subscribe, panels.isOpen, panels.isOpen);
+  // Not al off a Source page (#178): the writing in a panel beside the screen, its draft kept here.
+  const [writing, setWriting] = useState(false);
+  const [focusAsk, setFocusAsk] = useState(0);
+  const capture = useWideCapture();
+  const [pageWriting] = useState<PageWriting>(() => ({ current: null }));
+  const { sidebar } = useWideLayout({ panelOpen: screenPanel || writing });
   // The quick search window (#175): ⌘K from any screen of the open Library, or Ara ⌘K in the sidebar.
   const [searching, setSearching] = useState(false);
   const framed = library && sidebar !== null;
-  // Narrowed below the wide tier, or the Library closed, the window goes with the sidebar.
+  // Narrowed below the wide tier, or the Library closed, the window and the writing go with the sidebar.
   if (searching && !framed) setSearching(false);
+  if (writing && !framed) setWriting(false);
+  // A panel is closed on entry: another screen, or a screen's own panel opened, puts the writing away.
+  const pathname = usePathname();
+  const [path, setPath] = useState(pathname);
+  if (path !== pathname) {
+    setPath(pathname);
+    setWriting(false);
+  }
+  useEffect(() => panels.subscribe(() => (panels.isOpen() ? setWriting(false) : undefined)), [panels]);
+
+  const home = useQuery({ ...trpc.sources.home.queryOptions(), enabled: framed });
+  const openWriting = () => {
+    // With no Source yet, the first one is made before any Note.
+    if (home.data?.sourceCount === 0) {
+      router.push('/source/new');
+      return;
+    }
+    if (!writing) void capture.ready();
+    setWriting(true);
+    setFocusAsk((asked) => asked + 1);
+  };
+  // The sidebar's Not al: a page writing on its own brings its writing forward.
+  const notAl = () => (pageWriting.current ? pageWriting.current() : openWriting());
+
   useShortcuts({ active: framed }, (command) => {
     if (command !== 'quickSearch') return false;
     setSearching(true);
     return true;
   });
+  // N once the page in front has let it go; heard after every screen's own keys.
+  useShortcuts({ active: framed && !writing, last: true }, (command) => {
+    const state = { writing: false, pageWrites: pageWriting.current !== null, choosing: false, canSave: false };
+    if (captureAction(command, state) !== 'open') return false;
+    openWriting();
+    return true;
+  });
+  const capturing = framed && writing;
   return (
     <Panels value={panels}>
-      <SidebarShown value={framed}>
-        <View className="flex-1 flex-row bg-page">
-          {framed && <FrameSidebar shape={sidebar} onSearch={() => setSearching(true)} />}
-          <View className="flex-1">{children}</View>
-        </View>
-      </SidebarShown>
+      <PageWritings value={pageWriting}>
+        <SidebarShown value={framed}>
+          <Capturing value={capturing}>
+            <View className="flex-1 flex-row bg-page">
+              {framed && <FrameSidebar shape={sidebar} onSearch={() => setSearching(true)} onCapture={notAl} />}
+              {/* While the writing is open the screen's keys are held: they are the panel's. */}
+              <HoldShortcuts held={capturing}>
+                <View className="flex-1">{children}</View>
+              </HoldShortcuts>
+              {capturing && (
+                <View className="w-[520px] border-l border-line">
+                  <CapturePanel capture={capture} focusAsk={focusAsk} onClose={() => setWriting(false)} />
+                </View>
+              )}
+            </View>
+          </Capturing>
+        </SidebarShown>
+      </PageWritings>
       {framed && searching && <FrameQuickSearch onClose={() => setSearching(false)} />}
     </Panels>
   );
 }
 
+/** A screen's layout in the frame: the tier and `density` for its rows, and whether Not al's panel stands beside it. */
+export type FrameLayout = Layout & { capturing: boolean };
+
 /**
  * How a screen tells the frame its panel is open beside its list. Reported
  * only while the screen is in front: a screen under a pushed one, or in a
- * tab not shown, leaves the sidebar as it is. Returns the screen's layout
- * with its panel: the tier, and `density` for its rows.
+ * tab not shown, leaves the sidebar as it is. Opening its panel puts the
+ * frame's Not al away; Not al opening calls `onCapture`, where the screen
+ * closes its own panel, so only one ever stands beside the list (#178).
+ * Returns the screen's layout with its panel or Not al's: the tier,
+ * `density` for its rows, and `capturing`, while Not al's panel stands
+ * beside it (its list then fills its place: PanelLayout `beside`).
  */
-export function useFramePanel(open: boolean): Layout {
+export function useFramePanel(open: boolean, onCapture?: () => void): FrameLayout {
   const panels = useContext(Panels);
   const focused = useIsFocused();
-  useEffect(() => (open && focused && panels ? panels.open() : undefined), [open, focused, panels]);
-  return useWideLayout({ panelOpen: open });
+  const capturing = useContext(Capturing) && focused;
+  // Before the paint, so Not al's panel and the screen's never stand side by side.
+  useLayoutEffect(() => (open && focused && panels ? panels.open() : undefined), [open, focused, panels]);
+  const [wasCapturing, setWasCapturing] = useState(capturing);
+  if (capturing !== wasCapturing) {
+    setWasCapturing(capturing);
+    if (capturing) onCapture?.();
+  }
+  return { ...useWideLayout({ panelOpen: open || capturing }), capturing };
+}
+
+/**
+ * A page with its own writing (a wide Source page, #177) takes Not al
+ * while it is in front: the sidebar's Not al calls `toWriting`, and N is
+ * left to the page, never opening the frame's panel over it.
+ */
+export function usePageWriting(toWriting: () => void): void {
+  const writings = useContext(PageWritings);
+  const focused = useIsFocused();
+  const latest = useRef(toWriting);
+  latest.current = toWriting;
+  useEffect(() => {
+    if (!focused || !writings) return;
+    const take = () => latest.current();
+    writings.current = take;
+    return () => {
+      if (writings.current === take) writings.current = null;
+    };
+  }, [focused, writings]);
 }
 
 /**
@@ -102,11 +209,18 @@ function FrameQuickSearch({ onClose }: { onClose: () => void }) {
   );
 }
 
-function FrameSidebar({ shape, onSearch }: { shape: SidebarShape; onSearch: () => void }) {
+function FrameSidebar({
+  shape,
+  onSearch,
+  onCapture,
+}: {
+  shape: SidebarShape;
+  onSearch: () => void;
+  onCapture: () => void;
+}) {
   const { t } = useTranslation();
   const router = useRouter();
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const { place, file } = sidebarPlace(usePathname());
   const segments = useSegments();
   // Dosyalar in Son değişen order, the Collections last written in first.
@@ -116,16 +230,6 @@ function FrameSidebar({ shape, onSearch }: { shape: SidebarShape; onSearch: () =
   const go = (to: SidebarPlace) => {
     if (sidebarMove({ segments, place, to }) === 'switchTab') router.navigate(tabHref[to]);
     else router.dismissTo(tabHref[to]);
-  };
-
-  // Today's way to take a Note (#178 gives Not al its own panel): the last
-  // noted Source, ready to write, as Kaldığın yer opens it; with no Note yet,
-  // Kaynaklar to pick a Source, or the form for the first one.
-  const capture = async () => {
-    const last = await queryClient.fetchQuery(trpc.sources.lastNoted.queryOptions()).catch(() => null);
-    if (last) router.push({ pathname: '/source/[id]', params: { id: last.source.id, write: '1' } });
-    else if (home.data?.sourceCount === 0) router.push('/source/new');
-    else go('sources');
   };
 
   return (
@@ -156,7 +260,7 @@ function FrameSidebar({ shape, onSearch }: { shape: SidebarShape; onSearch: () =
         if (file) router.replace(href);
         else router.push(href);
       }}
-      onCapture={() => void capture()}
+      onCapture={onCapture}
       onSearch={onSearch}
     />
   );

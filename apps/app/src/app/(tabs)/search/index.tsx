@@ -179,7 +179,8 @@ export default function SearchScreen() {
   const focus = opened && opened.query === query && kind !== 'sources' && !offline ? opened.focus : null;
   // Put away for good: it does not come back with the query, Tümü or the connection.
   if (opened && !focus) setOpened(null);
-  const layout = useFramePanel(focus !== null);
+  // Not al takes the panel's place (#178).
+  const layout = useFramePanel(focus !== null, () => setOpened(null));
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
   // While its Note is edited in the panel, the edit hears the keys.
@@ -319,6 +320,7 @@ export default function SearchScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <PanelLayout
           narrow={layout.sidebar === 'iconRail'}
+          beside={layout.capturing}
           panel={
             focus && (
               <SearchNotePanel

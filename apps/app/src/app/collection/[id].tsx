@@ -120,7 +120,8 @@ function CollectionPage({ collection }: { collection: Collection }) {
     setByKeys(keys);
   };
   const [menuOpen, setMenuOpen] = useState(false);
-  const layout = useFramePanel(focus !== null);
+  // Not al takes the panel's place (#178).
+  const layout = useFramePanel(focus !== null, () => setFocus(null));
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
   // While its Note is edited in the panel, the edit hears the keys.
@@ -381,6 +382,7 @@ function CollectionPage({ collection }: { collection: Collection }) {
       <Stack.Screen options={{ title: collection.name, headerShown: false }} />
       <PanelLayout
         narrow={layout.sidebar === 'iconRail'}
+        beside={layout.capturing}
         panel={
           focus && (
             <ViewNotePanel

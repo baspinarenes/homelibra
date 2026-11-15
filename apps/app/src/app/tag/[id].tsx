@@ -106,7 +106,8 @@ function TagPage({
     setByKeys(keys);
   };
   const [menuOpen, setMenuOpen] = useState(false);
-  const layout = useFramePanel(focus !== null);
+  // Not al takes the panel's place (#178).
+  const layout = useFramePanel(focus !== null, () => setFocus(null));
   const wide = layout.tier === 'wide';
   const panelOpen = wide && focus !== null;
   const inFront = useIsFocused();
@@ -323,6 +324,7 @@ function TagPage({
       <Stack.Screen options={{ title: tag.name, headerShown: false }} />
       <PanelLayout
         narrow={layout.sidebar === 'iconRail'}
+        beside={layout.capturing}
         panel={
           focus && (
             <ViewNotePanel

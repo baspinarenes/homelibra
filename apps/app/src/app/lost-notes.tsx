@@ -46,7 +46,8 @@ export default function LostNotesScreen() {
   // The wide tier's panel: the Note it edits, closed on entry and once that Note is no longer lost.
   const [focusId, setFocusId] = useState<string | null>(null);
   const shown = shownLostNote(focusId, notes);
-  const layout = useFramePanel(shown !== null);
+  // Not al takes the panel's place (#178).
+  const layout = useFramePanel(shown !== null, () => setFocusId(null));
 
   if (layout.tier === 'wide')
     return (
@@ -54,6 +55,7 @@ export default function LostNotesScreen() {
         <Stack.Screen options={{ title: t('outbox.lostTitle'), headerShown: false }} />
         <PanelLayout
           narrow={layout.sidebar === 'iconRail'}
+          beside={layout.capturing}
           panel={
             shown && (
               <Panel
