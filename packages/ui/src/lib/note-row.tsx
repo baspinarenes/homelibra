@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { type Ref, useState } from 'react';
+import { Pressable, type PressableInstance, View } from 'react-native';
 
 import { cx } from './cx';
 import { Text, type Variant } from './text';
@@ -26,6 +26,8 @@ type Props = {
   /** A line above it, parting it from the Note before it under the same Source. */
   divided?: boolean;
   onPress: () => void;
+  /** The row itself, so a screen can put the focus on the row its keys chose. */
+  ref?: Ref<PressableInstance>;
   /** What screen readers hear the press does. */
   hint?: string;
   labels: {
@@ -55,6 +57,7 @@ export function NoteRow({
   onPress,
   hint,
   labels,
+  ref,
 }: Props) {
   const [hovered, setHovered] = useState(false);
   const compact = density === 'compact';
@@ -67,6 +70,7 @@ export function NoteRow({
   return (
     <View className={cx(divided && 'border-t border-line-soft')}>
       <Pressable
+        ref={ref}
         role="button"
         aria-current={selected || undefined}
         accessibilityHint={hint}
