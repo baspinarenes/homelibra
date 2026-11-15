@@ -25,7 +25,8 @@
     "./logo": "./src/logo.ts",
     "./wheels": "./src/wheels.ts",
     "./illustration": "./src/illustration.ts",
-    "./wide-layout": "./src/wide-layout.ts"
+    "./wide-layout": "./src/wide-layout.ts",
+    "./sidebar": "./src/sidebar.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
