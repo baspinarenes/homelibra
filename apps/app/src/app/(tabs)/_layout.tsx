@@ -1,8 +1,8 @@
 import { TabBar, type TabBarIcon } from '@homelibra/ui/tab-bar';
-import { type as typeScale, useTheme, wideMinWidth } from '@homelibra/ui/theme';
+import { type as typeScale, useTheme } from '@homelibra/ui/theme';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Platform, useWindowDimensions } from 'react-native';
 
 import { TabIcon } from '@/components/tab-icon';
 
@@ -15,13 +15,13 @@ const tabs = [
 ] as const satisfies readonly { route: string; key: string; icon: TabBarIcon }[];
 
 /**
- * Five tabs: the package's TabBar on the phone, a left rail on desktop web.
- * Etiketler is not a tab: it is the second view inside Dizin.
+ * Five tabs: the package's TabBar in the phone tier, a left rail from the
+ * rail tier up. Etiketler is not a tab: it is the second view inside Dizin.
  */
 export default function TabsLayout() {
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
-  const rail = Platform.OS === 'web' && width >= wideMinWidth; // below it, a bottom bar (library-nav prototype)
+  // The wide tier keeps the rail until the sidebar replaces it.
+  const rail = useWideLayout().tier !== 'phone';
   const { colors } = useTheme();
 
   return (

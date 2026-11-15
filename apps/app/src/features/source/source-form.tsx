@@ -19,7 +19,8 @@ import {
 import { HeaderIconAction, HeaderTextAction } from '@homelibra/ui/screen-header';
 import { Text } from '@homelibra/ui/text';
 import { TextField } from '@homelibra/ui/text-field';
-import { cx, space, useTheme, wideMinWidth } from '@homelibra/ui/theme';
+import { cx, space, useTheme } from '@homelibra/ui/theme';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useRouter } from 'expo-router';
@@ -27,7 +28,7 @@ import Link from 'lucide-react-native/icons/link';
 import Save from 'lucide-react-native/icons/save';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type DateDraft, DateInput, dateToDraft, emptyDateDraft, readDateDraft } from '@/features/source/date-input';
@@ -189,8 +190,8 @@ export function SourceForm({
   deleteAction?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
-  const wide = Platform.OS === 'web' && width >= wideMinWidth;
+  // Two columns from the rail tier up; the wide tier keeps them until the form moves into a panel.
+  const wide = useWideLayout().tier !== 'phone';
   const [draft, setDraft] = useState(initial);
   const [tuckedOpen, setTuckedOpen] = useState(false);
   const offline = useOffline();

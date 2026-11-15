@@ -12,7 +12,6 @@ export {
   type Shadows,
   space,
   type,
-  wideMinWidth,
 } from './lib/tokens';
 export {
   keepThemePreferenceIn,
