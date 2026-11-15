@@ -111,7 +111,7 @@ export function EditSourcePanel({
  * Kaydet stand at its foot. ⌘↵ saves; Esc closes it, but first asks
  * "Değişiklikler atılsın mı?" in the foot once something is written, and
  * puts a question it asked away again. Being offline and a failed save are
- * said on a strip at its top.
+ * said in the foot, over the buttons.
  */
 function SourceFormPanel({
   title,
@@ -174,7 +174,7 @@ function SourceFormPanel({
         ? t('deletion.deleteFailed')
         : null;
 
-  const foot = confirmingDelete ? (
+  const buttons = confirmingDelete ? (
     <View className="flex-row flex-wrap items-center justify-end gap-sm">
       <Text variant="bodySm" className="mr-auto min-w-0 shrink">
         <DeleteSourceQuestion title={initial.title} count={deletion?.noteCount ?? 0} />
@@ -205,6 +205,17 @@ function SourceFormPanel({
       <Button label={t('sourceForm.save')} onPress={form.save} disabled={!form.canSave} busy={saving} />
     </View>
   );
+  // Over the buttons, in sight wherever the form is scrolled to.
+  const foot = (
+    <View className="gap-sm">
+      {notice && (
+        <Text role="alert" variant="label" color="warn">
+          {notice}
+        </Text>
+      )}
+      {buttons}
+    </View>
+  );
 
   return (
     <Panel
@@ -226,13 +237,6 @@ function SourceFormPanel({
       onClose={onClose}
       foot={foot}
     >
-      {notice && (
-        <View role="alert" className="border-b border-line bg-warn-soft px-xl py-2.5">
-          <Text variant="label" color="warn">
-            {notice}
-          </Text>
-        </View>
-      )}
       <View className="gap-md px-xl pt-lg">
         <TypeChoice value={draft.type} onChange={form.changeType} />
 

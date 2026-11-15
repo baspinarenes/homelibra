@@ -313,7 +313,13 @@ export function WideSourcePage({
                 <HeaderIconAction icon={Search} label={t('noteSearch.inSource')} onPress={() => setSearching(true)} />
               )}
               <ReadingStatusButton sourceId={source.id} status={source.readingStatus} />
-              <Button label={t('sourcePage.edit')} variant="small" onPress={() => setEditingSource(true)} />
+              {/* Not over a Note being edited in the column: its changes would go unasked. */}
+              <Button
+                label={t('sourcePage.edit')}
+                variant="small"
+                onPress={() => setEditingSource(true)}
+                disabled={editing}
+              />
               <MoreMenu label={t('widePanel.more')} items={menuItems} open={menuOpen} onOpenChange={setMenuOpen} />
             </>
           }

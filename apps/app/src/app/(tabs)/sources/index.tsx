@@ -124,7 +124,8 @@ export default function SourcesScreen() {
     }
   });
 
-  // Saved, the panel closes on the new Source's row, chosen.
+  // Saved, the panel closes on the new Source's row, chosen. Both wide returns put it in the
+  // same place, so the first Source coming in, or a list that fails to load, keeps what it holds.
   const panel = wide && adding && (
     <View className="w-[520px]">
       <NewSourcePanel
@@ -208,46 +209,44 @@ export default function SourcesScreen() {
 
   if (wide) {
     return (
-      <View className="flex-1 bg-page">
+      <View className="flex-1 flex-row bg-page">
         <Stack.Screen options={{ headerShown: false }} />
-        <View className="flex-1 flex-row">
-          <View className={adding ? 'min-w-0 flex-1 border-r border-line' : 'min-w-0 flex-1'}>
-            <WideHeader
-              onAdd={addSource}
-              chips={filterOn && <FilterChips filters={filters} onChange={setFilters} named />}
-              onFilter={() => setWideDraft(wideDraft ? null : filters)}
-            >
-              {wideDraft && (
-                <FilterPanel
-                  draft={wideDraft}
-                  onChange={setWideDraft}
-                  count={all.data.filter(sourceFilter(wideDraft)).length}
-                  onApply={() => {
-                    setFilters(wideDraft);
-                    setWideDraft(null);
-                  }}
-                />
-              )}
-              {statusTabs(
-                <Text variant="caption" color="ink2">
-                  {t('sourceTable.sortHint')}
-                </Text>,
-              )}
-            </WideHeader>
-            <SourceTable
-              sources={shown}
-              order={order}
-              onOrder={setOrder}
-              selection={selection}
-              onOpen={(id) => openSource(id)}
-              header={hiddenUndated ? <View className="px-md pt-sm">{hiddenUndated}</View> : undefined}
-              empty={empty()}
-              density={density}
-            />
-            <SourceTableKeys />
-          </View>
-          {panel}
+        <View className={adding ? 'min-w-0 flex-1 border-r border-line' : 'min-w-0 flex-1'}>
+          <WideHeader
+            onAdd={addSource}
+            chips={filterOn && <FilterChips filters={filters} onChange={setFilters} named />}
+            onFilter={() => setWideDraft(wideDraft ? null : filters)}
+          >
+            {wideDraft && (
+              <FilterPanel
+                draft={wideDraft}
+                onChange={setWideDraft}
+                count={all.data.filter(sourceFilter(wideDraft)).length}
+                onApply={() => {
+                  setFilters(wideDraft);
+                  setWideDraft(null);
+                }}
+              />
+            )}
+            {statusTabs(
+              <Text variant="caption" color="ink2">
+                {t('sourceTable.sortHint')}
+              </Text>,
+            )}
+          </WideHeader>
+          <SourceTable
+            sources={shown}
+            order={order}
+            onOrder={setOrder}
+            selection={selection}
+            onOpen={(id) => openSource(id)}
+            header={hiddenUndated ? <View className="px-md pt-sm">{hiddenUndated}</View> : undefined}
+            empty={empty()}
+            density={density}
+          />
+          <SourceTableKeys />
         </View>
+        {panel}
       </View>
     );
   }

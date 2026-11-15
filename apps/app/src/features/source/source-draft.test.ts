@@ -12,6 +12,7 @@ const stored: SourceDraft = {
 
 describe('draftChanged', () => {
   it('a form as it was opened holds nothing to lose', () => {
+    expect(draftChanged(emptyDraft, stored)).toBe(true);
     expect(draftChanged(emptyDraft, emptyDraft)).toBe(false);
     expect(draftChanged(stored, { ...stored })).toBe(false);
   });
@@ -22,7 +23,9 @@ describe('draftChanged', () => {
   });
 
   it('a field written in and erased again is no change', () => {
+    expect(draftChanged(emptyDraft, { ...emptyDraft, values: { isbn: '978' } })).toBe(true);
     expect(draftChanged(emptyDraft, { ...emptyDraft, values: { isbn: '' } })).toBe(false);
+    expect(draftChanged(emptyDraft, { ...emptyDraft, title: 'Tanin' })).toBe(true);
     expect(draftChanged(emptyDraft, { ...emptyDraft, title: '   ' })).toBe(false);
   });
 
