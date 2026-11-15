@@ -74,6 +74,8 @@ describe('A Collection whose Tags are all gone (#36)', () => {
 
     await api.tags.delete({ id: tag!.id });
 
-    expect(await api.collections.list()).toEqual([{ id, name: 'Plan', tags: [], noteCount: 0 }]);
+    expect(await api.collections.list()).toEqual([
+      { id, name: 'Plan', tags: [], noteCount: 0, sourceCount: 0, updatedAt: expect.any(String) },
+    ]);
   });
 });
