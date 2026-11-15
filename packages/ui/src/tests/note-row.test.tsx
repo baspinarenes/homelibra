@@ -84,6 +84,24 @@ describe('NoteRow', () => {
     expect(marked.map(text)).toEqual(['Selanik']);
   });
 
+  it('in compact marks + yorum when the search matched words of the Comment, out of sight on that line', () => {
+    const plain = row({ density: 'compact' });
+    const inComment = row({
+      density: 'compact',
+      marks: {
+        excerpt: [{ text: note.excerpt, hit: false }],
+        comment: [
+          { text: "Bu iddia için dipnot 48'deki ", hit: false },
+          { text: 'arşiv', hit: true },
+          { text: ' belgesine bak.', hit: false },
+        ],
+      },
+    });
+    const withComment = (page: ReturnType<typeof row>) => all(page).find((node) => text(node) === '+ yorum')!;
+    expect(classes(withComment(plain))).not.toContain('bg-mark');
+    expect(classes(withComment(inComment))).toContain('bg-mark');
+  });
+
   it('ignores marks that no longer spell the text (the Note changed since the search)', () => {
     const page = row({ marks: { excerpt: [{ text: 'Eski', hit: true }] } });
     expect(all(page).filter((node) => classes(node).includes('bg-mark'))).toEqual([]);

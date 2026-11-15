@@ -18,7 +18,8 @@ export type ViewAction =
 /**
  * A wide view of Notes and its panel (ADR-0012): ↑↓ move the open panel through
  * the rows, ⌘C copies the Note it shows and ⌘⇧C the whole view, E edits
- * that Note, / opens the view's search. Esc takes back one thing at a time:
+ * that Note, / opens the view's search (or, open, puts the cursor back in
+ * its field). Esc takes back one thing at a time:
  * the renaming, then the panel, then the search; it never leaves the page.
  */
 export function viewAction(command: Command, state: ViewKeyState): ViewAction | null {
@@ -37,7 +38,8 @@ export function viewAction(command: Command, state: ViewKeyState): ViewAction | 
     case 'copyAll':
       return notes > 0 ? 'copyAll' : null;
     case 'searchHere':
-      return searching ? null : 'searchHere';
+      // Open already, it takes the cursor back to its field.
+      return 'searchHere';
     default:
       return null;
   }
