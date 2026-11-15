@@ -23,12 +23,16 @@ pnpm dev
 
 `pnpm dev` ([scripts/dev.sh](scripts/dev.sh)) starts Postgres, applies migrations, installs the dev build if the phone lacks it, reverses ports 3000 and 8081 onto the phone, starts the API and Metro, and opens the app. Sign-in codes appear in the `[api]` lines. JavaScript changes reload on save; after adding or upgrading a native dependency, run `pnpm dev --rebuild`. With several devices attached, pick one with `ANDROID_SERIAL=<id> pnpm dev` (ids from `adb devices`).
 
-For the web app, run the API and Metro yourself:
+For the web app, run Postgres, the API and Metro yourself (Docker Desktop must be running):
 
 ```bash
+pnpm db:up
+pnpm --filter @homelibra/api db:migrate
 pnpm --filter @homelibra/api dev
-EXPO_PUBLIC_API_URL=http://localhost:3000 pnpm --filter @homelibra/app web
+pnpm --filter @homelibra/app web
 ```
+
+In development the web app calls the API on `localhost:3000`; set `EXPO_PUBLIC_API_URL` to reach it elsewhere.
 
 ## Checks
 
