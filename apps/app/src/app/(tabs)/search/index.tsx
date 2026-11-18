@@ -2,21 +2,24 @@ import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
 import { Button } from '@homelibra/ui/button';
 import { Chip, ChipRow } from '@homelibra/ui/chip';
+import { KeyHints, PanelLayout } from '@homelibra/ui/panel';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Segment } from '@homelibra/ui/segment';
 import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { cx, useTheme } from '@homelibra/ui/theme';
-import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import { useShortcuts } from '@homelibra/ui/wide-layout';
+import { keepPreviousData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import Search from 'lucide-react-native/icons/search';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import X from 'lucide-react-native/icons/x';
-import { useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, FlatList, Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, TextInput, type TextInputInstance, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   emptyYearRange,
@@ -26,8 +29,18 @@ import {
   yearRangeLabel,
   yearRangeOf,
 } from '@/features/search/date-filter';
+import { copyNoteMarkdown } from '@/features/collection/collection-actions';
+import type { NoteFocus } from '@/features/collection/note-focus';
+import { viewAction } from '@/features/collection/view-keys';
 import { ShortWords } from '@/features/search/note-search';
+import { SearchNotePanel } from '@/features/search/search-note-panel';
+import { useNoteEditing } from '@/features/collection/collection-note-panel';
+import { stepInResults } from '@/features/search/search-results';
+import { SearchTipsPopover } from '@/features/search/search-tips';
+import { WideResults } from '@/features/search/wide-results';
 import { SourceCover } from '@/features/source/source-cover';
+import type { CoverSize } from '@/features/source/template-cover';
+import { useFramePanel, useLeave } from '@/components/wide-frame';
 import { useOffline } from '@/lib/network';
 import { useSettled } from '@/features/search/settled';
 import { useTRPC } from '@/lib/trpc';
@@ -91,13 +104,34 @@ function hiddenLine(
  * icon has a dot and a chip under the box names it, × taking it off. The
  * info icon beside the title, set by the tab's layout, opens Arama ipuçları.
  * Words too short for a prefix match are named in a line over the results,
- * or under "Sonuç yok." (#144).
+ * or under "Sonuç yok." (#144). The quick search window's "Ara'da tüm
+ * sonuçlar" opens Ara with its query in the box (`q`, #175).
+ *
+ * On a wide screen (#174) it has a Collection's layout (#171): no header,
+ * the box at the list's top with Arama ipuçları behind its ?, under it
+ * Tümü / Notlar / Kaynaklar with their counts and Tarih, the years opening
+ * in the page; the same query and the same rules. A Note opens in the panel
+ * beside the list, the rows going compact; a Source opens its page. ↑↓ move
+ * the panel through the Notes found, ⌘C copies its Note, E edits it, /
+ * goes to the box, Esc closes the Tarih fields, then the panel.
  */
 export default function SearchScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const trpc = useTRPC();
-  const [text, setText] = useState('');
+  const router = useRouter();
+  // `q`: a query handed over, by the quick search window's "Ara'da tüm sonuçlar" (#175).
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [text, setText] = useState(q ?? '');
+  const [taken, setTaken] = useState(q);
+  if (q !== taken) {
+    setTaken(q);
+    if (q !== undefined) setText(q);
+  }
+  // Once in the box the query is the box's: the same one handed over again replaces what was typed since.
+  useEffect(() => {
+    if (q !== undefined) router.setParams({ q: undefined });
+  }, [q, router]);
   const query = useSettled(text.trim());
   const offline = useOffline();
   const [choices, setChoices] = useState(initial);
@@ -127,10 +161,240 @@ export default function SearchScreen() {
   const notes = kind === 'sources' ? [] : (results.data?.pages.flatMap((page) => page.notes) ?? []);
   const hidden = hiddenLine(t, kind, query !== '' && dates ? first?.hiddenUndated : undefined);
 
+  // The wide tier's panel (#174): the Note it shows and the query it was opened from; null while
+  // it is closed, as on entry. A new query, Kaynaklar alone or no connection puts it away.
+  // `byKeys`: ↑↓ chose it, so the focus goes to its row too.
+  const [opened, setOpened] = useState<{ focus: NoteFocus; query: string; byKeys?: boolean } | null>(null);
+  const focus = opened && opened.query === query && kind !== 'sources' && !offline ? opened.focus : null;
+  // Put away for good: it does not come back with the query, Tümü or the connection.
+  if (opened && !focus) setOpened(null);
+  // Not al takes the panel's place (#178).
+  const layout = useFramePanel(focus !== null, () => setOpened(null));
+  // Another row pressed over an edit with changes asks first.
+  const leave = useLeave();
+  const wide = layout.tier === 'wide';
+  const panelOpen = wide && focus !== null;
+  // While its Note is edited in the panel, the edit hears the keys.
+  const { editing, setEditing } = useNoteEditing(focus);
+  const openNote = (to: NoteFocus, byKeys = false) => setOpened({ focus: to, query, byKeys });
+  const closePanel = () => setOpened(null);
+  const [tipsOpen, setTipsOpen] = useState(false);
+  const box = useRef<TextInputInstance>(null);
+  const inFront = useIsFocused();
+  const queryClient = useQueryClient();
+  const { top } = useSafeAreaInsets();
+  // What the panel fetched for its Note: a key acts on it at once, the clipboard allows no wait.
+  const sourceNotes = (sourceId: string) => queryClient.getQueryData(trpc.notes.list.queryKey({ sourceId }));
+
+  useShortcuts({ panelOpen, active: wide && inFront && !tipsOpen && !editing }, (command) => {
+    // Esc puts the Tarih fields away before the panel.
+    if ((command === 'closePanel' || command === 'back') && draft) {
+      setDraft(null);
+      return true;
+    }
+    const action = viewAction(command, { panelOpen, renaming: false, searching: false, notes: notes.length });
+    switch (action) {
+      case 'previous':
+      case 'next': {
+        const order = focus ? sourceNotes(focus.sourceId)?.map((note) => note.id) : undefined;
+        const to = stepInResults(notes, focus, action, order);
+        if (to) openNote(to, true);
+        return to !== null;
+      }
+      case 'copyNote': {
+        if (!focus) return false;
+        const note = sourceNotes(focus.sourceId)?.find((n) => n.id === focus.noteId);
+        const source = queryClient.getQueryData(trpc.sources.get.queryKey({ id: focus.sourceId }));
+        if (!note || !source) return false;
+        copyNoteMarkdown(source, note, {
+          done: t('collectionActions.copied', { count: 1 }),
+          failed: t('collectionActions.copyFailed'),
+        });
+        return true;
+      }
+      case 'edit':
+        if (!focus) return false;
+        setEditing(true);
+        return true;
+      case 'searchHere':
+        box.current?.focus();
+        return true;
+      case 'closePanel':
+        closePanel();
+        return true;
+      default:
+        return false;
+    }
+  });
+
+  // What stands in the list's place while there is no list to show.
+  const message = offline ? (
+    <View className={center}>
+      <Text variant="body" className="text-center">
+        {t('outbox.searchNeedsConnection')}
+      </Text>
+    </View>
+  ) : query === '' ? (
+    <View className="flex-1 bg-page" />
+  ) : results.isPending ? (
+    <View className={center}>
+      <ActivityIndicator color={colors.accent} />
+    </View>
+  ) : results.isError ? (
+    <View className={center}>
+      <Text variant="body" className="text-center">
+        {t('search.failed')}
+      </Text>
+      <Button variant="text" label={t('search.retry')} onPress={() => void results.refetch()} />
+    </View>
+  ) : sources.length === 0 && notes.length === 0 ? (
+    <View className={center}>
+      <Text variant="body" className="text-center">
+        {t('search.empty')}
+      </Text>
+      <ShortWords words={first?.shortWords} centered />
+    </View>
+  ) : null;
+
+  /** Over the Notes: the short words, the Sources found (the first three under Tümü), the Notes' heading. */
+  const listHeader = (cover: CoverSize) => (
+    <>
+      {!!first?.shortWords.length && (
+        <View className="pt-md">
+          <ShortWords words={first.shortWords} />
+        </View>
+      )}
+      {sources.length > 0 && (
+        <View className="pt-md pb-xs">
+          <GroupHeading label={t('search.sources')} count={sources.length} />
+          {(kind === 'sources' ? sources : sources.slice(0, FIRST_SOURCES)).map((source, i) => (
+            <SourceRow key={source.id} source={source} divided={i > 0} cover={cover} />
+          ))}
+          {kind === 'all' && sources.length > FIRST_SOURCES && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setChoices({ ...choices, kind: 'sources' })}
+              className="self-start py-sm active:opacity-70"
+            >
+              <Text variant="button">{t('search.allSources', { count: sources.length })}</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+      {notes.length > 0 && (
+        <View className={cx('pt-md pb-xs', sources.length > 0 && divider)}>
+          <GroupHeading label={t('search.notes')} count={first?.noteTotal ?? 0} />
+        </View>
+      )}
+    </>
+  );
+  const nextPage = () => {
+    if (kind !== 'sources' && results.hasNextPage && !results.isFetchingNextPage) void results.fetchNextPage();
+  };
+  const listFooter = results.isFetchingNextPage ? (
+    <ActivityIndicator color={colors.accent} className="py-md" />
+  ) : undefined;
+
+  if (wide) {
+    // Tümü 7 · Notlar 3 · Kaynaklar 4, once a search has counted them.
+    const kindLabel = (option: Kind, key: 'noteSearch.all' | 'noteSearch.notes' | 'noteSearch.sources') =>
+      query !== '' && first ? `${t(key)} ${countOf(option, first)}` : t(key);
+    // Along the list's foot while the panel is open, beside the full sidebar; only keys that act here.
+    const keyHints = [
+      { keys: '↑↓', label: t('widePanel.hintRows') },
+      { keys: '⌘C', label: t('widePanel.hintCopyNote') },
+      { keys: '/', label: t('widePanel.hintSearch') },
+      { keys: 'Esc', label: t('widePanel.hintClose') },
+    ];
+    return (
+      <View className="flex-1">
+        <Stack.Screen options={{ headerShown: false }} />
+        <PanelLayout
+          narrow={layout.sidebar === 'iconRail'}
+          beside={layout.capturing}
+          panel={
+            focus && (
+              <SearchNotePanel
+                focus={focus}
+                editing={editing}
+                onEditingChange={setEditing}
+                onFocus={(to) => openNote(to)}
+                onClose={closePanel}
+              />
+            )
+          }
+        >
+          <View className="flex-1 bg-page">
+            {/* The status bar's inset, which the tab's header kept, and 16 under it. */}
+            <View className="gap-2.5 border-b border-line px-lg pb-md" style={{ paddingTop: top + 16 }}>
+              <SearchBox
+                value={text}
+                onChange={setText}
+                offline={offline}
+                inputRef={box}
+                tips={<SearchTipsPopover open={tipsOpen} onOpenChange={setTipsOpen} />}
+              />
+              {!offline && (
+                <View className="flex-row flex-wrap items-center gap-sm">
+                  <Segment
+                    label={t('noteSearch.kindLabel')}
+                    options={[
+                      { value: 'all', label: kindLabel('all', 'noteSearch.all') },
+                      { value: 'notes', label: kindLabel('notes', 'noteSearch.notes') },
+                      { value: 'sources', label: kindLabel('sources', 'noteSearch.sources') },
+                    ]}
+                    value={kind}
+                    onChange={(next) => setChoices({ ...choices, kind: next })}
+                  />
+                  <Button label={t('search.dates')} variant="small" onPress={() => setDraft(draft ? null : choices)} />
+                  {dates && (
+                    <Chip
+                      label={yearRangeLabel(dates, t('dateFilter.open'))}
+                      selected
+                      removable
+                      onPress={() => setChoices({ ...choices, dates: unfiltered(choices).dates })}
+                    />
+                  )}
+                </View>
+              )}
+              {!offline && hidden && <Text variant="caption">{hidden}</Text>}
+              {!offline && draft && (
+                <DatesPanel
+                  draft={draft}
+                  onChange={setDraft}
+                  kind={kind}
+                  count={query !== '' && counts ? countOf(kind, counts) : null}
+                  onApply={() => {
+                    setChoices({ ...choices, dates: draft.dates });
+                    setDraft(null);
+                  }}
+                />
+              )}
+            </View>
+            {message ?? (
+              <WideResults
+                notes={notes}
+                density={layout.density}
+                focus={focus}
+                onOpen={(to) => leave(() => openNote(to))}
+                focusRow={opened?.byKeys ?? false}
+                header={<View className="px-lg">{listHeader('table')}</View>}
+                footer={listFooter}
+                onEndReached={nextPage}
+              />
+            )}
+            {panelOpen && !editing && layout.sidebar === 'full' && <KeyHints hints={keyHints} />}
+          </View>
+        </PanelLayout>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-page">
       <Stack.Screen
         options={{
+          headerShown: true,
           // Offline there is nothing to narrow.
           headerRight: offline
             ? undefined
@@ -169,78 +433,18 @@ export default function SearchScreen() {
           {hidden && <Text variant="caption">{hidden}</Text>}
         </View>
       )}
-      {offline ? (
-        <View className={center}>
-          <Text variant="body" className="text-center">
-            {t('outbox.searchNeedsConnection')}
-          </Text>
-        </View>
-      ) : query === '' ? (
-        <View className="flex-1 bg-page" />
-      ) : results.isPending ? (
-        <View className={center}>
-          <ActivityIndicator color={colors.accent} />
-        </View>
-      ) : results.isError ? (
-        <View className={center}>
-          <Text variant="body" className="text-center">
-            {t('search.failed')}
-          </Text>
-          <Button variant="text" label={t('search.retry')} onPress={() => void results.refetch()} />
-        </View>
-      ) : sources.length === 0 && notes.length === 0 ? (
-        <View className={center}>
-          <Text variant="body" className="text-center">
-            {t('search.empty')}
-          </Text>
-          <ShortWords words={first?.shortWords} centered />
-        </View>
-      ) : (
+      {message ?? (
         <FlatList
           className="flex-1 bg-page"
           contentContainerClassName="px-gutter pb-xxl"
           keyboardShouldPersistTaps="handled"
           data={notes}
           keyExtractor={(note) => note.id}
-          ListHeaderComponent={
-            <>
-              {!!first?.shortWords.length && (
-                <View className="pt-md">
-                  <ShortWords words={first.shortWords} />
-                </View>
-              )}
-              {sources.length > 0 && (
-                <View className="pt-md pb-xs">
-                  <GroupHeading label={t('search.sources')} count={sources.length} />
-                  {(kind === 'sources' ? sources : sources.slice(0, FIRST_SOURCES)).map((source, i) => (
-                    <SourceRow key={source.id} source={source} divided={i > 0} />
-                  ))}
-                  {kind === 'all' && sources.length > FIRST_SOURCES && (
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => setChoices({ ...choices, kind: 'sources' })}
-                      className="self-start py-sm active:opacity-70"
-                    >
-                      <Text variant="button">{t('search.allSources', { count: sources.length })}</Text>
-                    </Pressable>
-                  )}
-                </View>
-              )}
-              {notes.length > 0 && (
-                <View className={cx('pt-md pb-xs', sources.length > 0 && divider)}>
-                  <GroupHeading label={t('search.notes')} count={first?.noteTotal ?? 0} />
-                </View>
-              )}
-            </>
-          }
+          ListHeaderComponent={listHeader('small')}
           renderItem={({ item: note, index }) => <NoteRow note={note} divided={index > 0} />}
-          onEndReached={() => {
-            if (kind !== 'sources' && results.hasNextPage && !results.isFetchingNextPage) void results.fetchNextPage();
-          }}
+          onEndReached={nextPage}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            results.isFetchingNextPage ? <ActivityIndicator color={colors.accent} className="py-md" /> : undefined
-          }
+          ListFooterComponent={listFooter}
         />
       )}
       <FilterSheet
@@ -253,6 +457,48 @@ export default function SearchScreen() {
         }}
         onClose={() => setDraft(null)}
       />
+    </View>
+  );
+}
+
+/**
+ * A wide Ara's Tarih (#174): the years in the page under the bar, beside
+ * nothing and over nothing, as a wide Kaynaklar's Filtrele; Temizle and
+ * "N sonucu göster" as in the phone's sheet, N for the kind chosen.
+ */
+function DatesPanel({
+  draft,
+  onChange,
+  kind,
+  count,
+  onApply,
+}: {
+  draft: Choices;
+  onChange: (draft: Choices) => void;
+  kind: Kind;
+  /** Null before a word is typed, when there is nothing to count. */
+  count: number | null;
+  onApply: () => void;
+}) {
+  const { t } = useTranslation();
+  const [counted, uncounted] = showLabels[kind];
+  return (
+    <View className="max-w-[640px] gap-md pt-xs">
+      <YearRangeFields value={draft.dates} onChange={(dates) => onChange({ ...draft, dates })} />
+      <View className="flex-row gap-sm">
+        <Button
+          label={t('search.clearFilters')}
+          variant="secondary"
+          onPress={() => onChange({ ...draft, dates: unfiltered(draft).dates })}
+          disabled={!hasYear(draft.dates)}
+        />
+        <Button
+          label={count === null ? t(uncounted) : t(counted, { count })}
+          onPress={onApply}
+          // A year its calendar does not have (1400 r.) cannot be applied.
+          disabled={hasYear(draft.dates) && yearRangeOf(draft.dates) === null}
+        />
+      </View>
     </View>
   );
 }
@@ -337,25 +583,41 @@ const androidLine = { includeFontPadding: false, textAlignVertical: 'center' } a
 /**
  * The box under the title, a magnifier at its left and × at its right once
  * something is typed. Offline it says a search needs the connection, so no
- * result is taken for "not yok".
+ * result is taken for "not yok". With `tips` (a wide screen's ?) it fills the
+ * list's top, the ? at its right after the ×, and `inputRef` lets / reach it.
  */
 function SearchBox({
   value,
   onChange,
   offline,
+  tips,
+  inputRef,
 }: {
   value: string;
   onChange: (text: string) => void;
   offline: boolean;
+  tips?: ReactNode;
+  inputRef?: RefObject<TextInputInstance | null>;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
+  const clear = (className: string) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('search.clear')}
+      onPress={() => onChange('')}
+      className={className}
+    >
+      <X color={colors.muted} size={18} strokeWidth={1.8} />
+    </Pressable>
+  );
   return (
-    <View className="items-center px-gutter pt-md pb-2.5">
+    <View className={tips ? 'w-full' : 'items-center px-gutter pt-md pb-2.5'}>
       {/* 640 is the widest the search box gets on a wide screen. */}
       <View className={cx('w-full max-w-[640px] justify-center', offline && 'opacity-60')}>
         <TextInput
+          ref={inputRef}
           accessibilityLabel={t('tabs.search')}
           placeholder={t(offline ? 'outbox.searchNeedsConnection' : 'search.placeholder')}
           editable={!offline}
@@ -372,7 +634,8 @@ function SearchBox({
           // on focus drops an Android input's padding and the placeholder runs under the glass.
           // Focused: an accent border and a 3px accent-soft ring, as every field has.
           className={cx(
-            'type-body min-h-11.5 rounded-control border bg-surface px-10 py-3 text-fg outline-3 outline-solid',
+            'type-body min-h-11.5 rounded-control border bg-surface py-3 text-fg outline-3 outline-solid',
+            tips ? 'pr-20 pl-10' : 'px-10',
             focused ? 'border-accent outline-accent-soft' : 'border-line outline-transparent',
           )}
           style={androidLine}
@@ -380,15 +643,13 @@ function SearchBox({
         <View aria-hidden pointerEvents="none" className="absolute left-3.25">
           <Search color={offline ? colors.muted2 : colors.muted} size={18} strokeWidth={1.8} />
         </View>
-        {value !== '' && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('search.clear')}
-            onPress={() => onChange('')}
-            className="absolute right-px h-11 w-11 items-center justify-center active:opacity-70"
-          >
-            <X color={colors.muted} size={18} strokeWidth={1.8} />
-          </Pressable>
+        {tips ? (
+          <View className="absolute right-px flex-row items-center">
+            {value !== '' && clear('h-11 w-9 items-center justify-center active:opacity-70')}
+            {tips}
+          </View>
+        ) : (
+          value !== '' && clear('absolute right-px h-11 w-11 items-center justify-center active:opacity-70')
         )}
       </View>
     </View>
@@ -399,7 +660,8 @@ function GroupHeading({ label, count }: { label: string; count: number }) {
   return <SectionHeading title={`${label} · ${count}`} />;
 }
 
-function SourceRow({ source, divided }: { source: SourceResult; divided: boolean }) {
+/** `cover`: the phone's small Cover, or the table's 24 × 34 in a wide list. */
+function SourceRow({ source, divided, cover }: { source: SourceResult; divided: boolean; cover: CoverSize }) {
   const { t } = useTranslation();
   const router = useRouter();
   // Yazar · Tarih, the Date as it was entered.
@@ -410,7 +672,7 @@ function SourceRow({ source, divided }: { source: SourceResult; divided: boolean
       onPress={() => router.push({ pathname: '/source/[id]', params: { id: source.id } })}
       className={cx('flex-row items-center gap-3.25 py-md active:opacity-70', divided && divider)}
     >
-      <SourceCover type={source.type} cover={source.cover} />
+      <SourceCover type={source.type} cover={source.cover} size={cover} />
       <View className="flex-1 gap-0.5">
         <Text variant="micro">{t(`sourceTypes.${source.type}.label`)}</Text>
         <Text variant="sourceTitleSm" numberOfLines={2}>

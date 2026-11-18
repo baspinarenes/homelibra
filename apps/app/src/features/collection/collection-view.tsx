@@ -1,14 +1,18 @@
 import type { AppRouter } from '@homelibra/api';
 import { formatDate } from '@homelibra/core/date';
+import { NoteRow as WideNoteRow } from '@homelibra/ui/note-row';
 import { Text } from '@homelibra/ui/text';
 import { Switch } from '@homelibra/ui/switch';
 import { cx } from '@homelibra/ui/theme';
+import type { Density } from '@homelibra/ui/wide-layout';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, SectionList, View } from 'react-native';
+import { Pressable, SectionList, View, type PressableInstance } from 'react-native';
 
+import { usePressedRowAnchor } from '@/components/pressed-row-anchor';
+import type { NoteFocus } from '@/features/collection/note-focus';
 import { MarkedText, type Match, type Matches } from '@/features/search/note-search';
 
 /** What a Collection's view and a Tag's page have in common. */
@@ -20,13 +24,33 @@ type Group = ViewData['groups'][number];
 type Note = Group['notes'][number];
 
 /**
+ * The wide tier's list beside its panel (ADR-0012): rows in `density`, the
+ * one `focus` names framed, and a press opens the Note in the panel instead
+ * of on its Source's page.
+ */
+export type WideList = {
+  density: Density;
+  focus: NoteFocus | null;
+  onOpen: (focus: NoteFocus) => void;
+  /** The keys chose `focus` (↑↓): the focus goes to its row too, so the framed row and the focused one agree. */
+  focusRow?: boolean;
+};
+
+/** Room kept above a row brought into view, for the Source heading that sticks over the list. */
+const STICKY_ROOM = 44;
+
+/**
  * A Collection's view, or a Tag's page (#12 variant C): the fixed top bar
  * the caller fills, then the Notes grouped by Source in the order the API
  * gives, each Source's heading sticking under the bar while its Notes
  * scroll. The same layout on the phone and the desktop. A Source's heading
  * opens the Source page; a Note opens there, in place. While its search
  * finds Notes, `matches` marks the words they matched and the list starts
- * at the top. `underEmpty` stands under `empty` when there are none.
+ * at the top. `underEmpty` stands under `empty` when there are none;
+ * `foot` stands under the list. With `wide` it is the list beside a panel:
+ * opening a Note there switches the rows to compact while the pressed row
+ * stays where it was on the screen, and a row the keys move to is brought
+ * into view.
  */
 export function CollectionView({
   view,
@@ -34,67 +58,156 @@ export function CollectionView({
   empty,
   underEmpty,
   matches = null,
+  wide,
+  foot,
 }: {
   view: ViewData;
   bar: ReactNode;
   empty: string;
   underEmpty?: ReactNode;
   matches?: Matches | null;
+  wide?: WideList;
+  foot?: ReactNode;
 }) {
   const router = useRouter();
   const sections = view.groups.map((group) => ({ key: group.source.id, source: group.source, data: group.notes }));
   const list = useRef<SectionList<Note, (typeof sections)[number]>>(null);
+  const focused = wide?.focus?.noteId ?? null;
 
   // The search can open anywhere down the list; what it finds starts at the top.
   useEffect(() => {
     if (matches) list.current?.getScrollResponder()?.scrollTo({ y: 0, animated: false });
   }, [matches]);
 
+  const anchor = usePressedRowAnchor({
+    density: wide?.density,
+    focused,
+    focusRow: wide?.focusRow ?? false,
+    panelOpen: !!wide?.focus,
+    scrollTo: (y) => list.current?.getScrollResponder()?.scrollTo({ y, animated: false }),
+    reveal: (id) => {
+      const sectionIndex = sections.findIndex((section) => section.data.some((note) => note.id === id));
+      const itemIndex = sections[sectionIndex]?.data.findIndex((note) => note.id === id) ?? -1;
+      if (itemIndex >= 0)
+        list.current?.scrollToLocation({ sectionIndex, itemIndex, viewPosition: 0.5, animated: false });
+    },
+    topRoom: STICKY_ROOM,
+  });
+
+  const open = (focus: NoteFocus) => {
+    if (wide) anchor.press(focus.noteId, () => wide.onOpen(focus));
+  };
+
   return (
     <View className="flex-1 bg-page">
       <View className="gap-2.5 border-b border-line px-lg pt-sm pb-md">{bar}</View>
-      <SectionList
-        ref={list}
-        keyboardShouldPersistTaps="handled"
-        className="flex-1 bg-page"
-        contentContainerClassName="pb-xxl"
-        sections={sections}
-        keyExtractor={(note) => note.id}
-        extraData={matches}
-        stickySectionHeadersEnabled
-        ListEmptyComponent={
-          <View className="gap-sm p-xl">
-            <Text variant="body" className="text-center">
-              {empty}
-            </Text>
-            {underEmpty}
-          </View>
-        }
-        renderSectionHeader={({ section }) => (
-          <SourceHeading
-            source={section.source}
-            onPress={() => router.push({ pathname: '/source/[id]', params: { id: section.source.id } })}
-          />
-        )}
-        renderItem={({ item: note, index, section }) => (
-          <NoteRow
-            note={note}
-            match={matches?.get(note.id)}
-            divided={index > 0}
-            onPress={() => router.push({ pathname: '/source/[id]', params: { id: section.source.id, note: note.id } })}
-          />
-        )}
-      />
+      <View ref={anchor.frame} collapsable={false} className="flex-1">
+        <SectionList
+          ref={list}
+          keyboardShouldPersistTaps="handled"
+          className="flex-1 bg-page"
+          contentContainerClassName="pb-xxl"
+          sections={sections}
+          keyExtractor={(note) => note.id}
+          extraData={wide ? [matches, wide.density, focused] : matches}
+          stickySectionHeadersEnabled
+          onScroll={anchor.onScroll}
+          scrollEventThrottle={16}
+          onScrollToIndexFailed={() => {}}
+          ListEmptyComponent={
+            <View className="gap-sm p-xl">
+              <Text variant="body" className="text-center">
+                {empty}
+              </Text>
+              {underEmpty}
+            </View>
+          }
+          renderSectionHeader={({ section }) => (
+            <SourceHeading
+              source={section.source}
+              wide={!!wide}
+              onPress={() => router.push({ pathname: '/source/[id]', params: { id: section.source.id } })}
+            />
+          )}
+          renderItem={({ item: note, index, section }) =>
+            wide ? (
+              <View ref={anchor.row(note.id)} collapsable={false}>
+                <WideRow
+                  target={anchor.target(note.id)}
+                  note={note}
+                  match={matches?.get(note.id)}
+                  density={wide.density}
+                  selected={note.id === focused}
+                  divided={index > 0}
+                  onPress={() => open({ sourceId: section.source.id, noteId: note.id })}
+                />
+              </View>
+            ) : (
+              <NoteRow
+                note={note}
+                match={matches?.get(note.id)}
+                divided={index > 0}
+                onPress={() =>
+                  router.push({ pathname: '/source/[id]', params: { id: section.source.id, note: note.id } })
+                }
+              />
+            )
+          }
+        />
+      </View>
+      {foot}
     </View>
   );
 }
 
-/** Tür, `Yazar, Başlık`, and on the right the Date as entered, or "tarihsiz". */
-function SourceHeading({ source, onPress }: { source: Group['source']; onPress: () => void }) {
+/** The wide tier's row, from @homelibra/ui, with why the Note is here in the app's words. */
+function WideRow({
+  target,
+  note,
+  match,
+  density,
+  selected,
+  divided,
+  onPress,
+}: {
+  target: (row: PressableInstance | null) => void;
+  note: Note;
+  match: Match | undefined;
+  density: Density;
+  selected: boolean;
+  divided: boolean;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  const names = note.why.tags.map((tag) => tag.name).join(', ');
+  return (
+    <WideNoteRow
+      ref={target}
+      density={density}
+      locator={note.locator}
+      excerpt={note.excerpt}
+      comment={note.comment}
+      marks={match && { excerpt: match.excerpt, comment: match.comment }}
+      why={{ text: note.why.via === 'note' ? names : t('collection.viaSource', { names }), via: note.why.via }}
+      selected={selected}
+      divided={divided}
+      hint={t('widePanel.openNote')}
+      labels={{ withComment: t('widePanel.withComment') }}
+      onPress={onPress}
+    />
+  );
+}
+
+/** Tür, `Yazar, Başlık` (in the serif on a wide screen), and on the right the Date as entered, or "tarihsiz". */
+function SourceHeading({ source, wide, onPress }: { source: Group['source']; wide: boolean; onPress: () => void }) {
   const { t } = useTranslation();
   return (
     <Pressable
-      accessibilityRole="link"
+      // A button, not a link, so ↵ opens it on the web (react-native-web never presses role="link").
+      accessibilityRole="button"
+      accessibilityLabel={[t(`sourceTypes.${source.type}.label`), source.author, source.title]
+        .filter(Boolean)
+        .join(', ')}
       accessibilityHint={t('collection.openSource')}
       onPress={onPress}
       className="flex-row items-baseline gap-sm border-b border-line bg-page px-lg pt-md pb-1.5 active:opacity-70"
@@ -102,7 +215,7 @@ function SourceHeading({ source, onPress }: { source: Group['source']; onPress: 
       <Text variant="micro" color="accent">
         {t(`sourceTypes.${source.type}.label`)}
       </Text>
-      <Text variant="label" className="min-w-0 flex-1" numberOfLines={1}>
+      <Text variant={wide ? 'sourceTitleSm' : 'label'} className="min-w-0 flex-1" numberOfLines={1}>
         {[source.author, source.title].filter(Boolean).join(', ')}
       </Text>
       <Text variant="caption">{source.date ? formatDate(source.date) : t('collection.undated')}</Text>

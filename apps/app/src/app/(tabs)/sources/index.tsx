@@ -1,95 +1,94 @@
-import type { AppRouter } from '@homelibra/api';
-import { type CalendarDate, inYearRange } from '@homelibra/core/date';
-import { type SourceType, sourceTypes } from '@homelibra/core/source';
-import { Chip, ChipRow } from '@homelibra/ui/chip';
+import { sourceTypes } from '@homelibra/core/source';
+import { Button } from '@homelibra/ui/button';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
-import { Segment } from '@homelibra/ui/segment';
-import { Sheet, SheetField } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
 import { TextTabs } from '@homelibra/ui/text-tabs';
 import { useTheme } from '@homelibra/ui/theme';
+import { useShortcuts } from '@homelibra/ui/wide-layout';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { inferRouterInputs } from '@trpc/server';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  emptyYearRange,
-  hasYear,
-  type YearRangeDraft,
-  YearRangeFields,
-  yearRangeLabel,
-  yearRangeOf,
-} from '@/features/search/date-filter';
+import { emptyYearRange, yearRangeOf } from '@/features/search/date-filter';
 import { ListMessage } from '@/components/list-message';
+import { useFramePanel } from '@/components/wide-frame';
 import type { ReadingStatus } from '@/features/source/reading-status';
+import {
+  type Choices,
+  FilterChips,
+  FilterPanel,
+  FilterSheet,
+  filtering,
+  noFilters,
+  sourceFilter,
+  type SourceFilters,
+  unfiltered,
+} from '@/features/source/source-filter';
+import { NewSourcePanel } from '@/features/source/source-form-panel';
 import { SourceListRow } from '@/features/source/source-list-row';
+import { inOrder, naturalOrder } from '@/features/source/source-order';
+import { useSourceOrder } from '@/features/source/source-sort';
+import { SourceTable, SourceTableKeys, useRowSelection } from '@/features/source/source-table';
 import { useTRPC } from '@/lib/trpc';
-
-type Sort = inferRouterInputs<AppRouter>['sources']['list']['sort'];
-
-/** What Filtrele ve sırala sets: the order, and the Tür and Tarih filters; a filter with nothing chosen keeps all. */
-type Choices = { sort: Sort; types: SourceType[]; dates: YearRangeDraft };
-
-const initial: Choices = { sort: 'last', types: [], dates: emptyYearRange };
-
-/** Whether the Tür or the Tarih filter narrows the list. */
-const filtering = ({ types, dates }: Choices) => types.length > 0 || yearRangeOf(dates) !== null;
-
-/** Every filter off, the order and the calendar kept. */
-const unfiltered = (choices: Choices): Choices => ({
-  ...choices,
-  types: [],
-  dates: { ...emptyYearRange, calendar: choices.dates.calendar },
-});
-
-/** The test the filters put a Source to, by the rule `sources.list` follows: for the sheet's live count. */
-function sourceFilter({ types, dates }: Choices) {
-  const range = yearRangeOf(dates);
-  return (source: { type: SourceType; date: CalendarDate | null }) =>
-    (types.length === 0 || types.includes(source.type)) && (!range || inYearRange(source.date, range));
-}
 
 /**
  * Kaynaklar: every Source, by Son not (the default), Başlık, Yazar or Tarih,
  * under two tabs by Reading status, Okunuyor (open first) and Bitti, each
- * with its count. The header's Filtrele icon opens Filtrele ve sırala (#122): the
- * order, the Tür filter and the Tarih filter, applied by "N kaynağı göster".
- * While a filter is on the icon has a dot, the tabs count what it keeps,
- * and a chip under them names it, × taking it off; the Tarih filter hides
- * the undated and says how many. A row opens the Source page, where its
- * Notes are captured.
+ * with its count. The order is kept on this device. On a phone the header's
+ * Filtrele icon opens Filtrele ve sırala (#122): the order, the Tür filter
+ * and the Tarih filter, applied by "N kaynağı göster". While a filter is on
+ * the icon has a dot, the tabs count what it keeps, and a chip under them
+ * names it, × taking it off; the Tarih filter hides the undated and says
+ * how many. A row opens the Source page, where its Notes are captured.
+ * On a wide screen (#179) the list is a table whose column headings choose
+ * the order and turn it round; Filtrele keeps only Tür and Tarih and opens
+ * in the page; ↑↓ choose a row, ↵ opens it, N opens it ready to write.
+ * Kaynak ekle opens the Source form in a panel beside the table (#180),
+ * which then shows Tür, Başlık, Yazar and Not only.
  */
 export default function SourcesScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const trpc = useTRPC();
   const router = useRouter();
+  // Yeni kaynak's panel beside the table (#180): closed on entry, as every panel is.
+  const [adding, setAdding] = useState(false);
+  // Not al takes the panel's place (#178); a form with changes holds it off.
+  const { tier, density } = useFramePanel(adding, () => setAdding(false));
+  const wide = tier === 'wide';
+  const focused = useIsFocused();
   const [tab, setTab] = useState<ReadingStatus>('reading');
-  const [choices, setChoices] = useState(initial);
+  const [filters, setFilters] = useState<SourceFilters>(noFilters);
+  const [order, setOrder] = useSourceOrder();
   // A link from Genel Bakış's Kütüphanen opens a tab (`tab`) or narrows to one Tür (`type`), the tab kept.
+  // The wide sidebar's Not al with no Source yet opens Yeni kaynak's panel (`add`, #178).
   // Taken into the screen's own state once, then cleared, so the same link works again.
-  const link = useLocalSearchParams<{ tab?: string; type?: string }>();
-  const linked = link.tab || link.type ? `${link.tab}|${link.type}` : null;
+  const link = useLocalSearchParams<{ tab?: string; type?: string; add?: string }>();
+  const linked = link.tab || link.type || link.add ? `${link.tab}|${link.type}|${link.add}` : null;
   const [taken, setTaken] = useState<string | null>(null);
   if (linked !== taken) {
     setTaken(linked);
     if (link.tab === 'reading' || link.tab === 'finished') setTab(link.tab);
     const type = sourceTypes.find((known) => known === link.type);
-    if (type) setChoices((current) => ({ ...current, types: [type] }));
+    if (type) setFilters((current) => ({ ...current, types: [type] }));
+    if (link.add === '1') setAdding(true);
   }
   useEffect(() => {
-    if (linked) router.setParams({ tab: undefined, type: undefined });
+    if (linked) router.setParams({ tab: undefined, type: undefined, add: undefined });
   }, [linked, router]);
-  // The sheet's choices while it is open; "Kapat" drops them.
+  // The phone sheet's choices while it is open; "Kapat" drops them.
   const [draft, setDraft] = useState<Choices | null>(null);
-  const { sort, types } = choices;
-  const dates = yearRangeOf(choices.dates);
-  const filterOn = filtering(choices);
+  // The wide Filtrele's while it is open; Filtrele again or Esc drops them.
+  const [wideDraft, setWideDraft] = useState<SourceFilters | null>(null);
+  const { sort } = order;
+  const { types } = filters;
+  const dates = yearRangeOf(filters.dates);
+  const filterOn = filtering(filters);
   // Keep the rows on screen while the other order loads.
   const all = useQuery({ ...trpc.sources.list.queryOptions({ sort }), placeholderData: keepPreviousData });
   const filtered = useQuery({
@@ -98,34 +97,87 @@ export default function SourcesScreen() {
     placeholderData: keepPreviousData,
   });
   const sources = filterOn ? filtered : all;
-  const addSource = () => router.push('/source/new');
+  // A phone has no way to turn the order round: there it always runs its own way.
+  const rows = inOrder(sources.data ?? [], wide ? order : naturalOrder(sort));
+  const reading = rows.filter((source) => source.readingStatus === 'reading');
+  const finished = rows.filter((source) => source.readingStatus === 'finished');
+  const shown = tab === 'reading' ? reading : finished;
+  const addSource = () => (wide ? setAdding(true) : router.push('/source/new'));
+  const openSource = (id: string, write = false) =>
+    router.push({ pathname: '/source/[id]', params: write ? { id, write: '1' } : { id } });
+
+  const selection = useRowSelection(shown.map((source) => source.id));
+  // While the form is open its panel hears the keys.
+  useShortcuts({ active: focused && !(wide && adding) }, (command) => {
+    if (command === 'previous' || command === 'next') {
+      selection.step(command);
+      return true;
+    }
+    if (command === 'open' && selection.selected) {
+      openSource(selection.selected);
+      return true;
+    }
+    if (command === 'capture' && selection.selected) {
+      openSource(selection.selected, true);
+      return true;
+    }
+    if (command === 'back' && wideDraft) {
+      setWideDraft(null);
+      return true;
+    }
+  });
+
+  // Saved, the panel closes on the new Source's row, chosen. Both wide returns put it in the
+  // same place, so the first Source coming in, or a list that fails to load, keeps what it holds.
+  const panel = wide && adding && (
+    <View className="w-[520px]">
+      <NewSourcePanel
+        active={focused}
+        onClose={() => setAdding(false)}
+        onSaved={(id) => {
+          setAdding(false);
+          selection.select(id);
+        }}
+      />
+    </View>
+  );
 
   if (all.isPending || all.isError || all.data.length === 0) {
+    const message = all.isPending ? (
+      <ActivityIndicator className="flex-1" color={colors.accent} />
+    ) : all.isError ? (
+      <ListMessage lead={t('sources.loadFailed')} />
+    ) : (
+      <ListMessage
+        title={t('sources.emptyTitle')}
+        lead={t('sources.emptyLead')}
+        action={{ label: t('sources.add'), onPress: addSource }}
+      />
+    );
+    if (wide) {
+      return (
+        <View className="flex-1 flex-row bg-page">
+          <Stack.Screen options={{ headerShown: false }} />
+          <View className={adding ? 'min-w-0 flex-1 border-r border-line' : 'min-w-0 flex-1'}>
+            <WideHeader onAdd={addSource} />
+            {message}
+          </View>
+          {panel}
+        </View>
+      );
+    }
     return (
       <View className="flex-1 bg-page">
-        <Stack.Screen options={{ headerRight: () => <HeaderActions onAdd={addSource} /> }} />
-        {all.isPending ? (
-          <ActivityIndicator className="flex-1" color={colors.accent} />
-        ) : all.isError ? (
-          <ListMessage lead={t('sources.loadFailed')} />
-        ) : (
-          <ListMessage
-            title={t('sources.emptyTitle')}
-            lead={t('sources.emptyLead')}
-            action={{ label: t('sources.add'), onPress: addSource }}
-          />
-        )}
+        <Stack.Screen options={{ headerShown: true, headerRight: () => <HeaderActions onAdd={addSource} /> }} />
+        {message}
       </View>
     );
   }
 
-  const rows = sources.data ?? [];
   // The Sources of the chosen types that the Tarih filter hides for having no Date.
-  const ofTypes = sourceFilter({ ...choices, dates: emptyYearRange });
+  const ofTypes = sourceFilter({ ...filters, dates: emptyYearRange });
   const undated = dates ? all.data.filter((source) => !source.date && ofTypes(source)).length : 0;
-  const reading = rows.filter((source) => source.readingStatus === 'reading');
-  const finished = rows.filter((source) => source.readingStatus === 'finished');
-  const clearFilters = () => setChoices(unfiltered(choices));
+  const clearFilters = () => setFilters(unfiltered(filters));
 
   const empty = () => {
     if (sources.isPending) return <ActivityIndicator className="flex-1" color={colors.accent} />;
@@ -142,58 +194,89 @@ export default function SourcesScreen() {
     return <ListMessage lead={t('sources.readingEmpty')} action={{ label: t('sources.add'), onPress: addSource }} />;
   };
 
+  const statusTabs = (right?: ReactNode) => (
+    <TextTabs
+      label={t('sources.statusTabs')}
+      options={[
+        { value: 'reading', label: t('readingStatus.readingSection'), count: reading.length },
+        { value: 'finished', label: t('readingStatus.finishedSection'), count: finished.length },
+      ]}
+      value={tab}
+      onChange={setTab}
+      right={right}
+    />
+  );
+  const hiddenUndated = undated > 0 && (
+    <Text variant="caption">{t('dateFilter.hiddenSources', { count: undated })}</Text>
+  );
+
+  if (wide) {
+    return (
+      <View className="flex-1 flex-row bg-page">
+        <Stack.Screen options={{ headerShown: false }} />
+        <View className={adding ? 'min-w-0 flex-1 border-r border-line' : 'min-w-0 flex-1'}>
+          <WideHeader
+            onAdd={addSource}
+            chips={filterOn && <FilterChips filters={filters} onChange={setFilters} named />}
+            onFilter={() => setWideDraft(wideDraft ? null : filters)}
+          >
+            {wideDraft && (
+              <FilterPanel
+                draft={wideDraft}
+                onChange={setWideDraft}
+                count={all.data.filter(sourceFilter(wideDraft)).length}
+                onApply={() => {
+                  setFilters(wideDraft);
+                  setWideDraft(null);
+                }}
+              />
+            )}
+            {statusTabs(
+              <Text variant="caption" color="ink2">
+                {t('sourceTable.sortHint')}
+              </Text>,
+            )}
+          </WideHeader>
+          <SourceTable
+            sources={shown}
+            order={order}
+            onOrder={setOrder}
+            selection={selection}
+            onOpen={(id) => openSource(id)}
+            header={hiddenUndated ? <View className="px-md pt-sm">{hiddenUndated}</View> : undefined}
+            empty={empty()}
+            density={density}
+          />
+          <SourceTableKeys />
+        </View>
+        {panel}
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-page">
       <Stack.Screen
         options={{
+          headerShown: true,
           headerRight: () => (
-            <HeaderActions filter={{ on: filterOn, onPress: () => setDraft(choices) }} onAdd={addSource} />
+            <HeaderActions filter={{ on: filterOn, onPress: () => setDraft({ ...filters, sort }) }} onAdd={addSource} />
           ),
         }}
       />
       {/* Lines up with the root title. */}
-      <View className="px-gutter pt-0.5">
-        <TextTabs
-          label={t('sources.statusTabs')}
-          options={[
-            { value: 'reading', label: t('readingStatus.readingSection'), count: reading.length },
-            { value: 'finished', label: t('readingStatus.finishedSection'), count: finished.length },
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
-      </View>
+      <View className="px-gutter pt-0.5">{statusTabs()}</View>
       <FlatList
         className="flex-1"
         // Grows so an empty tab's message can sit in the middle.
         contentContainerClassName="grow px-gutter pb-xxl"
-        data={tab === 'reading' ? reading : finished}
+        data={shown}
         keyExtractor={(source) => source.id}
         ListHeaderComponent={
           filterOn ? (
             <View className="gap-sm pt-md">
-              <ChipRow>
-                {dates && (
-                  <Chip
-                    label={yearRangeLabel(dates, t('dateFilter.open'))}
-                    selected
-                    removable
-                    onPress={() => setChoices({ ...choices, dates: unfiltered(choices).dates })}
-                  />
-                )}
-                {types.length > 0 && (
-                  <Chip
-                    label={sourceTypes
-                      .filter((type) => types.includes(type))
-                      .map((type) => t(`sourceTypes.${type}.label`))
-                      .join(', ')}
-                    selected
-                    removable
-                    onPress={() => setChoices({ ...choices, types: [] })}
-                  />
-                )}
-              </ChipRow>
-              {undated > 0 && <Text variant="caption">{t('dateFilter.hiddenSources', { count: undated })}</Text>}
+              <FilterChips filters={filters} onChange={setFilters} />
+              {hiddenUndated}
             </View>
           ) : undefined
         }
@@ -205,7 +288,12 @@ export default function SourcesScreen() {
         onChange={setDraft}
         count={draft ? all.data.filter(sourceFilter(draft)).length : 0}
         onApply={() => {
-          if (draft) setChoices(draft);
+          if (draft) {
+            const { sort: chosen, ...chosenFilters } = draft;
+            // A new order runs its own way; the same one keeps the way a wide screen turned it.
+            if (chosen !== sort) setOrder(naturalOrder(chosen));
+            setFilters(chosenFilters);
+          }
           setDraft(null);
         }}
         onClose={() => setDraft(null)}
@@ -215,84 +303,36 @@ export default function SourcesScreen() {
 }
 
 /**
- * Filtrele ve sırala: Sırala (Son not, Başlık, Yazar, Tarih; no direction),
- * Tür (the nine types, any number chosen) and Tarih (one calendar, two
- * years); Temizle and "N kaynağı göster", N following the choices.
+ * A wide Kaynaklar's header in place of the tab's bar: the title, the
+ * filters that are on as chips, Filtrele (once there are Sources) and
+ * Kaynak ekle; then what `children` adds under it (Filtrele open, the tabs).
  */
-function FilterSheet({
-  draft,
-  onChange,
-  count,
-  onApply,
-  onClose,
+function WideHeader({
+  onAdd,
+  onFilter,
+  chips,
+  children,
 }: {
-  /** Null while the sheet is closed. */
-  draft: Choices | null;
-  onChange: (draft: Choices) => void;
-  count: number;
-  onApply: () => void;
-  onClose: () => void;
+  onAdd: () => void;
+  onFilter?: () => void;
+  chips?: ReactNode;
+  children?: ReactNode;
 }) {
   const { t } = useTranslation();
-  // The last choices stay on screen while the sheet slides away.
-  const [lastDraft, setLastDraft] = useState(draft ?? initial);
-  if (draft && draft !== lastDraft) setLastDraft(draft);
-  const toggle = (type: SourceType) =>
-    onChange({
-      ...lastDraft,
-      types: lastDraft.types.includes(type)
-        ? lastDraft.types.filter((other) => other !== type)
-        : [...lastDraft.types, type],
-    });
-  // A year its calendar does not have (1400 r.) cannot be applied.
-  const yearMissing = hasYear(lastDraft.dates) && yearRangeOf(lastDraft.dates) === null;
-
+  const { top } = useSafeAreaInsets();
   return (
-    <Sheet
-      visible={draft !== null}
-      title={t('sources.filter')}
-      closeLabel={t('sources.close')}
-      onClose={onClose}
-      secondary={{
-        label: t('sources.clear'),
-        onPress: () => onChange(unfiltered(lastDraft)),
-        disabled: lastDraft.types.length === 0 && !hasYear(lastDraft.dates),
-      }}
-      primary={{ label: t('sources.show', { count }), onPress: onApply, disabled: yearMissing }}
-    >
-      <View className="gap-4.5">
-        <SheetField label={t('sources.sort')}>
-          <Segment
-            label={t('sources.sort')}
-            options={[
-              { value: 'last', label: t('sourceList.byLast') },
-              { value: 'title', label: t('sources.byTitle') },
-              { value: 'author', label: t('sources.byAuthor') },
-              { value: 'date', label: t('sources.byDate') },
-            ]}
-            value={lastDraft.sort}
-            onChange={(sort) => onChange({ ...lastDraft, sort })}
-            block
-          />
-        </SheetField>
-        <SheetField label={t('sources.types')}>
-          <ChipRow>
-            {sourceTypes.map((type) => (
-              <Chip
-                key={type}
-                label={t(`sourceTypes.${type}.label`)}
-                tone="outline"
-                selected={lastDraft.types.includes(type)}
-                onPress={() => toggle(type)}
-              />
-            ))}
-          </ChipRow>
-        </SheetField>
-        <SheetField label={t('sources.dates')}>
-          <YearRangeFields value={lastDraft.dates} onChange={(dates) => onChange({ ...lastDraft, dates })} />
-        </SheetField>
+    // The header bar kept the status bar's inset; without it the title does, 20 under it.
+    <View className="gap-sm px-xxl" style={{ paddingTop: top + 20 }}>
+      <View className="flex-row items-center gap-sm">
+        <Text variant="title" className="flex-1">
+          {t('tabs.sources')}
+        </Text>
+        {chips}
+        {onFilter && <Button label={t('sourceTable.filter')} variant="small" onPress={onFilter} />}
+        <Button label={t('sources.add')} icon={Plus} onPress={onAdd} />
       </View>
-    </Sheet>
+      {children}
+    </View>
   );
 }
 

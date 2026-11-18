@@ -1,3 +1,4 @@
+import { AnchoredPopover } from '@homelibra/ui/popover';
 import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { Sheet } from '@homelibra/ui/sheet';
 import { Text } from '@homelibra/ui/text';
@@ -5,7 +6,7 @@ import { cx } from '@homelibra/ui/theme';
 import Info from 'lucide-react-native/icons/info';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 type Row = { term: string; description: string };
 
@@ -24,12 +25,60 @@ export function SearchTips() {
     <>
       <HeaderIconAction icon={Info} tone="muted" label={t('search.tips')} onPress={() => setOpen(true)} />
       <Sheet visible={open} title={t('search.tips')} closeLabel={t('search.close')} onClose={close}>
-        <View className="gap-4.5">
-          <Terms label={t('search.tipsWhere')} rows={t('search.tipsWhereRows', { returnObjects: true })} />
-          <Terms label={t('search.tipsSyntax')} rows={t('search.tipsSyntaxRows', { returnObjects: true })} mono />
-        </View>
+        <TipsTerms />
       </Sheet>
     </>
+  );
+}
+
+/**
+ * A wide Ara's ? at the right of its box (#174) and Arama ipuçları under it,
+ * right-aligned to it, over the list rather than in a sheet: the same two
+ * lists. The screen holds `open`, so its keys wait while the tips are in
+ * front. A press outside or Esc closes them.
+ */
+export function SearchTipsPopover({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation();
+  return (
+    <AnchoredPopover
+      open={open}
+      onOpenChange={onOpenChange}
+      role="dialog"
+      label={t('search.tips')}
+      gap={6}
+      className="w-[380px] gap-md p-lg"
+      trigger={({ ref, onPress }) => (
+        <Pressable
+          ref={ref}
+          role="button"
+          aria-label={t('search.tips')}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          onPress={onPress}
+          className={cx('h-11 w-9 items-center justify-center active:opacity-70', open && 'opacity-70')}
+        >
+          <Text variant="button" color="muted">
+            ?
+          </Text>
+        </Pressable>
+      )}
+    >
+      <Text variant="label" role="heading">
+        {t('search.tips')}
+      </Text>
+      <TipsTerms />
+    </AnchoredPopover>
+  );
+}
+
+/** Nerede arar and Yazım. */
+function TipsTerms() {
+  const { t } = useTranslation();
+  return (
+    <View className="gap-4.5">
+      <Terms label={t('search.tipsWhere')} rows={t('search.tipsWhereRows', { returnObjects: true })} />
+      <Terms label={t('search.tipsSyntax')} rows={t('search.tipsSyntaxRows', { returnObjects: true })} mono />
+    </View>
   );
 }
 

@@ -6,6 +6,7 @@ import { HeaderIconAction } from '@homelibra/ui/screen-header';
 import { SectionHeading } from '@homelibra/ui/section-heading';
 import { Text } from '@homelibra/ui/text';
 import { cx, useTheme } from '@homelibra/ui/theme';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { useQuery } from '@tanstack/react-query';
 import type { inferRouterOutputs } from '@trpc/server';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,13 +27,15 @@ import {
   useSearchText,
   useSourceSearch,
 } from '@/features/search/note-search';
-import { OutboxStatus } from '@/features/note/outbox-status';
+import { OutboxStatus, useShownStatus } from '@/features/note/outbox-status';
 import { ReadingStatusButton } from '@/features/source/reading-status';
 import { SourceSearchBar, SourceSearchNotice } from '@/features/source/source-search';
 import { SourceTags } from '@/features/source/source-tags';
+import { WideSourcePage } from '@/features/source/wide-source-page';
 import { NoteTagsLine } from '@/features/tag/tag-chips';
 import { useSourceSearchPlace } from '@/lib/appearance-choices';
 import { knownNotes } from '@/features/note/known-notes';
+import { useFramePanel } from '@/components/wide-frame';
 import { useOutbox } from '@/lib/outbox';
 import { useTRPC } from '@/lib/trpc';
 
@@ -41,9 +44,6 @@ type Source = inferRouterOutputs<AppRouter>['sources']['get'];
 // Tries at placing a Note whose row is not laid out yet, and the wait between them in ms.
 const scrollRetries = 5;
 const scrollRetryAfter = 50;
-
-// How long a Note is sent before its row says "gönderiliyor", in ms: a quick send says nothing.
-const slowSendAfter = 1000;
 
 /** A Note the list keeps in view: just above the bar once saved, or mid-screen when a search opened it. */
 type Pin = { id: string; at: 'bar' | 'middle' };
@@ -59,6 +59,10 @@ type Pin = { id: string; at: 'bar' | 'middle' };
  * the field while the heading folds to one line, or, as Görünüm can set, from
  * "Ara" on the Notes' heading. Going back puts the search away before it
  * leaves the page.
+ *
+ * On a wide screen (#177) the page is its own: the Notes beside a writing
+ * column that is always open (`WideSourcePage`), so the sidebar narrows to
+ * the icon rail below 1200 px as beside any panel.
  */
 export default function SourceScreen() {
   const { id, write, note } = useLocalSearchParams<{ id: string; write?: string; note?: string }>();
@@ -68,6 +72,8 @@ export default function SourceScreen() {
   const source = useQuery(trpc.sources.get.queryOptions({ id }));
   const notes = useQuery(trpc.notes.list.queryOptions({ sourceId: id }));
   const { state } = useOutbox();
+  const wide = useWideLayout().tier === 'wide';
+  useFramePanel(wide);
   // The Notes still in the outbox go on top of what the server (or, offline,
   // the phone's cache) last said; one waiting to move here comes from the
   // list it is in now.
@@ -97,7 +103,8 @@ export default function SourceScreen() {
     );
   }
 
-  return <SourcePage source={source.data} notes={shown} statuses={state.status} write={write === '1'} found={note} />;
+  const Page = wide ? WideSourcePage : SourcePage;
+  return <Page source={source.data} notes={shown} statuses={state.status} write={write === '1'} found={note} />;
 }
 
 function SourcePage({
@@ -183,6 +190,8 @@ function SourcePage({
       <Stack.Screen
         options={{
           title: '',
+          // Set again: crossing from the wide page, which has none.
+          headerShown: true,
           headerTitle: () =>
             searchInBar ? (
               <SearchField
@@ -332,24 +341,6 @@ function SourcePage({
       />
     </KeyboardAvoidingView>
   );
-}
-
-/**
- * The status a Note's row says, from where the phone's outbox has it:
- * nothing once sent, nor while a send takes under {@link slowSendAfter}.
- */
-function useShownStatus(status: NoteStatus | undefined) {
-  const sending = status === 'sending';
-  const [slow, setSlow] = useState(false);
-  useEffect(() => {
-    if (!sending) return;
-    const timer = setTimeout(() => setSlow(true), slowSendAfter);
-    return () => {
-      clearTimeout(timer);
-      setSlow(false);
-    };
-  }, [sending]);
-  return status === 'synced' || (sending && !slow) ? undefined : status;
 }
 
 /**

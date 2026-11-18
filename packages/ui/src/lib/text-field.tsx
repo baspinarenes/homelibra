@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { TextInput, type TextInputProps, View } from 'react-native';
+import { type Ref, useState } from 'react';
+import { TextInput, type TextInputInstance, type TextInputProps, View } from 'react-native';
 
 import { cx } from './cx';
 import { Text } from './text';
@@ -17,6 +17,7 @@ export function TextField({
   error,
   excerpt = false,
   code = false,
+  inputRef,
   multiline = false,
   onChangeText,
   onFocus,
@@ -35,6 +36,8 @@ export function TextField({
   excerpt?: boolean;
   /** A six-digit sign-in code: the number pad, the code from the email offered, digits only, in mono. */
   code?: boolean;
+  /** The input itself, so a screen can put the cursor in it. */
+  inputRef?: Ref<TextInputInstance>;
 } & TextInputProps) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -53,6 +56,7 @@ export function TextField({
         </View>
       )}
       <TextInput
+        ref={inputRef}
         aria-label={label}
         aria-invalid={invalid || undefined}
         placeholderTextColor={colors.muted2}

@@ -1,4 +1,6 @@
+import type { NoteStatus } from '@homelibra/outbox';
 import { Text } from '@homelibra/ui/text';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useOffline } from '@/lib/network';
@@ -22,4 +24,25 @@ export function OutboxStatus() {
       {text}
     </Text>
   );
+}
+
+// How long a Note is sent before its row says "gönderiliyor", in ms: a quick send says nothing.
+const slowSendAfter = 1000;
+
+/**
+ * The status a Note's row says, from where the phone's outbox has it:
+ * nothing once sent, nor while a send takes under {@link slowSendAfter}.
+ */
+export function useShownStatus(status: NoteStatus | undefined) {
+  const sending = status === 'sending';
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!sending) return;
+    const timer = setTimeout(() => setSlow(true), slowSendAfter);
+    return () => {
+      clearTimeout(timer);
+      setSlow(false);
+    };
+  }, [sending]);
+  return status === 'synced' || (sending && !slow) ? undefined : status;
 }

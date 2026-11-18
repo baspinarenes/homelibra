@@ -24,7 +24,20 @@
     "./strip": "./src/strip.ts",
     "./logo": "./src/logo.ts",
     "./wheels": "./src/wheels.ts",
-    "./illustration": "./src/illustration.ts"
+    "./illustration": "./src/illustration.ts",
+    "./wide-layout": "./src/wide-layout.ts",
+    "./sidebar": "./src/sidebar.ts",
+    "./table": "./src/table.ts",
+    "./quick-search": "./src/quick-search.ts",
+    "./inline-choices": "./src/inline-choices.ts",
+    "./note-row": "./src/note-row.ts",
+    "./panel": "./src/panel.ts",
+    "./note-panel": "./src/note-panel.ts",
+    "./menu": "./src/menu.ts",
+    "./popover": "./src/popover.ts",
+    "./note-editor": "./src/note-editor.ts",
+    "./dizin": "./src/dizin.ts",
+    "./note-writer": "./src/note-writer.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

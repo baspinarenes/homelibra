@@ -82,9 +82,6 @@ export const shadows = {
 // `rule`: the soft shadow under Genel Bakış's section rule (Çizgi).
 export type Shadows = { readonly card: string; readonly lift: string; readonly rule: string };
 
-// From this width up, web gets the left tab rail and the two-column Source form.
-export const wideMinWidth = 720;
-
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, gutter: 22, xl: 24, xxl: 32 } as const;
 
 /**
@@ -111,6 +108,7 @@ export const fonts = {
 // The app writes no size of its own, so a size a screen needs is an entry here.
 export const type = {
   display: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 42 }, // welcome and sign-in title
+  hero: { fontFamily: fonts.serif, fontSize: 52, lineHeight: 68 }, // Giriş's headline on a wide screen
   title: { fontFamily: fonts.serif, fontSize: 26, lineHeight: 34 }, // Collection name
   screenTitle: { fontFamily: fonts.mono, fontSize: 15, lineHeight: 20, letterSpacing: 2.2 }, // every screen's header, upper case
   sourceTitle: { fontFamily: fonts.serifMedium, fontSize: 21, lineHeight: 28 }, // also a sheet's title
@@ -123,6 +121,7 @@ export const type = {
   excerptLg: { fontFamily: fonts.quote, fontSize: 19, lineHeight: 32 }, // Kaldığın yer's words, Not önde
   body: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 22 },
   bodyLg: { fontFamily: fonts.sans, fontSize: 17, lineHeight: 25 }, // Kaldığın yer's comment, Not önde
+  reading: { fontFamily: fonts.sans, fontSize: 16, lineHeight: 27 }, // a legal text's paragraph on a wide screen
   bodySm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 20 }, // a form's error, Arama ipuçları
   comment: { fontFamily: fonts.sans, fontSize: 14.5, lineHeight: 22 }, // a Note's comment under its excerpt
   commentSm: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 22 }, // the same under excerptSm

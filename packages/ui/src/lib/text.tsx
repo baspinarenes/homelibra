@@ -14,6 +14,7 @@ export type Variant = keyof typeof typeScale;
  */
 const defaultColor: { [V in Variant]: keyof Colors | undefined } = {
   display: 'fg',
+  hero: 'fg',
   title: 'fg',
   screenTitle: 'fg',
   sourceTitle: 'fg',
@@ -25,6 +26,7 @@ const defaultColor: { [V in Variant]: keyof Colors | undefined } = {
   excerptLg: 'fg',
   body: 'ink2',
   bodyLg: 'fg',
+  reading: 'ink3',
   bodySm: 'fg',
   comment: 'ink3',
   commentSm: 'ink3',
@@ -76,7 +78,7 @@ export type UpperCaseVariant = (typeof upperCaseVariants)[number];
 const upperCase = new Set<Variant>(upperCaseVariants);
 
 /** Entries a screen reader lands on as a heading unless the screen says otherwise. */
-const headings = new Set<Variant>(['display', 'title', 'screenTitle', 'sourceTitle', 'heading']);
+const headings = new Set<Variant>(['display', 'hero', 'title', 'screenTitle', 'sourceTitle', 'heading']);
 
 type Props = Omit<TextProps, 'style' | 'children'> & {
   /** A colour of the theme other than the entry's own. */

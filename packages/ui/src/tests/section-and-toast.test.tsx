@@ -1,9 +1,10 @@
 import { Text } from 'react-native';
 import { describe, expect, it } from 'vitest';
 
-import { Section, SectionHeading, SectionText } from '../section-heading';
+import { Section, SectionHeading, Sections, SectionText } from '../section-heading';
+import { SettingsRow, SettingsRows } from '../settings-row';
 import { Toast } from '../toast';
-import { byRole, classes, nameOf, type Node, render, text } from './render';
+import { all, byRole, classes, nameOf, type Node, render, text } from './render';
 
 const noop = () => {};
 
@@ -60,6 +61,54 @@ describe('Section', () => {
     const heading = section.children[0] as Node;
     expect(classes(section)).toContain(gap);
     expect(classes(heading).includes('mb-1.5')).toBe(underHeading);
+  });
+});
+
+// Ayarlar on a wide screen (#183): one column, each section titled in serif over a rule, a rule under each row.
+describe('Sections, wide', () => {
+  const page = () =>
+    render(
+      <Sections wide>
+        <Section title="Hesap" spacing="rows">
+          <SettingsRows>
+            <SettingsRow label="Kütüphaneni dışa aktar" onPress={noop} />
+            <SettingsRow label="Hesabı sil" tone="danger" onPress={noop} />
+          </SettingsRows>
+        </Section>
+        <Section title="İletişim" spacing="text">
+          <SectionText>Sorular, destek ve KVKK başvuruları için:</SectionText>
+        </Section>
+      </Sections>,
+    );
+
+  it('titles each section in serif as it is written, a line rule under the title', () => {
+    const headings = byRole(page(), 'heading');
+    expect(headings.map(text)).toEqual(['Hesap', 'İletişim']);
+    expect(headings.map((heading) => classes(heading).includes('type-summary'))).toEqual([true, true]);
+    const ruled = all(page()).filter((node) => classes(node).includes('border-line'));
+    expect(ruled.map(text)).toEqual(['Hesap', 'İletişim']);
+  });
+
+  it('rules under every row, the last one too, and draws no rule between the sections', () => {
+    const rows = all(page()).filter((node) => classes(node).includes('border-line-soft'));
+    expect(rows.map(text)).toEqual(['Kütüphaneni dışa aktar', 'Hesabı sil']);
+    expect(rows.every((row) => classes(row).includes('border-b'))).toBe(true);
+  });
+
+  it('sets a row’s value under its label, not at the right', () => {
+    const page = render(
+      <Sections wide>
+        <Section title="Hesap" spacing="rows">
+          <SettingsRows>
+            <SettingsRow label="E-posta adresi" value="tarihci@ornek.edu.tr" onPress={noop} />
+          </SettingsRows>
+        </Section>
+      </Sections>,
+    );
+    const [row] = byRole(page, 'button');
+    const stacked = (row!.children as Node[]).find((child) => text(child) === 'E-posta adresitarihci@ornek.edu.tr');
+    expect(stacked).toBeDefined();
+    expect(classes(stacked!)).not.toContain('flex-row');
   });
 });
 

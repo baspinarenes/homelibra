@@ -1,8 +1,8 @@
 import { TabBar, type TabBarIcon } from '@homelibra/ui/tab-bar';
-import { type as typeScale, useTheme, wideMinWidth } from '@homelibra/ui/theme';
+import { type as typeScale, useTheme } from '@homelibra/ui/theme';
+import { useWideLayout } from '@homelibra/ui/wide-layout';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Platform, useWindowDimensions } from 'react-native';
 
 import { TabIcon } from '@/components/tab-icon';
 
@@ -14,21 +14,27 @@ const tabs = [
   { route: 'settings', key: 'settings', icon: 'settings' },
 ] as const satisfies readonly { route: string; key: string; icon: TabBarIcon }[];
 
+/** The wide tier's tabs have no bar: the frame's sidebar goes to them (components/wide-frame). */
+const noBar = () => null;
+
 /**
- * Five tabs: the package's TabBar on the phone, a left rail on desktop web.
- * Etiketler is not a tab: it is the second view inside Dizin.
+ * Five tabs: the package's TabBar in the phone tier, a left rail in the rail
+ * tier, the sidebar in the wide tier. Etiketler is not a tab: it is the
+ * second view inside Dizin.
  */
 export default function TabsLayout() {
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
-  const rail = Platform.OS === 'web' && width >= wideMinWidth; // below it, a bottom bar (library-nav prototype)
+  const { tier } = useWideLayout();
+  const rail = tier !== 'phone';
   const { colors } = useTheme();
 
   return (
     <Tabs
       tabBar={
         rail
-          ? undefined
+          ? tier === 'wide'
+            ? noBar
+            : undefined
           : ({ state, emitter, navigateToTab }) => {
               const open = state.routes[state.index];
               return (

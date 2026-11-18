@@ -8,6 +8,15 @@ export const tr = {
     search: 'Ara',
     settings: 'Ayarlar',
   },
+  // The wide tier's sidebar in place of the tabs (#170); its places take the tabs' names.
+  wideSidebar: {
+    navigation: 'Kenar çubuğu',
+    appName: 'Homelibra',
+    capture: 'Not al',
+    files: 'Dosyalar',
+    fileNotes: '{{name}}, {{count}} not',
+    sourceCount: 'Kaynaklar, {{count}} kaynak',
+  },
   screenHeader: {
     back: 'Geri',
   },
@@ -32,6 +41,20 @@ export const tr = {
     tagsEmptyTitle: 'Henüz etiketin yok',
     tagsEmptyLead: 'Bir nota ya da kaynağa “+ etiket” ile ekleyebilirsin.',
   },
+  // A wide Dizin (#181): Dosyalar and Etiketler side by side, each with its own order.
+  wideDizin: {
+    sortCollections: 'Dosyaları sırala: {{sort}}',
+    sortTags: 'Etiketleri sırala: {{sort}}',
+    emptyLead: 'Bir yazının etiketlerini bir araya getirmek için “Yeni dosya” ile bir dosya aç.',
+  },
+  // Yeni dosya in the panel beside a wide Dizin (#181).
+  newCollectionPanel: {
+    hintCancel: 'vazgeç',
+    hintSave: 'kaydet',
+    discard: 'Değişiklikler atılsın mı?',
+    keepEditing: 'Düzenlemeye dön',
+    discardConfirm: 'At',
+  },
   settings: {
     appearance: 'Görünüm',
     themeLabel: 'Tema',
@@ -49,6 +72,8 @@ export const tr = {
     sourceSearchNotes: 'Notlar',
     account: 'Hesap',
     versionSection: 'Sürüm',
+    // Above E-posta adresi, Dışa aktar and Hesabı sil on a wide screen, back to Ayarlar (#183).
+    back: '‹ Ayarlar',
   },
   // Hoş geldin: Homelibra in a few lines, once per Account; Başla records the terms accepted at sign-in (#118).
   welcome: {
@@ -65,6 +90,9 @@ export const tr = {
   },
   privacy: {
     title: 'Gizlilik',
+    // A privacy page on a wide screen (#185): its way back above the column's left, and a legal text's headings there.
+    back: '‹ Geri',
+    contents: 'Bu metinde',
     privacySection: 'Gizlilik',
     notice: 'Aydınlatma metni',
     terms: 'Kullanım koşulları',
@@ -146,10 +174,43 @@ export const tr = {
     resend: 'Kodu yeniden gönder',
     inviteOnly: 'Homelibra şu an davetle açık.',
     inviteOnlyContact: 'Davet için bize yazabilirsin:',
+    // The sign-in column on a wide screen (#184): its heading, the way to Gizlilik signed out (#40), and back from e-mail.
+    heading: 'Giriş',
+    privacyLink: 'Gizlilik ve hesabını silmek',
+    back: '‹ Giriş',
     errors: {
       sendFailed: 'Kod gönderilemedi. Bağlantını kontrol edip yeniden dene.',
       invalidCode: 'Kod yanlış ya da süresi dolmuş.',
       googleFailed: 'Google ile giriş yapılamadı. Yeniden dene.',
+    },
+  },
+  // Giriş's left half on a wide screen (#184): what Homelibra is, in three steps, each with a small example.
+  // The examples borrow the sample names the Kaynak formu already shows; the note's words are the composer's placeholders.
+  signInIntro: {
+    eyebrow: 'Araştırmacının not defteri',
+    title: 'Kaynaktan yazıya, alıntı alıntı.',
+    lead: "Kitap, makale, arşiv belgesi ya da gazete: ne okuyorsan künyesiyle ekle, notunu Konum'uyla al, yazacağın şeyin dosyasında topla.",
+    steps: {
+      source: {
+        title: 'Kaynağını ekle',
+        text: 'Dokuz türden biri; ISBN ya da DOI ile künye dolar.',
+      },
+      note: {
+        title: 'Notunu al',
+        text: 'Alıntı olduğu gibi, yorumun ayrı; Konum bir sonraki nota taşınır.',
+      },
+      collection: {
+        title: 'Dosyanda topla',
+        text: 'Etiketler bir yazının dosyasını kurar; tamamı Markdown olarak kopyalanır.',
+      },
+    },
+    examples: {
+      periodicalPlace: 'İstanbul',
+      locator: 's. 45',
+      // The Locator with its ablative, for capture.carriedOn: the next note starts from it.
+      locatorFrom: "s. 45'ten",
+      collectionName: 'İttihat ve Terakki makalesi',
+      tags: ['basın', 'meşrutiyet'],
     },
   },
   home: {
@@ -169,6 +230,10 @@ export const tr = {
     libraryTypes: 'Kaynak dağılımı',
     libraryStatus: 'Okuma durumu',
   },
+  // A wide Genel Bakış (#182): its two columns.
+  wideHome: {
+    recentNotes: 'Son notlar',
+  },
   // How long ago a Note was captured.
   elapsed: {
     now: 'az önce',
@@ -185,6 +250,29 @@ export const tr = {
     loadFailed: 'Kaynak yüklenemedi.',
     editNote: 'Notu düzenle',
   },
+  // A wide Source page (#177): the one-line künye, the Notes, and the writing column beside them.
+  wideSource: {
+    fullCitation: 'Künyenin tamamı ›',
+    shortCitation: 'Künyeyi kısalt',
+    notes: 'Notlar · {{count}} · Konum sırası',
+    empty: 'Bu kaynaktan henüz not yok. Yandaki sütunda yazmaya başla.',
+    focusHint: 'odak',
+    saveHint: 'kaydet',
+    footnote: 'Kaydedince alanlar boşalır, Konum bir sonraki not için kalır; sütun hep açık.',
+    newNote: '+ Yeni not',
+    writing: 'Yeni not',
+    note: 'Not',
+  },
+  // Not al off a Source page (#178): the writing in the panel beside any wide screen; the rest are capture's and wideSource's.
+  wideCapture: {
+    panel: 'Yeni not',
+    anywhere: 'her yerden',
+    source: 'Kaynak',
+    lastNoted: 'son not alınan · değiştir',
+    change: 'değiştir',
+    chooseSource: 'Kaynak seç',
+    footnote: 'Kaydedince alanlar boşalır, Kaynak ve Konum kalır; panel yazma alanı olarak açık durur.',
+  },
   noteEdit: {
     title: 'Notu düzenle',
     locator: 'Konum',
@@ -194,6 +282,14 @@ export const tr = {
     save: 'Kaydet',
     saveFailed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     loadFailed: 'Not yüklenemedi.',
+  },
+  // A Note edited where it is open on a wide screen (#176); the rest of its words are noteEdit's.
+  wideNoteEdit: {
+    cancel: 'Vazgeç',
+    ask: 'Değişiklikler atılsın mı?',
+    discard: 'At',
+    keepEditing: 'Düzenlemeye dön',
+    tagsDone: 'Tamam',
   },
   // Ara: Library search (#55, ADR-0005).
   search: {
@@ -235,6 +331,23 @@ export const tr = {
     showSourcesUncounted: 'Kaynakları göster',
     hiddenNotes: 'Tarihsiz kaynaklardan {{count}} not gizli',
   },
+  // The wide tier's ⌘K window, a shortcut to Ara over every screen (#175).
+  quickSearch: {
+    dialog: 'Hızlı arama',
+    field: 'Ara ya da git',
+    placeholder: 'Etiket, kaynak ya da not ara',
+    close: 'Kapat',
+    go: 'Git',
+    notes: 'Notlar',
+    tag: 'Etiket',
+    source: 'Kaynak',
+    openAll: 'Ara’da tüm sonuçlar: «{{query}}» ›',
+    // Before a word is typed the last row opens Ara itself.
+    openAra: 'Ara’yı aç ›',
+    select: 'seç',
+    open: 'aç',
+    openAllHint: 'Ara’da aç',
+  },
   sources: {
     byTitle: 'Başlık',
     byAuthor: 'Yazar',
@@ -260,6 +373,21 @@ export const tr = {
     removeTypes: 'Tür filtresini kaldır',
     filterEmpty: 'Bu filtreyle kaynak yok.',
     clearFilter: 'Filtreyi temizle',
+  },
+  // Kaynaklar as a table on a wide screen (#179); Başlık, Yazar, Tarih and Son not are `sources` and `sourceList`'s.
+  sourceTable: {
+    label: 'Kaynaklar',
+    type: 'Tür',
+    notes: 'Not',
+    filter: 'Filtrele',
+    typesChip: 'Tür: {{types}}',
+    datesChip: 'Tarih: {{range}}',
+    sortHint: 'Başlığa tıkla: sırala · tekrar: yönü çevir',
+    none: '—',
+    undated: 'tarihsiz',
+    keyRows: 'kaynak',
+    keyOpen: 'sayfasını aç',
+    keyCapture: 'seçili kaynağa not al',
   },
   // Source types: the chip label, its scope under the chip and the form's example values (#18).
   sourceTypes: {
@@ -395,6 +523,18 @@ export const tr = {
     saveFailed: 'Kaydedilemedi. Bağlantını kontrol edip yeniden dene.',
     loadFailed: 'Kaynak yüklenemedi.',
   },
+  // The Source form in a wide screen's panel (#180).
+  sourcePanel: {
+    cover: 'Kapak',
+    isbnFrom: 'Open Library',
+    isbnCheck: 'Doğru kitap mı, kontrol et; aktardıktan sonra düzeltebilirsin.',
+    cancel: 'Vazgeç',
+    hintCancel: 'vazgeç',
+    hintSave: 'kaydet',
+    discard: 'Değişiklikler atılsın mı?',
+    keepEditing: 'Düzenlemeye dön',
+    discardConfirm: 'At',
+  },
   capture: {
     open: 'Not al',
     // `from` is the Locator with its ablative: "s. 52'den".
@@ -513,6 +653,9 @@ export const tr = {
     // A Collection's and a Tag's header; the name stands in full under it (#139).
     pageTitle: 'Dosya',
     tagPageTitle: 'Etiket',
+    // Over a Tag's page on a wide screen (#173): back to Dizin's Etiketler.
+    tagCrumb: '‹ Dizin · Etiketler',
+    tagCrumbLabel: 'Dizin, Etiketler',
     noteCount: '{{count}} not',
     counts: '{{notes}} not · {{sources}} kaynak',
     noTags: 'etiketsiz',
@@ -598,6 +741,8 @@ export const tr = {
     shortWords: '{{words}} 3 harften kısa, yalnızca tam kelime olarak aranır.',
     matchCount: '{{shown}} / {{count}} not',
     viewMatchCounts: '{{shown}} / {{notes}} not · {{sources}} kaynak',
+    // Beside a wide view's search box (#172): the Markdown copy of the Notes found, only them.
+    copyFound: 'Bulunanları kopyala',
     failed: 'Arama yapılamadı. Bağlantını kontrol edip yeniden dene.',
     kindLabel: 'Sonuçlar',
     all: 'Tümü',
@@ -631,6 +776,30 @@ export const tr = {
     delete: 'Dosyayı sil',
     deleted: '“{{name}}” silindi',
     deleteFailed: 'Silinemedi. Bağlantını kontrol edip yeniden dene.',
+  },
+  // A wide screen's list of Notes and the panel beside it (#171): Collection, and later Etiket, Ara.
+  widePanel: {
+    panel: 'Not',
+    openNote: 'Notu yanda aç',
+    close: 'Paneli kapat',
+    previous: 'Önceki not',
+    next: 'Sonraki not',
+    place: '{{total}} notun {{n}}.',
+    copy: 'Kopyala',
+    edit: 'Düzenle',
+    openSource: 'Kaynağı aç',
+    siblings: 'Bu kaynaktan diğer notlar',
+    notInView: 'bu dosyada değil',
+    withComment: '+ yorum',
+    more: 'Diğer',
+    // Along the list's foot, after each key: "↑↓ not", "⌘C notu"…
+    hintRows: 'not',
+    hintOpen: 'aç',
+    hintCopyNote: 'notu',
+    hintCopyAll: 'dosyayı',
+    hintCopyFound: 'bulunanları',
+    hintSearch: 'ara',
+    hintClose: 'paneli kapat',
   },
   // Reading status (#62): okunuyor or bitti, and the lists it orders.
   readingStatus: {
